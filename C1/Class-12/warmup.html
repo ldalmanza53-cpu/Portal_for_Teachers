@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Impression Jury: First Impression Evaluator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and animations */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .glow-active {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+        .card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-800">
+
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between py-4 gap-4">
+                
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                        <i class="fas fa-gavel text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            The Impression Jury
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">B1-B2 ESL Lab</span>
+                        </h1>
+                        <p class="text-xs text-slate-400">Evaluate First Impressions & Master Opinion Language</p>
+                    </div>
+                </div>
+
+                <!-- Global App Nav Tabs -->
+                <nav class="flex items-center space-x-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 overflow-x-auto">
+                    <button id="nav-jury" onclick="switchTab('jury')" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow">
+                        <i class="fas fa-balance-scale"></i> Jury Room
+                    </button>
+                    <button id="nav-bank" onclick="switchTab('bank')" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-comment-dots"></i> Opinion Bank
+                    </button>
+                    <button id="nav-scorecard" onclick="switchTab('scorecard')" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-award"></i> Scorecard Builder
+                    </button>
+                </nav>
+
+            </div>
+        </div>
+
+        <div class="bg-slate-950 border-t border-slate-800/80 py-2.5 px-4 sm:px-6">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Role Filter Switcher -->
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400 uppercase font-bold tracking-wider mr-1 hidden sm:inline">Role Filter:</span>
+                    <div class="inline-flex rounded-lg bg-slate-800 p-0.5 border border-slate-700 text-xs font-medium">
+                        <button id="role-both" onclick="setRole('both')" class="px-3 py-1 rounded-md bg-indigo-600 text-white shadow-sm font-semibold transition-all">
+                            All Roles
+                        </button>
+                        <button id="role-studentA" onclick="setRole('studentA')" class="px-3 py-1 rounded-md text-slate-300 hover:text-white transition-all">
+                            <i class="fas fa-user-tie text-indigo-400 mr-1"></i> Student A (Lead)
+                        </button>
+                        <button id="role-studentB" onclick="setRole('studentB')" class="px-3 py-1 rounded-md text-slate-300 hover:text-white transition-all">
+                            <i class="fas fa-user-check text-purple-400 mr-1"></i> Student B (Reviewer)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Countdown Timer Widget -->
+                <div class="flex items-center gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs">
+                    <div class="flex items-center gap-1.5 text-indigo-400 font-bold">
+                        <i class="fas fa-clock"></i>
+                        <span id="timer-display" class="font-mono text-sm text-white">10:00</span>
+                    </div>
+
+                    <div class="h-4 w-px bg-slate-700"></div>
+
+                    <!-- Preset Selectors -->
+                    <div class="hidden sm:flex items-center gap-1 text-slate-400">
+                        <button onclick="setTimerPreset(5)" class="hover:text-white px-1 py-0.5 rounded hover:bg-slate-800">5m</button>
+                        <button onclick="setTimerPreset(10)" class="hover:text-white px-1 py-0.5 rounded hover:bg-slate-800 font-bold text-indigo-300">10m</button>
+                        <button onclick="setTimerPreset(15)" class="hover:text-white px-1 py-0.5 rounded hover:bg-slate-800">15m</button>
+                        <button onclick="setTimerPreset(20)" class="hover:text-white px-1 py-0.5 rounded hover:bg-slate-800">20m</button>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="flex items-center gap-1">
+                        <button id="btn-timer-toggle" onclick="toggleTimer()" class="w-7 h-7 rounded bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-colors">
+                            <i class="fas fa-play text-xs"></i>
+                        </button>
+                        <button onclick="resetTimer()" class="w-7 h-7 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors">
+                            <i class="fas fa-redo-alt text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- TAB 1: JURY ROOM SCENARIOS -->
+        <section id="tab-jury-view" class="space-y-6">
+            
+            <!-- Filter & Search Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="relative flex-grow max-w-md">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="jury-search" oninput="renderJuryScenarios()" placeholder="Search scenario or behavior keyword..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filter:</span>
+                    <button onclick="filterFlag('ALL')" id="flag-filter-ALL" class="flag-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-800 text-white">All (10)</button>
+                    <button onclick="filterFlag('GREEN')" id="flag-filter-GREEN" class="flag-btn px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all"><i class="fas fa-flag text-emerald-500 mr-1"></i> Positive</button>
+                    <button onclick="filterFlag('YELLOW')" id="flag-filter-YELLOW" class="flag-btn px-3 py-1.5 rounded-lg text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-all"><i class="fas fa-flag text-amber-500 mr-1"></i> Context</button>
+                    <button onclick="filterFlag('RED')" id="flag-filter-RED" class="flag-btn px-3 py-1.5 rounded-lg text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all"><i class="fas fa-flag text-rose-500 mr-1"></i> Negative</button>
+                </div>
+            </div>
+
+            <!-- Scenario Cards Container -->
+            <div id="scenarios-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Injected dynamically via JS -->
+            </div>
+
+        </section>
+
+
+        <section id="tab-bank-view" class="hidden space-y-6">
+            
+            <!-- Bank Header Intro -->
+            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <h2 class="text-2xl font-bold mb-2">Opinion Scaffolding Phrase Bank</h2>
+                    <p class="text-sm text-indigo-200">Equip yourself with precise language to express strong convictions, offer nuanced critiques, or disagree respectfully during partner discussions.</p>
+                </div>
+                <i class="fas fa-quote-right absolute -bottom-6 -right-6 text-9xl text-white/5 pointer-events-none"></i>
+            </div>
+
+            <!-- Bank Search & Category Filter Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="relative flex-grow max-w-md">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="bank-search" oninput="renderOpinionBank()" placeholder="Search phrases (e.g. 'strongly', 'perspective', 'vibe')..." class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                </div>
+
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="filterBankCategory('ALL')" id="bank-cat-ALL" class="bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all whitespace-nowrap">All Phrases</button>
+                    <button onclick="filterBankCategory('strong')" id="bank-cat-strong" class="bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all whitespace-nowrap">Strong Opinions</button>
+                    <button onclick="filterBankCategory('moderate')" id="bank-cat-moderate" class="bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all whitespace-nowrap">Moderate / Nuanced</button>
+                    <button onclick="filterBankCategory('disagree')" id="bank-cat-disagree" class="bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all whitespace-nowrap">Disagreeing</button>
+                    <button onclick="filterBankCategory('descriptor')" id="bank-cat-descriptor" class="bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all whitespace-nowrap">Impression Descriptors</button>
+                </div>
+            </div>
+
+            <!-- Opinion Phrases Grid -->
+            <div id="opinion-bank-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Injected dynamically via JS -->
+            </div>
+
+        </section>
+
+
+        <section id="tab-scorecard-view" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Left Column: Interactive Scorecard Form -->
+                <div class="lg:col-span-6 space-y-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                        <div class="border-b border-slate-100 pb-4">
+                            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-edit text-indigo-600"></i> Scorecard & Verdict Builder
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-1">Synthesize your pair discussion into a polished professional evaluation report.</p>
+                        </div>
+
+                        <!-- Partner Names -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Consultants / Student Names</label>
+                            <input type="text" id="scorecard-authors" oninput="updateScorecardPreview()" placeholder="e.g. Alex & Maria (Consulting Team 4)" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                        </div>
+
+                        <!-- Evaluated Behavior Dropdown -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Worst Habit or Key Scenario Evaluated</label>
+                            <select id="scorecard-scenario-select" onchange="updateScorecardPreview()" class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                <option value="">-- Select a Scenario --</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Joint Verdict -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Joint Pair Verdict <span class="text-slate-400 font-normal lowercase">(Why does this create a bad impression?)</span>
+                            </label>
+                            <div class="relative">
+                                <textarea id="scorecard-verdict" oninput="updateScorecardPreview()" rows="3" placeholder="In our opinion, this behavior gives off a bad impression because it comes across as..." class="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Recommended Upgrade Strategy -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Recommended Alternative Strategy <span class="text-slate-400 font-normal lowercase">(What should they do instead?)</span>
+                            </label>
+                            <textarea id="scorecard-strategy" oninput="updateScorecardPreview()" rows="3" placeholder="Instead, we strongly recommend that they..." class="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"></textarea>
+                        </div>
+
+                        <!-- Card Theme Selector -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Visual Theme</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <button onclick="setScorecardTheme('navy')" id="theme-btn-navy" class="px-3 py-2 rounded-xl text-xs font-medium border border-slate-700 bg-slate-900 text-white flex items-center justify-center gap-1.5 ring-2 ring-indigo-500">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Navy Slate
+                                </button>
+                                <button onclick="setScorecardTheme('indigo')" id="theme-btn-indigo" class="px-3 py-2 rounded-xl text-xs font-medium border border-indigo-200 bg-indigo-50 text-indigo-900 flex items-center justify-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> Royal Indigo
+                                </button>
+                                <button onclick="setScorecardTheme('emerald')" id="theme-btn-emerald" class="px-3 py-2 rounded-xl text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Emerald
+                                </button>
+                                <button onclick="setScorecardTheme('crimson')" id="theme-btn-crimson" class="px-3 py-2 rounded-xl text-xs font-medium border border-rose-200 bg-rose-50 text-rose-900 flex items-center justify-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Crimson
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Certificate Card Preview -->
+                <div class="lg:col-span-6 space-y-4">
+                    <div class="sticky top-28">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            <span>Live Scorecard Preview</span>
+                            <span class="text-indigo-600 font-semibold"><i class="fas fa-eye mr-1"></i> Auto-Updating</span>
+                        </div>
+
+                        <!-- Card Preview Box -->
+                        <div id="scorecard-preview-card" class="rounded-2xl p-6 shadow-xl border border-slate-800 bg-slate-900 text-white transition-all space-y-6">
+                            
+                            <!-- Certificate Header -->
+                            <div class="flex items-start justify-between border-b border-white/10 pb-4">
+                                <div>
+                                    <span class="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">Official Verdict</span>
+                                    <h3 id="preview-title" class="text-xl font-bold mt-2 text-white">First Impression Evaluation</h3>
+                                    <p id="preview-authors" class="text-xs text-slate-400 mt-0.5">Prepared by: Anonymous Consultants</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-indigo-400 border border-white/10">
+                                    <i class="fas fa-balance-scale text-lg"></i>
+                                </div>
+                            </div>
+
+                            <!-- Target Habit -->
+                            <div>
+                                <div class="text-[11px] uppercase font-bold text-slate-400 tracking-wider">Evaluated Behavior</div>
+                                <div id="preview-scenario" class="text-sm font-semibold text-slate-200 mt-1 bg-white/5 p-2.5 rounded-lg border border-white/5">
+                                    No scenario selected yet.
+                                </div>
+                            </div>
+
+                            <!-- Joint Verdict -->
+                            <div>
+                                <div class="text-[11px] uppercase font-bold text-indigo-300 tracking-wider">Consultants' Verdict</div>
+                                <p id="preview-verdict" class="text-sm text-slate-200 mt-1 leading-relaxed italic bg-white/5 p-3 rounded-lg border border-white/5">
+                                    "Select a scenario and enter your joint verdict to see it formatted here..."
+                                </p>
+                            </div>
+
+                            <!-- Upgrade Strategy -->
+                            <div>
+                                <div class="text-[11px] uppercase font-bold text-emerald-400 tracking-wider">Recommended Alternative Strategy</div>
+                                <p id="preview-strategy" class="text-sm text-slate-200 mt-1 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
+                                    "Enter your recommended alternative strategy..."
+                                </p>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                                <div class="text-[10px] text-slate-500 font-mono">
+                                    ID: IMP-JURY-2026
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <button onclick="speakVerdict()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all flex items-center gap-1.5">
+                                        <i class="fas fa-volume-up text-indigo-400"></i> Listen Audio
+                                    </button>
+                                    <button onclick="copyVerdictSummary()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all flex items-center gap-1.5 shadow">
+                                        <i class="fas fa-copy"></i> Copy Text
+                                    </button>
+                                    <button onclick="exportVerdictFile()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-all flex items-center gap-1.5 border border-white/10">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Custom Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>© 2026 First Impressions Mastery • Interactive ESL Speaking & Debate Activity</p>
+            <div class="flex items-center gap-4">
+                <span class="inline-flex items-center gap-1 text-slate-600"><i class="fas fa-book-reader text-indigo-500"></i> Target Level: B1-B2 Intermediate</span>
+                <span class="inline-flex items-center gap-1 text-slate-600"><i class="fas fa-microphone text-purple-500"></i> Speech Synthesis Enabled</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const SCENARIOS = [
+            {
+                id: 1,
+                title: "Glancing at Phone / Watch",
+                category: "Time & Attention",
+                description: "Glancing down at your smartwatch or smartphone twice during the first 3 to 5 minutes of a introductory meeting.",
+                defaultVotes: { green: 8, yellow: 34, red: 58 },
+                studentA_prompt: "Explain why checking your watch gives off a cold or disinterested vibe.",
+                studentB_prompt: "Provide a counter-perspective (e.g. what if they are expecting an urgent family update?).",
+                opinionStarters: [
+                    "In my opinion, glancing at your watch leaves a terrible first impression because...",
+                    "From my perspective, it immediately signals that you have somewhere more important to be.",
+                    "I see your point, but it depends on whether they politely excuse themselves first."
+                ],
+                sampleOpinion: "I strongly believe that checking your watch during the first five minutes makes you come across as dismissive and impatient."
+            },
+            {
+                id: 2,
+                title: "Name Repetition Overuse",
+                category: "Verbal Communication",
+                description: "Using the other person's name 4 or 5 times during a brief 2-minute initial introduction.",
+                defaultVotes: { green: 22, yellow: 54, red: 24 },
+                studentA_prompt: "Argue why repeating someone's name feels forced or manipulative.",
+                studentB_prompt: "Argue why this shows attentiveness and helps build immediate connection.",
+                opinionStarters: [
+                    "To be completely honest, hearing my name repeated five times feels unnatural.",
+                    "It seems to me that they are trying too hard to apply a sales technique.",
+                    "While it can sound artificial, it certainly shows that they paid close attention."
+                ],
+                sampleOpinion: "It seems to me that repeating a name too often comes across as insincere, almost like a pushy salesperson."
+            },
+            {
+                id: 3,
+                title: "Immediate Personal Over-Sharing",
+                category: "Social Boundaries",
+                description: "Sharing a major personal struggle, past mistake, or emotional conflict right away to appear 'authentic'.",
+                defaultVotes: { green: 12, yellow: 28, red: 60 },
+                studentA_prompt: "Express why over-sharing creates awkwardness in professional environments.",
+                studentB_prompt: "Defend why vulnerability can build trust faster than standard small talk.",
+                opinionStarters: [
+                    "There's no doubt in my mind that over-sharing puts undue pressure on the listener.",
+                    "I take a slightly different view; being open breaks down rigid corporate walls.",
+                    "From an executive standpoint, it shows a slight lack of professional boundaries."
+                ],
+                sampleOpinion: "In my opinion, over-sharing personal problems on first meeting lacks situational awareness and makes people uncomfortable."
+            },
+            {
+                id: 4,
+                title: "Intense Unbroken Eye Contact",
+                category: "Non-Verbal Cues",
+                description: "Maintaining continuous, unblinking eye contact for the entire duration of an introductory conversation.",
+                defaultVotes: { green: 15, yellow: 35, red: 50 },
+                studentA_prompt: "Explain how continuous eye contact can feel aggressive or intimidating.",
+                studentB_prompt: "Explain how breaking eye contact constantly might give off an untrustworthy impression.",
+                opinionStarters: [
+                    "I strongly feel that unblinking eye contact comes across as overly intense.",
+                    "While eye contact is vital, holding it without breaking feels like an interrogation.",
+                    "On the whole, I tend to think 60 to 70 percent eye contact is the ideal balance."
+                ],
+                sampleOpinion: "I am convinced that continuous eye contact crosses the line into intimidation rather than genuine engagement."
+            },
+            {
+                id: 5,
+                title: "Casual Attire for Corporate Interviews",
+                category: "Professional Presentation",
+                description: "Arriving in dark jeans, sneakers, and a casual t-shirt for a corporate executive job interview to show 'comfort'.",
+                defaultVotes: { green: 10, yellow: 42, red: 48 },
+                studentA_prompt: "Argue why dressing down signals a lack of respect for the organization's culture.",
+                studentB_prompt: "Argue why skills and confidence matter far more than rigid traditional dress codes.",
+                opinionStarters: [
+                    "I am convinced that dressing too casually shows a lack of effort and respect.",
+                    "To be honest, I think modern workplaces value talent over formal attire.",
+                    "I see your point, however first impressions are largely visual before you even speak."
+                ],
+                sampleOpinion: "From my perspective, wearing jeans to a formal job interview project a casual attitude toward the role itself."
+            },
+            {
+                id: 6,
+                title: "Complaining to Relate",
+                category: "Small Talk & Tone",
+                description: "Starting the conversation by complaining about bad weather, heavy traffic, or public transit to find common ground.",
+                defaultVotes: { green: 18, yellow: 52, red: 30 },
+                studentA_prompt: "Explain why starting with negative complaints sets an unpleasant mood.",
+                studentB_prompt: "Explain why shared mild frustrations make people feel human and relatable.",
+                opinionStarters: [
+                    "It seems to me that starting with a complaint immediately project negative energy.",
+                    "While complaining about traffic is universal, it isn't an inspiring conversation starter.",
+                    "I respectfully disagree; bonding over shared daily hassles is a very natural icebreaker."
+                ],
+                sampleOpinion: "I tend to think that opening with complaints gives off a pessimistic vibe right from the start."
+            },
+            {
+                id: 7,
+                title: "Enthusiastic Interrupting",
+                category: "Active Listening",
+                description: "Interrupting someone mid-sentence because you agree passionately with what they are saying.",
+                defaultVotes: { green: 25, yellow: 45, red: 30 },
+                studentA_prompt: "Critique how interrupting interrupts their flow regardless of good intentions.",
+                studentB_prompt: "Defend how enthusiastic interruptions demonstrate high energy and alignment.",
+                opinionStarters: [
+                    "Even if you agree, cutting someone off shows a lack of self-control.",
+                    "I take a slightly different view; in fast-paced brainstorming, enthusiasm is welcome.",
+                    "There is no doubt in my mind that patient listening leaves a more professional impression."
+                ],
+                sampleOpinion: "While the enthusiasm is positive, cutting someone off mid-thought still comes across as self-centered."
+            },
+            {
+                id: 8,
+                title: "The Soft or Gentle Handshake",
+                category: "Body Language",
+                description: "Offering a soft, limp, or barely touching handshake during greetings.",
+                defaultVotes: { green: 5, yellow: 30, red: 65 },
+                studentA_prompt: "Explain why a weak handshake conveys hesitation or lack of confidence.",
+                studentB_prompt: "Explain why judging someone based on a handshake is outdated or culturally biased.",
+                opinionStarters: [
+                    "In my experience, a soft handshake gives off a hesitant and passive vibe.",
+                    "It is worth considering that physical grip strength varies across cultures and individuals.",
+                    "While a firm handshake is traditional, we shouldn't judge competence based on grip strength."
+                ],
+                sampleOpinion: "I strongly believe a limp handshake creates a lingering impression of passivity or self-doubt."
+            },
+            {
+                id: 9,
+                title: "Minimal Talking & Brief Answers",
+                category: "Conversational Flow",
+                description: "Answering questions with 1-word or short answers and forcing the other person to carry 90% of the conversation.",
+                defaultVotes: { green: 2, yellow: 20, red: 78 },
+                studentA_prompt: "Critique how minimal answers place an unfair burden on the conversational partner.",
+                studentB_prompt: "Explain how introverted individuals or non-native speakers might just need time to feel comfortable.",
+                opinionStarters: [
+                    "Giving one-word answers leaves a impression of coldness and indifference.",
+                    "It seems to me that successful networking requires active mutual contribution.",
+                    "While shyness is understandable, brief answers make the other person do all the heavy lifting."
+                ],
+                sampleOpinion: "There's no doubt in my mind that minimal responses make the interaction feel like an uncomfortable interrogation."
+            },
+            {
+                id: 10,
+                title: "Immediate Humor & Jokes",
+                category: "Humor & Tone",
+                description: "Telling a witty joke or playful banter within the first 30 seconds of an introduction.",
+                defaultVotes: { green: 40, yellow: 45, red: 15 },
+                studentA_prompt: "Argue why early humor risks misinterpretation or sounding unprofessional.",
+                studentB_prompt: "Argue why humor immediately breaks the ice and makes you memorable.",
+                opinionStarters: [
+                    "In my opinion, humor early on is a high-risk, high-reward strategy.",
+                    "If the joke fails, it comes across as insensitive or unpolished.",
+                    "When done tastefully, I strongly believe humor establishes quick rapport and warmth."
+                ],
+                sampleOpinion: "From my perspective, humor within thirty seconds is fantastic if tailored properly, but dangerous if tone-deaf."
+            }
+        ];
+
+        const OPINION_PHRASES = [
+            // Strong Opinions
+            { phrase: "I strongly believe that...", category: "strong", tip: "Use when you have deep conviction about a professional boundary." },
+            { phrase: "There is no doubt in my mind that...", category: "strong", tip: "Emphasizes absolute certainty in your assessment." },
+            { phrase: "I am completely convinced that...", category: "strong", tip: "Shows firm agreement or disagreement." },
+            { phrase: "It is unacceptable to...", category: "strong", tip: "Direct standard-setting phrase for major red flags." },
+            { phrase: "From an executive standpoint, it's clear that...", category: "strong", tip: "Frame your opinion with a business focus." },
+
+            // Moderate / Nuanced
+            { phrase: "From my perspective...", category: "moderate", tip: "Gentle introduction to personal viewpoint." },
+            { phrase: "It seems to me that...", category: "moderate", tip: "Observation-based opinion." },
+            { phrase: "To be completely honest, I think...", category: "moderate", tip: "Signals authentic candor." },
+            { phrase: "On the whole, I tend to think...", category: "moderate", tip: "Balanced overall evaluation." },
+            { phrase: "It depends heavily on the context...", category: "moderate", tip: "Highlights situational nuances." },
+
+            // Disagreeing & Nuance
+            { phrase: "I see your point, but...", category: "disagree", tip: "Acknowledge partner before counter-arguing." },
+            { phrase: "I respectfully disagree because...", category: "disagree", tip: "Polite formal disagreement structure." },
+            { phrase: "While that might work in some contexts...", category: "disagree", tip: "Conditional disagreement starter." },
+            { phrase: "I take a slightly different view on...", category: "disagree", tip: "Soft alternative perspective." },
+            { phrase: "That is a valid observation, however...", category: "disagree", tip: "Validating partner insight while adding nuance." },
+
+            // Impression Descriptors
+            { phrase: "...comes across as arrogant / passive.", category: "descriptor", tip: "Describes social perception." },
+            { phrase: "...gives off a cold and detached vibe.", category: "descriptor", tip: "Describes non-verbal emotional impression." },
+            { phrase: "...lacks situational awareness.", category: "descriptor", tip: "Critiques understanding of context." },
+            { phrase: "...projects warmth, confidence, and respect.", category: "descriptor", tip: "Positive impression triad." },
+            { phrase: "...leaves a lasting positive mark.", category: "descriptor", tip: "Concludes successful interaction." }
+        ];
+
+        let activeTab = 'jury';
+        let activeRole = 'both';
+        let currentFlagFilter = 'ALL';
+        let currentBankCategory = 'ALL';
+        let userVotes = {}; // scenarioId -> 'GREEN' | 'YELLOW' | 'RED'
+        let scenarioNotes = {}; // scenarioId -> string
+
+        // Timer State
+        let timerSeconds = 600; // 10 minutes default
+        let timerMaxSeconds = 600;
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        // Scorecard State
+        let scorecardTheme = 'navy';
+
+        window.onload = function() {
+            // Load saved notes from localStorage
+            try {
+                const savedNotes = localStorage.getItem('impression_jury_notes');
+                if (savedNotes) scenarioNotes = JSON.parse(savedNotes);
+
+                const savedVotes = localStorage.getItem('impression_jury_votes');
+                if (savedVotes) userVotes = JSON.parse(savedVotes);
+            } catch(e) {
+                console.log("LocalStorage read error", e);
+            }
+
+            renderJuryScenarios();
+            renderOpinionBank();
+            populateScorecardDropdown();
+            updateScorecardPreview();
+            updateTimerDisplay();
+        };
+
+        function switchTab(tab) {
+            activeTab = tab;
+            
+            // Buttons visual update
+            ['jury', 'bank', 'scorecard'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow";
+                } else {
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all flex items-center gap-2 whitespace-nowrap";
+                }
+            });
+
+            // View section visibility
+            document.getElementById('tab-jury-view').classList.toggle('hidden', tab !== 'jury');
+            document.getElementById('tab-bank-view').classList.toggle('hidden', tab !== 'bank');
+            document.getElementById('tab-scorecard-view').classList.toggle('hidden', tab !== 'scorecard');
+        }
+
+        function setRole(role) {
+            activeRole = role;
+            ['both', 'studentA', 'studentB'].forEach(r => {
+                const btn = document.getElementById(`role-${r}`);
+                if (r === role) {
+                    btn.className = "px-3 py-1 rounded-md bg-indigo-600 text-white shadow-sm font-semibold transition-all";
+                } else {
+                    btn.className = "px-3 py-1 rounded-md text-slate-300 hover:text-white transition-all";
+                }
+            });
+
+            if (activeTab === 'jury') {
+                renderJuryScenarios();
+            }
+            showToast(`Role filter set to: ${role === 'both' ? 'All Roles' : role === 'studentA' ? 'Student A (Lead)' : 'Student B (Reviewer)'}`, 'info');
+        }
+
+        function renderJuryScenarios() {
+            const container = document.getElementById('scenarios-container');
+            const searchQuery = (document.getElementById('jury-search')?.value || '').toLowerCase();
+
+            let filtered = SCENARIOS.filter(s => {
+                const matchesSearch = s.title.toLowerCase().includes(searchQuery) ||
+                                      s.description.toLowerCase().includes(searchQuery) ||
+                                      s.category.toLowerCase().includes(searchQuery);
+
+                if (!matchesSearch) return false;
+
+                if (currentFlagFilter === 'ALL') return true;
+
+                // Calculate current majority vote or user vote
+                const userChoice = userVotes[s.id];
+                if (userChoice) return userChoice === currentFlagFilter;
+
+                // Fallback to majority in default votes
+                const votes = s.defaultVotes;
+                if (currentFlagFilter === 'GREEN' && votes.green >= votes.yellow && votes.green >= votes.red) return true;
+                if (currentFlagFilter === 'YELLOW' && votes.yellow >= votes.green && votes.yellow >= votes.red) return true;
+                if (currentFlagFilter === 'RED' && votes.red >= votes.green && votes.red >= votes.yellow) return true;
+
+                return false;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-slate-200">
+                        <i class="fas fa-search text-4xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-bold text-slate-700">No scenarios found</h3>
+                        <p class="text-xs text-slate-500 mt-1">Try adjusting your search query or flag filter.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(s => {
+                const votes = getCalculatedVotes(s);
+                const userChoice = userVotes[s.id];
+                const noteText = scenarioNotes[s.id] || '';
+
+                const showStudentA = activeRole === 'both' || activeRole === 'studentA';
+                const showStudentB = activeRole === 'both' || activeRole === 'studentB';
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm card-hover flex flex-col justify-between overflow-hidden">
+                        
+                        <!-- Card Header & Content -->
+                        <div class="p-5 space-y-4">
+                            
+                            <!-- Category Badge & Scenario ID -->
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${s.category}
+                                </span>
+                                <span class="text-xs font-mono font-semibold text-slate-400">Scenario #${s.id}</span>
+                            </div>
+
+                            <!-- Title & Scenario Text -->
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 flex items-center justify-between">
+                                    <span>${s.title}</span>
+                                    <button onclick="speakText('${s.title}. ${s.description.replace(/'/g, "\\'")}', this)" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Listen Scenario Audio">
+                                        <i class="fas fa-volume-up text-sm"></i>
+                                    </button>
+                                </h3>
+                                <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                                    ${s.description}
+                                </p>
+                            </div>
+
+                            <!-- Role Prompt Cards -->
+                            <div class="space-y-2 pt-1">
+                                ${showStudentA ? `
+                                    <div class="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950">
+                                        <div class="font-bold text-indigo-800 flex items-center gap-1.5 mb-1">
+                                            <i class="fas fa-user-tie"></i> Student A Lead Task:
+                                        </div>
+                                        <p>${s.studentA_prompt}</p>
+                                    </div>
+                                ` : ''}
+
+                                ${showStudentB ? `
+                                    <div class="p-3 rounded-xl bg-purple-50/70 border border-purple-100 text-xs text-purple-950">
+                                        <div class="font-bold text-purple-800 flex items-center gap-1.5 mb-1">
+                                            <i class="fas fa-user-check"></i> Student B Reviewer Task:
+                                        </div>
+                                        <p>${s.studentB_prompt}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Scaffolding Dropdown / Accordion -->
+                            <details class="group rounded-xl border border-slate-200 bg-slate-50 overflow-hidden text-xs">
+                                <summary class="p-3 font-semibold text-slate-700 cursor-pointer flex items-center justify-between hover:bg-slate-100 transition-colors">
+                                    <span class="flex items-center gap-1.5 text-indigo-600 font-bold">
+                                        <i class="fas fa-lightbulb"></i> View Opinion Starters
+                                    </span>
+                                    <i class="fas fa-chevron-down group-open:rotate-180 transition-transform text-slate-400"></i>
+                                </summary>
+                                <div class="p-3 border-t border-slate-200 space-y-2 bg-white">
+                                    ${s.opinionStarters.map(starter => `
+                                        <div class="flex items-start justify-between gap-2 p-1.5 rounded hover:bg-slate-50 transition-colors">
+                                            <span class="italic text-slate-700">"${starter}"</span>
+                                            <button onclick="copyToClipboard('${starter.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-indigo-600 shrink-0" title="Copy starter">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    `).join('')}
+
+                                    <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-indigo-900 bg-indigo-50/50 p-2 rounded">
+                                        <span class="font-medium text-[11px] truncate"><strong>Sample Response:</strong> ${s.sampleOpinion}</span>
+                                        <button onclick="speakText('${s.sampleOpinion.replace(/'/g, "\\'")}', this)" class="text-indigo-600 hover:text-indigo-800 shrink-0 ml-2" title="Listen Sample">
+                                            <i class="fas fa-volume-up"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- Flag Voting Buttons -->
+                            <div class="space-y-2 pt-2 border-t border-slate-100">
+                                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Cast Pair Jury Vote:</span>
+                                    <span class="text-slate-400 font-normal lowercase">${votes.total} total votes</span>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="castVote(${s.id}, 'GREEN')" class="py-2 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 border ${userChoice === 'GREEN' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'}">
+                                        <span><i class="fas fa-flag mr-1"></i> Green Flag</span>
+                                        <span class="text-[10px] opacity-80">${votes.greenPct}%</span>
+                                    </button>
+
+                                    <button onclick="castVote(${s.id}, 'YELLOW')" class="py-2 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 border ${userChoice === 'YELLOW' ? 'bg-amber-500 text-white border-amber-500 shadow-sm ring-2 ring-amber-300' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'}">
+                                        <span><i class="fas fa-flag mr-1"></i> Context</span>
+                                        <span class="text-[10px] opacity-80">${votes.yellowPct}%</span>
+                                    </button>
+
+                                    <button onclick="castVote(${s.id}, 'RED')" class="py-2 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-0.5 border ${userChoice === 'RED' ? 'bg-rose-600 text-white border-rose-600 shadow-sm ring-2 ring-rose-300' : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'}">
+                                        <span><i class="fas fa-flag mr-1"></i> Red Flag</span>
+                                        <span class="text-[10px] opacity-80">${votes.redPct}%</span>
+                                    </button>
+                                </div>
+
+                                <!-- Dynamic Vote Bar -->
+                                <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex mt-2">
+                                    <div style="width: ${votes.greenPct}%" class="bg-emerald-500 transition-all duration-500"></div>
+                                    <div style="width: ${votes.yellowPct}%" class="bg-amber-400 transition-all duration-500"></div>
+                                    <div style="width: ${votes.redPct}%" class="bg-rose-500 transition-all duration-500"></div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Card Footer: Pair Discussion Notes -->
+                        <div class="bg-slate-50 p-4 border-t border-slate-100">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                <i class="fas fa-pen-square text-indigo-500 mr-1"></i> Pair Discussion Notes:
+                            </label>
+                            <textarea oninput="saveNote(${s.id}, this.value)" rows="2" placeholder="Write key phrases or consensus reached..." class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none">${noteText}</textarea>
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getCalculatedVotes(scenario) {
+            let green = scenario.defaultVotes.green;
+            let yellow = scenario.defaultVotes.yellow;
+            let red = scenario.defaultVotes.red;
+
+            const userChoice = userVotes[scenario.id];
+            if (userChoice === 'GREEN') green += 1;
+            if (userChoice === 'YELLOW') yellow += 1;
+            if (userChoice === 'RED') red += 1;
+
+            const total = green + yellow + red;
+            return {
+                green, yellow, red, total,
+                greenPct: Math.round((green / total) * 100),
+                yellowPct: Math.round((yellow / total) * 100),
+                redPct: Math.round((red / total) * 100)
+            };
+        }
+
+        function castVote(scenarioId, flag) {
+            userVotes[scenarioId] = flag;
+            try {
+                localStorage.setItem('impression_jury_votes', JSON.stringify(userVotes));
+            } catch(e){}
+            renderJuryScenarios();
+            showToast(`Vote recorded: ${flag} flag for Scenario #${scenarioId}`, 'success');
+        }
+
+        function saveNote(scenarioId, text) {
+            scenarioNotes[scenarioId] = text;
+            try {
+                localStorage.setItem('impression_jury_notes', JSON.stringify(scenarioNotes));
+            } catch(e){}
+        }
+
+        function filterFlag(flag) {
+            currentFlagFilter = flag;
+            ['ALL', 'GREEN', 'YELLOW', 'RED'].forEach(f => {
+                const btn = document.getElementById(`flag-filter-${f}`);
+                if (btn) {
+                    if (f === flag) {
+                        btn.className = "flag-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white transition-all shadow-sm";
+                    } else {
+                        btn.className = "flag-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all";
+                    }
+                }
+            });
+            renderJuryScenarios();
+        }
+
+
+        function renderOpinionBank() {
+            const container = document.getElementById('opinion-bank-container');
+            const searchQuery = (document.getElementById('bank-search')?.value || '').toLowerCase();
+
+            let filtered = OPINION_PHRASES.filter(p => {
+                const matchesCat = currentBankCategory === 'ALL' || p.category === currentBankCategory;
+                const matchesSearch = p.phrase.toLowerCase().includes(searchQuery) || p.tip.toLowerCase().includes(searchQuery);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-slate-200">
+                        <i class="fas fa-comment-slash text-4xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-bold text-slate-700">No phrases found</h3>
+                        <p class="text-xs text-slate-500 mt-1">Try searching for alternative keywords.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => {
+                let catBadge = '';
+                if (p.category === 'strong') catBadge = '<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Strong Opinion</span>';
+                else if (p.category === 'moderate') catBadge = '<span class="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Moderate / Nuanced</span>';
+                else if (p.category === 'disagree') catBadge = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Disagreeing</span>';
+                else catBadge = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Descriptor</span>';
+
+                return `
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between card-hover">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                ${catBadge}
+                                <button onclick="speakText('${p.phrase.replace(/'/g, "\\'")}', this)" class="text-slate-400 hover:text-indigo-600 transition-colors" title="Listen Audio">
+                                    <i class="fas fa-volume-up text-xs"></i>
+                                </button>
+                            </div>
+                            <h4 class="text-base font-bold text-slate-900 leading-snug">
+                                "${p.phrase}"
+                            </h4>
+                            <p class="text-xs text-slate-500 italic">
+                                <i class="fas fa-info-circle text-indigo-400 mr-1"></i> ${p.tip}
+                            </p>
+                        </div>
+
+                        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-end">
+                            <button onclick="copyToClipboard('${p.phrase.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 text-xs font-semibold transition-all flex items-center gap-1.5">
+                                <i class="fas fa-copy"></i> Copy Phrase
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterBankCategory(cat) {
+            currentBankCategory = cat;
+            ['ALL', 'strong', 'moderate', 'disagree', 'descriptor'].forEach(c => {
+                const btn = document.getElementById(`bank-cat-${c}`);
+                if (btn) {
+                    if (c === cat) {
+                        btn.className = "bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all whitespace-nowrap shadow-sm";
+                    } else {
+                        btn.className = "bank-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all whitespace-nowrap";
+                    }
+                }
+            });
+            renderOpinionBank();
+        }
+
+        function populateScorecardDropdown() {
+            const select = document.getElementById('scorecard-scenario-select');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">-- Select Evaluated Scenario --</option>' +
+                SCENARIOS.map(s => `<option value="${s.id}">Scenario #${s.id}: ${s.title}</option>`).join('');
+        }
+
+        function updateScorecardPreview() {
+            const authors = document.getElementById('scorecard-authors')?.value || 'Anonymous Consultants';
+            const scenarioId = document.getElementById('scorecard-scenario-select')?.value;
+            const verdict = document.getElementById('scorecard-verdict')?.value;
+            const strategy = document.getElementById('scorecard-strategy')?.value;
+
+            const previewAuthors = document.getElementById('preview-authors');
+            const previewScenario = document.getElementById('preview-scenario');
+            const previewVerdict = document.getElementById('preview-verdict');
+            const previewStrategy = document.getElementById('preview-strategy');
+
+            if (previewAuthors) previewAuthors.textContent = `Prepared by: ${authors}`;
+
+            if (scenarioId) {
+                const scenarioObj = SCENARIOS.find(s => s.id == scenarioId);
+                if (previewScenario && scenarioObj) {
+                    previewScenario.textContent = `#${scenarioObj.id}: ${scenarioObj.title} - ${scenarioObj.description}`;
+                }
+            } else if (previewScenario) {
+                previewScenario.textContent = 'No scenario selected yet.';
+            }
+
+            if (previewVerdict) {
+                previewVerdict.textContent = verdict.trim() ? `"${verdict}"` : '"Select a scenario and enter your joint verdict to see it formatted here..."';
+            }
+
+            if (previewStrategy) {
+                previewStrategy.textContent = strategy.trim() ? strategy : '"Enter your recommended alternative strategy..."';
+            }
+        }
+
+        function setScorecardTheme(theme) {
+            scorecardTheme = theme;
+            const card = document.getElementById('scorecard-preview-card');
+            if (!card) return;
+
+            // Reset theme classes
+            card.className = "rounded-2xl p-6 shadow-xl transition-all space-y-6 border";
+
+            ['navy', 'indigo', 'emerald', 'crimson'].forEach(t => {
+                const btn = document.getElementById(`theme-btn-${t}`);
+                if (btn) {
+                    if (t === theme) {
+                        btn.classList.add('ring-2', 'ring-indigo-500', 'font-bold');
+                    } else {
+                        btn.classList.remove('ring-2', 'ring-indigo-500', 'font-bold');
+                    }
+                }
+            });
+
+            if (theme === 'navy') {
+                card.classList.add('bg-slate-900', 'text-white', 'border-slate-800');
+            } else if (theme === 'indigo') {
+                card.classList.add('bg-gradient-to-br', 'from-indigo-950', 'to-slate-900', 'text-white', 'border-indigo-800');
+            } else if (theme === 'emerald') {
+                card.classList.add('bg-gradient-to-br', 'from-emerald-950', 'to-slate-900', 'text-white', 'border-emerald-800');
+            } else if (theme === 'crimson') {
+                card.classList.add('bg-gradient-to-br', 'from-rose-950', 'to-slate-900', 'text-white', 'border-rose-800');
+            }
+        }
+
+        function getVerdictTextSummary() {
+            const authors = document.getElementById('scorecard-authors')?.value || 'Anonymous Consultants';
+            const scenarioId = document.getElementById('scorecard-scenario-select')?.value;
+            const verdict = document.getElementById('scorecard-verdict')?.value || 'N/A';
+            const strategy = document.getElementById('scorecard-strategy')?.value || 'N/A';
+            const scenarioObj = SCENARIOS.find(s => s.id == scenarioId);
+
+            return `FIRST IMPRESSION SCORECARD & VERDICT
+-----------------------------------------
+Prepared by: ${authors}
+Scenario: ${scenarioObj ? scenarioObj.title : 'General Evaluation'}
+Verdict: ${verdict}
+Alternative Strategy: ${strategy}
+-----------------------------------------
+The Impression Jury ESL Lab`;
+        }
+
+        function copyVerdictSummary() {
+            const summary = getVerdictTextSummary();
+            copyToClipboard(summary, "Scorecard text copied to clipboard!");
+        }
+
+        function exportVerdictFile() {
+            const summary = getVerdictTextSummary();
+            const blob = new Blob([summary], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Impression_Verdict_Report.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Verdict summary exported as file!", "success");
+        }
+
+        function speakVerdict() {
+            const verdict = document.getElementById('scorecard-verdict')?.value;
+            const strategy = document.getElementById('scorecard-strategy')?.value;
+            if (!verdict && !strategy) {
+                showToast("Please fill in a verdict or strategy to listen.", "warning");
+                return;
+            }
+            speakText(`Consultants verdict: ${verdict}. Recommended strategy: ${strategy}`);
+        }
+
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            const display = document.getElementById('timer-display');
+            if (display) {
+                display.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function toggleTimer() {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('btn-timer-toggle').innerHTML = '<i class="fas fa-play text-xs"></i>';
+            } else {
+                isTimerRunning = true;
+                document.getElementById('btn-timer-toggle').innerHTML = '<i class="fas fa-pause text-xs"></i>';
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        document.getElementById('btn-timer-toggle').innerHTML = '<i class="fas fa-play text-xs"></i>';
+                        playTimerChime();
+                        showToast("⏰ Time is up! Present your final verdict to the jury.", "warning");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = timerMaxSeconds;
+            updateTimerDisplay();
+            document.getElementById('btn-timer-toggle').innerHTML = '<i class="fas fa-play text-xs"></i>';
+        }
+
+        function setTimerPreset(mins) {
+            timerMaxSeconds = mins * 60;
+            timerSeconds = timerMaxSeconds;
+            resetTimer();
+            showToast(`Timer set to ${mins} minutes`, "info");
+        }
+
+        /* Web Audio API Synthesizer Chime */
+        function playTimerChime() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const now = ctx.currentTime;
+
+                // E5, G#5, B5 chime progression
+                const freqs = [659.25, 830.61, 987.77];
+                freqs.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+
+                    gain.gain.setValueAtTime(0, now + i * 0.15);
+                    gain.gain.linearRampToValueAtTime(0.2, now + i * 0.15 + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.15 + 0.8);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now + i * 0.15);
+                    osc.stop(now + i * 0.15 + 0.8);
+                });
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+
+        function speakText(text, buttonElement = null) {
+            if (!('speechSynthesis' in window)) {
+                showToast("Text-to-speech is not supported in this browser.", "warning");
+                return;
+            }
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.95; // Slightly measured rate for ESL learners
+            utterance.pitch = 1.0;
+
+            if (buttonElement) {
+                const origHTML = buttonElement.innerHTML;
+                buttonElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                utterance.onend = () => { buttonElement.innerHTML = origHTML; };
+                utterance.onerror = () => { buttonElement.innerHTML = origHTML; };
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function copyToClipboard(text, successMsg = "Copied phrase to clipboard!") {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(successMsg, "success");
+                }).catch(() => {
+                    fallbackCopy(text, successMsg);
+                });
+            } else {
+                fallbackCopy(text, successMsg);
+            }
+        }
+
+        function fallbackCopy(text, successMsg) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast(successMsg, "success");
+            } catch (err) {
+                showToast("Failed to copy text", "error");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = "pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2.5 transition-all transform translate-y-2 opacity-0";
+
+            let icon = 'fa-info-circle';
+            if (type === 'success') {
+                toast.className += " bg-emerald-900 text-white border-emerald-700";
+                icon = 'fa-check-circle';
+            } else if (type === 'warning') {
+                toast.className += " bg-amber-900 text-white border-amber-700";
+                icon = 'fa-exclamation-triangle';
+            } else if (type === 'error') {
+                toast.className += " bg-rose-900 text-white border-rose-700";
+                icon = 'fa-times-circle';
+            } else {
+                toast.className += " bg-slate-900 text-white border-slate-700";
+            }
+
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Remove after 3s
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
