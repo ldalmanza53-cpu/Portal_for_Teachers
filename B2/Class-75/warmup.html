@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wish Machine: Present Wishes & Imaginary Realities</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eef2ff',
+                100: '#e0e7ff',
+                500: '#6366f1',
+                600: '#4f46e5',
+                700: '#4338ca',
+                800: '#3730a3',
+                900: '#312e81',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15);
+        }
+
+        .tab-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+
+        /* Pulse highlight for correct answers */
+        @keyframes correctPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .animate-correct {
+            animation: correctPulse 0.4s ease-in-out;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Application Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3 transition-all duration-200">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid font-bold fa-wand-magic-sparkles text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-brand-100 bg-clip-text text-transparent">
+                        The Wish Machine
+                    </h1>
+                    <p class="text-xs font-medium text-slate-400">Present Wishes & Imaginary Realities (B1/B2 ESL)</p>
+                </div>
+            </div>
+
+            <!-- Controls: Speed, Voice & Stars -->
+            <div class="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <!-- Speed Toggle -->
+                <div class="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700/60">
+                    <button id="speedSlowBtn" onclick="setSpeed(0.7)" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white flex items-center gap-1.5" title="Slow Speech (0.7x)">
+                        <span>🐢</span> <span class="hidden sm:inline">0.7x</span>
+                    </button>
+                    <button id="speedNormalBtn" onclick="setSpeed(1.0)" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow-sm transition-all flex items-center gap-1.5" title="Normal Speech (1.0x)">
+                        <span>🔊</span> <span class="hidden sm:inline">1.0x</span>
+                    </button>
+                </div>
+
+                <!-- TTS Voice Selection -->
+                <div class="relative hidden sm:block">
+                    <select id="voiceSelect" onchange="onVoiceChange()" class="bg-slate-800 text-xs text-slate-200 rounded-lg pl-3 pr-8 py-1.5 border border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none cursor-pointer max-w-[150px] truncate">
+                        <option value="">System Audio (Default)</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]"></i>
+                </div>
+
+                <!-- Star Reward Counter -->
+                <div class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg text-amber-400 font-bold text-sm shadow-inner">
+                    <i class="fa-solid fa-star text-amber-400 animate-pulse"></i>
+                    <span id="starCounter">0 Stars</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="bg-slate-900 border-b border-slate-800 px-4 lg:px-8 py-2 overflow-x-auto scrollbar-none">
+        <div class="max-w-7xl mx-auto flex items-center gap-2 min-w-max">
+            <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>Module 1: Rules & Matrix</span>
+            </button>
+            <button onclick="switchTab('lab')" id="tab-lab" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-bolt text-amber-400"></i>
+                <span>Module 2: Reality Lab</span>
+            </button>
+            <button onclick="switchTab('roulette')" id="tab-roulette" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-dice text-emerald-400"></i>
+                <span>Module 3: Debate Roulette</span>
+            </button>
+            <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-headphones text-sky-400"></i>
+                <span>Module 4: Listening Lab</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>Module 5: Mastery Quiz</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8">
+
+        <!-- MODULE 1: GRAMMAR MATRIX & RULES HUB -->
+        <section id="mod-matrix" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="glass-card rounded-2xl p-6 lg:p-8 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-brand-500/20">
+                <div class="max-w-3xl space-y-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                        <i class="fa-solid fa-graduation-cap"></i> Essential B1/B2 English Grammar
+                    </span>
+                    <h2 class="text-2xl lg:text-3xl font-bold tracking-tight text-white">
+                        Expressing Unreal Present Situations
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        We use <span class="font-semibold text-brand-300 underline decoration-brand-500 underline-offset-4">I wish + Past Simple / Could / Were</span> to talk about things in the <strong class="text-white">present</strong> that we want to be different, but are <strong class="text-amber-300">impossible or untrue right now</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Reality vs Wish Comparison Matrix -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-800">
+                <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-table-columns text-brand-400"></i>
+                            Reality ➔ Wish Transformation Matrix
+                        </h3>
+                        <p class="text-xs text-slate-400">Notice how the verb tense moves one step back into the past, and the polarity flips!</p>
+                    </div>
+                    <span class="text-xs font-medium text-slate-400 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
+                        ⚡ Core Rule: Change Positive ↔ Negative
+                    </span>
+                </div>
+
+                <!-- Matrix Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-900/60">
+                                <th class="p-3.5 rounded-l-xl">Category / Target</th>
+                                <th class="p-3.5">Present Reality (Fact)</th>
+                                <th class="p-3.5">Wish Expression (Imaginary)</th>
+                                <th class="p-3.5 text-center rounded-r-xl">Listen</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-sm">
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-3.5 font-medium text-brand-300">Possession / Having</td>
+                                <td class="p-3.5 text-red-300/90 font-mono text-xs sm:text-sm">"I don't have a car."</td>
+                                <td class="p-3.5 text-emerald-300 font-mono text-xs sm:text-sm font-semibold">"I wish I had a car."</td>
+                                <td class="p-3.5 text-center">
+                                    <button onclick="speakText('I don\'t have a car. I wish I had a car.')" class="p-2 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-all">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-3.5 font-medium text-brand-300">Ability / Can</td>
+                                <td class="p-3.5 text-red-300/90 font-mono text-xs sm:text-sm">"I can't speak French."</td>
+                                <td class="p-3.5 text-emerald-300 font-mono text-xs sm:text-sm font-semibold">"I wish I could speak French."</td>
+                                <td class="p-3.5 text-center">
+                                    <button onclick="speakText('I can\'t speak French. I wish I could speak French.')" class="p-2 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-all">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-3.5 font-medium text-brand-300">State / Being (Subjunctive)</td>
+                                <td class="p-3.5 text-red-300/90 font-mono text-xs sm:text-sm">"I am not rich."</td>
+                                <td class="p-3.5 text-emerald-300 font-mono text-xs sm:text-sm font-semibold">"I wish I were rich." <span class="text-xs text-slate-400 font-sans font-normal">(or "was")</span></td>
+                                <td class="p-3.5 text-center">
+                                    <button onclick="speakText('I am not rich. I wish I were rich.')" class="p-2 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-all">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-3.5 font-medium text-brand-300">Obligation / Habit</td>
+                                <td class="p-3.5 text-red-300/90 font-mono text-xs sm:text-sm">"I have to work today."</td>
+                                <td class="p-3.5 text-emerald-300 font-mono text-xs sm:text-sm font-semibold">"I wish I didn't have to work today."</td>
+                                <td class="p-3.5 text-center">
+                                    <button onclick="speakText('I have to work today. I wish I didn\'t have to work today.')" class="p-2 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-all">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-3.5 font-medium text-brand-300">Weather / Environment</td>
+                                <td class="p-3.5 text-red-300/90 font-mono text-xs sm:text-sm">"It is raining."</td>
+                                <td class="p-3.5 text-emerald-300 font-mono text-xs sm:text-sm font-semibold">"I wish it weren't raining."</td>
+                                <td class="p-3.5 text-center">
+                                    <button onclick="speakText('It is raining. I wish it weren\'t raining.')" class="p-2 rounded-lg bg-slate-800 hover:bg-brand-600 text-slate-300 hover:text-white transition-all">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Explicit Grammar Notes & Tips -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">1</div>
+                    <h4 class="font-bold text-white text-base">The Polarity Switch Rule</h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        If the reality is <span class="text-red-400 font-semibold">negative</span> ("I don't live in Japan"), your wish is <span class="text-emerald-400 font-semibold">positive</span> ("I wish I lived in Japan"). If reality is positive, the wish is negative.
+                    </p>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">2</div>
+                    <h4 class="font-bold text-white text-base">The Subjunctive "Were"</h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        In formal/B2 written English, use <strong class="text-indigo-300">were</strong> for all pronouns: <em>"I wish I were..."</em>, <em>"I wish he were..."</em>. In everyday informal conversation, "was" is also heard.
+                    </p>
+                </div>
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">3</div>
+                    <h4 class="font-bold text-white text-base">Ability with "Could"</h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        When wishing for present abilities, change <strong class="text-red-400">can't ➔ could</strong>: <em>"I can't play piano" ➔ "I wish I could play piano."</em> Never use "can" after wish!
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: REALITY-TO-WISH LAB (TRANSFORMATION EXERCISE) -->
+        <section id="mod-lab" class="hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                        Reality-to-Wish Transformation Lab
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Read the present reality and rewrite it as a present unreal wish starting with "I wish...".</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl">
+                    <span class="text-slate-400">Completed:</span>
+                    <span id="labProgress" class="font-bold text-brand-400">0 / 8</span>
+                </div>
+            </div>
+
+            <!-- Transformation Exercises Container -->
+            <div id="labItemsContainer" class="space-y-4">
+                <!-- Javascript will dynamically inject the 8 transformation cards -->
+            </div>
+        </section>
+
+        <!-- MODULE 3: THE WISH DISCUSSION & DEBATE ROULETTE -->
+        <section id="mod-roulette" class="hidden space-y-6">
+            <!-- Header Card -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-800">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-dice text-emerald-400"></i>
+                            The Wish Discussion & Debate Roulette
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Spin for a discussion topic, type or dictate your thoughts, and receive interactive audio partner feedback!</p>
+                    </div>
+
+                    <!-- Category Filter Chips -->
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button onclick="filterRoulette('all')" class="roulette-filter active px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700">All Topics</button>
+                        <button onclick="filterRoulette('personal')" class="roulette-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700">👤 Personal</button>
+                        <button onclick="filterRoulette('fantasy')" class="roulette-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700">⚡ Fantasy</button>
+                        <button onclick="filterRoulette('world')" class="roulette-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700">🌍 World</button>
+                        <button onclick="filterRoulette('work')" class="roulette-filter px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white transition-all border border-slate-700">💼 Work/School</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Spinner & Card Display -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Spin Controls & Display -->
+                <div class="lg:col-span-5 flex flex-col justify-between glass-card rounded-2xl p-6 border border-slate-800 space-y-6">
+                    <div class="text-center py-4 space-y-3">
+                        <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white text-3xl shadow-xl shadow-brand-500/20 ring-4 ring-slate-800">
+                            <i id="rouletteIcon" class="fa-solid fa-comments"></i>
+                        </div>
+                        <span id="rouletteCategoryBadge" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            Ready to Spin
+                        </span>
+                    </div>
+
+                    <div id="rouletteCard" class="text-center space-y-3 min-h-[120px] flex flex-col justify-center">
+                        <h3 id="rouletteTitle" class="text-xl font-bold text-white">Press below to spin a debate card!</h3>
+                        <p id="roulettePrompt" class="text-sm text-slate-300 italic">"Explore imaginary situations and discuss them with your simulated conversation partner."</p>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button id="spinBtn" onclick="spinRoulette()" class="flex-1 py-3.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-rotate-right text-base"></i>
+                            Spin Discussion Card
+                        </button>
+                        <button id="listenPromptBtn" onclick="listenCurrentPrompt()" class="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all" title="Listen to prompt">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Student Response & Interactive Partner Speech -->
+                <div class="lg:col-span-7 glass-card rounded-2xl p-6 border border-slate-800 space-y-5">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-brand-400"></i>
+                        Your Expressed Wish & Partner Reaction
+                    </h3>
+
+                    <!-- Helpful Sentence Starters -->
+                    <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400 space-y-1">
+                        <p class="font-semibold text-slate-300">💡 Sentence Starters to Practice:</p>
+                        <p>• <em>"In my opinion, I wish I had / were / could..."</em></p>
+                        <p>• <em>"If I'm being honest, I wish people didn't..."</em></p>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="space-y-2">
+                        <textarea id="studentSpeechInput" rows="3" placeholder="Type your response using 'I wish...' (e.g., 'I wish I could speak every language in the world...')" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all resize-none"></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button onclick="getPartnerResponse('agree')" class="flex-1 min-w-[160px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-emerald-600/20 hover:border-emerald-500/50 text-emerald-300 border border-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-thumbs-up"></i> Partner Agrees & Expands
+                        </button>
+                        <button onclick="getPartnerResponse('question')" class="flex-1 min-w-[160px] py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-sky-600/20 hover:border-sky-500/50 text-sky-300 border border-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-question"></i> Partner Asks Follow-up
+                        </button>
+                    </div>
+
+                    <!-- Partner Simulated Feedback Card -->
+                    <div id="partnerCard" class="hidden p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 space-y-3 animate-correct">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                                    <i class="fa-solid fa-robot"></i>
+                                </div>
+                                <span class="text-xs font-bold text-indigo-200">Conversation Partner (AI Audio)</span>
+                            </div>
+                            <button id="playPartnerAudioBtn" onclick="speakPartnerText()" class="px-2.5 py-1 rounded-md bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen Again
+                            </button>
+                        </div>
+                        <p id="partnerSpeechText" class="text-sm text-slate-200 italic leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: LISTENING & VERB TENSE LAB -->
+        <section id="mod-listening" class="hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 border border-slate-800">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-headphones text-sky-400"></i>
+                            Listening & Verb Tense Gap Lab
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Listen to the spoken wish at normal or slow speed, then select the grammatically correct past verb form.</p>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
+                        🎧 Tip: Focus on the verb directly after <span class="text-brand-300 font-bold">wish</span>!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Listening Items Container -->
+            <div id="listeningItemsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- MODULE 5: UNREAL REALITY MASTERY QUIZ -->
+        <section id="mod-quiz" class="hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i>
+                        Unreal Reality Mastery Quiz
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Test your mastery of present wish structures, polarity flips, and subjunctive verb forms!</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="quizScoreText" class="text-sm font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl">
+                        Score: 0 / 5
+                    </span>
+                    <button onclick="resetQuiz()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white border border-slate-700 transition-all">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Quiz
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Questions Container -->
+            <div id="quizContainer" class="space-y-5">
+                <!-- Javascript will render 5 diagnostic diagnostic questions -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800 bg-slate-900/60 py-4 px-4 text-center text-xs text-slate-400">
+        <p>✨ <strong>The Wish Machine</strong> — Interactive ESL/EFL Learning Tool for Present Wishes & Subjunctive Mood.</p>
+    </footer>
+
+    <script>
+        /* STATE MANAGEMENT */
+        let state = {
+            stars: 0,
+            speechSpeed: 1.0,
+            selectedVoiceIndex: 0,
+            voices: [],
+            labCompleted: 0,
+            labAnswers: {},
+            currentRoulettePrompt: null,
+            partnerText: "",
+            quizAnswers: {},
+            quizSubmitted: false
+        };
+
+        /* SOUND EFFECTS SYNTHESIZER (Web Audio API) */
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playChime(freqs = [523.25, 659.25, 783.99], duration = 0.15) {
+            try {
+                const ctx = getAudioContext();
+                freqs.forEach((f, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, ctx.currentTime + idx * 0.08);
+                    
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + duration);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(ctx.currentTime + idx * 0.08);
+                    osc.stop(ctx.currentTime + idx * 0.08 + duration);
+                });
+            } catch (e) {
+                console.warn("Audio context not allowed yet", e);
+            }
+        }
+
+        function playSuccessSound() {
+            playChime([523.25, 659.25, 783.99, 1046.50], 0.2);
+        }
+
+        function playStarSound() {
+            playChime([659.25, 880.00, 1046.50, 1318.51], 0.25);
+        }
+
+        function playErrorSound() {
+            playChime([300, 250], 0.2);
+        }
+
+        function playClickSound() {
+            playChime([400], 0.05);
+        }
+
+        /* WEB SPEECH API (TTS) */
+        function loadVoices() {
+            if ('speechSynthesis' in window) {
+                state.voices = window.speechSynthesis.getVoices();
+                const select = document.getElementById('voiceSelect');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">System Audio (Default)</option>';
+                state.voices.forEach((v, index) => {
+                    if (v.lang.startsWith('en')) {
+                        const opt = document.createElement('option');
+                        opt.value = index;
+                        opt.textContent = `${v.name} (${v.lang})`;
+                        select.appendChild(opt);
+                    }
+                });
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function setSpeed(speed) {
+            state.speechSpeed = speed;
+            document.getElementById('speedSlowBtn').className = speed === 0.7 
+                ? "px-2.5 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow-sm transition-all flex items-center gap-1.5"
+                : "px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+            
+            document.getElementById('speedNormalBtn').className = speed === 1.0 
+                ? "px-2.5 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow-sm transition-all flex items-center gap-1.5"
+                : "px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+            
+            playClickSound();
+        }
+
+        function onVoiceChange() {
+            const select = document.getElementById('voiceSelect');
+            state.selectedVoiceIndex = select.value;
+        }
+
+        function speakText(text, customSpeed = null) {
+            if (!('speechSynthesis' in window)) {
+                alert("Speech Synthesis is not supported in your browser.");
+                return;
+            }
+            window.speechSynthesis.cancel(); // Stop any ongoing speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = customSpeed || state.speechSpeed;
+            
+            if (state.selectedVoiceIndex !== "" && state.voices[state.selectedVoiceIndex]) {
+                utterance.voice = state.voices[state.selectedVoiceIndex];
+            } else {
+                // Try to find an English voice
+                const englishVoice = state.voices.find(v => v.lang.startsWith('en'));
+                if (englishVoice) utterance.voice = englishVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        /* REWARD STARS MANAGEMENT */
+        function addStars(num) {
+            state.stars += num;
+            document.getElementById('starCounter').textContent = `${state.stars} Stars`;
+            playStarSound();
+        }
+
+        /* NAVIGATION TAB SWITCHING */
+        function switchTab(tabId) {
+            ['matrix', 'lab', 'roulette', 'listening', 'quiz'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const sec = document.getElementById(`mod-${t}`);
+                if (t === tabId) {
+                    btn.classList.add('active');
+                    sec.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('active');
+                    sec.classList.add('hidden');
+                }
+            });
+            playClickSound();
+        }
+
+        /* MODULE 2: REALITY LAB DATA & LOGIC */
+        const labData = [
+            {
+                id: 1,
+                reality: "I don't live near the beach.",
+                target: ["I wish I lived near the beach.", "I wish I lived near the beach"],
+                hint: "Use Past Simple: 'live' ➔ 'lived'.",
+                explanation: "Positive wish replaces negative reality: 'don't live' ➔ 'lived'."
+            },
+            {
+                id: 2,
+                reality: "My apartment is very small.",
+                target: ["I wish my apartment were bigger.", "I wish my apartment was bigger.", "I wish my apartment weren't so small.", "I wish my apartment wasn't so small."],
+                hint: "Use subjunctive 'were' (or 'was') + bigger / not so small.",
+                explanation: "Use 'were' or 'was' after wish for states of being."
+            },
+            {
+                id: 3,
+                reality: "I have to work on Saturdays.",
+                target: ["I wish I didn't have to work on Saturdays.", "I wish I didn't have to work on Saturdays"],
+                hint: "Change positive obligation 'have to' ➔ negative 'didn't have to'.",
+                explanation: "Opposite polarity: 'have to' becomes 'didn't have to'."
+            },
+            {
+                id: 4,
+                reality: "I can't speak fluent Italian.",
+                target: ["I wish I could speak fluent Italian.", "I wish I could speak fluent Italian"],
+                hint: "Change 'can't' ➔ 'could'.",
+                explanation: "For present abilities, always use 'could' after wish."
+            },
+            {
+                id: 5,
+                reality: "I don't know how to play chess.",
+                target: ["I wish I knew how to play chess.", "I wish I knew how to play chess"],
+                hint: "Change 'don't know' ➔ 'knew'.",
+                explanation: "Past Simple of 'know' is 'knew'."
+            },
+            {
+                id: 6,
+                reality: "I am not on vacation right now.",
+                target: ["I wish I were on vacation right now.", "I wish I was on vacation right now.", "I wish I were on vacation.", "I wish I was on vacation."],
+                hint: "Change 'am not' ➔ 'were' or 'was'.",
+                explanation: "Subjunctive 'were' is preferred in formal English."
+            },
+            {
+                id: 7,
+                reality: "It is so noisy in this coffee shop.",
+                target: ["I wish it weren't so noisy in this coffee shop.", "I wish it wasn't so noisy in this coffee shop.", "I wish it were quieter.", "I wish it was quieter."],
+                hint: "Change 'is so noisy' ➔ 'weren't so noisy' or 'were quieter'.",
+                explanation: "Positive state 'is' becomes negative subjunctive 'weren't'."
+            },
+            {
+                id: 8,
+                reality: "I don't have enough free time.",
+                target: ["I wish I had more free time.", "I wish I had enough free time.", "I wish I had free time."],
+                hint: "Change 'don't have' ➔ 'had'.",
+                explanation: "Past Simple of 'have' is 'had'."
+            }
+        ];
+
+        function renderLabItems() {
+            const container = document.getElementById('labItemsContainer');
+            container.innerHTML = labData.map(item => `
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4" id="labCard-${item.id}">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-brand-600/30 text-brand-300 border border-brand-500/40 text-xs font-bold flex items-center justify-center">
+                                ${item.id}
+                            </span>
+                            <span class="text-xs font-semibold text-slate-400">PRESENT REALITY:</span>
+                        </div>
+                        <button onclick="speakText('${item.reality.replace(/'/g, "\\'")}')" class="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1.5 self-start sm:self-auto">
+                            <i class="fa-solid fa-volume-high"></i> Listen Reality
+                        </button>
+                    </div>
+
+                    <p class="text-sm font-semibold text-red-300/90 font-mono">"${item.reality}"</p>
+
+                    <!-- Input area -->
+                    <div class="space-y-2">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="labInput-${item.id}" placeholder="Type wish (e.g. I wish...)" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
+                            <button onclick="checkLabItem(${item.id})" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> Check
+                            </button>
+                            <button onclick="toggleLabHint(${item.id})" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 transition-all">
+                                💡 Hint
+                            </button>
+                        </div>
+
+                        <!-- Feedback Message -->
+                        <div id="labFeedback-${item.id}" class="hidden p-3 rounded-xl text-xs font-medium space-y-1"></div>
+                        <div id="labHintBox-${item.id}" class="hidden p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+                            💡 <strong>Hint:</strong> ${item.hint}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleLabHint(id) {
+            const hintBox = document.getElementById(`labHintBox-${id}`);
+            hintBox.classList.toggle('hidden');
+        }
+
+        function checkLabItem(id) {
+            const item = labData.find(x => x.id === id);
+            const input = document.getElementById(`labInput-${id}`).value.trim();
+            const feedback = document.getElementById(`labFeedback-${id}`);
+            const card = document.getElementById(`labCard-${id}`);
+
+            if (!input) {
+                feedback.className = "p-3 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-300";
+                feedback.innerHTML = "⚠️ Please write your wish statement first!";
+                feedback.classList.remove('hidden');
+                playErrorSound();
+                return;
+            }
+
+            // Normalization for comparison
+            const normalize = (str) => str.toLowerCase().replace(/['".,!]/g, '').replace(/\s+/g, ' ').trim();
+            const normalizedInput = normalize(input);
+            const isCorrect = item.target.some(t => normalize(t) === normalizedInput);
+
+            if (isCorrect) {
+                feedback.className = "p-3 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-1";
+                feedback.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-emerald-400">
+                        <i class="fa-solid fa-circle-check"></i> Excellent Transformation!
+                    </div>
+                    <p>${item.explanation}</p>
+                `;
+                feedback.classList.remove('hidden');
+                card.classList.add('animate-correct');
+
+                if (!state.labAnswers[id]) {
+                    state.labAnswers[id] = true;
+                    state.labCompleted++;
+                    document.getElementById('labProgress').textContent = `${state.labCompleted} / ${labData.length}`;
+                    addStars(2);
+                } else {
+                    playSuccessSound();
+                }
+
+                // Speak correct sentence TTS
+                speakText(input);
+
+            } else {
+                feedback.className = "p-3 rounded-xl text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-300 space-y-1";
+                feedback.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold">
+                        <i class="fa-solid fa-circle-xmark"></i> Not quite right yet.
+                    </div>
+                    <p>Sample correct wish: <strong class="text-white font-mono">"${item.target[0]}"</strong></p>
+                `;
+                feedback.classList.remove('hidden');
+                playErrorSound();
+            }
+        }
+
+        /* MODULE 3: ROULETTE DATA & LOGIC */
+        const roulettePrompts = [
+            {
+                category: "personal",
+                categoryLabel: "👤 Personal Life",
+                title: "Current Ability & Talent",
+                prompt: "What is one creative or practical skill you cannot do right now, but wish you could do?",
+                partnerAgree: "I completely agree! I wish I could play the piano fluently. It would make evenings so relaxing.",
+                partnerQuestion: "That's interesting! If you could master that skill tomorrow, what is the first thing you would create or do?"
+            },
+            {
+                category: "personal",
+                categoryLabel: "👤 Personal Life",
+                title: "Living Situation & Location",
+                prompt: "Do you wish you lived in a different country or city right now? Why or why not?",
+                partnerAgree: "I feel the same way! I wish I lived closer to the mountains so I could go hiking every weekend.",
+                partnerQuestion: "If you wish you lived somewhere else, what is one thing about your current city that you would miss?"
+            },
+            {
+                category: "fantasy",
+                categoryLabel: "⚡ Superpowers & Fantasy",
+                title: "Superhuman Ability",
+                prompt: "If you could have any superpower today, what do you wish you could do?",
+                partnerAgree: "Oh, definitely! I wish I could teleport anywhere instantly so I didn't have to spend hours in traffic.",
+                partnerQuestion: "If you wish you had flight or teleportation, how do you think it would change your daily routine?"
+            },
+            {
+                category: "fantasy",
+                categoryLabel: "⚡ Superpowers & Fantasy",
+                title: "Time Travel Wish",
+                prompt: "Do you wish you lived in a different historical century? Which era and why?",
+                partnerAgree: "That's fascinating. I wish I were alive in the 1920s to experience the music and art scene!",
+                partnerQuestion: "If you wish you were living in the past, how would you handle not having modern smartphones or internet?"
+            },
+            {
+                category: "world",
+                categoryLabel: "🌍 World & Environment",
+                title: "Global Change",
+                prompt: "If you could change one major thing about the world today, what do you wish were different?",
+                partnerAgree: "I wish plastic pollution were completely eliminated. Our oceans and wildlife would be so much healthier.",
+                partnerQuestion: "That is a huge issue! What small habit do you wish more people practiced daily to help?"
+            },
+            {
+                category: "work",
+                categoryLabel: "💼 Work & School",
+                title: "Schedule & Work Life",
+                prompt: "What is something about your work or school schedule that you wish were different?",
+                partnerAgree: "I agree completely! I wish we had a 4-day work week so everyone had three days to rest and pursue hobbies.",
+                partnerQuestion: "If you wish you had more free time during the week, how would you spend those extra hours?"
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        function filterRoulette(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.roulette-filter').forEach(btn => {
+                btn.classList.remove('active', 'bg-brand-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            event.target.classList.add('active', 'bg-brand-600', 'text-white');
+            playClickSound();
+        }
+
+        function spinRoulette() {
+            let available = roulettePrompts;
+            if (currentFilter !== 'all') {
+                available = roulettePrompts.filter(p => p.category === currentFilter);
+            }
+            if (available.length === 0) available = roulettePrompts;
+
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const promptObj = available[randomIndex];
+            state.currentRoulettePrompt = promptObj;
+
+            document.getElementById('rouletteCategoryBadge').textContent = promptObj.categoryLabel;
+            document.getElementById('rouletteTitle').textContent = promptObj.title;
+            document.getElementById('roulettePrompt').textContent = `"${promptObj.prompt}"`;
+
+            // Reset partner response
+            document.getElementById('partnerCard').classList.add('hidden');
+
+            playChime([400, 600, 800], 0.1);
+            speakText(promptObj.prompt);
+        }
+
+        function listenCurrentPrompt() {
+            if (state.currentRoulettePrompt) {
+                speakText(state.currentRoulettePrompt.prompt);
+            } else {
+                speakText("Press Spin Discussion Card to get started!");
+            }
+        }
+
+        function getPartnerResponse(type) {
+            if (!state.currentRoulettePrompt) {
+                spinRoulette();
+            }
+
+            const input = document.getElementById('studentSpeechInput').value.trim();
+            const partnerCard = document.getElementById('partnerCard');
+            const partnerTextElem = document.getElementById('partnerSpeechText');
+
+            let partnerReply = "";
+            if (type === 'agree') {
+                partnerReply = state.currentRoulettePrompt.partnerAgree;
+            } else {
+                partnerReply = state.currentRoulettePrompt.partnerQuestion;
+            }
+
+            state.partnerText = partnerReply;
+            partnerTextElem.textContent = `"${partnerReply}"`;
+            partnerCard.classList.remove('hidden');
+
+            // Play TTS
+            speakText(partnerReply);
+            addStars(1);
+        }
+
+        function speakPartnerText() {
+            if (state.partnerText) {
+                speakText(state.partnerText);
+            }
+        }
+
+        /* MODULE 4: LISTENING LAB DATA & LOGIC */
+        const listeningData = [
+            {
+                id: 1,
+                audioText: "I really wish I lived closer to my family.",
+                displayGap: "I really wish I _____ closer to my family.",
+                options: ["live", "lived", "would live", "am living"],
+                correct: 1,
+                explanation: "After wish for present regret, use Past Simple 'lived'."
+            },
+            {
+                id: 2,
+                audioText: "She wishes she could play the violin fluently.",
+                displayGap: "She wishes she _____ play the violin fluently.",
+                options: ["can", "could", "would can", "could to"],
+                correct: 1,
+                explanation: "'Can' changes to 'could' after wish for present abilities."
+            },
+            {
+                id: 3,
+                audioText: "I wish it were warmer outside today.",
+                displayGap: "I wish it _____ warmer outside today.",
+                options: ["is", "be", "were", "has been"],
+                correct: 2,
+                explanation: "Subjunctive 'were' is used after wish for states of being."
+            },
+            {
+                id: 4,
+                audioText: "They wish they didn't have so much homework tonight.",
+                displayGap: "They wish they _____ so much homework tonight.",
+                options: ["don't have", "didn't have", "haven't", "not had"],
+                correct: 1,
+                explanation: "Present obligation 'have' flips to negative past 'didn't have'."
+            },
+            {
+                id: 5,
+                audioText: "He wishes he knew how to fix cars.",
+                displayGap: "He wishes he _____ how to fix cars.",
+                options: ["knows", "knew", "known", "is knowing"],
+                correct: 1,
+                explanation: "Past simple of 'know' is 'knew'."
+            },
+            {
+                id: 6,
+                audioText: "I wish I were on a sunny beach right now.",
+                displayGap: "I wish I _____ on a sunny beach right now.",
+                options: ["am", "were", "will be", "been"],
+                correct: 1,
+                explanation: "'Were' expresses imaginary present state."
+            }
+        ];
+
+        function renderListeningItems() {
+            const container = document.getElementById('listeningItemsContainer');
+            container.innerHTML = listeningData.map(item => `
+                <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4" id="listenCard-${item.id}">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <span class="text-xs font-bold text-brand-400">AUDIO PROMPT #${item.id}</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="speakText('${item.audioText.replace(/'/g, "\\'")}', 1.0)" class="px-2.5 py-1 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-volume-high"></i> Play Normal
+                            </button>
+                            <button onclick="speakText('${item.audioText.replace(/'/g, "\\'")}', 0.7)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-all">
+                                🐢 Play Slow
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl bg-slate-900 font-mono text-sm text-slate-200">
+                        "${item.displayGap}"
+                    </div>
+
+                    <!-- Options Grid -->
+                    <div class="grid grid-cols-2 gap-2">
+                        ${item.options.map((opt, idx) => `
+                            <button onclick="selectListeningOption(${item.id}, ${idx})" id="listenOpt-${item.id}-${idx}" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold transition-all text-left flex items-center gap-2">
+                                <span class="w-5 h-5 rounded-md bg-slate-800 text-slate-400 flex items-center justify-center text-[10px] font-bold">${String.fromCharCode(65 + idx)}</span>
+                                <span>${opt}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div id="listenFeedback-${item.id}" class="hidden p-3 rounded-xl text-xs space-y-1"></div>
+                </div>
+            `).join('');
+        }
+
+        function selectListeningOption(itemId, optIdx) {
+            const item = listeningData.find(x => x.id === itemId);
+            const feedback = document.getElementById(`listenFeedback-${itemId}`);
+
+            // Reset button highlights
+            item.options.forEach((_, idx) => {
+                const btn = document.getElementById(`listenOpt-${itemId}-${idx}`);
+                btn.className = "p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-semibold transition-all text-left flex items-center gap-2";
+            });
+
+            const selectedBtn = document.getElementById(`listenOpt-${itemId}-${optIdx}`);
+
+            if (optIdx === item.correct) {
+                selectedBtn.className = "p-2.5 rounded-xl bg-emerald-600/20 border-emerald-500 text-emerald-300 text-xs font-semibold transition-all text-left flex items-center gap-2";
+                feedback.className = "p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Correct!</div>
+                    <p>${item.explanation}</p>
+                `;
+                feedback.classList.remove('hidden');
+                addStars(2);
+            } else {
+                selectedBtn.className = "p-2.5 rounded-xl bg-red-600/20 border-red-500 text-red-300 text-xs font-semibold transition-all text-left flex items-center gap-2";
+                feedback.className = "p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs space-y-1";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-xmark"></i> Incorrect</div>
+                    <p>Listen again closely to the audio clip!</p>
+                `;
+                feedback.classList.remove('hidden');
+                playErrorSound();
+            }
+        }
+
+        /* MODULE 5: QUIZ DATA & LOGIC */
+        const quizData = [
+            {
+                id: 1,
+                question: "Which wish sentence correctly transforms the reality: 'I don't know his phone number'?",
+                options: [
+                    "I wish I don't know his phone number.",
+                    "I wish I knew his phone number.",
+                    "I wish I know his phone number.",
+                    "I wish I would know his phone number."
+                ],
+                correct: 1,
+                explanation: "Positive wish replaces negative reality, using Past Simple ('knew')."
+            },
+            {
+                id: 2,
+                question: "Select the most grammatically formal sentence for an unreal present situation:",
+                options: [
+                    "I wish I am richer.",
+                    "I wish I were richer.",
+                    "I wish I will be richer.",
+                    "I wish I be richer."
+                ],
+                correct: 1,
+                explanation: "The subjunctive 'were' is the standard formal verb after wish."
+            },
+            {
+                id: 3,
+                question: "Spot the grammatical mistake in: 'I wish I can speak fluently right now.'",
+                options: [
+                    "'wish' should be 'hope'",
+                    "'can' should be changed to 'could'",
+                    "'fluently' should be 'fluent'",
+                    "There is no mistake"
+                ],
+                correct: 1,
+                explanation: "'Can' must be changed to 'could' when expressing present ability wishes."
+            },
+            {
+                id: 4,
+                question: "What is the correct wish for: 'She has to study all weekend'?",
+                options: [
+                    "She wishes she didn't have to study all weekend.",
+                    "She wishes she isn't studying all weekend.",
+                    "She wishes she doesn't have to study all weekend.",
+                    "She wishes she won't study all weekend."
+                ],
+                correct: 0,
+                explanation: "'Has to' (positive present obligation) becomes 'didn't have to' (negative past simple)."
+            },
+            {
+                id: 5,
+                question: "Choose the correct verb form: 'I wish it _____ so noisy in here.'",
+                options: [
+                    "isn't",
+                    "weren't",
+                    "won't be",
+                    "not be"
+                ],
+                correct: 1,
+                explanation: "'Weren't' (or wasn't) is required for present unreal state wishes."
+            }
+        ];
+
+        function renderQuiz() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = quizData.map((q, idx) => `
+                <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4" id="quizCard-${q.id}">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 text-xs font-bold border border-brand-500/30">
+                            Question ${idx + 1}
+                        </span>
+                        <h3 class="text-sm sm:text-base font-bold text-white">${q.question}</h3>
+                    </div>
+
+                    <div class="space-y-2">
+                        ${q.options.map((opt, optIdx) => `
+                            <button onclick="answerQuiz(${q.id}, ${optIdx})" id="quizBtn-${q.id}-${optIdx}" class="w-full text-left p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs sm:text-sm text-slate-200 transition-all flex items-center justify-between group">
+                                <span>${opt}</span>
+                                <i class="fa-regular fa-circle text-slate-500 group-hover:text-brand-400"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div id="quizFeedback-${q.id}" class="hidden p-3.5 rounded-xl text-xs space-y-1"></div>
+                </div>
+            `).join('');
+        }
+
+        function answerQuiz(qId, selectedOpt) {
+            const question = quizData.find(x => x.id === qId);
+            state.quizAnswers[qId] = selectedOpt;
+
+            // Highlight chosen option
+            question.options.forEach((_, idx) => {
+                const btn = document.getElementById(`quizBtn-${qId}-${idx}`);
+                if (idx === selectedOpt) {
+                    btn.className = "w-full text-left p-3.5 rounded-xl bg-brand-600/20 border-brand-500 text-white font-semibold transition-all flex items-center justify-between";
+                } else {
+                    btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-900 border border-slate-700 text-xs sm:text-sm text-slate-400 opacity-60";
+                }
+            });
+
+            const feedback = document.getElementById(`quizFeedback-${qId}`);
+            if (selectedOpt === question.correct) {
+                feedback.className = "p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i> Correct Answer!</div>
+                    <p>${question.explanation}</p>
+                `;
+                feedback.classList.remove('hidden');
+                playSuccessSound();
+            } else {
+                feedback.className = "p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs space-y-1";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-xmark"></i> Incorrect</div>
+                    <p>${question.explanation}</p>
+                `;
+                feedback.classList.remove('hidden');
+                playErrorSound();
+            }
+
+            updateQuizScore();
+        }
+
+        function updateQuizScore() {
+            let correctCount = 0;
+            quizData.forEach(q => {
+                if (state.quizAnswers[q.id] === q.correct) {
+                    correctCount++;
+                }
+            });
+            document.getElementById('quizScoreText').textContent = `Score: ${correctCount} / ${quizData.length}`;
+            if (Object.keys(state.quizAnswers).length === quizData.length && !state.quizSubmitted) {
+                state.quizSubmitted = true;
+                addStars(correctCount * 3);
+            }
+        }
+
+        function resetQuiz() {
+            state.quizAnswers = {};
+            state.quizSubmitted = false;
+            document.getElementById('quizScoreText').textContent = `Score: 0 / ${quizData.length}`;
+            renderQuiz();
+            playClickSound();
+        }
+
+        /* INIT ON LOAD */
+        window.onload = function() {
+            renderLabItems();
+            renderListeningItems();
+            renderQuiz();
+            spinRoulette();
+            
+            // Audio context initializer on first user interaction
+            document.body.addEventListener('click', function initCtx() {
+                getAudioContext();
+                document.body.removeEventListener('click', initCtx);
+            }, { once: true });
+        };
+    </script>
+</body>
+</html>
