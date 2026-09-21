@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Broadcast Studio: News Portrayal & Live Drama Creator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            studio: {
+              950: '#070B14',
+              900: '#0E1726',
+              800: '#17253D',
+              700: '#223454',
+            },
+            crimson: {
+              500: '#F43F5E',
+              600: '#E11D48',
+              700: '#BE123C',
+            },
+            cyan: {
+              400: '#22D3EE',
+              500: '#06B6D4',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Chakra Petch', 'sans-serif'],
+            mono: ['Share Tech Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0E1726;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #223454;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06B6D4;
+    }
+
+    /* Studio Scanlines & Grain Effects */
+    .vhs-scanlines {
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.35) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+
+    .night-vision-effect {
+      filter: brightness(1.2) hue-rotate(90deg) contrast(1.4) saturate(1.8);
+    }
+
+    .retro-vhs-effect {
+      filter: contrast(1.1) saturate(1.3) sepia(0.2);
+    }
+
+    .field-grain-effect {
+      filter: grayscale(0.8) contrast(1.3);
+    }
+
+    /* Custom Ticker Marquee Animation */
+    @keyframes tickerScroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-ticker {
+      display: inline-block;
+      white-space: nowrap;
+      animation: tickerScroll var(--ticker-speed, 22s) linear infinite;
+    }
+    .animate-ticker:hover {
+      animation-play-state: paused;
+    }
+
+    /* Glowing LED Studio Accents */
+    .glow-red {
+      box-shadow: 0 0 15px rgba(225, 29, 72, 0.6);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+    }
+    .glow-amber {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+    }
+
+    /* Mirror Mode for Teleprompter Glass */
+    .mirror-mode {
+      transform: scaleX(-1);
+    }
+  </style>
+</head>
+<body class="bg-studio-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-slate-950 overflow-x-hidden">
+
+  <!-- Top Navigation & Broadcast Control Bar -->
+  <header class="border-b border-slate-800 bg-studio-900/90 backdrop-blur sticky top-0 z-40 px-4 py-3 shadow-xl">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand & Studio Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-crimson-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-crimson-600/30">
+          <i class="fa-solid font-bold text-xl fa-broadcast-tower animate-pulse"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display font-bold text-lg md:text-xl tracking-wide bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
+              BROADCAST STUDIO
+            </h1>
+            <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">v2.5 LIVE</span>
+          </div>
+          <p class="text-xs text-slate-400">News Portrayal & Drama Performance Lab</p>
+        </div>
+      </div>
+
+      <!-- Studio Status Badge & Controls -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+        <div id="onAirBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-400 transition-all duration-300">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block" id="onAirDot"></span>
+          <span id="onAirText">STUDIO STANDBY</span>
+        </div>
+
+        <button id="toggleOnAirBtn" onclick="toggleOnAirState()" class="px-3.5 py-1.5 rounded-md bg-crimson-600 hover:bg-crimson-500 text-white font-display text-xs font-bold tracking-wider transition shadow-md hover:shadow-crimson-600/40 flex items-center gap-2">
+          <i class="fa-solid fa-circle"></i>
+          <span>TOGGLE LIVE</span>
+        </button>
+
+        <div class="text-right font-mono text-xs hidden lg:block border-l border-slate-800 pl-3">
+          <div id="studioClock" class="text-cyan-400 font-bold">12:00:00 UTC</div>
+          <div id="studioDate" class="text-slate-400 text-[10px]">SEP 18, 2026</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto mt-3 flex items-center gap-1 overflow-x-auto pb-1 text-sm font-display border-t border-slate-800/80 pt-2 scrollbar-none">
+      <button onclick="switchTab('studio')" id="tabBtn-studio" class="tab-btn px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-2 font-semibold transition whitespace-nowrap">
+        <i class="fa-solid fa-tv"></i> Live TV Studio
+      </button>
+
+      <button onclick="switchTab('generator')" id="tabBtn-generator" class="tab-btn px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700 flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> AI Story & Script Builder
+      </button>
+
+      <button onclick="switchTab('teleprompter')" id="tabBtn-teleprompter" class="tab-btn px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700 flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-scroll text-emerald-400"></i> On-Air Teleprompter
+      </button>
+
+      <button onclick="switchTab('soundboard')" id="tabBtn-soundboard" class="tab-btn px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700 flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-sliders text-purple-400"></i> Soundboard & Graphics
+      </button>
+
+      <button onclick="switchTab('review')" id="tabBtn-review" class="tab-btn px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700 flex items-center gap-2 transition whitespace-nowrap">
+        <i class="fa-solid fa-clipboard-check text-crimson-400"></i> Peer Assessment & Debrief
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-6">
+
+    <!-- TAB 1: LIVE TV STUDIO SIMULATOR -->
+    <section id="tab-studio" class="tab-content flex flex-col gap-6">
+      
+      <!-- Studio Grid: Main Video Viewport + Controls Sidebar -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        
+        <!-- TV Broadcast Frame Container (2 Columns on large screens) -->
+        <div class="lg:col-span-2 flex flex-col gap-3">
+          
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400 px-1">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-video text-crimson-500"></i> BROADCAST MONITOR OUT (1080p60)</span>
+            <span id="cameraResolutionText">Webcam Offline</span>
+          </div>
+
+          <!-- TV Screen Box with Overlays -->
+          <div id="tvFrame" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border-2 border-slate-800 group transition-all duration-300">
+            
+            <!-- Video / Camera Feed Element -->
+            <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+
+            <!-- Fallback Graphic / Test Pattern when camera is off -->
+            <div id="webcamFallback" class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-studio-900 to-slate-950 p-6 text-center">
+              <div class="relative mb-4">
+                <div class="w-20 h-20 rounded-full border-2 border-slate-700 flex items-center justify-center text-slate-500 text-3xl">
+                  <i class="fa-solid fa-camera"></i>
+                </div>
+                <div class="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-slate-950 text-[10px] font-bold">!</div>
+              </div>
+              <h3 class="font-display text-lg font-bold text-slate-300 mb-1">CAMERA FEED OFFLINE</h3>
+              <p class="text-xs text-slate-500 max-w-sm mb-4">Click "Enable Webcam" to project live performers directly onto the TV Broadcast frame with studio graphics.</p>
+              <button onclick="initWebcam()" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-display text-xs font-bold transition flex items-center gap-2 mx-auto shadow-lg shadow-cyan-600/30">
+                <i class="fa-solid fa-video"></i> ENABLE WEBCAM FEED
+              </button>
+            </div>
+
+            <!-- CSS Scanline Effect Layer -->
+            <div id="scanlineLayer" class="absolute inset-0 vhs-scanlines opacity-40 pointer-events-none"></div>
+
+            <!-- TV OVERLAYS LAYER -->
+            <!-- Top Left: Live Badge & Location -->
+            <div class="absolute top-4 left-4 flex flex-col gap-1 z-20">
+              <div id="liveBadgeOverlay" class="flex items-center gap-2 bg-crimson-600 text-white text-xs font-display font-extrabold px-2.5 py-1 rounded shadow-md tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>LIVE</span>
+              </div>
+              <div id="locationOverlay" class="bg-slate-900/90 border border-slate-700/80 backdrop-blur text-cyan-300 text-[11px] font-mono px-2 py-0.5 rounded shadow">
+                <i class="fa-solid fa-location-dot text-crimson-400 mr-1"></i><span id="overlayLocationText">STUDIO A • NEW YORK</span>
+              </div>
+            </div>
+
+            <!-- Top Right: Broadcast Logo Bug & Time -->
+            <div class="absolute top-4 right-4 text-right z-20">
+              <div class="bg-slate-900/80 border border-slate-700/60 backdrop-blur px-2.5 py-1 rounded text-right">
+                <div class="font-display font-bold text-xs text-slate-200 tracking-wider">GLOBAL NEWS 24</div>
+                <div id="overlayClockText" class="font-mono text-[10px] text-amber-400">12:00:00 EST</div>
+              </div>
+            </div>
+
+            <!-- Bottom Lower Third Banner -->
+            <div id="lowerThirdContainer" class="absolute bottom-0 inset-x-0 z-20 flex flex-col">
+              
+              <!-- Breaking News Red Bar -->
+              <div id="breakingBanner" class="bg-gradient-to-r from-crimson-700 via-crimson-600 to-crimson-800 text-white px-4 py-1.5 flex items-center gap-3 border-t-2 border-amber-400 shadow-xl">
+                <span class="bg-amber-400 text-slate-950 font-display font-black text-xs px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">
+                  BREAKING NEWS
+                </span>
+                <span id="overlayHeadline" class="font-display font-bold text-sm sm:text-base tracking-wide truncate text-white uppercase">
+                  UN CLIMATE SUMMIT REACHES LANDMARK ACCORD
+                </span>
+              </div>
+
+              <!-- Secondary Lower Third Bar (Subhead / Reporter Name) -->
+              <div class="bg-slate-900/95 border-t border-slate-700/80 backdrop-blur px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 shadow-2xl">
+                <div>
+                  <div id="overlaySubhead" class="text-xs sm:text-sm font-semibold text-cyan-300">
+                    Delegates agree on ambitious renewable transition timeline
+                  </div>
+                  <div id="overlayReporter" class="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                    <span><i class="fa-solid fa-user-tie text-amber-400 mr-1"></i><span id="overlayReporterText">ALEX MORGAN, CHIEF CORRESPONDENT</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Running News Ticker Bar at Bottom -->
+              <div class="bg-slate-950 border-t border-slate-800 px-3 py-1 flex items-center text-xs overflow-hidden font-mono">
+                <div class="bg-cyan-500 text-slate-950 px-2 py-0.5 font-bold text-[10px] tracking-wider rounded-sm mr-3 shrink-0 uppercase">
+                  TICKER
+                </div>
+                <div class="overflow-hidden w-full relative">
+                  <div id="tickerMarquee" class="animate-ticker text-slate-300">
+                    ✦ DEVELOPING STORY: Tech summit unveils AI safety framework ✦ SPORTS: World Cup qualifiers reach final group stage ✦ MARKETS: Global green tech stocks surge following policy shift ✦
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Video Controls & Quick FX Toolbar -->
+          <div class="bg-studio-900 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+            <div class="flex items-center gap-2">
+              <button onclick="toggleWebcam()" id="webcamToggleBtn" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono border border-slate-700 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-camera"></i> <span id="webcamBtnText">Toggle Camera</span>
+              </button>
+
+              <select id="cameraFilterSelect" onchange="applyCameraFilter(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2.5 py-1.5 text-xs font-mono focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="clean">Filter: Broadcast Clean</option>
+                <option value="vhs">Filter: Retro VHS Scanlines</option>
+                <option value="night">Filter: Night Vision Ops</option>
+                <option value="grain">Filter: Field Cam Grain</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="audioFX.playSting()" class="px-2.5 py-1.5 rounded bg-crimson-600/20 hover:bg-crimson-600/30 text-crimson-400 border border-crimson-500/40 text-xs font-mono font-bold flex items-center gap-1 transition">
+                <i class="fa-solid fa-bolt"></i> INTRO STING
+              </button>
+
+              <button onclick="audioFX.playApplause()" class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 text-xs font-mono font-bold flex items-center gap-1 transition">
+                <i class="fa-solid fa-hands-clapping"></i> APPLAUSE
+              </button>
+
+              <button onclick="audioFX.playFlash()" class="px-2.5 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40 text-xs font-mono font-bold flex items-center gap-1 transition">
+                <i class="fa-solid fa-camera-retro"></i> FLASH
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Sidebar: On-Screen Text & Graphics Customizer -->
+        <div class="bg-studio-900 border border-slate-800 rounded-xl p-4 flex flex-col gap-4 shadow-xl">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h2 class="font-display font-bold text-sm text-cyan-400 flex items-center gap-2">
+              <i class="fa-solid fa-pen-to-square"></i> LOWER THIRD GRAPHICS
+            </h2>
+            <span class="text-[10px] font-mono text-slate-500">LIVE EDIT</span>
+          </div>
+
+          <!-- Banner Type Selector -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-mono text-slate-400">Banner Label Style</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="setBannerTag('BREAKING NEWS', 'crimson')" class="px-2 py-1.5 rounded text-xs font-display font-bold bg-crimson-600 text-white text-center hover:opacity-90">
+                BREAKING NEWS
+              </button>
+              <button onclick="setBannerTag('SPECIAL REPORT', 'amber')" class="px-2 py-1.5 rounded text-xs font-display font-bold bg-amber-500 text-slate-950 text-center hover:opacity-90">
+                SPECIAL REPORT
+              </button>
+              <button onclick="setBannerTag('EXCLUSIVE', 'cyan')" class="px-2 py-1.5 rounded text-xs font-display font-bold bg-cyan-500 text-slate-950 text-center hover:opacity-90">
+                EXCLUSIVE
+              </button>
+              <button onclick="setBannerTag('LIVE DEVELOPING', 'emerald')" class="px-2 py-1.5 rounded text-xs font-display font-bold bg-emerald-600 text-white text-center hover:opacity-90">
+                LIVE DEVELOPING
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Headline Input -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-mono text-slate-400">Main Headline</label>
+            <input type="text" id="inputHeadline" oninput="updateGraphicsFromInputs()" value="UN CLIMATE SUMMIT REACHES LANDMARK ACCORD" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:ring-1 focus:ring-cyan-500 outline-none font-semibold">
+          </div>
+
+          <!-- Subhead Input -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-mono text-slate-400">Subheadline / Key Detail</label>
+            <input type="text" id="inputSubhead" oninput="updateGraphicsFromInputs()" value="Delegates agree on ambitious renewable transition timeline" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:ring-1 focus:ring-cyan-500 outline-none">
+          </div>
+
+          <!-- Reporter Name & Title -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-mono text-slate-400">Reporter / Anchor</label>
+              <input type="text" id="inputReporter" oninput="updateGraphicsFromInputs()" value="ALEX MORGAN" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-mono text-slate-400">Location Tag</label>
+              <input type="text" id="inputLocation" oninput="updateGraphicsFromInputs()" value="STUDIO A • NEW YORK" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+          </div>
+
+          <!-- Ticker Tape Editor -->
+          <div class="flex flex-col gap-1 border-t border-slate-800 pt-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-mono text-slate-400">Bottom Ticker Text</label>
+              <button onclick="audioFX.playTicker()" class="text-[10px] font-mono text-cyan-400 hover:underline">Test Sound</button>
+            </div>
+            <textarea id="inputTicker" oninput="updateGraphicsFromInputs()" rows="2" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500 outline-none">✦ DEVELOPING STORY: Tech summit unveils AI safety framework ✦ SPORTS: World Cup qualifiers reach final group stage ✦ MARKETS: Global green tech stocks surge following policy shift ✦</textarea>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex gap-2 pt-2">
+            <button onclick="loadScriptToGraphics()" class="flex-1 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-display text-xs font-bold transition flex items-center justify-center gap-1 shadow">
+              <i class="fa-solid fa-file-import"></i> SYNC FROM SCRIPT
+            </button>
+            <button onclick="resetGraphicsToDefault()" class="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition">
+              Reset
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 2: AI STORY & SCRIPT BUILDER -->
+    <section id="tab-generator" class="tab-content hidden flex-col gap-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Panel: Headline Input & Gemini Prompt Engine -->
+        <div class="lg:col-span-1 bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-5 shadow-xl">
+          
+          <div class="border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2 text-amber-400 font-display font-bold text-sm">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> SCRIPT GENERATOR ENGINE
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Transform news headlines into structured performance scripts using AI or offline story templates.</p>
+          </div>
+
+          <!-- Category Presets -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-mono text-slate-400">1. Select News Category</label>
+            <select id="newsCategorySelect" onchange="loadPresetCategoryTemplate(this.value)" class="bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-medium focus:ring-1 focus:ring-amber-400 outline-none">
+              <option value="climate">Climate & Environment (e.g. Climate Summit Accord)</option>
+              <option value="tech">Technology & AI (e.g. Breakthrough Quantum Computing)</option>
+              <option value="space">Space Exploration (e.g. Lunar Base Discovery)</option>
+              <option value="sports">Sports & Competition (e.g. Underdog Championship)</option>
+              <option value="culture">Global Culture & Arts (e.g. Historic Artifact Return)</option>
+              <option value="custom">Custom News Event (Type your own below)</option>
+            </select>
+          </div>
+
+          <!-- Topic / Headline Input -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-mono text-slate-400">2. Enter Headline or Brief Facts</label>
+            <textarea id="newsHeadlineInput" rows="3" placeholder="e.g., Archaeologists discover an ancient sunken city off the coast of Alexandria using AI seabed mapping..." class="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-100 placeholder-slate-600 focus:ring-1 focus:ring-amber-400 outline-none leading-relaxed"></textarea>
+          </div>
+
+          <!-- Script Format Selector -->
+          <div class="flex flex-col gap-2">
+            <label class="text-xs font-mono text-slate-400">3. Choose Performance Style</label>
+            <div class="grid grid-cols-1 gap-2">
+              <label class="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950 cursor-pointer hover:border-slate-700 transition">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="scriptStyle" value="broadcast" checked class="text-amber-500 focus:ring-0">
+                  <div>
+                    <div class="text-xs font-bold text-slate-200">Breaking Broadcast</div>
+                    <div class="text-[10px] text-slate-400">Anchor, Field Reporter & Eyewitness</div>
+                  </div>
+                </div>
+                <i class="fa-solid fa-tv text-cyan-400 text-xs"></i>
+              </label>
+
+              <label class="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950 cursor-pointer hover:border-slate-700 transition">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="scriptStyle" value="panel" class="text-amber-500 focus:ring-0">
+                  <div>
+                    <div class="text-xs font-bold text-slate-200">Perspective Panel</div>
+                    <div class="text-[10px] text-slate-400">Host & 2 Contrasting Stakeholders</div>
+                  </div>
+                </div>
+                <i class="fa-solid fa-users text-purple-400 text-xs"></i>
+              </label>
+
+              <label class="flex items-center justify-between p-2.5 rounded-lg border border-slate-800 bg-slate-950 cursor-pointer hover:border-slate-700 transition">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="scriptStyle" value="tableau" class="text-amber-500 focus:ring-0">
+                  <div>
+                    <div class="text-xs font-bold text-slate-200">Freeze-Frame Tableau</div>
+                    <div class="text-[10px] text-slate-400">3 Physical Poses + Narrator Cues</div>
+                  </div>
+                </div>
+                <i class="fa-solid fa-person-rays text-amber-400 text-xs"></i>
+              </label>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col gap-2 pt-2">
+            <button onclick="generateScriptWithAI()" id="generateAiBtn" class="w-full py-3 rounded-lg bg-gradient-to-r from-amber-500 via-crimson-600 to-purple-600 text-white font-display font-bold text-xs tracking-wider transition shadow-lg hover:shadow-crimson-600/30 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE SCRIPT (GEMINI AI)
+            </button>
+
+            <button onclick="generateScriptOffline()" class="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-bolt"></i> Fast Template Builder (Offline)
+            </button>
+          </div>
+
+          <div id="aiLoadingSpinner" class="hidden flex-col items-center justify-center p-3 rounded-lg bg-slate-950 border border-slate-800 text-center gap-2">
+            <i class="fa-solid fa-circle-notch fa-spin text-amber-400 text-xl"></i>
+            <span class="text-xs font-mono text-slate-300">Drafting script with Gemini AI...</span>
+          </div>
+
+        </div>
+
+        <!-- Right Panel: Script Editor & Role Highlighter -->
+        <div class="lg:col-span-2 bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h2 id="scriptDisplayTitle" class="font-display font-bold text-base text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-scroll text-amber-400"></i> UN CLIMATE SUMMIT BREAKING BROADCAST
+              </h2>
+              <p class="text-xs text-slate-400">Edit character lines, sound cues, and push directly to Teleprompter.</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="copyScriptToClipboard()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono flex items-center gap-1 transition">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+              <button onclick="sendScriptToTeleprompter()" class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-display text-xs font-bold flex items-center gap-1 transition shadow-md shadow-emerald-600/30">
+                <i class="fa-solid fa-paper-plane"></i> SEND TO TELEPROMPTER
+              </button>
+            </div>
+          </div>
+
+          <!-- Role Color Key Legend -->
+          <div class="flex flex-wrap items-center gap-3 text-xs font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <span class="text-slate-500 font-bold">ROLES:</span>
+            <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-semibold">[ANCHOR]</span>
+            <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-semibold">[REPORTER]</span>
+            <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60 font-semibold">[GUEST / EXPERT]</span>
+            <span class="px-2 py-0.5 rounded bg-crimson-950 text-crimson-300 border border-crimson-800/60 font-semibold">(SOUND / STAGE CUE)</span>
+          </div>
+
+          <!-- Script Textarea / Formatted Editor -->
+          <div class="flex-1 flex flex-col gap-2 min-h-[380px]">
+            <textarea id="scriptContentArea" rows="18" class="w-full flex-1 bg-slate-950 border border-slate-800 rounded-lg p-4 font-mono text-xs sm:text-sm text-slate-200 leading-relaxed focus:ring-1 focus:ring-amber-400 outline-none resize-none shadow-inner">
+(SOUND FX: BREAKING NEWS INTRO STING)
+
+[ANCHOR - ALEX MORGAN]: Good evening. We begin tonight with historic news from Geneva. Representatives from 190 nations have officially signed a landmark climate accord after marathon negotiations.
+
+[ANCHOR]: Let's go live to our Senior Field Reporter, Sam Rivera, standing by outside the UN Assembly Hall. Sam, what is the mood on the ground?
+
+(SOUND FX: PRESS CONFERENCE CHATTER)
+
+[REPORTER - SAM RIVERA]: Alex, the atmosphere here is ecstatic. After 72 hours of uninterrupted talks, delegates emerged moments ago announcing a binding agreement to accelerate global renewable transition goals.
+
+[GUEST - DR. MAYA CHEN]: "This isn't just a political pledge—it's a legally binding framework with clear carbon reduction milestones starting immediately."
+
+[REPORTER]: Back to you in the studio, Alex.
+
+[ANCHOR]: Thank you, Sam. We will continue following this breaking story throughout the broadcast.
+            </textarea>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 3: ON-AIR TELEPROMPTER & STAGE MODE -->
+    <section id="tab-teleprompter" class="tab-content hidden flex-col gap-4">
+      
+      <!-- Teleprompter Header Controls Bar -->
+      <div class="bg-studio-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        
+        <div class="flex items-center gap-3">
+          <button id="prompterPlayBtn" onclick="togglePrompterScroll()" class="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center text-xl shadow-lg shadow-emerald-600/40 transition">
+            <i class="fa-solid fa-play" id="prompterPlayIcon"></i>
+          </button>
+
+          <div>
+            <div id="prompterStatusBadge" class="text-xs font-mono font-bold text-slate-400 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-slate-500 inline-block" id="prompterDot"></span>
+              <span id="prompterStatusText">PROMPTER READY</span>
+            </div>
+            <div class="text-xs text-slate-400">Use Spacebar or Play button to toggle scroll</div>
+          </div>
+        </div>
+
+        <!-- Cue Timer & Controls -->
+        <div class="flex items-center gap-4">
+          
+          <!-- Cue Signal Lights -->
+          <div class="flex items-center gap-1 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+            <button onclick="triggerStageCue('GET READY')" class="px-2.5 py-1 rounded text-xs font-mono font-bold bg-amber-500/20 text-amber-400 hover:bg-amber-500/30">
+              READY
+            </button>
+            <button onclick="triggerStageCue('3-2-1 ON AIR')" class="px-2.5 py-1 rounded text-xs font-mono font-bold bg-crimson-600 text-white animate-pulse">
+              3-2-1 ON AIR
+            </button>
+            <button onclick="triggerStageCue('WRAP UP')" class="px-2.5 py-1 rounded text-xs font-mono font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500/30">
+              WRAP UP
+            </button>
+          </div>
+
+          <!-- Scroll Speed Slider -->
+          <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+            <span class="text-xs font-mono text-slate-400"><i class="fa-solid fa-gauge-high"></i> Speed:</span>
+            <input type="range" id="prompterSpeedInput" min="1" max="10" value="3" onchange="updatePrompterSettings()" class="w-20 accent-cyan-500">
+            <span id="prompterSpeedVal" class="text-xs font-mono text-cyan-400 font-bold">3</span>
+          </div>
+
+          <!-- Font Size Slider -->
+          <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+            <span class="text-xs font-mono text-slate-400"><i class="fa-solid fa-text-height"></i> Size:</span>
+            <input type="range" id="prompterFontInput" min="18" max="48" value="28" onchange="updatePrompterSettings()" class="w-20 accent-cyan-500">
+            <span id="prompterFontVal" class="text-xs font-mono text-cyan-400 font-bold">28px</span>
+          </div>
+
+          <!-- Mirror Mode Toggle -->
+          <button onclick="togglePrompterMirror()" id="mirrorToggleBtn" class="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition" title="Flip text horizontally for teleprompter glass reflection">
+            <i class="fa-solid fa-right-left"></i> Mirror
+          </button>
+
+          <button onclick="resetPrompterScroll()" class="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition" title="Reset to Top">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+      <!-- Large Teleprompter Glass Viewport -->
+      <div id="prompterViewport" class="relative w-full h-[520px] bg-black rounded-xl border-2 border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between">
+        
+        <!-- On-Air Cue Light Indicator Overlay Banner -->
+        <div id="prompterCueBanner" class="hidden absolute top-0 inset-x-0 z-30 bg-crimson-600 text-white font-display font-black text-center py-2 text-lg uppercase tracking-widest animate-pulse shadow-lg">
+          3-2-1 ON AIR!
+        </div>
+
+        <!-- Center Stage Target Eye-Line Overlay Indicator -->
+        <div class="absolute top-1/2 inset-x-0 h-12 -translate-y-1/2 border-y-2 border-cyan-500/30 bg-cyan-500/5 pointer-events-none z-20 flex items-center justify-between px-4">
+          <i class="fa-solid fa-caret-right text-cyan-400 text-xl animate-pulse"></i>
+          <span class="text-[10px] font-mono text-cyan-400/60 uppercase tracking-widest">READ LINE HERE</span>
+          <i class="fa-solid fa-caret-left text-cyan-400 text-xl animate-pulse"></i>
+        </div>
+
+        <!-- Teleprompter Scrolling Text Container -->
+        <div id="prompterScrollBox" class="w-full h-full overflow-y-auto px-8 sm:px-16 py-40 transition-all duration-100 scrollbar-none">
+          <div id="prompterTextDisplay" class="font-mono text-slate-100 font-bold tracking-wide leading-relaxed space-y-6">
+            <!-- Rendered teleprompter script lines appear here -->
+          </div>
+        </div>
+
+        <!-- Quick Floating Soundboard Bar inside Teleprompter Stage -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-900/90 border border-slate-700/80 backdrop-blur px-4 py-2 rounded-full flex items-center gap-2 shadow-2xl">
+          <span class="text-[10px] font-mono text-slate-400 mr-1">LIVE FX:</span>
+          <button onclick="audioFX.playSting()" class="px-2.5 py-1 rounded-full bg-crimson-600 text-white text-[11px] font-mono font-bold hover:bg-crimson-500">⚡ STING</button>
+          <button onclick="audioFX.playTicker()" class="px-2.5 py-1 rounded-full bg-cyan-600 text-slate-950 text-[11px] font-mono font-bold hover:bg-cyan-500">📟 TICKER</button>
+          <button onclick="audioFX.playFlash()" class="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 text-[11px] font-mono font-bold hover:bg-amber-400">📸 FLASH</button>
+          <button onclick="audioFX.playApplause()" class="px-2.5 py-1 rounded-full bg-purple-600 text-white text-[11px] font-mono font-bold hover:bg-purple-500">👏 APPLAUSE</button>
+          <button onclick="audioFX.playSiren()" class="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-mono font-bold hover:bg-rose-500">🚨 SIREN</button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 4: SOUNDBOARD & GRAPHICS STUDIO -->
+    <section id="tab-soundboard" class="tab-content hidden flex-col gap-6">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Synthesized Audio FX Soundboard Panel -->
+        <div class="bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="font-display font-bold text-base text-purple-400 flex items-center gap-2">
+              <i class="fa-solid fa-volume-high"></i> BROADCAST AUDIO SOUNDBOARD
+            </h2>
+            <span class="text-xs font-mono text-slate-500">Synthesized Web Audio API</span>
+          </div>
+
+          <!-- Sound FX Trigger Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            
+            <button onclick="audioFX.playSting()" class="p-4 rounded-xl bg-gradient-to-br from-crimson-950 to-slate-900 border border-crimson-700/50 hover:border-crimson-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-bolt text-crimson-500 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Intro Sting</div>
+                <div class="text-[10px] font-mono text-slate-400">Brass FM Sweep</div>
+              </div>
+            </button>
+
+            <button onclick="audioFX.playTicker()" class="p-4 rounded-xl bg-gradient-to-br from-cyan-950 to-slate-900 border border-cyan-700/50 hover:border-cyan-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-calculator text-cyan-400 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Ticker Beeps</div>
+                <div class="text-[10px] font-mono text-slate-400">Teletype Pulse</div>
+              </div>
+            </button>
+
+            <button onclick="audioFX.playFlash()" class="p-4 rounded-xl bg-gradient-to-br from-amber-950 to-slate-900 border border-amber-700/50 hover:border-amber-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-camera-retro text-amber-400 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Flash Shutter</div>
+                <div class="text-[10px] font-mono text-slate-400">Press Flashbulb</div>
+              </div>
+            </button>
+
+            <button onclick="audioFX.playApplause()" class="p-4 rounded-xl bg-gradient-to-br from-purple-950 to-slate-900 border border-purple-700/50 hover:border-purple-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-hands-clapping text-purple-400 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Studio Applause</div>
+                <div class="text-[10px] font-mono text-slate-400">Audience Claps</div>
+              </div>
+            </button>
+
+            <button onclick="audioFX.playSiren()" class="p-4 rounded-xl bg-gradient-to-br from-rose-950 to-slate-900 border border-rose-700/50 hover:border-rose-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-lightbulb text-rose-500 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Alert Siren</div>
+                <div class="text-[10px] font-mono text-slate-400">Emergency Osc.</div>
+              </div>
+            </button>
+
+            <button onclick="audioFX.playChatter()" class="p-4 rounded-xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-700/50 hover:border-emerald-500 text-left flex flex-col justify-between h-28 group transition shadow-lg">
+              <i class="fa-solid fa-comments text-emerald-400 text-2xl group-hover:scale-110 transition-transform"></i>
+              <div>
+                <div class="font-display font-bold text-xs text-white">Press Chatter</div>
+                <div class="text-[10px] font-mono text-slate-400">Reporter Crowd</div>
+              </div>
+            </button>
+
+          </div>
+
+          <!-- Master Volume Slider -->
+          <div class="flex items-center gap-3 bg-slate-950 p-3 rounded-lg border border-slate-800 mt-2">
+            <i class="fa-solid fa-volume-high text-cyan-400"></i>
+            <span class="text-xs font-mono text-slate-300">Master Volume:</span>
+            <input type="range" id="masterVolInput" min="0" max="100" value="80" onchange="setMasterVolume(this.value)" class="flex-1 accent-cyan-500">
+            <span id="masterVolVal" class="text-xs font-mono text-cyan-400 font-bold">80%</span>
+          </div>
+
+        </div>
+
+        <!-- Preset News Ticker Customizer & Feeds -->
+        <div class="bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <h2 class="font-display font-bold text-base text-cyan-400 flex items-center gap-2">
+              <i class="fa-solid fa-rss"></i> NEWS FEED & TICKER PRESETS
+            </h2>
+            <span class="text-xs font-mono text-slate-500">Quick Loads</span>
+          </div>
+
+          <p class="text-xs text-slate-400">Click a preset news feed to instantly update the running broadcast ticker on the live screen.</p>
+
+          <div class="flex flex-col gap-2">
+            <button onclick="setTickerPreset('climate')" class="p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition flex flex-col gap-1">
+              <div class="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                <i class="fa-solid fa-leaf"></i> Climate & Global Summit Feed
+              </div>
+              <div class="text-[11px] font-mono text-slate-400 truncate">
+                ✦ UN Accord signed by 190 nations ✦ Renewable investments double in 2026 ✦ Global clean grid initiative launched ✦
+              </div>
+            </button>
+
+            <button onclick="setTickerPreset('tech')" class="p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition flex flex-col gap-1">
+              <div class="text-xs font-bold text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-microchip"></i> Tech & AI Innovation Feed
+              </div>
+              <div class="text-[11px] font-mono text-slate-400 truncate">
+                ✦ Quantum supercomputer solves protein folding milestone ✦ AI Ethics treaty ratified ✦ Next-gen solar cells achieve 38% efficiency ✦
+              </div>
+            </button>
+
+            <button onclick="setTickerPreset('space')" class="p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition flex flex-col gap-1">
+              <div class="text-xs font-bold text-purple-400 flex items-center gap-2">
+                <i class="fa-solid fa-shuttle-space"></i> Space & Science Exploration
+              </div>
+              <div class="text-[11px] font-mono text-slate-400 truncate">
+                ✦ Artemis mission prepares for permanent lunar habitat setup ✦ Deep space array detects organic molecules in exoplanet atmosphere ✦
+              </div>
+            </button>
+
+            <button onclick="setTickerPreset('sports')" class="p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-left transition flex flex-col gap-1">
+              <div class="text-xs font-bold text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-trophy"></i> Sports & Athletics Wire
+              </div>
+              <div class="text-[11px] font-mono text-slate-400 truncate">
+                ✦ World Cup final produces dramatic overtime finish ✦ New world record set in women's marathon ✦ Esports championship breaks viewership ✦
+              </div>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 5: AUDIENCE PEER ASSESSMENT & DEBRIEF -->
+    <section id="tab-review" class="tab-content hidden flex-col gap-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Peer Review Worksheet Input (2 Columns) -->
+        <div class="lg:col-span-2 bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-5 shadow-xl">
+          
+          <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h2 class="font-display font-bold text-base text-crimson-400 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-check"></i> PERFORMANCE PEER ASSESSMENT & FACT-CHECK
+              </h2>
+              <p class="text-xs text-slate-400">Evaluate performance teams on journalistic accuracy, tone, and theatrical portrayal.</p>
+            </div>
+            <button onclick="exportAssessmentSummary()" class="px-3 py-1.5 rounded bg-crimson-600 hover:bg-crimson-500 text-white font-display text-xs font-bold transition flex items-center gap-1 shadow">
+              <i class="fa-solid fa-file-export"></i> EXPORT REPORT
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-mono text-slate-400">Performance Team Name / Group</label>
+              <input type="text" id="reviewTeamName" value="Team Alpha (Global News)" class="bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-100 focus:ring-1 focus:ring-crimson-500 outline-none">
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-mono text-slate-400">News Headline Being Portrayed</label>
+              <input type="text" id="reviewStoryHeadline" value="UN Climate Summit Reaches Landmark Accord" class="bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-100 focus:ring-1 focus:ring-crimson-500 outline-none">
+            </div>
+          </div>
+
+          <!-- The 5 Ws Fact-Check Matrix -->
+          <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
+            <label class="text-xs font-mono text-amber-400 font-bold flex items-center gap-2">
+              <i class="fa-solid fa-list-check"></i> THE 5 Ws FACT IDENTIFICATION CHECKLIST
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-2 p-2 rounded bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="wWho" checked class="rounded text-crimson-600 focus:ring-0">
+                <span class="text-slate-300 font-mono"><strong>WHO:</strong> Key people/nations identified</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 rounded bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="wWhat" checked class="rounded text-crimson-600 focus:ring-0">
+                <span class="text-slate-300 font-mono"><strong>WHAT:</strong> Main event clearly conveyed</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 rounded bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="wWhere" checked class="rounded text-crimson-600 focus:ring-0">
+                <span class="text-slate-300 font-mono"><strong>WHERE:</strong> Location & setting specified</span>
+              </label>
+
+              <label class="flex items-center gap-2 p-2 rounded bg-slate-950 border border-slate-800">
+                <input type="checkbox" id="wWhy" checked class="rounded text-crimson-600 focus:ring-0">
+                <span class="text-slate-300 font-mono"><strong>WHY:</strong> Underlying cause & impact explained</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Portrayal Tone Assessment Slider -->
+          <div class="flex flex-col gap-2 border-t border-slate-800 pt-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-mono text-cyan-400 font-bold">Reporting Tone Assessment</label>
+              <span id="toneScoreText" class="text-xs font-mono font-bold text-amber-400">Neutral & Balanced (3/5)</span>
+            </div>
+            <input type="range" id="toneSlider" min="1" max="5" value="3" onchange="updateToneRating(this.value)" class="w-full accent-cyan-500">
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>1 = Strictly Factual / Neutral</span>
+              <span>3 = Balanced Drama</span>
+              <span>5 = Highly Sensationalized</span>
+            </div>
+          </div>
+
+          <!-- Scoring Rubric -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-800 pt-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-mono text-slate-400">Fact Accuracy (1-10)</label>
+              <input type="number" id="scoreAccuracy" min="1" max="10" value="9" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs font-bold text-slate-100">
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-mono text-slate-400">Role Vocal Delivery (1-10)</label>
+              <input type="number" id="scoreDelivery" min="1" max="10" value="8" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs font-bold text-slate-100">
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-[11px] font-mono text-slate-400">Stage & Sound Synergy (1-10)</label>
+              <input type="number" id="scoreSynergy" min="1" max="10" value="9" class="bg-slate-950 border border-slate-700 rounded p-2 text-xs font-bold text-slate-100">
+            </div>
+          </div>
+
+          <!-- Peer Comments Box -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-mono text-slate-400">Constructive Feedback & Notes</label>
+            <textarea id="reviewNotes" rows="3" placeholder="Write feedback on clarity, stage presence, or potential bias..." class="bg-slate-950 border border-slate-700 rounded p-2.5 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-crimson-500">Great use of lower third graphics and intro sting! The contrast between the field reporter and anchor felt authentic.</textarea>
+          </div>
+
+        </div>
+
+        <!-- Debrief Reflection Prompts & Summary View -->
+        <div class="bg-studio-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl">
+          <div class="border-b border-slate-800 pb-3">
+            <h2 class="font-display font-bold text-base text-amber-400 flex items-center gap-2">
+              <i class="fa-solid fa-lightbulb"></i> CLASSROOM DEBRIEF PROMPTS
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Discussion questions for after the news performance.</p>
+          </div>
+
+          <div class="space-y-3 text-xs leading-relaxed text-slate-300">
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-cyan-400 font-mono">1. Visual & Non-Verbal Impact</span>
+              <p class="text-slate-400">How did posture, tone of voice, and sound cues influence how believable the news story felt?</p>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-purple-400 font-mono">2. Media Bias & Drama</span>
+              <p class="text-slate-400">Did the performance lean into sensationalism to generate excitement, and did that alter any core facts?</p>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex flex-col gap-1">
+              <span class="font-bold text-crimson-400 font-mono">3. Perspective Comparison</span>
+              <p class="text-slate-400">How did portraying different stakeholders (Anchor vs Eyewitness) reveal contrasting opinions on the news event?</p>
+            </div>
+          </div>
+
+          <div class="mt-auto border-t border-slate-800 pt-3">
+            <button onclick="printFormattedReport()" class="w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-display text-xs font-bold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-print"></i> PRINT EVALUATION CARD
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Modal for Generated Report Display -->
+  <div id="reportModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-studio-900 border border-slate-700 rounded-xl max-w-xl w-full p-6 flex flex-col gap-4 shadow-2xl text-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-display font-bold text-base text-cyan-400 flex items-center gap-2">
+          <i class="fa-solid fa-file-contract"></i> PERFORMANCE ASSESSMENT SUMMARY
+        </h3>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="modalReportContent" class="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-xs space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto">
+        <!-- Dynamic report output -->
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="copyModalReportText()" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-display font-bold text-xs transition">
+          Copy Report Text
+        </button>
+        <button onclick="closeReportModal()" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Bar -->
+  <footer class="border-t border-slate-800 bg-studio-900/80 py-3 text-center text-xs font-mono text-slate-500 mt-auto">
+    Broadcast Studio Interactive App &copy; 2026 • News Portrayal & Drama Performance Platform
+  </footer>
+
+  <script>
+    /* ===================================================================
+       1. WEB AUDIO API SYNTHESIZER ENGINE (Synthesized Sound Effects)
+       =================================================================== */
+    class StudioAudioFXEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterVolume = 0.8;
+      }
+
+      initCtx() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // Breaking News Intro Sting (Brass Synth Chord + Sub Kick)
+      playSting() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        const masterGain = this.ctx.createGain();
+        masterGain.gain.setValueAtTime(this.masterVolume, now);
+        masterGain.connect(this.ctx.destination);
+
+        // Sub Impact Kick
+        const oscSub = this.ctx.createOscillator();
+        const gainSub = this.ctx.createGain();
+        oscSub.type = 'sine';
+        oscSub.frequency.setValueAtTime(160, now);
+        oscSub.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+        gainSub.gain.setValueAtTime(1.0, now);
+        gainSub.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        oscSub.connect(gainSub);
+        gainSub.connect(masterGain);
+        oscSub.start(now);
+        oscSub.stop(now + 0.4);
+
+        // Brass Triad Stabs (C4, G4, C5)
+        const freqs = [261.63, 392.00, 523.25, 659.25];
+        freqs.forEach((f, index) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, now);
+          
+          // Slight pitch glide
+          osc.frequency.exponentialRampToValueAtTime(f * 1.02, now + 0.6);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.setValueAtTime(0.35, now + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9 + (index * 0.1));
+
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 1.2);
+        });
+
+        showToast("⚡ Playing Breaking News Intro Sting");
+      }
+
+      // Ticker Digital Clicks/Beeps
+      playTicker() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        
+        for (let i = 0; i < 4; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = now + (i * 0.08);
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(950 + (i * 120), time);
+
+          gain.gain.setValueAtTime(0.15 * this.masterVolume, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.05);
+        }
+      }
+
+      // Camera Flashbulb Pop (Burst Noise + High Sine Drop)
+      playFlash() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        
+        // High frequency pop
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+
+        gain.gain.setValueAtTime(0.3 * this.masterVolume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+
+        showToast("📸 Flashbulb Shutter FX");
+      }
+
+      // Studio Applause Simulation (Filtered Noise Loop with Spikes)
+      playApplause() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        const duration = 2.5;
+
+        // Create White Noise
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        // Bandpass Filter to sound like clapping hands
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1200, now);
+        filter.Q.setValueAtTime(1.2, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.25 * this.masterVolume, now + 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + duration);
+
+        showToast("👏 Playing Studio Applause FX");
+      }
+
+      // Alert Siren FX
+      playSiren() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(950, now + 0.4);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.8);
+        osc.frequency.linearRampToValueAtTime(950, now + 1.2);
+
+        gain.gain.setValueAtTime(0.2 * this.masterVolume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 1.4);
+
+        showToast("🚨 Alert Siren Triggered");
+      }
+
+      // Press Conference Chatter FX
+      playChatter() {
+        this.initCtx();
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 6; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const delay = now + (Math.random() * 0.3);
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(250 + (Math.random() * 200), delay);
+
+          gain.gain.setValueAtTime(0.08 * this.masterVolume, delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, delay + 0.3);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(delay);
+          osc.stop(delay + 0.35);
+        }
+        showToast("🎙️ Press Chatter Sound");
+      }
+    }
+
+    const audioFX = new StudioAudioFXEngine();
+
+    function setMasterVolume(val) {
+      audioFX.masterVolume = parseInt(val) / 100;
+      document.getElementById('masterVolVal').textContent = `${val}%`;
+    }
+
+    /* ===================================================================
+       2. WEBCAM & BROADCAST MONITOR LOGIC
+       =================================================================== */
+    let webcamStream = null;
+
+    async function initWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        webcamStream = stream;
+        const videoEl = document.getElementById('webcamVideo');
+        videoEl.srcObject = stream;
+        videoEl.classList.remove('hidden');
+        document.getElementById('webcamFallback').classList.add('hidden');
+        document.getElementById('cameraResolutionText').textContent = "Camera Feed: Active";
+        document.getElementById('webcamBtnText').textContent = "Disable Camera";
+        showToast("🎥 Webcam Feed Activated Successfully");
+      } catch (err) {
+        showToast("⚠️ Could not access webcam. Using fallback graphic mode.", true);
+      }
+    }
+
+    function toggleWebcam() {
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+        document.getElementById('webcamVideo').classList.add('hidden');
+        document.getElementById('webcamFallback').classList.remove('hidden');
+        document.getElementById('cameraResolutionText').textContent = "Webcam Offline";
+        document.getElementById('webcamBtnText').textContent = "Enable Camera";
+        showToast("Camera Feed Disabled");
+      } else {
+        initWebcam();
+      }
+    }
+
+    function applyCameraFilter(filterType) {
+      const videoEl = document.getElementById('webcamVideo');
+      const scanline = document.getElementById('scanlineLayer');
+
+      videoEl.className = "w-full h-full object-cover ";
+      scanline.className = "absolute inset-0 pointer-events-none ";
+
+      if (filterType === 'vhs') {
+        videoEl.classList.add('retro-vhs-effect');
+        scanline.classList.add('vhs-scanlines', 'opacity-60');
+      } else if (filterType === 'night') {
+        videoEl.classList.add('night-vision-effect');
+        scanline.classList.add('vhs-scanlines', 'opacity-50');
+      } else if (filterType === 'grain') {
+        videoEl.classList.add('field-grain-effect');
+        scanline.classList.add('vhs-scanlines', 'opacity-30');
+      } else {
+        scanline.classList.add('vhs-scanlines', 'opacity-20');
+      }
+      showToast(`Filter set to: ${filterType.toUpperCase()}`);
+    }
+
+    /* ===================================================================
+       3. ON-SCREEN GRAPHICS & LOWER THIRD SYNC
+       =================================================================== */
+    function setBannerTag(label, colorTheme) {
+      const banner = document.getElementById('breakingBanner');
+      const tagSpan = banner.children[0];
+      tagSpan.textContent = label;
+
+      tagSpan.className = "font-display font-black text-xs px-2 py-0.5 rounded uppercase tracking-wider animate-pulse ";
+      banner.className = "text-white px-4 py-1.5 flex items-center gap-3 border-t-2 shadow-xl ";
+
+      if (colorTheme === 'amber') {
+        tagSpan.classList.add('bg-slate-950', 'text-amber-400');
+        banner.classList.add('bg-gradient-to-r', 'from-amber-600', 'via-amber-500', 'to-amber-700', 'border-white');
+      } else if (colorTheme === 'cyan') {
+        tagSpan.classList.add('bg-slate-950', 'text-cyan-400');
+        banner.classList.add('bg-gradient-to-r', 'from-cyan-700', 'via-cyan-600', 'to-cyan-800', 'border-amber-400');
+      } else if (colorTheme === 'emerald') {
+        tagSpan.classList.add('bg-slate-950', 'text-emerald-400');
+        banner.classList.add('bg-gradient-to-r', 'from-emerald-700', 'via-emerald-600', 'to-emerald-800', 'border-white');
+      } else {
+        tagSpan.classList.add('bg-amber-400', 'text-slate-950');
+        banner.classList.add('bg-gradient-to-r', 'from-crimson-700', 'via-crimson-600', 'to-crimson-800', 'border-amber-400');
+      }
+    }
+
+    function updateGraphicsFromInputs() {
+      const headline = document.getElementById('inputHeadline').value;
+      const subhead = document.getElementById('inputSubhead').value;
+      const reporter = document.getElementById('inputReporter').value;
+      const location = document.getElementById('inputLocation').value;
+      const ticker = document.getElementById('inputTicker').value;
+
+      document.getElementById('overlayHeadline').textContent = headline.toUpperCase();
+      document.getElementById('overlaySubhead').textContent = subhead;
+      document.getElementById('overlayReporterText').textContent = reporter.toUpperCase();
+      document.getElementById('overlayLocationText').textContent = location.toUpperCase();
+      document.getElementById('tickerMarquee').textContent = ticker;
+    }
+
+    function setTickerPreset(presetKey) {
+      const presets = {
+        climate: "✦ UN Climate Accord signed by 190 nations ✦ Renewable investments double in 2026 ✦ Global clean grid initiative launched ✦",
+        tech: "✦ Quantum supercomputer solves protein folding milestone ✦ AI Ethics treaty ratified ✦ Next-gen solar cells achieve 38% efficiency ✦",
+        space: "✦ Artemis mission prepares for permanent lunar habitat setup ✦ Deep space array detects organic molecules in exoplanet atmosphere ✦",
+        sports: "✦ World Cup final produces dramatic overtime finish ✦ New world record set in women's marathon ✦ Esports championship breaks viewership ✦"
+      };
+      if (presets[presetKey]) {
+        document.getElementById('inputTicker').value = presets[presetKey];
+        updateGraphicsFromInputs();
+        showToast(`Loaded ${presetKey.toUpperCase()} News Feed`);
+      }
+    }
+
+    function resetGraphicsToDefault() {
+      document.getElementById('inputHeadline').value = "UN CLIMATE SUMMIT REACHES LANDMARK ACCORD";
+      document.getElementById('inputSubhead').value = "Delegates agree on ambitious renewable transition timeline";
+      document.getElementById('inputReporter').value = "ALEX MORGAN, CHIEF CORRESPONDENT";
+      document.getElementById('inputLocation').value = "STUDIO A • NEW YORK";
+      updateGraphicsFromInputs();
+      showToast("Graphics reset to default");
+    }
+
+    /* ===================================================================
+       4. AI SCRIPT GENERATOR & OFFLINE TEMPLATE ENGINE
+       =================================================================== */
+    const PRESET_TEMPLATES = {
+      climate: {
+        headline: "UN Climate Accord Reaches Historic Renewable Energy Deal",
+        broadcast: `(SOUND FX: BREAKING NEWS INTRO STING)
+
+[ANCHOR - ALEX MORGAN]: Good evening. We begin tonight with historic news from Geneva. Representatives from 190 nations have officially signed a landmark climate accord after marathon negotiations.
+
+[ANCHOR]: Let's go live to our Senior Field Reporter, Sam Rivera, standing by outside the UN Assembly Hall. Sam, what is the mood on the ground?
+
+(SOUND FX: PRESS CONFERENCE CHATTER)
+
+[REPORTER - SAM RIVERA]: Alex, the atmosphere here is ecstatic. After 72 hours of uninterrupted talks, delegates emerged moments ago announcing a binding agreement to accelerate global renewable transition goals.
+
+[GUEST - DR. MAYA CHEN]: "This isn't just a political pledge—it's a legally binding framework with clear carbon reduction milestones starting immediately."
+
+[REPORTER]: Back to you in the studio, Alex.
+
+[ANCHOR]: Thank you, Sam. We will continue following this breaking story throughout the broadcast.`,
+        panel: `(SOUND FX: INTRO STING)
+
+[HOST - JORDYN REYES]: Welcome to Perspective Panel. Today's global debate: The Geneva Climate Accord. Is it a monumental victory or an aggressive economic hurdle?
+
+[GUEST 1 - DR. MAYA CHEN (CLIMATE SCIENTIST)]: "The data is undisputed. Transitioning our energy grid within a decade is our sole path to atmospheric stabilization."
+
+[GUEST 2 - MARCUS VANCE (INDUSTRIAL REPRESENTATIVE)]: "While clean energy is essential, rapid mandates risk overwhelming local energy infrastructure before grid storage is ready."
+
+[HOST]: Dr. Chen, how do proponents respond to infrastructure timeline concerns?
+
+[GUEST 1]: "The accord allocates dedicated transition funds specifically to upgrade regional grids."`,
+        tableau: `(SOUND FX: ALERT SIREN)
+
+[NARRATOR]: POSE 1 - THE CRITICAL DEADLINE.
+[STAGE INSTRUCTION]: Three actors freeze in tense posture surrounding a conference table, pointing urgently at a world map display.
+
+(SOUND FX: FLASHBULB SHUTTER)
+
+[NARRATOR]: POSE 2 - THE BREAKTHROUGH ACCORD.
+[STAGE INSTRUCTION]: Lead delegate steps forward, holding a quill pen aloft as reporters lean in with microphones raised.
+
+(SOUND FX: APPLAUSE)
+
+[NARRATOR]: POSE 3 - THE NEW SUNRISE.
+[STAGE INSTRUCTION]: Actors link hands looking upwards towards the studio lights, depicting global unity.`
+      },
+
+      tech: {
+        headline: "Quantum Computing Lab Unveils Breakthrough Clean Energy Simulation",
+        broadcast: `(SOUND FX: BREAKING NEWS INTRO STING)
+
+[ANCHOR - ALEX MORGAN]: Science headlines tonight: Quantum computing researchers have achieved a long-awaited milestone—simulating zero-loss power grids at molecular scale.
+
+[REPORTER - SAM RIVERA]: Standing outside the Quantum Innovation Facility. Dr. Aris Thorne announced moments ago that their 10,000-qubit processor calculated room-temperature superconducting alloys in seconds.
+
+[GUEST - DR. ARIS THORNE]: "What used to take supercomputers centuries was solved in under three minutes today."
+
+[ANCHOR]: A major leap forward for clean technology deployment.`,
+        panel: `[HOST]: Welcome to Perspective Panel. Is quantum-driven AI advancing faster than regulatory guardrails can keep pace?
+
+[GUEST 1 - DR. THORNE]: "Quantum simulations give humanity the computational tools needed to solve battery chemistry and carbon capture."
+
+[GUEST 2 - ELENA ROSTOVA (CYBERSECURITY ANALYST)]: "However, quantum processing also renders traditional encryption obsolete. Security upgrades must happen concurrently."`,
+        tableau: `[NARRATOR]: POSE 1 - THE QUANTUM COMPUTATION.
+[STAGE INSTRUCTION]: Scientists freeze staring intensely at glowing digital monitors.
+
+[NARRATOR]: POSE 2 - THE MOLECULAR BREAKTHROUGH.
+[STAGE INSTRUCTION]: Lead scientist holds up a glass prism as colleagues gesture in amazement.
+
+[NARRATOR]: POSE 3 - SHARING WITH THE WORLD.
+[STAGE INSTRUCTION]: Team steps side-by-side presenting open data tablets to the audience.`
+      }
+    };
+
+    function loadPresetCategoryTemplate(categoryKey) {
+      if (categoryKey === 'custom') return;
+      const template = PRESET_TEMPLATES[categoryKey] || PRESET_TEMPLATES['climate'];
+      document.getElementById('newsHeadlineInput').value = template.headline;
+    }
+
+    function generateScriptOffline() {
+      const category = document.getElementById('newsCategorySelect').value;
+      const headline = document.getElementById('newsHeadlineInput').value || "Breaking News Story Event";
+      const style = document.querySelector('input[name="scriptStyle"]:checked').value;
+
+      let baseTemplate = PRESET_TEMPLATES[category] || PRESET_TEMPLATES['climate'];
+      let scriptText = baseTemplate[style] || baseTemplate['broadcast'];
+
+      document.getElementById('scriptDisplayTitle').innerHTML = `<i class="fa-solid fa-scroll text-amber-400"></i> ${headline.toUpperCase()}`;
+      document.getElementById('scriptContentArea').value = scriptText;
+      
+      // Auto update lower third input
+      document.getElementById('inputHeadline').value = headline.toUpperCase();
+      updateGraphicsFromInputs();
+
+      showToast("Generated Script from Offline Template!");
+    }
+
+    // Gemini API Direct Integration
+    async function generateScriptWithAI() {
+      const headline = document.getElementById('newsHeadlineInput').value;
+      const style = document.querySelector('input[name="scriptStyle"]:checked').value;
+
+      if (!headline || headline.trim().length < 5) {
+        showToast("⚠️ Please enter a headline or topic brief first!", true);
+        return;
+      }
+
+      const spinner = document.getElementById('aiLoadingSpinner');
+      const btn = document.getElementById('generateAiBtn');
+      spinner.classList.remove('hidden');
+      btn.disabled = true;
+
+      const systemPrompt = `You are a professional TV news dramatist and scriptwriter. Write a crisp, 1 shadow-ready script for a news performance activity. Format character lines clearly as [ROLE - NAME]: line and sound cues in parentheses like (SOUND FX: INTRO STING). Keep it short (under 250 words), punchy, and structured for classroom/tv news portrayal.`;
+
+      const userPrompt = `Headline: "${headline}"
+Style requested: ${style.toUpperCase()} (Options: Broadcast news, Perspective panel debate, or Freeze-frame tableau narrator script). Include clear character names and stage/sound cues.`;
+
+      const apiKey = ""; // Canvas runtime automatically supplies API Key
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        const result = await response.json();
+        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (generatedText) {
+          document.getElementById('scriptContentArea').value = generatedText;
+          document.getElementById('scriptDisplayTitle').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> ${headline.toUpperCase()}`;
+          
+          // Auto update lower thirds
+          document.getElementById('inputHeadline').value = headline.toUpperCase();
+          updateGraphicsFromInputs();
+
+          showToast("✨ AI Script Generated with Gemini!");
+        } else {
+          throw new Error("Invalid response structure");
+        }
+      } catch (err) {
+        showToast("Falling back to smart offline script generator...", false);
+        generateScriptOffline();
+      } finally {
+        spinner.classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    function sendScriptToTeleprompter() {
+      const scriptText = document.getElementById('scriptContentArea').value;
+      renderScriptToTeleprompterDisplay(scriptText);
+      switchTab('teleprompter');
+      showToast("🚀 Script loaded into Teleprompter Stage!");
+    }
+
+    function loadScriptToGraphics() {
+      const scriptText = document.getElementById('scriptContentArea').value;
+      const lines = scriptText.split('\n').filter(l => l.trim().length > 0);
+      if (lines.length > 0) {
+        const headlineCandidate = lines.find(l => !l.startsWith('(') && l.includes(':')) || lines[0];
+        document.getElementById('inputSubhead').value = headlineCandidate.substring(0, 80);
+        updateGraphicsFromInputs();
+        showToast("Synced headline detail from script");
+      }
+    }
+
+    function copyScriptToClipboard() {
+      const scriptText = document.getElementById('scriptContentArea').value;
+      navigator.clipboard.writeText(scriptText);
+      showToast("Copied script text to clipboard!");
+    }
+
+    /* ===================================================================
+       5. TELEPROMPTER SCROLLING ENGINE & STAGE CONTROL
+       =================================================================== */
+    let isPrompterScrolling = false;
+    let prompterInterval = null;
+    let prompterSpeed = 3;
+    let prompterFontSize = 28;
+
+    function renderScriptToTeleprompterDisplay(rawText) {
+      const container = document.getElementById('prompterTextDisplay');
+      container.innerHTML = '';
+
+      const lines = rawText.split('\n');
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const p = document.createElement('div');
+        p.style.fontSize = `${prompterFontSize}px`;
+
+        if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+          p.className = "text-crimson-400 font-bold italic tracking-widest my-4 border-y border-crimson-900/50 py-1 text-center bg-crimson-950/30";
+          p.innerHTML = `<i class="fa-solid fa-bell mr-2"></i> ${trimmed}`;
+        } else if (trimmed.startsWith('[ANCHOR')) {
+          p.className = "text-cyan-300 font-bold border-l-4 border-cyan-500 pl-3 my-2";
+          p.textContent = trimmed;
+        } else if (trimmed.startsWith('[REPORTER')) {
+          p.className = "text-amber-300 font-bold border-l-4 border-amber-500 pl-3 my-2";
+          p.textContent = trimmed;
+        } else if (trimmed.startsWith('[GUEST') || trimmed.startsWith('[HOST')) {
+          p.className = "text-purple-300 font-bold border-l-4 border-purple-500 pl-3 my-2";
+          p.textContent = trimmed;
+        } else {
+          p.className = "text-slate-100 my-2";
+          p.textContent = trimmed;
+        }
+
+        container.appendChild(p);
+      });
+    }
+
+    function togglePrompterScroll() {
+      const scrollBox = document.getElementById('prompterScrollBox');
+      const icon = document.getElementById('prompterPlayIcon');
+      const statusText = document.getElementById('prompterStatusText');
+      const dot = document.getElementById('prompterDot');
+
+      if (isPrompterScrolling) {
+        clearInterval(prompterInterval);
+        isPrompterScrolling = false;
+        icon.className = "fa-solid fa-play";
+        statusText.textContent = "PROMPTER PAUSED";
+        dot.className = "w-2 h-2 rounded-full bg-amber-500 inline-block";
+      } else {
+        isPrompterScrolling = true;
+        icon.className = "fa-solid fa-pause";
+        statusText.textContent = "PROMPTER SCROLLING";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block";
+
+        prompterInterval = setInterval(() => {
+          scrollBox.scrollTop += prompterSpeed;
+          if (scrollBox.scrollTop + scrollBox.clientHeight >= scrollBox.scrollHeight) {
+            togglePrompterScroll();
+          }
+        }, 30);
+      }
+    }
+
+    function resetPrompterScroll() {
+      if (isPrompterScrolling) togglePrompterScroll();
+      document.getElementById('prompterScrollBox').scrollTop = 0;
+      showToast("Teleprompter reset to start");
+    }
+
+    function updatePrompterSettings() {
+      prompterSpeed = parseInt(document.getElementById('prompterSpeedInput').value);
+      prompterFontSize = parseInt(document.getElementById('prompterFontInput').value);
+
+      document.getElementById('prompterSpeedVal').textContent = prompterSpeed;
+      document.getElementById('prompterFontVal').textContent = `${prompterFontSize}px`;
+
+      // Re-apply font size to display children
+      const children = document.getElementById('prompterTextDisplay').children;
+      for (let child of children) {
+        child.style.fontSize = `${prompterFontSize}px`;
+      }
+    }
+
+    function togglePrompterMirror() {
+      const scrollBox = document.getElementById('prompterScrollBox');
+      scrollBox.classList.toggle('mirror-mode');
+      showToast("Toggled Mirror Reflection Mode");
+    }
+
+    function triggerStageCue(cueText) {
+      const banner = document.getElementById('prompterCueBanner');
+      banner.textContent = cueText;
+      banner.classList.remove('hidden');
+
+      if (cueText.includes('ON AIR')) {
+        audioFX.playSting();
+      } else {
+        audioFX.playTicker();
+      }
+
+      setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 3500);
+    }
+
+    // Spacebar keyboard listener for teleprompter scroll control
+    document.addEventListener('keydown', (e) => {
+      const activeTab = document.querySelector('.tab-content:not(.hidden)').id;
+      if (activeTab === 'tab-teleprompter' && e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        togglePrompterScroll();
+      }
+    });
+
+    /* ===================================================================
+       6. STUDIO ON-AIR STATE & PEER ASSESSMENT LOGIC
+       =================================================================== */
+    let isOnAir = false;
+
+    function toggleOnAirState() {
+      isOnAir = !isOnAir;
+      const badge = document.getElementById('onAirBadge');
+      const dot = document.getElementById('onAirDot');
+      const text = document.getElementById('onAirText');
+
+      if (isOnAir) {
+        badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-crimson-950 border border-crimson-600 text-xs font-mono font-bold text-crimson-400 glow-red transition-all duration-300";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-crimson-500 animate-ping inline-block";
+        text.textContent = "ON AIR • BROADCASTING";
+        audioFX.playSting();
+        showToast("🔴 STUDIO IS NOW LIVE ON AIR!");
+      } else {
+        badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono font-bold text-slate-400 transition-all duration-300";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-slate-600 inline-block";
+        text.textContent = "STUDIO STANDBY";
+        showToast("Studio Standby Mode Enabled");
+      }
+    }
+
+    function updateToneRating(val) {
+      const labels = [
+        "1/5 - Strictly Factual & Neutral",
+        "2/5 - Mild News Formatting",
+        "3/5 - Balanced News Drama",
+        "4/5 - High Dramatic Tension",
+        "5/5 - Highly Sensationalized"
+      ];
+      document.getElementById('toneScoreText').textContent = labels[val - 1];
+    }
+
+    function exportAssessmentSummary() {
+      const team = document.getElementById('reviewTeamName').value;
+      const headline = document.getElementById('reviewStoryHeadline').value;
+      const who = document.getElementById('wWho').checked ? '✓ Verified' : '✗ Missing';
+      const what = document.getElementById('wWhat').checked ? '✓ Verified' : '✗ Missing';
+      const where = document.getElementById('wWhere').checked ? '✓ Verified' : '✗ Missing';
+      const why = document.getElementById('wWhy').checked ? '✓ Verified' : '✗ Missing';
+
+      const tone = document.getElementById('toneScoreText').textContent;
+      const accuracy = document.getElementById('scoreAccuracy').value;
+      const delivery = document.getElementById('scoreDelivery').value;
+      const synergy = document.getElementById('scoreSynergy').value;
+      const notes = document.getElementById('reviewNotes').value;
+
+      const reportHtml = `
+        <div class="text-amber-400 font-bold border-b border-slate-800 pb-1">PERFORMANCE FEEDBACK CARD</div>
+        <div><strong>TEAM:</strong> ${team}</div>
+        <div><strong>STORY:</strong> ${headline}</div>
+        <div class="pt-2 text-cyan-300">--- 5 Ws FACT ACCURACY CHECK ---</div>
+        <div>WHO: ${who} | WHAT: ${what} | WHERE: ${where} | WHY: ${why}</div>
+        <div class="pt-2 text-purple-300">--- TONE & PERFORMANCE METRICS ---</div>
+        <div>TONE ASSESSMENT: ${tone}</div>
+        <div>FACT ACCURACY: ${accuracy}/10</div>
+        <div>VOCAL DELIVERY: ${delivery}/10</div>
+        <div>STAGE & SOUND SYNERGY: ${synergy}/10</div>
+        <div class="pt-2 text-slate-300">--- CONSTRUCTIVE NOTES ---</div>
+        <div>"${notes}"</div>
+      `;
+
+      document.getElementById('modalReportContent').innerHTML = reportHtml;
+      document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+    }
+
+    function copyModalReportText() {
+      const text = document.getElementById('modalReportContent').innerText;
+      navigator.clipboard.writeText(text);
+      showToast("Assessment Summary Copied to Clipboard!");
+    }
+
+    function printFormattedReport() {
+      exportAssessmentSummary();
+      window.print();
+    }
+
+    /* ===================================================================
+       7. TAB NAVIGATION & APPLICATION UTILITIES
+       =================================================================== */
+    function switchTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn px-4 py-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent hover:border-slate-700 flex items-center gap-2 transition whitespace-nowrap";
+      });
+
+      // Show selected tab
+      const selectedTab = document.getElementById(`tab-${tabId}`);
+      if (selectedTab) selectedTab.classList.remove('hidden');
+
+      // Highlight active button
+      const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "tab-btn px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-2 font-semibold transition whitespace-nowrap";
+      }
+
+      if (tabId === 'teleprompter') {
+        const currentScript = document.getElementById('scriptContentArea').value;
+        renderScriptToTeleprompterDisplay(currentScript);
+      }
+    }
+
+    function showToast(msg, isError = false) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-lg text-xs font-mono font-bold shadow-2xl transition-all duration-300 flex items-center gap-2 ${
+        isError ? 'bg-crimson-600 text-white' : 'bg-slate-900 border border-cyan-500/50 text-cyan-300'
+      }`;
+      toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i> ${msg}`;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Live Studio Clock Updater
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toUTCString().split(' ')[4] + " UTC";
+      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+      
+      const clockEl = document.getElementById('studioClock');
+      const dateEl = document.getElementById('studioDate');
+      const overlayClock = document.getElementById('overlayClockText');
+
+      if (clockEl) clockEl.textContent = timeStr;
+      if (dateEl) dateEl.textContent = dateStr;
+      if (overlayClock) overlayClock.textContent = timeStr.split(' ')[0] + " EST";
+    }
+
+    // Initialize application on window load
+    window.onload = function() {
+      setInterval(updateClock, 1000);
+      updateClock();
+      // Initialize default teleprompter text
+      const defaultScript = document.getElementById('scriptContentArea').value;
+      renderScriptToTeleprompterDisplay(defaultScript);
+    };
+  </script>
+</body>
+</html>
