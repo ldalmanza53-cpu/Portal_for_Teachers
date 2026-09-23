@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DwellCompare - ESL Housing Evaluation & Grammar Suite</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#035483',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(14, 165, 233, 0.8); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .word-chip {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .word-chip:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Top Header / Gamification Bar -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Brand & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md font-bold text-xl">
+                    <i class="fa-solid fa-house-chimney-window"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                        DwellCompare ESL
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">House vs. Apartment Comparative Mastery</p>
+                </div>
+            </div>
+
+            <!-- Stats & Gamification Counters -->
+            <div class="flex items-center gap-3 sm:gap-6">
+                <!-- XP Indicator -->
+                <div class="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1.5 rounded-full text-amber-700 dark:text-amber-300 font-semibold text-sm">
+                    <i class="fa-solid fa-bolt text-amber-500 animate-bounce"></i>
+                    <span id="xpCount">0</span> <span class="text-xs font-normal">XP</span>
+                </div>
+
+                <!-- Streak Counter -->
+                <div class="flex items-center gap-2 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-3 py-1.5 rounded-full text-rose-700 dark:text-rose-300 font-semibold text-sm">
+                    <i class="fa-solid fa-fire text-rose-500"></i>
+                    <span id="streakCount">1</span> <span class="text-xs font-normal">Day Streak</span>
+                </div>
+
+                <!-- Level Badge -->
+                <div class="hidden md:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 px-3 py-1.5 rounded-full text-indigo-700 dark:text-indigo-300 font-semibold text-sm">
+                    <i class="fa-solid fa-award text-indigo-500"></i>
+                    <span id="levelName">Beginner Explorer</span>
+                </div>
+
+                <!-- Dark/Light Theme & Sound Toggles -->
+                <div class="flex items-center border-l border-slate-200 dark:border-slate-700 pl-3 gap-2">
+                    <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Sound Effects">
+                        <i id="soundIcon" class="fa-solid fa-volume-high text-lg"></i>
+                    </button>
+                    <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                        <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <nav class="bg-slate-100/80 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700/60">
+            <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex overflow-x-auto space-x-1 sm:space-x-2 py-2 no-scrollbar">
+                <button onclick="switchTab('matrix')" id="nav-matrix" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition bg-sky-600 text-white shadow-sm">
+                    <i class="fa-solid fa-table-columns"></i> <span>1. Housing Matrix</span>
+                </button>
+                <button onclick="switchTab('grammar')" id="nav-grammar" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-pen-ruler"></i> <span>2. Grammar Practice</span>
+                </button>
+                <button onclick="switchTab('matchmaker')" id="nav-matchmaker" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-users-viewfinder"></i> <span>3. Client Matchmaker</span>
+                </button>
+                <button onclick="switchTab('evaluator')" id="nav-evaluator" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-sliders"></i> <span>4. Lifestyle Matcher</span>
+                </button>
+                <button onclick="switchTab('speaking')" id="nav-speaking" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-comments"></i> <span>5. Speaking & Debate</span>
+                </button>
+                <button onclick="switchTab('badges')" id="nav-badges" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-trophy"></i> <span>Badges & Stats</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- MODULE 1: INTERACTIVE COMPARISON MATRIX -->
+        <section id="tab-matrix" class="tab-content block space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                        Module 1: Vocabulary & Characteristics
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Housing Characteristics Comparison Matrix</h2>
+                    <p class="text-sky-100 max-w-2xl text-sm sm:text-base">
+                        Explore key differences between detached houses and urban apartments. Click cards to listen to pronunciations, expand sample comparative sentences, and filter by criteria.
+                    </p>
+                </div>
+                <div class="absolute -right-8 -bottom-8 opacity-15 text-white">
+                    <i class="fa-solid fa-city text-9xl"></i>
+                </div>
+            </div>
+
+            <!-- Filters & Search Toolbar -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="matrixSearch" onkeyup="filterMatrix()" placeholder="Search characteristics (e.g., yard, rent, maintenance)..." class="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-slate-100">
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                    <button onclick="setMatrixFilter('all')" class="matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition">All</button>
+                    <button onclick="setMatrixFilter('Space')" class="matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">Space</button>
+                    <button onclick="setMatrixFilter('Cost')" class="matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">Cost</button>
+                    <button onclick="setMatrixFilter('Maintenance')" class="matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">Maintenance</button>
+                    <button onclick="setMatrixFilter('Lifestyle')" class="matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">Lifestyle</button>
+                </div>
+            </div>
+
+            <!-- Comparison Cards Container -->
+            <div id="matrixContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Dynamically populated matrix cards go here -->
+            </div>
+        </section>
+
+        <!-- MODULE 2: COMPARATIVE GRAMMAR PRACTICE -->
+        <section id="tab-grammar" class="tab-content hidden space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                    Module 2: Grammar Mastery
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Comparative Adjectives & Connectors</h2>
+                <p class="text-emerald-100 max-w-2xl text-sm sm:text-base">
+                    Master comparative forms (<em>-er than</em>, <em>more ... than</em>, <em>less ... than</em>) and contrast connectors (<em>however</em>, <em>while</em>, <em>on the other hand</em>). Complete the practice interactive exercises below.
+                </p>
+            </div>
+
+            <!-- Quiz Sub-Tabs -->
+            <div class="flex border-b border-slate-200 dark:border-slate-700">
+                <button onclick="switchGrammarMode('fill')" id="grammarSubTab-fill" class="px-5 py-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> Fill-in-the-Blank Quiz
+                </button>
+                <button onclick="switchGrammarMode('unscramble')" id="grammarSubTab-unscramble" class="px-5 py-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-puzzle-piece"></i> Sentence Unscrambler
+                </button>
+            </div>
+
+            <!-- Grammar Mode 1: Fill-in-the-blank Quiz -->
+            <div id="grammarMode-fill" class="space-y-4">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="grammarQuizProgress">Question 1 of 6</span>
+                        <span class="text-xs font-medium px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded-full" id="grammarTopicTag">Comparative Adjectives</span>
+                    </div>
+
+                    <!-- Question Prompt -->
+                    <div class="my-6">
+                        <p class="text-lg sm:text-xl font-medium leading-relaxed" id="grammarPromptText">
+                            Loading question...
+                        </p>
+                    </div>
+
+                    <!-- Input / Options area -->
+                    <div id="grammarInputArea" class="space-y-3 mb-6">
+                        <!-- Dynamic options or input box inserted here -->
+                    </div>
+
+                    <!-- Hint & Explanation Box -->
+                    <div id="grammarHintBox" class="hidden p-4 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm">
+                        <i class="fa-solid fa-lightbulb text-amber-500 mr-2"></i> <span id="grammarHintText"></span>
+                    </div>
+
+                    <div id="grammarExplanationBox" class="hidden p-4 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-sm">
+                        <i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> <span id="grammarExpText"></span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <button onclick="showGrammarHint()" class="text-xs font-semibold text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-lightbulb"></i> Need a Hint?
+                        </button>
+                        <div class="flex gap-2">
+                            <button id="checkGrammarBtn" onclick="checkGrammarAnswer()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow transition">
+                                Submit Answer
+                            </button>
+                            <button id="nextGrammarBtn" onclick="nextGrammarQuestion()" class="hidden px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow transition flex items-center gap-2">
+                                Next <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grammar Mode 2: Sentence Unscrambler -->
+            <div id="grammarMode-unscramble" class="hidden space-y-4">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Drag or Click Words to Reorder</span>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100 mt-1">Build a Grammatically Correct Comparative Sentence</h3>
+                    </div>
+
+                    <!-- Target Sentence Drop / Assembly Box -->
+                    <div class="mb-4">
+                        <label class="block text-xs text-slate-400 mb-1">Your Assembled Sentence:</label>
+                        <div id="assembledSentenceBox" class="min-h-[60px] p-3 bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-wrap gap-2 items-center">
+                            <span class="text-slate-400 text-sm italic placeholder-msg">Click words below to construct your sentence...</span>
+                        </div>
+                    </div>
+
+                    <!-- Available Word Chips Bank -->
+                    <div class="mb-6">
+                        <label class="block text-xs text-slate-400 mb-1">Available Words:</label>
+                        <div id="wordBank" class="p-4 bg-slate-100 dark:bg-slate-900/60 rounded-xl flex flex-wrap gap-2 min-h-[60px]">
+                            <!-- Dynamic word chips -->
+                        </div>
+                    </div>
+
+                    <!-- Unscramble Feedback -->
+                    <div id="unscrambleFeedback" class="hidden p-4 rounded-lg text-sm font-medium mb-4"></div>
+
+                    <div class="flex items-center justify-between">
+                        <button onclick="resetUnscramble()" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Clear & Reset
+                        </button>
+                        <div class="flex gap-2">
+                            <button id="checkUnscrambleBtn" onclick="checkUnscramble()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow transition">
+                                Verify Sentence
+                            </button>
+                            <button id="nextUnscrambleBtn" onclick="nextUnscramblePuzzle()" class="hidden px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow transition">
+                                Next Puzzle <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: CLIENT MATCHMAKING TASK -->
+        <section id="tab-matchmaker" class="tab-content hidden space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                    Module 3: Real-World Case Studies
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Client Housing Matchmaker</h2>
+                <p class="text-purple-100 max-w-2xl text-sm sm:text-base">
+                    Act as a real estate advisor! Read client profiles, evaluate their lifestyle preferences, select the optimal housing recommendation, and formulate comparative justifications.
+                </p>
+            </div>
+
+            <!-- Client Profiles Cards Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="clientProfilesGrid">
+                <!-- Dynamic client cards rendered here -->
+            </div>
+
+            <!-- Client Decision Modal / Task Panel -->
+            <div id="matchmakerModal" class="hidden bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg border-2 border-violet-500/40 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div id="activeClientAvatar" class="w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-300 flex items-center justify-center font-bold text-xl"></div>
+                        <div>
+                            <h3 id="activeClientName" class="text-lg font-bold text-slate-900 dark:text-slate-100"></h3>
+                            <p id="activeClientTagline" class="text-xs text-slate-500 dark:text-slate-400"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeMatchmakerTask()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Client Needs & Requirements list -->
+                <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Key Client Priorities</h4>
+                    <ul id="activeClientNeedsList" class="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                    </ul>
+                </div>
+
+                <!-- Step 1: Housing Choice Selection -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">Step 1: Choose Recommended Property Type</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="selectHousingChoice('House')" id="choice-House" class="choice-card p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-center hover:border-violet-500 transition">
+                            <i class="fa-solid fa-house text-2xl text-violet-600 mb-2"></i>
+                            <div class="font-bold text-sm">Detached House</div>
+                            <p class="text-xs text-slate-500">More space & privacy</p>
+                        </button>
+                        <button onclick="selectHousingChoice('Apartment')" id="choice-Apartment" class="choice-card p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-center hover:border-violet-500 transition">
+                            <i class="fa-solid fa-building text-2xl text-violet-600 mb-2"></i>
+                            <div class="font-bold text-sm">Urban Apartment</div>
+                            <p class="text-xs text-slate-500">Convenience & low maintenance</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Reasoning Selection or Writing -->
+                <div>
+                    <label class="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">Step 2: Select Best Comparative Justification</label>
+                    <div id="matchReasoningOptions" class="space-y-2">
+                        <!-- Dynamic options based on client -->
+                    </div>
+                </div>
+
+                <!-- Feedback Display -->
+                <div id="matchmakerFeedback" class="hidden p-4 rounded-lg text-sm"></div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-end gap-3 pt-2">
+                    <button onclick="submitClientMatch()" id="submitMatchBtn" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg shadow transition">
+                        Submit Advisor Recommendation
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: PERSONAL LIFESTYLE EVALUATOR -->
+        <section id="tab-evaluator" class="tab-content hidden space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-2xl p-6 text-white shadow-lg">
+                <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                    Module 4: Interactive Match Algorithm
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Personal Lifestyle Match Evaluator</h2>
+                <p class="text-amber-100 max-w-2xl text-sm sm:text-base">
+                    Adjust the sliders below to rate your personal priorities. Our algorithm calculates your exact percentage match for living in a House vs. an Apartment, complete with a generated English report.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Priority Sliders Form (7 cols) -->
+                <div class="lg:col-span-7 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-6">
+                    <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-amber-500"></i> Rate Your Lifestyle Priorities
+                    </h3>
+
+                    <!-- Slider 1: Outdoor Space & Yard -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Private Yard & Space</label>
+                            <span id="val-space" class="text-xs font-bold text-amber-600 dark:text-amber-400">50 / 100</span>
+                        </div>
+                        <input type="range" id="slide-space" min="0" max="100" value="50" oninput="updateEvaluator()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="text-xs text-slate-400 mt-1">Low: Don't need space | High: Want big lawn, garden, garage</p>
+                    </div>
+
+                    <!-- Slider 2: Budget Sensitivity -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Budget & Cost Sensitivity</label>
+                            <span id="val-budget" class="text-xs font-bold text-amber-600 dark:text-amber-400">50 / 100</span>
+                        </div>
+                        <input type="range" id="slide-budget" min="0" max="100" value="50" oninput="updateEvaluator()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="text-xs text-slate-400 mt-1">Low: High budget available | High: Prefer lower rent & utilities</p>
+                    </div>
+
+                    <!-- Slider 3: Low Maintenance Priority -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Preference for Low Maintenance</label>
+                            <span id="val-maint" class="text-xs font-bold text-amber-600 dark:text-amber-400">50 / 100</span>
+                        </div>
+                        <input type="range" id="slide-maint" min="0" max="100" value="50" oninput="updateEvaluator()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="text-xs text-slate-400 mt-1">Low: Happy to fix roofs & lawns | High: Want building management to fix everything</p>
+                    </div>
+
+                    <!-- Slider 4: Privacy & Quietness -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Privacy & Soundproofing</label>
+                            <span id="val-privacy" class="text-xs font-bold text-amber-600 dark:text-amber-400">50 / 100</span>
+                        </div>
+                        <input type="range" id="slide-privacy" min="0" max="100" value="50" oninput="updateEvaluator()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="text-xs text-slate-400 mt-1">Low: Don't mind neighbor noise | High: Need quiet, no shared walls</p>
+                    </div>
+
+                    <!-- Slider 5: City Location & Walkability -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">City Center & Walkability</label>
+                            <span id="val-location" class="text-xs font-bold text-amber-600 dark:text-amber-400">50 / 100</span>
+                        </div>
+                        <input type="range" id="slide-location" min="0" max="100" value="50" oninput="updateEvaluator()" class="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <p class="text-xs text-slate-400 mt-1">Low: Fine with suburban driving | High: Want to walk to cafes & subways</p>
+                    </div>
+                </div>
+
+                <!-- Match Results & Comparative Breakdown (5 cols) -->
+                <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between space-y-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-amber-500"></i> Your Calculated Match
+                        </h3>
+
+                        <!-- Dual Percentage Match Bar -->
+                        <div class="space-y-4">
+                            <!-- House Bar -->
+                            <div>
+                                <div class="flex justify-between text-sm font-semibold mb-1">
+                                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-house text-sky-500"></i> Detached House</span>
+                                    <span id="houseMatchPct" class="text-sky-600 dark:text-sky-400">50%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 h-4 rounded-full overflow-hidden">
+                                    <div id="houseProgressBar" class="bg-sky-500 h-full transition-all duration-300" style="width: 50%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Apartment Bar -->
+                            <div>
+                                <div class="flex justify-between text-sm font-semibold mb-1">
+                                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-building text-purple-500"></i> Apartment</span>
+                                    <span id="aptMatchPct" class="text-purple-600 dark:text-purple-400">50%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-slate-700 h-4 rounded-full overflow-hidden">
+                                    <div id="aptProgressBar" class="bg-purple-500 h-full transition-all duration-300" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generated Personalized Comparative Summary -->
+                        <div class="mt-6 p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-1">Your ESL Summary Report</h4>
+                            <p id="evaluatorReportText" class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                                Adjust the sliders above to generate your customized comparative evaluation sentence!
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onclick="copyEvaluatorReport()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold text-sm rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Copy Summary to Clipboard
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 5: SPEAKING & DEBATE DECK -->
+        <section id="tab-speaking" class="tab-content hidden space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                    Module 5: Oral Fluency & Speech
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Speaking & Debate Prompt Deck</h2>
+                <p class="text-blue-100 max-w-2xl text-sm sm:text-base">
+                    Practice answering comparative debate prompts. Use the interactive audio model, vocabulary helper bank, and timer to record your response.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Flashcard & Timer Controls (7 cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative">
+                        <div class="flex items-center justify-between mb-4">
+                            <span id="promptDeckIndex" class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">Card 1 of 5</span>
+                            <button onclick="speakCurrentPrompt()" class="p-2 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 hover:bg-sky-200 transition" title="Listen to Prompt Speech">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <!-- Prompt Question Text -->
+                        <h3 id="speakingPromptTitle" class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4 leading-snug">
+                            "If you had to choose today, would you prefer to live in a house or an apartment? Why?"
+                        </h3>
+
+                        <!-- Suggested Sentence Starters -->
+                        <div class="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Target Sentence Starters</span>
+                            <div id="sentenceStarterChips" class="flex flex-wrap gap-2 text-xs">
+                                <!-- Dynamic sentence starter tags -->
+                            </div>
+                        </div>
+
+                        <!-- Speaking Practice Recording / Timer Controller -->
+                        <div class="bg-sky-50 dark:bg-sky-950/40 p-4 rounded-xl border border-sky-200 dark:border-sky-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-lg shadow" id="timerDisplay">
+                                    45s
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Speech Timer</h4>
+                                    <p class="text-xs text-slate-500" id="timerStatusText">Ready to record practice answer</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button id="startTimerBtn" onclick="startSpeechTimer()" class="flex-1 sm:flex-initial px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-play"></i> Start Timer
+                                </button>
+                                <button id="resetTimerBtn" onclick="resetSpeechTimer()" class="px-3 py-2 border border-slate-300 dark:border-slate-600 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Card Navigation -->
+                        <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <button onclick="prevSpeakingPrompt()" class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Previous Prompt
+                            </button>
+                            <button onclick="nextSpeakingPrompt()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow">
+                                Next Prompt <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Useful Vocabulary Bank & Reference Guide (5 cols) -->
+                <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                    <h3 class="font-bold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark text-sky-500"></i> Debate Phrase Bank
+                    </h3>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                            <span class="font-bold text-sky-600 dark:text-sky-400 block mb-1">Expressing Preferences:</span>
+                            <p class="text-slate-600 dark:text-slate-300">"Personally, I would opt for an apartment because..."</p>
+                            <p class="text-slate-600 dark:text-slate-300">"In my experience, living in a house is far superior for..."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                            <span class="font-bold text-sky-600 dark:text-sky-400 block mb-1">Connecting Contrasts:</span>
+                            <p class="text-slate-600 dark:text-slate-300">"Houses require high maintenance; <em>on the other hand</em>, building management handles repairs."</p>
+                            <p class="text-slate-600 dark:text-slate-300">"<em>While</em> houses offer gardens, apartments provide access to shared amenities."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                            <span class="font-bold text-sky-600 dark:text-sky-400 block mb-1">Emphasizing Differences:</span>
+                            <p class="text-slate-600 dark:text-slate-300">"significantly more spacious", "substantially quieter", "considerably cheaper"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 6: BADGES & ACHIEVEMENTS TAB -->
+        <section id="tab-badges" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+                    Achievements & Growth
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">Unlockable ESL Badges & Milestones</h2>
+                <p class="text-amber-100 max-w-2xl text-sm sm:text-base">
+                    Complete tasks across all 5 modules to earn XP, level up, and unlock prestigious housing ESL badges!
+                </p>
+            </div>
+
+            <!-- Badges Grid Container -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="badgesGrid">
+                <!-- Dynamically filled badges -->
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Web Audio API Sound Synthesizer (No external audio assets needed)
+        let soundEnabled = true;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'incorrect') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'badge') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                }
+            } catch (e) {
+                console.log("Audio play suppressed");
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-lg';
+                playSound('click');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.className = 'fa-solid fa-moon text-lg';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-lg';
+            }
+            playSound('click');
+        }
+
+        // Global App State
+        let userXP = 0;
+        let streak = 1;
+        let unlockedBadges = new Set();
+
+        function addXP(amount, reason) {
+            userXP += amount;
+            document.getElementById('xpCount').textContent = userXP;
+            checkLevel();
+            checkBadges();
+        }
+
+        function checkLevel() {
+            const levelEl = document.getElementById('levelName');
+            if (userXP >= 300) levelEl.textContent = 'Property Master 🏆';
+            else if (userXP >= 180) levelEl.textContent = 'Housing Specialist ⭐';
+            else if (userXP >= 80) levelEl.textContent = 'Intermediate Advisor 🏡';
+            else levelEl.textContent = 'Beginner Explorer 🔍';
+        }
+
+        // MODULE 1: MATRIX DATA
+        const matrixData = [
+            {
+                category: 'Space',
+                title: 'Living Space & Storage',
+                icon: 'fa-ruler-combined',
+                house: 'Generally larger; includes private outdoor space (yard, garden, patio, private garage).',
+                apartment: 'Smaller square footage; limited storage; often includes a shared balcony.',
+                sentence: 'Houses are generally more spacious than apartments, providing larger storage rooms and private yards.'
+            },
+            {
+                category: 'Lifestyle',
+                title: 'Privacy & Noise Level',
+                icon: 'fa-volume-xmark',
+                house: 'High privacy; no shared walls; quieter environment with less immediate neighbor noise.',
+                apartment: 'Lower privacy; shared walls, floors, and ceilings; higher potential for neighbor noise.',
+                sentence: 'Living in a detached house is significantly quieter than living in an apartment building with shared walls.'
+            },
+            {
+                category: 'Cost',
+                title: 'Cost & Utilities',
+                icon: 'fa-wallet',
+                house: 'Higher purchase price, higher heating/cooling utility bills, higher property taxes.',
+                apartment: 'Lower purchase price or rent; lower utility costs; shared maintenance fees.',
+                sentence: 'Apartment living is often more affordable for young professionals because utility bills are lower.'
+            },
+            {
+                category: 'Maintenance',
+                title: 'Maintenance & Repairs',
+                icon: 'fa-screwdriver-wrench',
+                house: 'Owner is responsible for all exterior/interior repairs (roof, lawn, plumbing, snow removal).',
+                apartment: 'Building management handles exterior repairs, landscaping, elevators, and common areas.',
+                sentence: 'Maintaining a house is more demanding because you must fix roof leaks and cut the lawn yourself.'
+            },
+            {
+                category: 'Lifestyle',
+                title: 'Location & Convenience',
+                icon: 'fa-map-location-dot',
+                house: 'Usually in suburbs or countryside; requires driving to work, grocery stores, or schools.',
+                apartment: 'Often located in city centers; highly walkable to shops, public transit, and night life.',
+                sentence: 'Apartments are typically closer to city centers; however, houses offer peaceful suburban surroundings.'
+            },
+            {
+                category: 'Cost',
+                title: 'Amenities & Facilities',
+                icon: 'fa-dumbbell',
+                house: 'Private features (private driveway, garden), but expensive to install pools or gym equipment.',
+                apartment: 'Shared access to high-end amenities (fitness gym, swimming pool, 24/7 security concierge).',
+                sentence: 'While houses offer private yards, apartments frequently provide access to shared gym facilities.'
+            }
+        ];
+
+        let activeMatrixFilter = 'all';
+
+        function renderMatrix() {
+            const container = document.getElementById('matrixContainer');
+            const searchQuery = document.getElementById('matrixSearch').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = matrixData.filter(item => {
+                const matchesFilter = activeMatrixFilter === 'all' || item.category === activeMatrixFilter;
+                const matchesSearch = item.title.toLowerCase().includes(searchQuery) ||
+                                      item.house.toLowerCase().includes(searchQuery) ||
+                                      item.apartment.toLowerCase().includes(searchQuery);
+                return matchesFilter && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400">No matching characteristics found. Try another search.</div>`;
+                return;
+            }
+
+            filtered.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 card-hover flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 flex items-center justify-center text-sm font-bold">
+                                    <i class="fa-solid ${item.icon}"></i>
+                                </div>
+                                <h3 class="font-bold text-slate-900 dark:text-slate-100">${item.title}</h3>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">${item.category}</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-3">
+                            <div class="p-3 rounded-lg bg-sky-50/70 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900">
+                                <span class="text-xs font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1 mb-1">
+                                    <i class="fa-solid fa-house"></i> House
+                                </span>
+                                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${item.house}</p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900">
+                                <span class="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1 mb-1">
+                                    <i class="fa-solid fa-building"></i> Apartment
+                                </span>
+                                <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${item.apartment}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-1">
+                                <span>Sample Comparative Sentence:</span>
+                                <button onclick="speakText('${item.sentence.replace(/'/g, "\\'")}')" class="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-volume-high"></i> Listen
+                                </button>
+                            </div>
+                            <p class="text-xs italic text-slate-600 dark:text-slate-300">"${item.sentence}"</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function setMatrixFilter(filter) {
+            activeMatrixFilter = filter;
+            document.querySelectorAll('.matrix-filter-btn').forEach(btn => {
+                if (btn.textContent === filter || (filter === 'all' && btn.textContent === 'All')) {
+                    btn.className = 'matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white transition';
+                } else {
+                    btn.className = 'matrix-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition';
+                }
+            });
+            playSound('click');
+            renderMatrix();
+        }
+
+        function filterMatrix() {
+            renderMatrix();
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+                playSound('click');
+            } else {
+                alert("Speech Synthesis is not supported in this browser.");
+            }
+        }
+
+        // MODULE 2: GRAMMAR PRACTICE DATA & LOGIC
+        const fillQuestions = [
+            {
+                prompt: "Houses are usually _______________ (spacious) than apartments, making them ideal for large families.",
+                options: ["spaciouse", "more spacious", "most spacious", "less spacious"],
+                correct: "more spacious",
+                hint: "Use 'more' + adjective for multi-syllable adjectives.",
+                explanation: "'Spacious' has three syllables, so its comparative form is 'more spacious'."
+            },
+            {
+                prompt: "Apartment living is often _______________ (affordable) for young professionals who want to live near city centers.",
+                options: ["affordable", "more affordable", "affordabler", "less affordable"],
+                correct: "more affordable",
+                hint: "Multi-syllable adjectives require 'more'.",
+                explanation: "We use 'more affordable' to compare costs between apartments and houses."
+            },
+            {
+                prompt: "Taking care of a house is _______________ (difficult) than renting an apartment because you must repair the roof yourself.",
+                options: ["more difficult", "difficulter", "difficulty", "less difficult"],
+                correct: "more difficult",
+                hint: "Adjectives ending in -cult use 'more'.",
+                explanation: "'More difficult' expresses a higher level of difficulty."
+            },
+            {
+                prompt: "Apartments offer great access to city life; _______________, they provide less privacy than single-family houses.",
+                options: ["while", "however", "because", "so"],
+                correct: "however",
+                hint: "Use a contrast connector after a semicolon or at the start of a clause.",
+                explanation: "'However' connects two contrasting sentences with a pause."
+            },
+            {
+                prompt: "Living in a detached house is generally _______________ (quiet) than living in a crowded apartment building.",
+                options: ["quieter", "more quiet", "quietest", "quietly"],
+                correct: "quieter",
+                hint: "Two-syllable adjectives ending in -et add -er.",
+                explanation: "'Quiet' becomes 'quieter' in comparative sentences."
+            },
+            {
+                prompt: "_______________ houses feature private yards, apartments provide access to shared swimming pools and gyms.",
+                options: ["However", "While", "On the other hand", "Because"],
+                correct: "While",
+                hint: "Use this connector at the beginning of a complex sentence showing contrast.",
+                explanation: "'While' introduces a dependent clause contrasting two ideas."
+            }
+        ];
+
+        let currentFillIndex = 0;
+        let fillSelectedOption = null;
+
+        function loadGrammarFillQuestion() {
+            const q = fillQuestions[currentFillIndex];
+            document.getElementById('grammarQuizProgress').textContent = `Question ${currentFillIndex + 1} of ${fillQuestions.length}`;
+            document.getElementById('grammarPromptText').innerHTML = q.prompt.replace("_______________", `<span id="blankSpace" class="px-3 py-1 underline font-bold text-emerald-600 dark:text-emerald-400">______</span>`);
+            
+            const inputArea = document.getElementById('grammarInputArea');
+            inputArea.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'grammar-opt-btn w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:border-emerald-500 transition flex items-center justify-between';
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-300"></i>`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.grammar-opt-btn').forEach(b => {
+                        b.className = 'grammar-opt-btn w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:border-emerald-500 transition flex items-center justify-between';
+                        b.querySelector('i').className = 'fa-regular fa-circle text-slate-300';
+                    });
+                    btn.className = 'grammar-opt-btn w-full text-left p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-sm font-bold text-emerald-800 dark:text-emerald-200 transition flex items-center justify-between';
+                    btn.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-500';
+                    fillSelectedOption = opt;
+                    document.getElementById('blankSpace').textContent = opt;
+                    playSound('click');
+                };
+                inputArea.appendChild(btn);
+            });
+
+            document.getElementById('grammarHintBox').classList.add('hidden');
+            document.getElementById('grammarExplanationBox').classList.add('hidden');
+            document.getElementById('checkGrammarBtn').classList.remove('hidden');
+            document.getElementById('nextGrammarBtn').classList.add('hidden');
+            fillSelectedOption = null;
+        }
+
+        function showGrammarHint() {
+            const q = fillQuestions[currentFillIndex];
+            document.getElementById('grammarHintText').textContent = q.hint;
+            document.getElementById('grammarHintBox').classList.remove('hidden');
+            playSound('click');
+        }
+
+        function checkGrammarAnswer() {
+            if (!fillSelectedOption) {
+                alert("Please select an answer option first!");
+                return;
+            }
+            const q = fillQuestions[currentFillIndex];
+            const expBox = document.getElementById('grammarExplanationBox');
+            
+            if (fillSelectedOption === q.correct) {
+                playSound('correct');
+                addXP(20, 'Grammar practice');
+                expBox.className = 'p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-sm';
+                document.getElementById('grammarExpText').innerHTML = `<strong>Correct! (+20 XP)</strong> ${q.explanation}`;
+            } else {
+                playSound('incorrect');
+                expBox.className = 'p-4 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-sm';
+                document.getElementById('grammarExpText').innerHTML = `<strong>Not quite.</strong> The correct answer is <em>"${q.correct}"</em>. ${q.explanation}`;
+            }
+
+            expBox.classList.remove('hidden');
+            document.getElementById('checkGrammarBtn').classList.add('hidden');
+            document.getElementById('nextGrammarBtn').classList.remove('hidden');
+        }
+
+        function nextGrammarQuestion() {
+            currentFillIndex = (currentFillIndex + 1) % fillQuestions.length;
+            loadGrammarFillQuestion();
+            playSound('click');
+        }
+
+        // Grammar Mode 2: Unscrambler Logic
+        const unscramblePuzzles = [
+            {
+                words: ["Houses", "are", "generally", "more", "spacious", "than", "urban", "apartments."],
+                answer: "Houses are generally more spacious than urban apartments."
+            },
+            {
+                words: ["Apartments", "are", "more", "convenient", "however", "houses", "offer", "greater", "privacy."],
+                answer: "Apartments are more convenient however houses offer greater privacy."
+            },
+            {
+                words: ["Maintaining", "a", "yard", "is", "far", "more", "time-consuming", "than", "renting."],
+                answer: "Maintaining a yard is far more time-consuming than renting."
+            }
+        ];
+
+        let currentPuzzleIndex = 0;
+        let selectedUnscrambleWords = [];
+
+        function loadUnscramblePuzzle() {
+            const puzzle = unscramblePuzzles[currentPuzzleIndex];
+            selectedUnscrambleWords = [];
+            renderUnscrambleBoxes();
+            document.getElementById('unscrambleFeedback').classList.add('hidden');
+            document.getElementById('checkUnscrambleBtn').classList.remove('hidden');
+            document.getElementById('nextUnscrambleBtn').classList.add('hidden');
+        }
+
+        function renderUnscrambleBoxes() {
+            const puzzle = unscramblePuzzles[currentPuzzleIndex];
+            const assembledBox = document.getElementById('assembledSentenceBox');
+            const wordBank = document.getElementById('wordBank');
+
+            assembledBox.innerHTML = '';
+            wordBank.innerHTML = '';
+
+            if (selectedUnscrambleWords.length === 0) {
+                assembledBox.innerHTML = `<span class="text-slate-400 text-sm italic placeholder-msg">Click words below to construct your sentence...</span>`;
+            } else {
+                selectedUnscrambleWords.forEach((word, idx) => {
+                    const chip = document.createElement('span');
+                    chip.className = 'word-chip px-3 py-1.5 bg-emerald-600 text-white font-semibold text-sm rounded-lg shadow-sm flex items-center gap-1';
+                    chip.innerHTML = `${word} <i class="fa-solid fa-xmark text-xs opacity-70"></i>`;
+                    chip.onclick = () => removeWordFromSentence(idx);
+                    assembledBox.appendChild(chip);
+                });
+            }
+
+            // Shuffle available remaining words
+            const available = puzzle.words.filter((_, i) => !selectedUnscrambleWords.includes(puzzle.words[i]) || countInArray(selectedUnscrambleWords, puzzle.words[i]) < countInArray(puzzle.words, puzzle.words[i]));
+
+            puzzle.words.forEach((word, originalIdx) => {
+                // Check how many times word was selected vs total
+                const timesSelected = selectedUnscrambleWords.filter((w, index) => w === word).length;
+                const timesTotal = puzzle.words.filter(w => w === word).length;
+
+                if (timesSelected < timesTotal) {
+                    const chip = document.createElement('span');
+                    chip.className = 'word-chip px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold text-sm rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-500';
+                    chip.textContent = word;
+                    chip.onclick = () => addWordToSentence(word);
+                    wordBank.appendChild(chip);
+                }
+            });
+        }
+
+        function countInArray(arr, val) {
+            return arr.filter(item => item === val).length;
+        }
+
+        function addWordToSentence(word) {
+            selectedUnscrambleWords.push(word);
+            playSound('click');
+            renderUnscrambleBoxes();
+        }
+
+        function removeWordFromSentence(index) {
+            selectedUnscrambleWords.splice(index, 1);
+            playSound('click');
+            renderUnscrambleBoxes();
+        }
+
+        function resetUnscramble() {
+            selectedUnscrambleWords = [];
+            playSound('click');
+            renderUnscrambleBoxes();
+            document.getElementById('unscrambleFeedback').classList.add('hidden');
+        }
+
+        function checkUnscramble() {
+            const puzzle = unscramblePuzzles[currentPuzzleIndex];
+            const userSentence = selectedUnscrambleWords.join(' ');
+            const feedback = document.getElementById('unscrambleFeedback');
+
+            if (userSentence === puzzle.answer) {
+                playSound('correct');
+                addXP(25, 'Unscrambler solved');
+                feedback.className = 'p-4 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 text-sm font-semibold border border-emerald-300';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i> Excellent Grammar! Sentence perfectly assembled. (+25 XP)`;
+                document.getElementById('checkUnscrambleBtn').classList.add('hidden');
+                document.getElementById('nextUnscrambleBtn').classList.remove('hidden');
+            } else {
+                playSound('incorrect');
+                feedback.className = 'p-4 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 text-sm font-semibold border border-rose-300';
+                feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-2"></i> Sentence structure is incorrect. Try rearranging the words!`;
+            }
+            feedback.classList.remove('hidden');
+        }
+
+        function nextUnscramblePuzzle() {
+            currentPuzzleIndex = (currentPuzzleIndex + 1) % unscramblePuzzles.length;
+            loadUnscramblePuzzle();
+            playSound('click');
+        }
+
+        function switchGrammarMode(mode) {
+            if (mode === 'fill') {
+                document.getElementById('grammarMode-fill').classList.remove('hidden');
+                document.getElementById('grammarMode-unscramble').classList.add('hidden');
+                document.getElementById('grammarSubTab-fill').className = 'px-5 py-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-2';
+                document.getElementById('grammarSubTab-unscramble').className = 'px-5 py-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2';
+            } else {
+                document.getElementById('grammarMode-fill').classList.add('hidden');
+                document.getElementById('grammarMode-unscramble').classList.remove('hidden');
+                document.getElementById('grammarSubTab-fill').className = 'px-5 py-3 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2';
+                document.getElementById('grammarSubTab-unscramble').className = 'px-5 py-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-2';
+            }
+            playSound('click');
+        }
+
+        // MODULE 3: CLIENT MATCHMAKER DATA
+        const clientProfiles = [
+            {
+                id: 'sofia',
+                name: 'Sofia (Age 24)',
+                tagline: 'Junior Graphic Designer • City Enthusiast',
+                avatar: 'S',
+                needs: [
+                    'Moderate budget; prefers low monthly utility costs',
+                    'Works in downtown tech hub; hates driving in traffic',
+                    'Lives alone; does not want to maintain a garden or shovel snow',
+                    'Enjoys walking to local coffee shops and gym facilities'
+                ],
+                recommended: 'Apartment',
+                reasons: [
+                    {
+                        text: "Sofia should choose an apartment because it is located closer to downtown and building management handles all repairs.",
+                        isCorrect: true
+                    },
+                    {
+                        text: "Sofia should buy a house because she needs a massive 3-car garage and huge private lawn.",
+                        isCorrect: false
+                    },
+                    {
+                        text: "Sofia needs a house because apartments are too close to public transit lines.",
+                        isCorrect: false
+                    }
+                ],
+                explanation: "Correct! An urban apartment suits Sofia's lifestyle best. She benefits from lower maintenance, proximity to work, and shared gym amenities."
+            },
+            {
+                id: 'marcus',
+                name: 'Marcus & Elena',
+                tagline: 'Family of 4 + Golden Retriever Dog',
+                avatar: 'M&E',
+                needs: [
+                    'High budget; looking for a long-term family investment',
+                    'Needs 4 bedrooms, storage for sports equipment, and 2 parking spots',
+                    'Desires a private fenced yard for young kids and pet dog',
+                    'Values quiet weekend evenings with minimal neighbor sound'
+                ],
+                recommended: 'House',
+                reasons: [
+                    {
+                        text: "Marcus & Elena should choose a detached house because it offers a private fenced yard for their dog and significantly more living space.",
+                        isCorrect: true
+                    },
+                    {
+                        text: "They should rent a studio apartment because studio spaces have lower maintenance fees.",
+                        isCorrect: false
+                    },
+                    {
+                        text: "They should choose an apartment so they can share a small balcony with neighbors.",
+                        isCorrect: false
+                    }
+                ],
+                explanation: "Spot on! Marcus & Elena require a detached house for private outdoor yard space, quietness, and extra storage for their growing family."
+            },
+            {
+                id: 'david',
+                name: 'David (Age 68)',
+                tagline: 'Retired University Professor • Frequent Traveler',
+                avatar: 'D',
+                needs: [
+                    'Fixed retirement income; seeks predictable monthly housing costs',
+                    'Travels internationally for 3 months every winter',
+                    'Needs elevator access and 24/7 security concierge',
+                    'Wants zero physical lawn maintenance or roof care'
+                ],
+                recommended: 'Apartment',
+                reasons: [
+                    {
+                        text: "David should choose an apartment because building security protects his home while traveling and elevator access eliminates stairs.",
+                        isCorrect: true
+                    },
+                    {
+                        text: "David should purchase a large suburban house with a 2-acre lawn requiring weekly mowing.",
+                        isCorrect: false
+                    },
+                    {
+                        text: "David needs a house because houses have no property taxes.",
+                        isCorrect: false
+                    }
+                ],
+                explanation: "Exactly! An apartment complex provides elevator accessibility, zero exterior maintenance, and lock-and-leave security while David travels."
+            }
+        ];
+
+        let activeClient = null;
+        let selectedHousingChoice = null;
+
+        function renderClientProfiles() {
+            const grid = document.getElementById('clientProfilesGrid');
+            grid.innerHTML = '';
+
+            clientProfiles.forEach(client => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 card-hover flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-300 flex items-center justify-center font-extrabold text-lg border border-violet-200">
+                                ${client.avatar}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 dark:text-slate-100">${client.name}</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">${client.tagline}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-6">
+                            ${client.needs.map(n => `<div class="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2"><i class="fa-solid fa-circle-check text-violet-500 mt-0.5"></i> <span>${n}</span></div>`).join('')}
+                        </div>
+                    </div>
+
+                    <button onclick="openClientTask('${client.id}')" class="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold text-xs rounded-lg shadow transition">
+                        Evaluate & Consult Client
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openClientTask(clientId) {
+            activeClient = clientProfiles.find(c => c.id === clientId);
+            selectedHousingChoice = null;
+
+            document.getElementById('activeClientAvatar').textContent = activeClient.avatar;
+            document.getElementById('activeClientName').textContent = activeClient.name;
+            document.getElementById('activeClientTagline').textContent = activeClient.tagline;
+
+            const needsList = document.getElementById('activeClientNeedsList');
+            needsList.innerHTML = activeClient.needs.map(n => `<li>• ${n}</li>`).join('');
+
+            // Reset step 1
+            document.querySelectorAll('.choice-card').forEach(c => {
+                c.className = 'choice-card p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-center hover:border-violet-500 transition';
+            });
+
+            // Render step 2 reasons
+            const reasonsContainer = document.getElementById('matchReasoningOptions');
+            reasonsContainer.innerHTML = '';
+            activeClient.reasons.forEach((r, idx) => {
+                const label = document.createElement('label');
+                label.className = 'block p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer text-xs sm:text-sm text-slate-700 dark:text-slate-300';
+                label.innerHTML = `
+                    <div class="flex items-start gap-2">
+                        <input type="radio" name="reasonChoice" value="${idx}" class="mt-1 accent-violet-600">
+                        <span>${r.text}</span>
+                    </div>
+                `;
+                reasonsContainer.appendChild(label);
+            });
+
+            document.getElementById('matchmakerFeedback').classList.add('hidden');
+            document.getElementById('matchmakerModal').classList.remove('hidden');
+            document.getElementById('matchmakerModal').scrollIntoView({ behavior: 'smooth' });
+            playSound('click');
+        }
+
+        function closeMatchmakerTask() {
+            document.getElementById('matchmakerModal').classList.add('hidden');
+            playSound('click');
+        }
+
+        function selectHousingChoice(choice) {
+            selectedHousingChoice = choice;
+            document.querySelectorAll('.choice-card').forEach(c => {
+                c.className = 'choice-card p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-center hover:border-violet-500 transition';
+            });
+            document.getElementById(`choice-${choice}`).className = 'choice-card p-4 rounded-xl border-2 border-violet-600 bg-violet-50/50 dark:bg-violet-950/40 text-center transition';
+            playSound('click');
+        }
+
+        function submitClientMatch() {
+            if (!selectedHousingChoice) {
+                alert("Please complete Step 1: Select recommended property type.");
+                return;
+            }
+
+            const selectedRadio = document.querySelector('input[name="reasonChoice"]:checked');
+            if (!selectedRadio) {
+                alert("Please complete Step 2: Select a comparative reasoning option.");
+                return;
+            }
+
+            const reasonIdx = parseInt(selectedRadio.value);
+            const isReasonCorrect = activeClient.reasons[reasonIdx].isCorrect;
+            const isHousingCorrect = selectedHousingChoice === activeClient.recommended;
+
+            const fb = document.getElementById('matchmakerFeedback');
+
+            if (isHousingCorrect && isReasonCorrect) {
+                playSound('correct');
+                addXP(35, 'Client matchmaker advisor');
+                fb.className = 'p-4 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 text-sm font-medium border border-emerald-300';
+                fb.innerHTML = `<i class="fa-solid fa-award text-emerald-600 text-lg mr-2"></i> <strong>Consultation Success! (+35 XP)</strong> ${activeClient.explanation}`;
+            } else {
+                playSound('incorrect');
+                fb.className = 'p-4 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 text-sm font-medium border border-rose-300';
+                fb.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 text-lg mr-2"></i> <strong>Consultation Review Needed:</strong> ${activeClient.name} would be best suited with a <strong>${activeClient.recommended}</strong>. ${activeClient.explanation}`;
+            }
+
+            fb.classList.remove('hidden');
+        }
+
+        // MODULE 4: LIFESTYLE MATCH EVALUATOR ALGORITHM
+        function updateEvaluator() {
+            const space = parseInt(document.getElementById('slide-space').value);
+            const budget = parseInt(document.getElementById('slide-budget').value);
+            const maint = parseInt(document.getElementById('slide-maint').value);
+            const privacy = parseInt(document.getElementById('slide-privacy').value);
+            const location = parseInt(document.getElementById('slide-location').value);
+
+            document.getElementById('val-space').textContent = `${space} / 100`;
+            document.getElementById('val-budget').textContent = `${budget} / 100`;
+            document.getElementById('val-maint').textContent = `${maint} / 100`;
+            document.getElementById('val-privacy').textContent = `${privacy} / 100`;
+            document.getElementById('val-location').textContent = `${location} / 100`;
+
+            // Score Calculation formula
+            // House factors: Space (+), Privacy (+), Low Maint (-), Budget Sensitivity (-), City Location (-)
+            let houseScore = (space * 0.3) + (privacy * 0.3) + ((100 - maint) * 0.2) + ((100 - budget) * 0.1) + ((100 - location) * 0.1);
+            let aptScore = ((100 - space) * 0.2) + ((100 - privacy) * 0.1) + (maint * 0.3) + (budget * 0.2) + (location * 0.2);
+
+            let total = houseScore + aptScore;
+            let housePct = Math.round((houseScore / total) * 100);
+            let aptPct = 100 - housePct;
+
+            document.getElementById('houseMatchPct').textContent = `${housePct}%`;
+            document.getElementById('aptMatchPct').textContent = `${aptPct}%`;
+            document.getElementById('houseProgressBar').style.width = `${housePct}%`;
+            document.getElementById('aptProgressBar').style.width = `${aptPct}%`;
+
+            // Report sentence generator
+            const reportEl = document.getElementById('evaluatorReportText');
+            let recommendation = housePct > aptPct ? 'a detached house' : 'an urban apartment';
+            let keyReason = housePct > aptPct ? 
+                `your strong preference for space (${space}/100) and privacy (${privacy}/100)` : 
+                `your desire for low maintenance (${maint}/100) and city center convenience (${location}/100)`;
+
+            reportEl.innerHTML = `"Based on your ratings, living in <strong>${recommendation}</strong> is a <strong>${Math.max(housePct, aptPct)}% match</strong> for your lifestyle. While houses offer greater privacy and yard space, apartments provide superior walkability and lower repair responsibilities. Overall, ${recommendation} fits you better due to ${keyReason}."`;
+        }
+
+        function copyEvaluatorReport() {
+            const text = document.getElementById('evaluatorReportText').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Summary report copied to clipboard!");
+                playSound('click');
+            }).catch(() => {
+                // Fallback copy
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                alert("Summary report copied to clipboard!");
+            });
+        }
+
+        // MODULE 5: SPEAKING DECK DATA & TIMER
+        const speakingPrompts = [
+            {
+                prompt: "If you had to choose today, would you prefer to live in a house or an apartment? Why?",
+                starters: [
+                    "Personally, I would choose an apartment because...",
+                    "Living in a house would be better for me because...",
+                    "While apartments offer convenience, I prefer..."
+                ]
+            },
+            {
+                prompt: "Which factor is more important to you when choosing a home: privacy or location? Explain.",
+                starters: [
+                    "In my opinion, privacy is far more important than location because...",
+                    "On the other hand, location is critical to me because...",
+                    "Although privacy is nice, being close to work is..."
+                ]
+            },
+            {
+                prompt: "Do you think paying building maintenance fees for amenities like a pool or gym is worth the money?",
+                starters: [
+                    "Yes, paying building fees is worth it because...",
+                    "No, I believe building fees are too expensive compared to...",
+                    "While gym access is convenient, maintaining private space is..."
+                ]
+            },
+            {
+                prompt: "What is the biggest advantage of living in an apartment compared to a house?",
+                starters: [
+                    "The single biggest advantage of an apartment is...",
+                    "Compared to maintaining a house, apartments are much...",
+                    "You don't have to worry about roof repairs or lawn care, which..."
+                ]
+            }
+        ];
+
+        let currentSpeakingIndex = 0;
+        let timerSeconds = 45;
+        let timerInterval = null;
+
+        function loadSpeakingPrompt() {
+            const p = speakingPrompts[currentSpeakingIndex];
+            document.getElementById('promptDeckIndex').textContent = `Card ${currentSpeakingIndex + 1} of ${speakingPrompts.length}`;
+            document.getElementById('speakingPromptTitle').textContent = `"${p.prompt}"`;
+
+            const startersBox = document.getElementById('sentenceStarterChips');
+            startersBox.innerHTML = p.starters.map(s => `<span class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 italic">${s}</span>`).join('');
+
+            resetSpeechTimer();
+        }
+
+        function speakCurrentPrompt() {
+            speakText(speakingPrompts[currentSpeakingIndex].prompt);
+        }
+
+        function startSpeechTimer() {
+            if (timerInterval) return;
+            playSound('click');
+            document.getElementById('timerStatusText').textContent = "Speaking practice in progress...";
+
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                document.getElementById('timerDisplay').textContent = `${timerSeconds}s`;
+
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    playSound('badge');
+                    addXP(20, 'Speaking practice completed');
+                    document.getElementById('timerStatusText').textContent = "Time complete! Great practice (+20 XP)";
+                }
+            }, 1000);
+        }
+
+        function resetSpeechTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            timerSeconds = 45;
+            document.getElementById('timerDisplay').textContent = "45s";
+            document.getElementById('timerStatusText').textContent = "Ready to record practice answer";
+        }
+
+        function nextSpeakingPrompt() {
+            currentSpeakingIndex = (currentSpeakingIndex + 1) % speakingPrompts.length;
+            loadSpeakingPrompt();
+            playSound('click');
+        }
+
+        function prevSpeakingPrompt() {
+            currentSpeakingIndex = (currentSpeakingIndex - 1 + speakingPrompts.length) % speakingPrompts.length;
+            loadSpeakingPrompt();
+            playSound('click');
+        }
+
+        // MODULE 6: BADGES SYSTEM
+        const badgesList = [
+            {
+                id: 'badge-vocab',
+                name: 'Property Inspector',
+                desc: 'Explore all characteristic cards in the Housing Matrix.',
+                icon: 'fa-magnifying-glass'
+            },
+            {
+                id: 'badge-grammar',
+                name: 'Grammar Architect',
+                desc: 'Earn 100+ XP from comparative grammar exercises.',
+                icon: 'fa-pen-ruler'
+            },
+            {
+                id: 'badge-advisor',
+                name: 'Housing Consultant',
+                desc: 'Successfully complete a client matchmaking evaluation.',
+                icon: 'fa-user-tie'
+            },
+            {
+                id: 'badge-orator',
+                name: 'Debate Master',
+                desc: 'Complete a 45-second speech timer prompt.',
+                icon: 'fa-microphone'
+            }
+        ];
+
+        function checkBadges() {
+            if (userXP >= 50 && !unlockedBadges.has('badge-vocab')) {
+                unlockBadge('badge-vocab');
+            }
+            if (userXP >= 100 && !unlockedBadges.has('badge-grammar')) {
+                unlockBadge('badge-grammar');
+            }
+            if (userXP >= 150 && !unlockedBadges.has('badge-advisor')) {
+                unlockBadge('badge-advisor');
+            }
+            if (userXP >= 200 && !unlockedBadges.has('badge-orator')) {
+                unlockBadge('badge-orator');
+            }
+        }
+
+        function unlockBadge(id) {
+            unlockedBadges.add(id);
+            playSound('badge');
+            renderBadges();
+        }
+
+        function renderBadges() {
+            const grid = document.getElementById('badgesGrid');
+            grid.innerHTML = '';
+
+            badgesList.forEach(b => {
+                const isUnlocked = unlockedBadges.has(b.id);
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-xl border flex items-center gap-4 ${isUnlocked ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 opacity-60'}`;
+                card.innerHTML = `
+                    <div class="w-12 h-12 rounded-full ${isUnlocked ? 'bg-amber-500 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-500'} flex items-center justify-center font-bold text-xl shadow">
+                        <i class="fa-solid ${b.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-bold text-slate-900 dark:text-slate-100 text-sm">${b.name}</h4>
+                            ${isUnlocked ? '<span class="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full">Unlocked</span>' : '<span class="text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full">Locked</span>'}
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${b.desc}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700';
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.className = 'tab-btn px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap flex items-center gap-2 transition bg-sky-600 text-white shadow-sm';
+
+            playSound('click');
+        }
+
+        // Window load initialization
+        window.onload = function() {
+            renderMatrix();
+            loadGrammarFillQuestion();
+            loadUnscramblePuzzle();
+            renderClientProfiles();
+            updateEvaluator();
+            loadSpeakingPrompt();
+            renderBadges();
+        };
+    </script>
+</body>
+</html>
