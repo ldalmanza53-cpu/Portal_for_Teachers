@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobSync A1: Daily Schedules & Jobs Master</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Lexend & Plus Jakarta Sans for visual ESL legibility -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Lexend', 'sans-serif'],
+            lexend: ['Lexend', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(59, 130, 246, 0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .badge-at { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-in { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-on { background-color: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+    .verb-highlight { background-color: #fecdd3; color: #9f1239; border-radius: 0.25rem; padding: 0.1rem 0.3rem; font-weight: 700; }
+    
+    .card-shake {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+
+    .bounce-match {
+      animation: bounceMatch 0.5s ease-in-out;
+    }
+    @keyframes bounceMatch {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-id-card, #printable-id-card * { visibility: visible; }
+      #printable-id-card { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="h-full font-sans text-slate-800 bg-slate-50 flex flex-col min-h-screen selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i class="fa-solid fa-business-time text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-xl font-extrabold text-slate-900 tracking-tight font-lexend">JobSync A1</h1>
+              <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full border border-brand-200">ESL Level A1</span>
+            </div>
+            <p class="text-xs text-slate-500 hidden sm:block">Daily Schedules, Jobs & Time Prepositions Master</p>
+          </div>
+        </div>
+
+        <!-- Top Right Controls: Stars, Streak, Audio Toggle -->
+        <div class="flex items-center space-x-3">
+          <!-- Star Rating / Score -->
+          <div class="bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-xl flex items-center space-x-2 shadow-xs">
+            <i class="fa-solid fa-star text-amber-500 text-sm animate-pulse"></i>
+            <span id="global-stars" class="font-extrabold text-sm">0</span>
+            <span class="text-xs text-amber-600 font-medium">pts</span>
+          </div>
+
+          <!-- Streak Badge -->
+          <div class="bg-rose-50 border border-rose-200 text-rose-700 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-xs">
+            <i class="fa-solid fa-fire text-rose-500 text-sm"></i>
+            <span id="global-streak" class="font-extrabold text-sm">0</span>
+          </div>
+
+          <!-- Mute / Unmute Toggle -->
+          <button id="sound-toggle-btn" onclick="toggleAudio()" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all">
+            <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="flex space-x-1 overflow-x-auto py-2 border-t border-slate-100 scrollbar-none">
+        <button onclick="switchTab('matcher')" id="tab-btn-matcher" class="nav-tab text-slate-600 hover:text-slate-900 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition-all">
+          <i class="fa-solid fa-puzzle-piece text-indigo-500"></i>
+          <span>1. Job Matcher & Fact Checker</span>
+        </button>
+
+        <button onclick="switchTab('inspector')" id="tab-btn-inspector" class="nav-tab text-slate-600 hover:text-slate-900 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition-all">
+          <i class="fa-solid fa-clock text-amber-500"></i>
+          <span>2. 24h Routine Inspector</span>
+        </button>
+
+        <button onclick="switchTab('roleplay')" id="tab-btn-roleplay" class="nav-tab text-slate-600 hover:text-slate-900 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition-all">
+          <i class="fa-solid fa-comments text-emerald-500"></i>
+          <span>3. Roleplay Trainer</span>
+        </button>
+
+        <button onclick="switchTab('masterclass')" id="tab-btn-masterclass" class="nav-tab text-slate-600 hover:text-slate-900 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition-all">
+          <i class="fa-solid fa-graduation-cap text-brand-500"></i>
+          <span>4. Grammar Masterclass</span>
+        </button>
+
+        <button onclick="switchTab('creator')" id="tab-btn-creator" class="nav-tab text-slate-600 hover:text-slate-900 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 whitespace-nowrap transition-all">
+          <i class="fa-solid fa-address-card text-purple-500"></i>
+          <span>5. ID & Schedule Builder</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: KNOWLEDGE VALIDATOR & JOB MATCHER / FACT-CHECKER -->
+    <!-- =================================================================== -->
+    <section id="tab-content-matcher" class="tab-pane hidden space-y-6">
+      <!-- Section Intro Header -->
+      <div class="bg-gradient-to-r from-indigo-600 to-brand-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-15">
+          <i class="fa-solid fa-user-doctor text-9xl"></i>
+        </div>
+        <div class="max-w-2xl relative z-10">
+          <span class="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Step 1 • Vocabulary & Knowledge Verification</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold mt-2 font-lexend">Validate Jobs, Workplaces & Daily Actions</h2>
+          <p class="text-indigo-100 text-sm mt-1">Match professions to where they work and what they do. Then test your skill in Fact-Checker mode!</p>
+        </div>
+        
+        <!-- Game Sub-Mode Switcher -->
+        <div class="flex space-x-2 mt-4 relative z-10">
+          <button onclick="switchMatcherSubmode('matching')" id="sub-btn-matching" class="bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all">
+            <i class="fa-solid fa-link mr-1.5"></i> Matching Game
+          </button>
+          <button onclick="switchMatcherSubmode('factchecker')" id="sub-btn-factchecker" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+            <i class="fa-solid fa-circle-check mr-1.5"></i> Fact-Checker Mode
+          </button>
+        </div>
+      </div>
+
+      <!-- MODE 1A: MATCHING GAME -->
+      <div id="matcher-mode-matching" class="space-y-6">
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-lightbulb text-amber-500 text-xl"></i>
+            <p class="text-xs sm:text-sm text-amber-900 font-medium">
+              <strong class="font-bold">Instructions:</strong> Click one item from each column (Job ➔ Workplace ➔ Daily Duty) to complete a matching set!
+            </p>
+          </div>
+          <button onclick="resetMatchingGame()" class="text-xs bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold px-3 py-1.5 rounded-lg transition-all">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+          </button>
+        </div>
+
+        <!-- 3 Columns Matching Board -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Column 1: Professions -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="font-bold text-slate-800 flex items-center text-sm sm:text-base font-lexend">
+                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs mr-2 font-bold">1</span>
+                Professions (Jobs)
+              </h3>
+              <span id="count-jobs" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">6 left</span>
+            </div>
+            <div id="col-professions" class="space-y-2.5">
+              <!-- Dynamically Populated -->
+            </div>
+          </div>
+
+          <!-- Column 2: Workplaces -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="font-bold text-slate-800 flex items-center text-sm sm:text-base font-lexend">
+                <span class="w-6 h-6 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xs mr-2 font-bold">2</span>
+                Workplaces
+              </h3>
+              <span id="count-workplaces" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">6 left</span>
+            </div>
+            <div id="col-workplaces" class="space-y-2.5">
+              <!-- Dynamically Populated -->
+            </div>
+          </div>
+
+          <!-- Column 3: Daily Duties -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="font-bold text-slate-800 flex items-center text-sm sm:text-base font-lexend">
+                <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs mr-2 font-bold">3</span>
+                Daily Duties (Verbs)
+              </h3>
+              <span id="count-duties" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">6 left</span>
+            </div>
+            <div id="col-duties" class="space-y-2.5">
+              <!-- Dynamically Populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Completed Matches Showcase -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <h4 class="font-bold text-slate-800 text-sm flex items-center font-lexend">
+            <i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i> Verified Matching Cards (<span id="matched-count-text">0</span>/6)
+          </h4>
+          <div id="completed-matches-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div class="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-xl text-center col-span-full">
+              Matched items will appear here with full complete sentences.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 1B: FACT-CHECKER MODE -->
+      <div id="matcher-mode-factchecker" class="hidden space-y-6">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-full">
+                Statement Challenge <span id="fact-card-counter">1/5</span>
+              </span>
+              <h3 class="text-xl font-bold text-slate-900 mt-2 font-lexend">Is this statement correct or wrong?</h3>
+            </div>
+            <button onclick="speakFactStatement()" class="p-3 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl transition-all" title="Listen">
+              <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+          </div>
+
+          <!-- Fact Statement Display Box -->
+          <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner text-center space-y-2">
+            <p id="fact-statement-text" class="text-lg sm:text-xl font-medium tracking-wide">
+              "A doctor works in a café at 6:00 AM."
+            </p>
+            <p class="text-xs text-slate-400 font-mono">Verify workplace and schedule logic!</p>
+          </div>
+
+          <!-- True / False Buttons -->
+          <div id="fact-buttons-container" class="grid grid-cols-2 gap-4">
+            <button onclick="answerFactCheck(true)" class="py-4 px-6 rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-base flex items-center justify-center space-x-2 transition-all">
+              <i class="fa-solid fa-circle-check text-emerald-600 text-xl"></i>
+              <span>TRUE</span>
+            </button>
+            <button onclick="answerFactCheck(false)" class="py-4 px-6 rounded-xl border-2 border-rose-500 bg-rose-50 hover:bg-rose-100 text-rose-800 font-extrabold text-base flex items-center justify-center space-x-2 transition-all">
+              <i class="fa-solid fa-circle-xmark text-rose-600 text-xl"></i>
+              <span>FALSE</span>
+            </button>
+          </div>
+
+          <!-- Sentence Corrector (Appears when FALSE is selected correctly) -->
+          <div id="fact-corrector-box" class="hidden p-5 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-4">
+            <div class="flex items-center space-x-2 text-indigo-900 font-bold text-sm">
+              <i class="fa-solid fa-wrench text-indigo-600"></i>
+              <span>Correct the false statement! Pick the right options:</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div>
+                <label class="block text-xs font-semibold text-indigo-700 mb-1">Profession</label>
+                <select id="correct-select-job" class="w-full bg-white border border-indigo-200 rounded-xl p-2.5 text-slate-800 font-medium">
+                  <!-- JS options -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-indigo-700 mb-1">Workplace</label>
+                <select id="correct-select-workplace" class="w-full bg-white border border-indigo-200 rounded-xl p-2.5 text-slate-800 font-medium">
+                  <!-- JS options -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-indigo-700 mb-1">Duty Action</label>
+                <select id="correct-select-duty" class="w-full bg-white border border-indigo-200 rounded-xl p-2.5 text-slate-800 font-medium">
+                  <!-- JS options -->
+                </select>
+              </div>
+            </div>
+            <button onclick="submitCorrection()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all">
+              Verify Correction
+            </button>
+          </div>
+
+          <!-- Fact Feedback Box -->
+          <div id="fact-feedback-box" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+
+          <div class="flex justify-end pt-2">
+            <button onclick="nextFactCard()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold rounded-xl flex items-center space-x-2 transition-all">
+              <span>Next Statement</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: VISUAL JOB SCHEDULE & 24-HOUR ROUTINE INSPECTOR -->
+    <!-- =================================================================== -->
+    <section id="tab-content-inspector" class="tab-pane hidden space-y-6">
+      <!-- Top Character Picker Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Character Profile:</label>
+        <div id="inspector-character-bar" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+          <!-- Dynamically populated buttons for Carlos, Sarah, Leo, Maya, Pierre, Elena -->
+        </div>
+      </div>
+
+      <!-- Main Inspector Dashboard -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Character Profile Summary Card (4 cols) -->
+        <div class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
+          <div class="space-y-4 text-center">
+            <!-- Avatar Container -->
+            <div id="inspector-avatar-bg" class="w-24 h-24 mx-auto rounded-full bg-brand-100 border-4 border-white shadow-lg flex items-center justify-center text-4xl">
+              <i id="inspector-avatar-icon" class="fa-solid fa-mug-hot text-brand-600"></i>
+            </div>
+            <div>
+              <h3 id="inspector-name" class="text-2xl font-extrabold text-slate-900 font-lexend">Carlos Mendoza</h3>
+              <p id="inspector-title" class="text-sm font-bold text-brand-600">Barista</p>
+              <div class="inline-flex items-center space-x-1.5 bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-medium mt-2">
+                <i id="inspector-workplace-icon" class="fa-solid fa-store text-slate-500"></i>
+                <span id="inspector-workplace">Sunrise Café</span>
+              </div>
+            </div>
+            
+            <p id="inspector-bio" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+              Carlos works in a busy café. He makes delicious coffee for customer every morning.
+            </p>
+          </div>
+
+          <!-- Quick Speech Controls -->
+          <div class="bg-brand-50 border border-brand-100 p-4 rounded-xl space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-brand-900">Audio Pronunciation</span>
+              <button onclick="speakFullProfile()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center space-x-1 transition-all">
+                <i class="fa-solid fa-play"></i>
+                <span>Read Full Day</span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-xs text-brand-700">
+              <span>Speed:</span>
+              <div class="flex space-x-1">
+                <button onclick="setTtsSpeed(0.75)" class="px-2 py-0.5 rounded bg-white font-bold border hover:bg-brand-100 text-xs">Slow (0.75x)</button>
+                <button onclick="setTtsSpeed(1.0)" class="px-2 py-0.5 rounded bg-white font-bold border hover:bg-brand-100 text-xs">Normal (1.0x)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Schedule & Grammar Inspector (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+          <!-- Digital & Visual Clock Header -->
+          <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+              <!-- Analog Style Visual Clock Display -->
+              <div class="w-16 h-16 rounded-full bg-slate-800 border-2 border-brand-400 flex items-center justify-center relative shadow-inner">
+                <i class="fa-solid fa-clock text-3xl text-brand-400"></i>
+              </div>
+              <div>
+                <span id="inspector-time-period" class="text-xs font-bold uppercase tracking-widest text-brand-400">Morning Routine</span>
+                <div id="inspector-clock-display" class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight">06:30 AM</div>
+              </div>
+            </div>
+
+            <!-- Time Grammar Legend Toggle -->
+            <div class="flex items-center space-x-2 text-xs">
+              <span class="badge-at px-2.5 py-1 rounded-md font-bold">AT + Clock/Night</span>
+              <span class="badge-in px-2.5 py-1 rounded-md font-bold">IN + Morning/Afternoon</span>
+              <span class="badge-on px-2.5 py-1 rounded-md font-bold">ON + Days</span>
+            </div>
+          </div>
+
+          <!-- Timeline Activity Selector Cards -->
+          <div class="space-y-3">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center font-lexend">
+              <i class="fa-solid fa-list-check text-brand-500 mr-2"></i> Daily Routine Timeline (Click an activity)
+            </h4>
+            
+            <div id="inspector-schedule-list" class="space-y-2.5">
+              <!-- Dynamically populated schedule items -->
+            </div>
+          </div>
+
+          <!-- Interactive Active Activity Grammar Inspector Card -->
+          <div id="inspector-grammar-card" class="bg-white p-6 rounded-2xl border-2 border-brand-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span class="text-xs font-bold text-slate-500 uppercase">Selected Routine Breakdown</span>
+              </div>
+              <button onclick="speakSelectedSentence()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1 rounded-lg font-bold flex items-center space-x-1">
+                <i class="fa-solid fa-volume-high"></i>
+                <span>Listen Sentence</span>
+              </button>
+            </div>
+
+            <!-- Focus Sentence Banner -->
+            <div id="inspector-sentence-display" class="text-lg sm:text-xl text-slate-800 font-medium leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+              He <span class="verb-highlight">starts</span> work <span class="badge-at font-bold px-1.5 py-0.5 rounded">at 6:30 AM</span> <span class="badge-in font-bold px-1.5 py-0.5 rounded">in the morning</span>.
+            </div>
+
+            <!-- Grammar Breakdown Explanation Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="bg-rose-50 border border-rose-200 p-3 rounded-xl space-y-1">
+                <span class="font-extrabold text-rose-800 flex items-center">
+                  <i class="fa-solid fa-pen-nib mr-1.5"></i> Third Person (-s / -es) Rule
+                </span>
+                <p class="text-rose-900 leading-normal">
+                  Subject is <strong>He / She</strong>, so we add <strong>-s</strong> to the verb (<span class="font-mono">start ➔ starts</span>).
+                </p>
+              </div>
+
+              <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl space-y-1">
+                <span class="font-extrabold text-amber-800 flex items-center">
+                  <i class="fa-solid fa-hourglass-half mr-1.5"></i> Preposition Rule
+                </span>
+                <p id="inspector-preposition-explanation" class="text-amber-900 leading-normal">
+                  Use <strong>AT</strong> for exact clock times (at 6:30 AM) and <strong>IN</strong> for parts of the day (in the morning).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: INTERACTIVE DIALOGUE & SPEAKING ROLEPLAY TRAINER -->
+    <!-- =================================================================== -->
+    <section id="tab-content-roleplay" class="tab-pane hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <!-- Roleplay Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Step 3 • Speaking & Asking Questions</span>
+            <h2 class="text-2xl font-extrabold text-slate-900 font-lexend mt-1">Interactive Conversation Roleplay</h2>
+            <p class="text-xs text-slate-500">Practice Wh- questions (<em class="font-serif">Where does he work? What time does she finish?</em>)</p>
+          </div>
+
+          <!-- Character Dialogue Switcher -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs font-bold text-slate-600">Partner:</label>
+            <select id="roleplay-character-select" onchange="initRoleplayScenario()" class="bg-slate-100 border border-slate-300 font-bold text-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm">
+              <option value="0">Carlos (Barista)</option>
+              <option value="1">Dr. Sarah (Doctor)</option>
+              <option value="2">Captain Leo (Pilot)</option>
+              <option value="3">Maya (Teacher)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Chat Window Container (7 cols) -->
+          <div class="lg:col-span-7 bg-slate-50 rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col h-[480px]">
+            <!-- Chat Messages Area -->
+            <div id="roleplay-messages-box" class="flex-1 overflow-y-auto space-y-4 pr-2">
+              <!-- Dynamically Populated Chat Messages -->
+            </div>
+
+            <!-- Dialogue Options Box -->
+            <div id="roleplay-options-box" class="pt-4 border-t border-slate-200 space-y-2">
+              <p class="text-xs font-bold text-slate-500 uppercase">Select your response:</p>
+              <div id="roleplay-choices-container" class="space-y-2">
+                <!-- JS Populated Choices -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Grammar Helper Side Panel (5 cols) -->
+          <div class="lg:col-span-5 space-y-4">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-3">
+              <h4 class="font-bold text-emerald-900 text-sm flex items-center font-lexend">
+                <i class="fa-solid fa-lightbulb text-emerald-600 mr-2"></i> Grammar Tip: Wh- Questions
+              </h4>
+              <p class="text-xs text-emerald-800 leading-relaxed">
+                When asking about schedules in 3rd person singular (He/She):
+              </p>
+              <div class="bg-white p-3 rounded-xl border border-emerald-200 text-xs font-mono space-y-1.5 text-slate-800">
+                <p><strong>Where</strong> + does + he/she + work?</p>
+                <p><strong>What time</strong> + does + he/she + start?</p>
+                <p><strong>When</strong> + does + he/she + go home?</p>
+              </div>
+            </div>
+
+            <!-- Verb Ending Helper Box -->
+            <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 space-y-3">
+              <h4 class="font-bold text-indigo-900 text-sm flex items-center font-lexend">
+                <i class="fa-solid fa-spell-check text-indigo-600 mr-2"></i> Verb Ending Rules (-s / -es)
+              </h4>
+              <ul class="text-xs text-indigo-900 space-y-1.5 list-disc list-inside">
+                <li>Most verbs: add <strong>-s</strong> (<em>works, starts, cooks</em>)</li>
+                <li>Verbs ending in -ch, -sh, -o, -x: add <strong>-es</strong> (<em>teaches, finishes, goes</em>)</li>
+                <li>Verbs ending in consonant + y: change to <strong>-ies</strong> (<em>studies, flies</em>)</li>
+              </ul>
+            </div>
+
+            <!-- Roleplay Progress & Restart -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-slate-400">Dialogue Progress</span>
+                <p id="roleplay-step-text" class="text-sm font-extrabold text-slate-800">Step 1 of 4</p>
+              </div>
+              <button onclick="initRoleplayScenario()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Restart Chat
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: GRAMMAR & TIME PREPOSITION MASTERCLASS -->
+    <!-- =================================================================== -->
+    <section id="tab-content-masterclass" class="tab-pane hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <span class="bg-brand-100 text-brand-800 text-xs font-bold px-2.5 py-1 rounded-full">Step 4 • Interactive Practice Drills</span>
+            <h2 class="text-2xl font-extrabold text-slate-900 font-lexend mt-1">Preposition & Grammar Masterclass</h2>
+            <p class="text-xs text-slate-500">Master prepositions of time (<em class="font-serif">at, in, on</em>), word ordering, and 3rd person transformations.</p>
+          </div>
+
+          <!-- Drill Mode Tabs -->
+          <div class="flex space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+            <button onclick="switchMasterclassDrill('prepositions')" id="drill-tab-prepositions" class="px-3 py-1.5 rounded-lg text-slate-700 bg-white shadow-xs">
+              1. Prepositions (At/In/On)
+            </button>
+            <button onclick="switchMasterclassDrill('unscramble')" id="drill-tab-unscramble" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">
+              2. Sentence Unscramble
+            </button>
+            <button onclick="switchMasterclassDrill('transformer')" id="drill-tab-transformer" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">
+              3. 1st ➔ 3rd Person
+            </button>
+          </div>
+        </div>
+
+        <!-- DRILL 1: PREPOSITION PICKER (AT / IN / ON) -->
+        <div id="masterclass-drill-prepositions" class="space-y-6">
+          <div class="bg-gradient-to-br from-brand-50 to-indigo-50 border border-brand-200 p-6 rounded-2xl space-y-6">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-extrabold text-brand-700 bg-white px-3 py-1 rounded-full shadow-xs">
+                Question <span id="prep-question-num">1</span>/6
+              </span>
+              <span id="prep-score-badge" class="text-xs font-bold text-slate-600">Accuracy: 100%</span>
+            </div>
+
+            <!-- Fill-in-the-blank Sentence -->
+            <div class="text-center py-6">
+              <p id="prep-sentence-prompt" class="text-xl sm:text-2xl font-bold text-slate-800 leading-relaxed">
+                Carlos opens the café <span class="border-b-4 border-brand-500 text-brand-600 px-3 py-0.5 bg-white rounded-lg shadow-xs">_____</span> 6:30 AM.
+              </p>
+              <p id="prep-context-hint" class="text-xs text-slate-500 mt-2 font-medium">Hint: Exact clock time</p>
+            </div>
+
+            <!-- Choice Buttons: AT / IN / ON -->
+            <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
+              <button onclick="checkPrepositionAnswer('at')" class="py-4 bg-white hover:bg-amber-50 border-2 border-amber-300 rounded-2xl font-extrabold text-lg text-amber-900 shadow-sm transition-all hover:scale-105">
+                AT
+              </button>
+              <button onclick="checkPrepositionAnswer('in')" class="py-4 bg-white hover:bg-blue-50 border-2 border-blue-300 rounded-2xl font-extrabold text-lg text-blue-900 shadow-sm transition-all hover:scale-105">
+                IN
+              </button>
+              <button onclick="checkPrepositionAnswer('on')" class="py-4 bg-white hover:bg-pink-50 border-2 border-pink-300 rounded-2xl font-extrabold text-lg text-pink-900 shadow-sm transition-all hover:scale-105">
+                ON
+              </button>
+            </div>
+
+            <!-- Drill Feedback Box -->
+            <div id="prep-feedback" class="hidden p-4 rounded-xl text-center text-sm font-bold"></div>
+          </div>
+        </div>
+
+        <!-- DRILL 2: SENTENCE UNSCRAMBLE -->
+        <div id="masterclass-drill-unscramble" class="hidden space-y-6">
+          <div class="bg-slate-900 text-white p-6 rounded-2xl space-y-6">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-brand-400 font-bold uppercase tracking-wider">Tap word tiles to build the correct sentence</span>
+              <button onclick="resetUnscramble()" class="text-slate-400 hover:text-white underline">Clear</button>
+            </div>
+
+            <!-- Construction Drop Area -->
+            <div id="unscramble-drop-area" class="min-h-[70px] bg-slate-800 border-2 border-dashed border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+              <span class="text-xs text-slate-500 italic">Tap words below...</span>
+            </div>
+
+            <!-- Scrambled Word Chips -->
+            <div id="unscramble-source-area" class="flex flex-wrap gap-2.5 justify-center py-4">
+              <!-- Dynamically populated chips -->
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+              <button onclick="speakUnscrambleTarget()" class="px-3 py-1.5 bg-slate-800 text-slate-300 hover:text-white rounded-lg text-xs font-bold flex items-center space-x-1">
+                <i class="fa-solid fa-volume-high"></i>
+                <span>Listen Prompt</span>
+              </button>
+              <button onclick="checkUnscrambleSentence()" class="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-extrabold rounded-xl text-sm shadow-md transition-all">
+                Check Sentence
+              </button>
+            </div>
+
+            <div id="unscramble-feedback" class="hidden p-3 rounded-xl text-xs font-bold text-center"></div>
+          </div>
+        </div>
+
+        <!-- DRILL 3: 1ST TO 3RD PERSON TRANSFORMER -->
+        <div id="masterclass-drill-transformer" class="hidden space-y-6">
+          <div class="bg-purple-50 border border-purple-200 p-6 rounded-2xl space-y-6">
+            <div class="text-xs font-bold text-purple-700 uppercase tracking-wider">
+              Transform 1st Person ("I") to 3rd Person ("He / She")
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Original 1st Person Box -->
+              <div class="bg-white p-4 rounded-xl border border-purple-200 space-y-2">
+                <span class="text-xs font-extrabold text-slate-400 uppercase">1st Person (I)</span>
+                <p id="transformer-input-1st" class="text-base font-bold text-slate-800">"I cook meals in the afternoon."</p>
+              </div>
+
+              <!-- Target 3rd Person Box -->
+              <div class="bg-white p-4 rounded-xl border-2 border-purple-400 space-y-2">
+                <span class="text-xs font-extrabold text-purple-600 uppercase">3rd Person (Chef Pierre / He)</span>
+                <p id="transformer-target-prompt" class="text-base font-bold text-slate-800">
+                  He <input id="transformer-verb-input" type="text" placeholder="type verb..." class="w-28 border-b-2 border-purple-500 px-2 py-0.5 text-purple-700 font-extrabold focus:outline-none text-center"> meals in the afternoon.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+              <button onclick="checkTransformerAnswer()" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl text-sm shadow-md transition-all">
+                Check Transformation
+              </button>
+            </div>
+
+            <div id="transformer-feedback" class="hidden p-3 rounded-xl text-xs font-bold text-center"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: CUSTOM JOB & SCHEDULE PROFILE CREATOR -->
+    <!-- =================================================================== -->
+    <section id="tab-content-creator" class="tab-pane hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Form Builder (6 cols) -->
+        <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+          <div class="border-b border-slate-100 pb-3">
+            <span class="bg-purple-100 text-purple-800 text-xs font-bold px-2.5 py-1 rounded-full">Step 5 • Custom Content Creator</span>
+            <h2 class="text-2xl font-extrabold text-slate-900 font-lexend mt-1">Design Custom Job & Schedule Card</h2>
+            <p class="text-xs text-slate-500">Build your own job profile or student routine card and print/save it!</p>
+          </div>
+
+          <form id="custom-card-form" onsubmit="event.preventDefault(); updateCustomCardPreview();" class="space-y-4 text-xs sm:text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Full Name</label>
+                <input id="create-name" type="text" value="Alex Rivera" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Job Title</label>
+                <input id="create-title" type="text" value="Bus Driver" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Workplace Name</label>
+                <input id="create-workplace" type="text" value="City Metro Station" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Avatar Icon</label>
+                <select id="create-icon" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-medium">
+                  <option value="fa-bus">🚌 Bus / Driver</option>
+                  <option value="fa-user-doctor">🩺 Doctor / Nurse</option>
+                  <option value="fa-mug-hot">☕ Barista / Café</option>
+                  <option value="fa-plane">✈️ Pilot / Airport</option>
+                  <option value="fa-utensils">🍳 Chef / Restaurant</option>
+                  <option value="fa-chalkboard-user">📚 Teacher / School</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Schedule Items inputs -->
+            <div class="space-y-3 pt-2">
+              <label class="block font-bold text-slate-800 text-xs uppercase tracking-wider">3 Key Schedule Routines:</label>
+              
+              <!-- Item 1 -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <span class="font-bold text-brand-600 text-xs">Routine 1 (Morning)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  <input id="create-time-1" type="text" value="06:00 AM" class="bg-white border rounded-lg p-1.5 font-mono text-xs">
+                  <input id="create-action-1" type="text" value="starts work" class="col-span-2 bg-white border rounded-lg p-1.5 text-xs">
+                </div>
+              </div>
+
+              <!-- Item 2 -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <span class="font-bold text-brand-600 text-xs">Routine 2 (Afternoon)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  <input id="create-time-2" type="text" value="12:30 PM" class="bg-white border rounded-lg p-1.5 font-mono text-xs">
+                  <input id="create-action-2" type="text" value="eats lunch in the park" class="col-span-2 bg-white border rounded-lg p-1.5 text-xs">
+                </div>
+              </div>
+
+              <!-- Item 3 -->
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <span class="font-bold text-brand-600 text-xs">Routine 3 (Evening / Night)</span>
+                <div class="grid grid-cols-3 gap-2">
+                  <input id="create-time-3" type="text" value="05:00 PM" class="bg-white border rounded-lg p-1.5 font-mono text-xs">
+                  <input id="create-action-3" type="text" value="finishes work and goes home" class="col-span-2 bg-white border rounded-lg p-1.5 text-xs">
+                </div>
+              </div>
+            </div>
+
+            <button type="button" onclick="updateCustomCardPreview()" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Update Preview Card
+            </button>
+          </form>
+        </div>
+
+        <!-- Live Card Preview & Printable ID Display (6 cols) -->
+        <div class="lg:col-span-6 space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Live Card Preview:</span>
+            <button onclick="printCustomCard()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5">
+              <i class="fa-solid fa-print"></i>
+              <span>Print / Download ID</span>
+            </button>
+          </div>
+
+          <!-- The Printable Card Box -->
+          <div id="printable-id-card" class="bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-indigo-400/30 space-y-6 relative overflow-hidden">
+            <!-- Background Badge Overlay -->
+            <div class="absolute -right-12 -top-12 opacity-10 text-9xl">
+              <i id="preview-bg-watermark" class="fa-solid fa-bus"></i>
+            </div>
+
+            <!-- ID Header Badge -->
+            <div class="flex justify-between items-start border-b border-indigo-800/80 pb-4 relative z-10">
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400">Official ESL Job Badge</span>
+                <h3 id="preview-name" class="text-2xl font-black font-lexend text-white">Alex Rivera</h3>
+                <p id="preview-title" class="text-sm font-bold text-indigo-300">Bus Driver</p>
+              </div>
+              <div class="w-16 h-16 rounded-2xl bg-indigo-600/40 border border-indigo-400/40 flex items-center justify-center text-3xl shadow-inner">
+                <i id="preview-icon-display" class="fa-solid fa-bus text-indigo-200"></i>
+              </div>
+            </div>
+
+            <!-- Workplace Tag -->
+            <div class="inline-flex items-center space-x-2 bg-indigo-900/60 border border-indigo-700/50 px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-200 relative z-10">
+              <i class="fa-solid fa-location-dot text-indigo-400"></i>
+              <span id="preview-workplace">City Metro Station</span>
+            </div>
+
+            <!-- Daily Schedule Summary -->
+            <div class="space-y-3 pt-2 relative z-10">
+              <h4 class="text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center">
+                <i class="fa-solid fa-clock mr-1.5"></i> Daily Schedule & Grammar Summary:
+              </h4>
+
+              <div class="space-y-2 text-xs">
+                <div class="bg-slate-800/80 border border-slate-700/80 p-2.5 rounded-xl flex items-center space-x-3">
+                  <span id="preview-time-1" class="font-mono bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded font-bold">06:00 AM</span>
+                  <span id="preview-desc-1" class="text-slate-200 font-medium">Starts work in the morning.</span>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700/80 p-2.5 rounded-xl flex items-center space-x-3">
+                  <span id="preview-time-2" class="font-mono bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded font-bold">12:30 PM</span>
+                  <span id="preview-desc-2" class="text-slate-200 font-medium">Eats lunch in the park.</span>
+                </div>
+                <div class="bg-slate-800/80 border border-slate-700/80 p-2.5 rounded-xl flex items-center space-x-3">
+                  <span id="preview-time-3" class="font-mono bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded font-bold">05:00 PM</span>
+                  <span id="preview-desc-3" class="text-slate-200 font-medium">Finishes work and goes home.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Automatic Grammar Text Paragraph -->
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-xs text-indigo-100 leading-relaxed relative z-10">
+              <p id="preview-auto-paragraph">
+                Alex Rivera is a Bus Driver. Alex works at City Metro Station. Alex starts work at 06:00 AM in the morning.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT APPLICATION CODE -->
+  <!-- =================================================================== -->
+  <script>
+    // -------------------------------------------------------------------
+    // DATA MODEL & STATE
+    // -------------------------------------------------------------------
+    let userStats = {
+      stars: 0,
+      streak: 0,
+      audioEnabled: true
+    };
+
+    // Characters Profile Data
+    const CHARACTERS = [
+      {
+        id: 'carlos',
+        name: 'Carlos Mendoza',
+        title: 'Barista',
+        workplace: 'Sunrise Café',
+        avatarIcon: 'fa-mug-hot',
+        avatarBg: 'bg-amber-100',
+        avatarColor: 'text-amber-600',
+        bio: 'Carlos opens the café early every morning. He makes hot coffee and espresso for sleepy customers!',
+        schedule: [
+          { time: '05:30 AM', period: 'Morning', action: 'wakes up', prep: 'at 5:30 AM', prep2: 'in the morning', sentence: 'Carlos wakes up at 5:30 AM in the morning.' },
+          { time: '06:30 AM', period: 'Morning', action: 'opens the café', prep: 'at 6:30 AM', prep2: 'in the morning', sentence: 'He opens the café at 6:30 AM in the morning.' },
+          { time: '07:00 AM', period: 'Morning', action: 'makes coffee', prep: 'at 7:00 AM', prep2: 'in the morning', sentence: 'He makes coffee for customers at 7:00 AM.' },
+          { time: '12:30 PM', period: 'Afternoon', action: 'eats lunch', prep: 'at 12:30 PM', prep2: 'in the afternoon', sentence: 'He eats lunch at 12:30 PM in the afternoon.' },
+          { time: '03:00 PM', period: 'Afternoon', action: 'finishes work', prep: 'at 3:00 PM', prep2: 'in the afternoon', sentence: 'He finishes work at 3:00 PM in the afternoon.' },
+          { time: '10:00 PM', period: 'Night', action: 'goes to bed', prep: 'at 10:00 PM', prep2: 'at night', sentence: 'He goes to bed at 10:00 PM at night.' }
+        ]
+      },
+      {
+        id: 'sarah',
+        name: 'Dr. Sarah Lin',
+        title: 'Doctor',
+        workplace: 'Central Hospital',
+        avatarIcon: 'fa-user-doctor',
+        avatarBg: 'bg-emerald-100',
+        avatarColor: 'text-emerald-600',
+        bio: 'Dr. Sarah cares for sick patients at the hospital. She works long shifts to keep people healthy.',
+        schedule: [
+          { time: '07:00 AM', period: 'Morning', action: 'starts work', prep: 'at 7:00 AM', prep2: 'in the morning', sentence: 'Dr. Sarah starts work at 7:00 AM at the hospital.' },
+          { time: '08:30 AM', period: 'Morning', action: 'examines patients', prep: 'at 8:30 AM', prep2: 'in the morning', sentence: 'She examines patients in the morning at 8:30 AM.' },
+          { time: '01:30 PM', period: 'Afternoon', action: 'eats lunch', prep: 'at 1:30 PM', prep2: 'in the afternoon', sentence: 'She eats lunch at 1:30 PM in the hospital cafeteria.' },
+          { time: '06:00 PM', period: 'Evening', action: 'finishes work', prep: 'at 6:00 PM', prep2: 'in the evening', sentence: 'She finishes work at 6:00 PM in the evening.' },
+          { time: '11:00 PM', period: 'Night', action: 'sleeps', prep: 'at 11:00 PM', prep2: 'at night', sentence: 'She sleeps at 11:00 PM at night.' }
+        ]
+      },
+      {
+        id: 'leo',
+        name: 'Captain Leo Vance',
+        title: 'Pilot',
+        workplace: 'Skyline Airport',
+        avatarIcon: 'fa-plane',
+        avatarBg: 'bg-sky-100',
+        avatarColor: 'text-sky-600',
+        bio: 'Captain Leo flies commercial airplanes around the world. He flies on Mondays and Thursdays.',
+        schedule: [
+          { time: '06:00 AM', period: 'Morning', action: 'arrives at airport', prep: 'at 6:00 AM', prep2: 'in the morning', sentence: 'Captain Leo arrives at the airport at 6:00 AM.' },
+          { time: '08:00 AM', period: 'Morning', action: 'flies planes', prep: 'at 8:00 AM', prep2: 'in the morning', sentence: 'He flies planes at 8:00 AM in the morning.' },
+          { time: '01:00 PM', period: 'Afternoon', action: 'lands airplane', prep: 'at 1:00 PM', prep2: 'in the afternoon', sentence: 'He lands the airplane at 1:00 PM in the afternoon.' },
+          { time: '05:00 PM', period: 'Evening', action: 'rests at hotel', prep: 'at 5:00 PM', prep2: 'in the evening', sentence: 'He rests at the hotel in the evening.' }
+        ]
+      },
+      {
+        id: 'maya',
+        name: 'Maya Patel',
+        title: 'Teacher',
+        workplace: 'Lincoln School',
+        avatarIcon: 'fa-chalkboard-user',
+        avatarBg: 'bg-purple-100',
+        avatarColor: 'text-purple-600',
+        bio: 'Maya teaches math and English to young students in primary school.',
+        schedule: [
+          { time: '07:30 AM', period: 'Morning', action: 'goes to school', prep: 'at 7:30 AM', prep2: 'in the morning', sentence: 'Maya goes to school at 7:30 AM in the morning.' },
+          { time: '08:30 AM', period: 'Morning', action: 'teaches math', prep: 'at 8:30 AM', prep2: 'in the morning', sentence: 'She teaches math at 8:30 AM in the morning.' },
+          { time: '12:00 PM', period: 'Afternoon', action: 'eats lunch', prep: 'at 12:00 PM', prep2: 'at noon', sentence: 'She eats lunch at 12:00 PM at noon.' },
+          { time: '04:00 PM', period: 'Afternoon', action: 'corrects homework', prep: 'at 4:00 PM', prep2: 'in the afternoon', sentence: 'She corrects homework at 4:00 PM in the afternoon.' },
+          { time: '05:00 PM', period: 'Evening', action: 'goes home', prep: 'at 5:00 PM', prep2: 'in the evening', sentence: 'She goes home at 5:00 PM in the evening.' }
+        ]
+      },
+      {
+        id: 'pierre',
+        name: 'Pierre Dubois',
+        title: 'Chef',
+        workplace: 'Gourmet Bistro',
+        avatarIcon: 'fa-utensils',
+        avatarBg: 'bg-rose-100',
+        avatarColor: 'text-rose-600',
+        bio: 'Chef Pierre cooks delicious gourmet meals in a French bistro kitchen.',
+        schedule: [
+          { time: '10:00 AM', period: 'Morning', action: 'prepares food', prep: 'at 10:00 AM', prep2: 'in the morning', sentence: 'Pierre prepares food at 10:00 AM in the morning.' },
+          { time: '12:00 PM', period: 'Afternoon', action: 'cooks lunch', prep: 'at 12:00 PM', prep2: 'at noon', sentence: 'He cooks lunch at 12:00 PM at noon.' },
+          { time: '07:00 PM', period: 'Evening', action: 'cooks dinner', prep: 'at 7:00 PM', prep2: 'in the evening', sentence: 'He cooks dinner for guests at 7:00 PM in the evening.' },
+          { time: '10:30 PM', period: 'Night', action: 'cleans kitchen', prep: 'at 10:30 PM', prep2: 'at night', sentence: 'He cleans the kitchen at 10:30 PM at night.' }
+        ]
+      },
+      {
+        id: 'elena',
+        name: 'Elena Rossi',
+        title: 'Bus Driver',
+        workplace: 'City Transit Depot',
+        avatarIcon: 'fa-bus',
+        avatarBg: 'bg-teal-100',
+        avatarColor: 'text-teal-600',
+        bio: 'Elena drives city buses and takes passengers safely to work and school.',
+        schedule: [
+          { time: '05:00 AM', period: 'Morning', action: 'starts shift', prep: 'at 5:00 AM', prep2: 'in the morning', sentence: 'Elena starts her shift at 5:00 AM in the morning.' },
+          { time: '06:00 AM', period: 'Morning', action: 'drives bus', prep: 'at 6:00 AM', prep2: 'in the morning', sentence: 'She drives the city bus at 6:00 AM.' },
+          { time: '11:30 AM', period: 'Morning', action: 'takes a break', prep: 'at 11:30 AM', prep2: 'in the morning', sentence: 'She takes a break at 11:30 AM.' },
+          { time: '02:00 PM', period: 'Afternoon', action: 'finishes shift', prep: 'at 2:00 PM', prep2: 'in the afternoon', sentence: 'She finishes her shift at 2:00 PM in the afternoon.' }
+        ]
+      }
+    ];
+
+    // Matching Items Master List
+    const MATCH_ITEMS = [
+      { id: 1, job: 'Doctor', workplace: 'Hospital', duty: 'examines patients', icon: 'fa-user-doctor' },
+      { id: 2, job: 'Barista', workplace: 'Café', duty: 'makes coffee', icon: 'fa-mug-hot' },
+      { id: 3, job: 'Chef', workplace: 'Restaurant', duty: 'cooks meals', icon: 'fa-utensils' },
+      { id: 4, job: 'Pilot', workplace: 'Airport', duty: 'flies planes', icon: 'fa-plane' },
+      { id: 5, job: 'Teacher', workplace: 'School', duty: 'teaches math', icon: 'fa-chalkboard-user' },
+      { id: 6, job: 'Bus Driver', workplace: 'Bus Depot', duty: 'drives buses', icon: 'fa-bus' }
+    ];
+
+    // Fact Checker Statement Bank
+    const FACT_STATEMENTS = [
+      { statement: "A doctor works in a café at 6:00 AM.", isTrue: false, correctJob: "Doctor", correctWorkplace: "Hospital", correctDuty: "examines patients" },
+      { statement: "A barista makes coffee in a café in the morning.", isTrue: true, correctJob: "Barista", correctWorkplace: "Café", correctDuty: "makes coffee" },
+      { statement: "A teacher flies planes at an airport on Mondays.", isTrue: false, correctJob: "Teacher", correctWorkplace: "School", correctDuty: "teaches math" },
+      { statement: "A chef cooks delicious meals in a restaurant.", isTrue: true, correctJob: "Chef", correctWorkplace: "Restaurant", correctDuty: "cooks meals" },
+      { statement: "A pilot drives city buses at a hospital.", isTrue: false, correctJob: "Pilot", correctWorkplace: "Airport", correctDuty: "flies planes" }
+    ];
+
+    // -------------------------------------------------------------------
+    // WEB AUDIO API SOUND SYNTHESIZER
+    // -------------------------------------------------------------------
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!userStats.audioEnabled) return;
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          // Playful ascending double chime
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'wrong') {
+          // Low error buzz
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.setValueAtTime(130, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'click') {
+          // Gentle pop
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'fanfare') {
+          // Celebration triad
+          const freqs = [523.25, 659.25, 783.99, 1046.50];
+          freqs.forEach((f, idx) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(f, now + idx * 0.08);
+            g.gain.setValueAtTime(0.12, now + idx * 0.08);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+            o.start(now + idx * 0.08);
+            o.stop(now + idx * 0.08 + 0.3);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio playback not supported or blocked", e);
+      }
+    }
+
+    function toggleAudio() {
+      userStats.audioEnabled = !userStats.audioEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (userStats.audioEnabled) {
+        icon.className = "fa-solid fa-volume-high";
+        playSound('click');
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-rose-500";
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // WEB SPEECH API TEXT-TO-SPEECH
+    // -------------------------------------------------------------------
+    let ttsRate = 1.0;
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) {
+        alert("Text-to-speech is not supported in this browser.");
+        return;
+      }
+      window.speechSynthesis.cancel(); // Stop current playing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = ttsRate;
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function setTtsSpeed(speed) {
+      ttsRate = speed;
+      playSound('click');
+    }
+
+    // -------------------------------------------------------------------
+    // GLOBAL APP STATE & TAB NAVIGATION
+    // -------------------------------------------------------------------
+    let currentTab = 'matcher';
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      playSound('click');
+
+      // Hide all panes
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('bg-brand-500', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      // Show target tab
+      const targetPane = document.getElementById(`tab-content-${tabId}`);
+      if (targetPane) targetPane.classList.remove('hidden');
+
+      const targetBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (targetBtn) {
+        targetBtn.classList.add('bg-brand-500', 'text-white', 'shadow-sm');
+        targetBtn.classList.remove('text-slate-600');
+      }
+    }
+
+    function addPoints(pts) {
+      userStats.stars += pts;
+      userStats.streak += 1;
+      document.getElementById('global-stars').textContent = userStats.stars;
+      document.getElementById('global-streak').textContent = userStats.streak;
+    }
+
+    // -------------------------------------------------------------------
+    // TAB 1: JOB MATCHER & FACT-CHECKER LOGIC
+    // -------------------------------------------------------------------
+    let selectedJob = null;
+    let selectedWorkplace = null;
+    let selectedDuty = null;
+    let matchedSets = [];
+
+    function switchMatcherSubmode(submode) {
+      playSound('click');
+      const btnMatching = document.getElementById('sub-btn-matching');
+      const btnFact = document.getElementById('sub-btn-factchecker');
+      const viewMatching = document.getElementById('matcher-mode-matching');
+      const viewFact = document.getElementById('matcher-mode-factchecker');
+
+      if (submode === 'matching') {
+        btnMatching.className = "bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all";
+        btnFact.className = "bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all";
+        viewMatching.classList.remove('hidden');
+        viewFact.classList.add('hidden');
+      } else {
+        btnFact.className = "bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all";
+        btnMatching.className = "bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all";
+        viewFact.classList.remove('hidden');
+        viewMatching.classList.add('hidden');
+        initFactChecker();
+      }
+    }
+
+    function initMatchingGame() {
+      selectedJob = null;
+      selectedWorkplace = null;
+      selectedDuty = null;
+      matchedSets = [];
+
+      renderMatchingColumns();
+      renderCompletedMatches();
+    }
+
+    function renderMatchingColumns() {
+      const colJobs = document.getElementById('col-professions');
+      const colWorkplaces = document.getElementById('col-workplaces');
+      const colDuties = document.getElementById('col-duties');
+
+      colJobs.innerHTML = '';
+      colWorkplaces.innerHTML = '';
+      colDuties.innerHTML = '';
+
+      // Shuffle array helper
+      const shuffled = [...MATCH_ITEMS].sort(() => Math.random() - 0.5);
+
+      MATCH_ITEMS.forEach(item => {
+        if (!matchedSets.includes(item.id)) {
+          // Job item
+          const jobBtn = document.createElement('button');
+          jobBtn.className = `w-full p-3 rounded-xl border text-left text-xs sm:text-sm font-bold flex items-center justify-between transition-all ${
+            selectedJob === item.id 
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-102' 
+              : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-indigo-50'
+          }`;
+          jobBtn.onclick = () => selectJobItem(item.id);
+          jobBtn.innerHTML = `
+            <div class="flex items-center space-x-2.5">
+              <i class="fa-solid ${item.icon} text-indigo-500"></i>
+              <span>${item.job}</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-xs opacity-50"></i>
+          `;
+          colJobs.appendChild(jobBtn);
+        }
+      });
+
+      // Shuffled workplaces
+      [...MATCH_ITEMS].sort((a,b) => a.workplace.localeCompare(b.workplace)).forEach(item => {
+        if (!matchedSets.includes(item.id)) {
+          const wpBtn = document.createElement('button');
+          wpBtn.className = `w-full p-3 rounded-xl border text-left text-xs sm:text-sm font-bold flex items-center justify-between transition-all ${
+            selectedWorkplace === item.id 
+              ? 'bg-brand-600 text-white border-brand-600 shadow-md scale-102' 
+              : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-brand-50'
+          }`;
+          wpBtn.onclick = () => selectWorkplaceItem(item.id);
+          wpBtn.innerHTML = `
+            <span>${item.workplace}</span>
+            <i class="fa-solid fa-building text-xs opacity-50"></i>
+          `;
+          colWorkplaces.appendChild(wpBtn);
+        }
+      });
+
+      // Shuffled duties
+      [...MATCH_ITEMS].sort((a,b) => a.duty.localeCompare(b.duty)).forEach(item => {
+        if (!matchedSets.includes(item.id)) {
+          const dutyBtn = document.createElement('button');
+          dutyBtn.className = `w-full p-3 rounded-xl border text-left text-xs sm:text-sm font-bold flex items-center justify-between transition-all ${
+            selectedDuty === item.id 
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-102' 
+              : 'bg-slate-50 border-slate-200 text-slate-800 hover:bg-emerald-50'
+          }`;
+          dutyBtn.onclick = () => selectDutyItem(item.id);
+          dutyBtn.innerHTML = `
+            <span>${item.duty}</span>
+            <i class="fa-solid fa-check text-xs opacity-50"></i>
+          `;
+          colDuties.appendChild(dutyBtn);
+        }
+      });
+
+      // Update remaining counts
+      const rem = MATCH_ITEMS.length - matchedSets.length;
+      document.getElementById('count-jobs').textContent = `${rem} left`;
+      document.getElementById('count-workplaces').textContent = `${rem} left`;
+      document.getElementById('count-duties').textContent = `${rem} left`;
+    }
+
+    function selectJobItem(id) {
+      playSound('click');
+      selectedJob = id;
+      checkTripleMatch();
+      renderMatchingColumns();
+    }
+
+    function selectWorkplaceItem(id) {
+      playSound('click');
+      selectedWorkplace = id;
+      checkTripleMatch();
+      renderMatchingColumns();
+    }
+
+    function selectDutyItem(id) {
+      playSound('click');
+      selectedDuty = id;
+      checkTripleMatch();
+      renderMatchingColumns();
+    }
+
+    function checkTripleMatch() {
+      if (selectedJob && selectedWorkplace && selectedDuty) {
+        if (selectedJob === selectedWorkplace && selectedWorkplace === selectedDuty) {
+          // Success match!
+          playSound('correct');
+          addPoints(15);
+          matchedSets.push(selectedJob);
+          
+          const matchedItem = MATCH_ITEMS.find(i => i.id === selectedJob);
+          speakText(`Correct! A ${matchedItem.job} works in a ${matchedItem.workplace} and ${matchedItem.duty}.`);
+
+          selectedJob = null;
+          selectedWorkplace = null;
+          selectedDuty = null;
+
+          if (matchedSets.length === MATCH_ITEMS.length) {
+            playSound('fanfare');
+          }
+        } else {
+          // Wrong match combination
+          playSound('wrong');
+          selectedJob = null;
+          selectedWorkplace = null;
+          selectedDuty = null;
+        }
+        renderCompletedMatches();
+      }
+    }
+
+    function renderCompletedMatches() {
+      const container = document.getElementById('completed-matches-list');
+      document.getElementById('matched-count-text').textContent = matchedSets.length;
+
+      if (matchedSets.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 italic p-3 border border-dashed border-slate-200 rounded-xl text-center col-span-full">Matched items will appear here with full complete sentences.</div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      matchedSets.forEach(id => {
+        const item = MATCH_ITEMS.find(i => i.id === id);
+        const card = document.createElement('div');
+        card.className = "bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center space-x-3 text-xs bounce-match";
+        card.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">
+            <i class="fa-solid ${item.icon}"></i>
+          </div>
+          <div>
+            <span class="font-bold text-emerald-900">${item.job}</span>
+            <p class="text-emerald-700">Works in a <strong>${item.workplace}</strong> & <strong>${item.duty}</strong>.</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function resetMatchingGame() {
+      playSound('click');
+      initMatchingGame();
+    }
+
+    // -------------------------------------------------------------------
+    // FACT CHECKER MODE LOGIC
+    // -------------------------------------------------------------------
+    let currentFactIndex = 0;
+
+    function initFactChecker() {
+      currentFactIndex = 0;
+      loadFactCard();
+    }
+
+    function loadFactCard() {
+      const fact = FACT_STATEMENTS[currentFactIndex];
+      document.getElementById('fact-card-counter').textContent = `${currentFactIndex + 1}/${FACT_STATEMENTS.length}`;
+      document.getElementById('fact-statement-text').textContent = `"${fact.statement}"`;
+
+      document.getElementById('fact-corrector-box').classList.add('hidden');
+      const feedbackBox = document.getElementById('fact-feedback-box');
+      feedbackBox.className = "hidden p-4 rounded-xl text-sm font-medium";
+
+      // Populate drop downs for correction
+      const selectJob = document.getElementById('correct-select-job');
+      const selectWp = document.getElementById('correct-select-workplace');
+      const selectDuty = document.getElementById('correct-select-duty');
+
+      selectJob.innerHTML = MATCH_ITEMS.map(i => `<option value="${i.job}">${i.job}</option>`).join('');
+      selectWp.innerHTML = MATCH_ITEMS.map(i => `<option value="${i.workplace}">${i.workplace}</option>`).join('');
+      selectDuty.innerHTML = MATCH_ITEMS.map(i => `<option value="${i.duty}">${i.duty}</option>`).join('');
+    }
+
+    function speakFactStatement() {
+      const fact = FACT_STATEMENTS[currentFactIndex];
+      speakText(fact.statement);
+    }
+
+    function answerFactCheck(userAnswer) {
+      const fact = FACT_STATEMENTS[currentFactIndex];
+      const feedbackBox = document.getElementById('fact-feedback-box');
+
+      if (userAnswer === fact.isTrue) {
+        playSound('correct');
+        addPoints(10);
+        feedbackBox.classList.remove('hidden');
+        feedbackBox.className = "p-4 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+        
+        if (fact.isTrue) {
+          feedbackBox.textContent = "✅ Excellent! That statement is factually correct!";
+        } else {
+          feedbackBox.textContent = "✅ Correct! That statement is FALSE. Now fix the sentence below:";
+          document.getElementById('fact-corrector-box').classList.remove('hidden');
+        }
+      } else {
+        playSound('wrong');
+        feedbackBox.classList.remove('hidden');
+        feedbackBox.className = "p-4 rounded-xl text-sm font-bold bg-rose-100 text-rose-900 border border-rose-300 card-shake";
+        feedbackBox.textContent = "❌ Oops! Think carefully about where this job takes place.";
+      }
+    }
+
+    function submitCorrection() {
+      const fact = FACT_STATEMENTS[currentFactIndex];
+      const jobVal = document.getElementById('correct-select-job').value;
+      const wpVal = document.getElementById('correct-select-workplace').value;
+      const dutyVal = document.getElementById('correct-select-duty').value;
+
+      if (jobVal === fact.correctJob && wpVal === fact.correctWorkplace && dutyVal === fact.correctDuty) {
+        playSound('correct');
+        addPoints(15);
+        speakText(`Great job! A ${jobVal} works in a ${wpVal} and ${dutyVal}.`);
+        alert("🎉 Perfect correction verified!");
+      } else {
+        playSound('wrong');
+        alert("⚠️ Try again! Check which workplace and duty match this job.");
+      }
+    }
+
+    function nextFactCard() {
+      playSound('click');
+      currentFactIndex = (currentFactIndex + 1) % FACT_STATEMENTS.length;
+      loadFactCard();
+    }
+
+    // -------------------------------------------------------------------
+    // TAB 2: 24-HOUR ROUTINE INSPECTOR LOGIC
+    // -------------------------------------------------------------------
+    let activeCharIndex = 0;
+    let activeScheduleIndex = 0;
+
+    function initInspector() {
+      renderInspectorCharacterBar();
+      loadInspectorCharacter(0);
+    }
+
+    function renderInspectorCharacterBar() {
+      const bar = document.getElementById('inspector-character-bar');
+      bar.innerHTML = '';
+
+      CHARACTERS.forEach((char, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `p-2.5 rounded-xl border text-left transition-all flex items-center space-x-2 ${
+          activeCharIndex === idx 
+            ? 'bg-brand-600 text-white border-brand-600 shadow-md' 
+            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+        }`;
+        btn.onclick = () => loadInspectorCharacter(idx);
+        btn.innerHTML = `
+          <div class="w-7 h-7 rounded-lg ${char.avatarBg} ${char.avatarColor} flex items-center justify-center text-xs font-bold">
+            <i class="fa-solid ${char.avatarIcon}"></i>
+          </div>
+          <div class="truncate text-xs">
+            <span class="font-bold block truncate">${char.name.split(' ')[0]}</span>
+            <span class="opacity-75 text-[10px] block truncate">${char.title}</span>
+          </div>
+        `;
+        bar.appendChild(btn);
+      });
+    }
+
+    function loadInspectorCharacter(idx) {
+      playSound('click');
+      activeCharIndex = idx;
+      activeScheduleIndex = 0;
+
+      renderInspectorCharacterBar();
+
+      const char = CHARACTERS[idx];
+      document.getElementById('inspector-name').textContent = char.name;
+      document.getElementById('inspector-title').textContent = char.title;
+      document.getElementById('inspector-workplace').textContent = char.workplace;
+      document.getElementById('inspector-bio').textContent = char.bio;
+
+      const avatarIcon = document.getElementById('inspector-avatar-icon');
+      avatarIcon.className = `fa-solid ${char.avatarIcon} ${char.avatarColor}`;
+      document.getElementById('inspector-avatar-bg').className = `w-24 h-24 mx-auto rounded-full ${char.avatarBg} border-4 border-white shadow-lg flex items-center justify-center text-4xl`;
+
+      renderInspectorSchedule();
+    }
+
+    function renderInspectorSchedule() {
+      const char = CHARACTERS[activeCharIndex];
+      const container = document.getElementById('inspector-schedule-list');
+      container.innerHTML = '';
+
+      char.schedule.forEach((item, sIdx) => {
+        const btn = document.createElement('button');
+        btn.className = `w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+          activeScheduleIndex === sIdx
+            ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-800'
+        }`;
+        btn.onclick = () => selectScheduleActivity(sIdx);
+        btn.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="font-mono text-xs font-bold px-2 py-1 rounded ${activeScheduleIndex === sIdx ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-700'}">${item.time}</span>
+            <span class="text-xs sm:text-sm font-semibold">${item.action}</span>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+            item.period === 'Morning' ? 'bg-amber-100 text-amber-800' :
+            item.period === 'Afternoon' ? 'bg-blue-100 text-blue-800' :
+            item.period === 'Evening' ? 'bg-purple-100 text-purple-800' : 'bg-slate-800 text-slate-200'
+          }">${item.period}</span>
+        `;
+        container.appendChild(btn);
+      });
+
+      selectScheduleActivity(activeScheduleIndex);
+    }
+
+    function selectScheduleActivity(sIdx) {
+      playSound('click');
+      activeScheduleIndex = sIdx;
+      const char = CHARACTERS[activeCharIndex];
+      const item = char.schedule[sIdx];
+
+      document.getElementById('inspector-clock-display').textContent = item.time;
+      document.getElementById('inspector-time-period').textContent = `${item.period} Activity`;
+
+      // Formatted Grammar Display
+      const verbWord = item.action.split(' ')[0]; // e.g. starts, opens, makes
+      const restWords = item.action.substring(verbWord.length);
+
+      document.getElementById('inspector-sentence-display').innerHTML = `
+        ${char.name.split(' ')[0]} <span class="verb-highlight">${verbWord}</span>${restWords} 
+        <span class="badge-at font-bold px-1.5 py-0.5 rounded">${item.prep}</span> 
+        <span class="badge-in font-bold px-1.5 py-0.5 rounded">${item.prep2}</span>.
+      `;
+
+      // Update preposition explanation text
+      document.getElementById('inspector-preposition-explanation').innerHTML = `
+        Use <strong>AT</strong> for precise times (<span class="font-mono">${item.prep}</span>) and <strong>IN</strong> for time blocks (<span class="font-mono">${item.prep2}</span>).
+      `;
+
+      // Re-render schedule item active highlight
+      const container = document.getElementById('inspector-schedule-list');
+      Array.from(container.children).forEach((child, i) => {
+        if (i === sIdx) {
+          child.className = "w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all bg-slate-900 text-white border-slate-900 shadow-md";
+        } else {
+          child.className = "w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all bg-white border-slate-200 hover:bg-slate-50 text-slate-800";
+        }
+      });
+    }
+
+    function speakSelectedSentence() {
+      const char = CHARACTERS[activeCharIndex];
+      const item = char.schedule[activeScheduleIndex];
+      speakText(item.sentence);
+    }
+
+    function speakFullProfile() {
+      const char = CHARACTERS[activeCharIndex];
+      let fullSpeech = `${char.name} is a ${char.title} at ${char.workplace}. `;
+      char.schedule.forEach(s => {
+        fullSpeech += `${s.sentence} `;
+      });
+      speakText(fullSpeech);
+    }
+
+    // -------------------------------------------------------------------
+    // TAB 3: ROLEPLAY TRAINER LOGIC
+    // -------------------------------------------------------------------
+    let roleplayStep = 0;
+    let roleplayCharIndex = 0;
+
+    const ROLEPLAY_DIALOGUES = [
+      {
+        characterId: 0, // Carlos
+        steps: [
+          {
+            partnerPrompt: "Hello! Where does Carlos work?",
+            choices: [
+              { text: "He works in a hospital.", correct: false, feedback: "No, a hospital is for doctors!" },
+              { text: "He works in a café.", correct: true, feedback: "Correct! He is a barista at Sunrise Café." }
+            ],
+            npcReply: "That's right! What time does he open the café in the morning?"
+          },
+          {
+            partnerPrompt: "What time does Carlos open the café?",
+            choices: [
+              { text: "He opens the café at 6:30 AM.", correct: true, feedback: "Great! At 6:30 AM in the morning." },
+              { text: "He open café on 6:30 AM.", correct: false, feedback: "Remember: 'He opens' and use preposition 'at' for time." }
+            ],
+            npcReply: "Awesome! What does he do at 7:00 AM?"
+          },
+          {
+            partnerPrompt: "What does he do at 7:00 AM?",
+            choices: [
+              { text: "He makes delicious coffee.", correct: true, feedback: "Spot on! He makes coffee for customers." },
+              { text: "He teach math class.", correct: false, feedback: "No, teachers teach math, baristas make coffee!" }
+            ],
+            npcReply: "Perfect dialogue completed!"
+          }
+        ]
+      },
+      {
+        characterId: 1, // Dr. Sarah
+        steps: [
+          {
+            partnerPrompt: "Hi there! What is Sarah's job?",
+            choices: [
+              { text: "She is a doctor in a hospital.", correct: true, feedback: "Yes! Dr. Sarah works in a hospital." },
+              { text: "She is a bus driver at airport.", correct: false, feedback: "Incorrect. Sarah is a doctor." }
+            ],
+            npcReply: "Great! What time does she start work?"
+          },
+          {
+            partnerPrompt: "What time does she start work?",
+            choices: [
+              { text: "She starts work at 7:00 AM.", correct: true, feedback: "Correct! Use 'at 7:00 AM'." },
+              { text: "She start work in 7:00 AM.", correct: false, feedback: "Remember: Add '-s' to start (starts) and use 'at' for time." }
+            ],
+            npcReply: "Excellent work completing the interview!"
+          }
+        ]
+      }
+    ];
+
+    function initRoleplayScenario() {
+      roleplayCharIndex = parseInt(document.getElementById('roleplay-character-select').value) || 0;
+      roleplayStep = 0;
+      renderRoleplayStep();
+    }
+
+    function renderRoleplayStep() {
+      const dialogueData = ROLEPLAY_DIALOGUES.find(d => d.characterId === roleplayCharIndex) || ROLEPLAY_DIALOGUES[0];
+      const stepData = dialogueData.steps[roleplayStep];
+
+      document.getElementById('roleplay-step-text').textContent = `Step ${roleplayStep + 1} of ${dialogueData.steps.length}`;
+
+      const chatBox = document.getElementById('roleplay-messages-box');
+      if (roleplayStep === 0) {
+        chatBox.innerHTML = '';
+      }
+
+      // Add Partner Question Bubble
+      const partnerBubble = document.createElement('div');
+      partnerBubble.className = "flex items-start space-x-2.5";
+      partnerBubble.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+          NPC
+        </div>
+        <div class="bg-white border border-slate-200 p-3 rounded-2xl text-xs sm:text-sm text-slate-800 shadow-xs max-w-[85%]">
+          <p class="font-bold text-emerald-700 text-[10px] uppercase">Partner Question</p>
+          <p class="mt-0.5">${stepData.partnerPrompt}</p>
+        </div>
+      `;
+      chatBox.appendChild(partnerBubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // Speak prompt
+      speakText(stepData.partnerPrompt);
+
+      // Render choices
+      const choicesContainer = document.getElementById('roleplay-choices-container');
+      choicesContainer.innerHTML = '';
+
+      stepData.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = "w-full p-3 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl text-left text-xs sm:text-sm font-semibold text-slate-800 transition-all shadow-xs flex items-center justify-between";
+        btn.onclick = () => selectRoleplayChoice(choice, stepData);
+        btn.innerHTML = `
+          <span>${choice.text}</span>
+          <i class="fa-solid fa-paper-plane text-emerald-500 text-xs"></i>
+        `;
+        choicesContainer.appendChild(btn);
+      });
+    }
+
+    function selectRoleplayChoice(choice, stepData) {
+      const chatBox = document.getElementById('roleplay-messages-box');
+
+      // Add User Choice Bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = "flex items-start justify-end space-x-2.5";
+      userBubble.innerHTML = `
+        <div class="bg-brand-600 text-white p-3 rounded-2xl text-xs sm:text-sm shadow-xs max-w-[85%]">
+          <p class="font-bold text-brand-200 text-[10px] uppercase">You</p>
+          <p class="mt-0.5">${choice.text}</p>
+        </div>
+      `;
+      chatBox.appendChild(userBubble);
+
+      if (choice.correct) {
+        playSound('correct');
+        addPoints(10);
+
+        // NPC Response Bubble
+        setTimeout(() => {
+          const npcReplyBubble = document.createElement('div');
+          npcReplyBubble.className = "flex items-start space-x-2.5";
+          npcReplyBubble.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+              NPC
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-xs sm:text-sm text-emerald-900 shadow-xs max-w-[85%]">
+              <p class="font-bold text-emerald-700 text-[10px] uppercase">Partner Feedback</p>
+              <p class="mt-0.5">${choice.feedback}</p>
+            </div>
+          `;
+          chatBox.appendChild(npcReplyBubble);
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          roleplayStep++;
+          const dialogueData = ROLEPLAY_DIALOGUES.find(d => d.characterId === roleplayCharIndex) || ROLEPLAY_DIALOGUES[0];
+          if (roleplayStep < dialogueData.steps.length) {
+            setTimeout(renderRoleplayStep, 1000);
+          } else {
+            playSound('fanfare');
+            document.getElementById('roleplay-choices-container').innerHTML = `
+              <div class="p-3 bg-emerald-100 text-emerald-900 font-bold text-center rounded-xl text-xs">
+                🎉 Roleplay completed! Great speaking practice.
+              </div>
+            `;
+          }
+        }, 500);
+      } else {
+        playSound('wrong');
+        const wrongBubble = document.createElement('div');
+        wrongBubble.className = "flex items-start space-x-2.5";
+        wrongBubble.innerHTML = `
+          <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl text-xs text-rose-900 shadow-xs max-w-[85%]">
+            <p class="font-bold text-rose-700 text-[10px] uppercase">Grammar Hint</p>
+            <p class="mt-0.5">${choice.feedback}</p>
+          </div>
+        `;
+        chatBox.appendChild(wrongBubble);
+      }
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // -------------------------------------------------------------------
+    // TAB 4: GRAMMAR MASTERCLASS DRILLS
+    // -------------------------------------------------------------------
+    let currentDrill = 'prepositions';
+    let prepQuestionIdx = 0;
+
+    const PREP_QUESTIONS = [
+      { sentence: "Carlos opens the café _____ 6:30 AM.", answer: "at", hint: "Exact clock time", explain: "Use 'AT' for exact clock times (at 6:30 AM)." },
+      { sentence: "Dr. Sarah examines patients _____ the morning.", answer: "in", hint: "Part of the day", explain: "Use 'IN' for parts of the day (in the morning/afternoon)." },
+      { sentence: "Captain Leo flies planes _____ Mondays.", answer: "on", hint: "Day of the week", explain: "Use 'ON' for specific days (on Mondays)." },
+      { sentence: "Chef Pierre finishes work _____ night.", answer: "at", hint: "Night expression", explain: "Use 'AT' with the word 'night' (at night)." },
+      { sentence: "Maya teaches math _____ 8:30 AM.", answer: "at", hint: "Exact time", explain: "Use 'AT' for specific time (at 8:30 AM)." },
+      { sentence: "Elena drives the bus _____ the afternoon.", answer: "in", hint: "Part of the day", explain: "Use 'IN' for in the afternoon." }
+    ];
+
+    function switchMasterclassDrill(drillType) {
+      playSound('click');
+      currentDrill = drillType;
+
+      document.querySelectorAll('#drill-tab-prepositions, #drill-tab-unscramble, #drill-tab-transformer').forEach(btn => {
+        btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
+      });
+      document.getElementById(`drill-tab-${drillType}`).className = "px-3 py-1.5 rounded-lg text-slate-700 bg-white shadow-xs font-bold";
+
+      document.getElementById('masterclass-drill-prepositions').classList.add('hidden');
+      document.getElementById('masterclass-drill-unscramble').classList.add('hidden');
+      document.getElementById('masterclass-drill-transformer').classList.add('hidden');
+
+      document.getElementById(`masterclass-drill-${drillType}`).classList.remove('hidden');
+
+      if (drillType === 'prepositions') initPrepDrill();
+      if (drillType === 'unscramble') initUnscrambleDrill();
+      if (drillType === 'transformer') initTransformerDrill();
+    }
+
+    function initPrepDrill() {
+      prepQuestionIdx = 0;
+      loadPrepQuestion();
+    }
+
+    function loadPrepQuestion() {
+      const q = PREP_QUESTIONS[prepQuestionIdx];
+      document.getElementById('prep-question-num').textContent = prepQuestionIdx + 1;
+      document.getElementById('prep-context-hint').textContent = `Hint: ${q.hint}`;
+
+      const formatted = q.sentence.replace('_____', '<span class="border-b-4 border-brand-500 text-brand-600 px-3 py-0.5 bg-white rounded-lg shadow-xs">_____</span>');
+      document.getElementById('prep-sentence-prompt').innerHTML = formatted;
+
+      const fb = document.getElementById('prep-feedback');
+      fb.classList.add('hidden');
+    }
+
+    function checkPrepositionAnswer(userChoice) {
+      const q = PREP_QUESTIONS[prepQuestionIdx];
+      const fb = document.getElementById('prep-feedback');
+      fb.classList.remove('hidden');
+
+      if (userChoice === q.answer) {
+        playSound('correct');
+        addPoints(10);
+        fb.className = "p-4 rounded-xl text-center text-sm font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+        fb.innerHTML = `✅ Excellent! ${q.explain}`;
+
+        setTimeout(() => {
+          prepQuestionIdx = (prepQuestionIdx + 1) % PREP_QUESTIONS.length;
+          loadPrepQuestion();
+        }, 1500);
+      } else {
+        playSound('wrong');
+        fb.className = "p-4 rounded-xl text-center text-sm font-bold bg-rose-100 text-rose-900 border border-rose-300 card-shake";
+        fb.innerHTML = `❌ Incorrect. Try again! (${q.hint})`;
+      }
+    }
+
+    // UNSCRAMBLE DRILL LOGIC
+    let unscrambleWords = [];
+    let selectedUnscrambleWords = [];
+    const UNSCRAMBLE_TARGET = "Dr. Sarah starts work at 7:00 AM in the morning";
+
+    function initUnscrambleDrill() {
+      selectedUnscrambleWords = [];
+      unscrambleWords = ["Dr. Sarah", "starts", "work", "at 7:00 AM", "in the morning"].sort(() => Math.random() - 0.5);
+      renderUnscrambleTiles();
+    }
+
+    function renderUnscrambleTiles() {
+      const dropArea = document.getElementById('unscramble-drop-area');
+      const sourceArea = document.getElementById('unscramble-source-area');
+
+      dropArea.innerHTML = '';
+      if (selectedUnscrambleWords.length === 0) {
+        dropArea.innerHTML = `<span class="text-xs text-slate-500 italic">Tap word tiles below...</span>`;
+      } else {
+        selectedUnscrambleWords.forEach((word, idx) => {
+          const chip = document.createElement('button');
+          chip.className = "px-3 py-1.5 bg-brand-500 text-white font-bold rounded-lg text-xs shadow-xs flex items-center space-x-1";
+          chip.onclick = () => removeUnscrambleWord(idx);
+          chip.innerHTML = `<span>${word}</span> <i class="fa-solid fa-xmark text-[10px]"></i>`;
+          dropArea.appendChild(chip);
+        });
+      }
+
+      sourceArea.innerHTML = '';
+      unscrambleWords.forEach((word, idx) => {
+        if (!selectedUnscrambleWords.includes(word)) {
+          const chip = document.createElement('button');
+          chip.className = "px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold rounded-xl text-xs sm:text-sm shadow-xs transition-all hover:scale-105";
+          chip.onclick = () => addUnscrambleWord(word);
+          chip.textContent = word;
+          sourceArea.appendChild(chip);
+        }
+      });
+    }
+
+    function addUnscrambleWord(word) {
+      playSound('click');
+      selectedUnscrambleWords.push(word);
+      renderUnscrambleTiles();
+    }
+
+    function removeUnscrambleWord(idx) {
+      playSound('click');
+      selectedUnscrambleWords.splice(idx, 1);
+      renderUnscrambleTiles();
+    }
+
+    function resetUnscramble() {
+      playSound('click');
+      selectedUnscrambleWords = [];
+      renderUnscrambleTiles();
+    }
+
+    function checkUnscrambleSentence() {
+      const userSentence = selectedUnscrambleWords.join(' ');
+      const fb = document.getElementById('unscramble-feedback');
+      fb.classList.remove('hidden');
+
+      if (userSentence === UNSCRAMBLE_TARGET) {
+        playSound('correct');
+        addPoints(20);
+        fb.className = "p-3 rounded-xl text-xs font-bold text-center bg-emerald-500 text-white";
+        fb.textContent = "🎉 Perfect Sentence Construction!";
+        speakText(UNSCRAMBLE_TARGET);
+      } else {
+        playSound('wrong');
+        fb.className = "p-3 rounded-xl text-xs font-bold text-center bg-rose-500 text-white card-shake";
+        fb.textContent = "❌ Not quite right. Check subject ➔ verb ➔ time order.";
+      }
+    }
+
+    function speakUnscrambleTarget() {
+      speakText(UNSCRAMBLE_TARGET);
+    }
+
+    // TRANSFORMER DRILL LOGIC
+    function initTransformerDrill() {
+      document.getElementById('transformer-verb-input').value = '';
+      document.getElementById('transformer-feedback').classList.add('hidden');
+    }
+
+    function checkTransformerAnswer() {
+      const val = document.getElementById('transformer-verb-input').value.trim().toLowerCase();
+      const fb = document.getElementById('transformer-feedback');
+      fb.classList.remove('hidden');
+
+      if (val === 'cooks') {
+        playSound('correct');
+        addPoints(15);
+        fb.className = "p-3 rounded-xl text-xs font-bold text-center bg-emerald-500 text-white";
+        fb.textContent = "✅ Correct! 'I cook' ➔ 'He cooks' (add -s).";
+        speakText("He cooks meals in the afternoon.");
+      } else {
+        playSound('wrong');
+        fb.className = "p-3 rounded-xl text-xs font-bold text-center bg-rose-500 text-white card-shake";
+        fb.textContent = "❌ Remember: Add '-s' to cook for He/She (cooks).";
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // TAB 5: CUSTOM PROFILE CARD CREATOR
+    // -------------------------------------------------------------------
+    function updateCustomCardPreview() {
+      playSound('click');
+
+      const name = document.getElementById('create-name').value || "Alex Rivera";
+      const title = document.getElementById('create-title').value || "Bus Driver";
+      const workplace = document.getElementById('create-workplace').value || "City Metro Station";
+      const icon = document.getElementById('create-icon').value || "fa-bus";
+
+      const time1 = document.getElementById('create-time-1').value || "06:00 AM";
+      const action1 = document.getElementById('create-action-1').value || "starts work";
+
+      const time2 = document.getElementById('create-time-2').value || "12:30 PM";
+      const action2 = document.getElementById('create-action-2').value || "eats lunch";
+
+      const time3 = document.getElementById('create-time-3').value || "05:00 PM";
+      const action3 = document.getElementById('create-action-3').value || "finishes work";
+
+      // Update Preview Elements
+      document.getElementById('preview-name').textContent = name;
+      document.getElementById('preview-title').textContent = title;
+      document.getElementById('preview-workplace').textContent = workplace;
+
+      document.getElementById('preview-icon-display').className = `fa-solid ${icon} text-indigo-200`;
+      document.getElementById('preview-bg-watermark').className = `fa-solid ${icon}`;
+
+      document.getElementById('preview-time-1').textContent = time1;
+      document.getElementById('preview-desc-1').textContent = `${action1} in the morning.`;
+
+      document.getElementById('preview-time-2').textContent = time2;
+      document.getElementById('preview-desc-2').textContent = `${action2} in the afternoon.`;
+
+      document.getElementById('preview-time-3').textContent = time3;
+      document.getElementById('preview-desc-3').textContent = `${action3} in the evening.`;
+
+      // Auto generated paragraph
+      const paragraph = `${name} is a ${title}. ${name} works at ${workplace}. ${name} ${action1} at ${time1} in the morning, ${action2} at ${time2}, and ${action3} at ${time3}.`;
+      document.getElementById('preview-auto-paragraph').textContent = paragraph;
+    }
+
+    function printCustomCard() {
+      playSound('click');
+      window.print();
+    }
+
+    // -------------------------------------------------------------------
+    // INITIALIZATION ON WINDOW LOAD
+    // -------------------------------------------------------------------
+    window.onload = function() {
+      switchTab('matcher');
+      initMatchingGame();
+      initInspector();
+      initRoleplayScenario();
+      initPrepDrill();
+      updateCustomCardPreview();
+    };
+  </script>
+</body>
+</html>
