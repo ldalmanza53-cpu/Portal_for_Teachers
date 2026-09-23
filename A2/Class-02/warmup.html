@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Then & Now: Comparing Past & Current Habits</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#4f46e5',
+                            600: '#4338ca',
+                            700: '#3730a3',
+                        },
+                        past: {
+                            light: '#fef3c7',
+                            DEFAULT: '#f59e0b',
+                            dark: '#b45309',
+                        },
+                        now: {
+                            light: '#d1fae5',
+                            DEFAULT: '#10b981',
+                            dark: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        .tab-btn.active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+        .word-chip {
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .flip-card {
+            perspective: 1000px;
+        }
+        .flip-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            backface-visibility: hidden;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-500 selection:text-white">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- App Title Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('grammar')">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-indigo-200 transform hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-hourglass-half text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">CEFR Level A2</span>
+                        </div>
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Then <span class="text-indigo-600">&amp;</span> Now</h1>
+                    </div>
+                </div>
+
+                <!-- Stats Header Widget -->
+                <div class="flex items-center space-x-3 sm:space-x-6">
+                    <!-- Audio FX Toggle -->
+                    <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" title="Toggle Sound FX">
+                        <i id="soundIcon" class="fa-solid fa-volume-high text-lg"></i>
+                    </button>
+
+                    <!-- Score Badge -->
+                    <div class="flex items-center bg-amber-50 border border-amber-200/80 px-3.5 py-1.5 rounded-xl">
+                        <i class="fa-solid fa-star text-amber-500 text-lg mr-2 animate-pulse"></i>
+                        <div class="text-left">
+                            <span class="block text-[10px] font-bold text-amber-700 uppercase leading-none">Score</span>
+                            <span id="scoreDisplay" class="text-base font-extrabold text-amber-900 leading-tight">0 pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Badges Earned Indicator -->
+                    <div class="hidden sm:flex items-center bg-indigo-50 border border-indigo-200/80 px-3.5 py-1.5 rounded-xl cursor-pointer" onclick="switchTab('badges')">
+                        <i class="fa-solid fa-award text-indigo-600 text-lg mr-2"></i>
+                        <div class="text-left">
+                            <span class="block text-[10px] font-bold text-indigo-700 uppercase leading-none">Badges</span>
+                            <span id="badgesCountDisplay" class="text-base font-extrabold text-indigo-900 leading-tight">0 / 5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation Bar -->
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto pb-3 pt-1 scrollbar-none">
+                <button onclick="switchTab('grammar')" id="tab-grammar" class="tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold flex items-center whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-book-open mr-2"></i> Grammar Guide
+                </button>
+                <button onclick="switchTab('practice')" id="tab-practice" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-pen-ruler mr-2"></i> Interactive Practice
+                </button>
+                <button onclick="switchTab('creator')" id="tab-creator" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Habit Poster Creator
+                </button>
+                <button onclick="switchTab('speaking')" id="tab-speaking" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-comments mr-2"></i> Pair Speaking Deck
+                </button>
+                <button onclick="switchTab('badges')" id="tab-badges" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center whitespace-nowrap transition-all text-slate-600 hover:text-indigo-600 hover:bg-slate-100">
+                    <i class="fa-solid fa-trophy mr-2"></i> Achievements
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <section id="section-grammar" class="tab-content block space-y-8">
+            <!-- Hero Grammar Banner -->
+            <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black select-none">
+                    THEN
+                </div>
+                <div class="relative z-10 max-w-3xl">
+                    <span class="inline-block px-3 py-1 bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                        Grammar Core
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4">
+                        Comparing Past Habits (<span class="text-amber-400">used to</span>) &amp; Present Habits (<span class="text-emerald-400">Present Simple</span>)
+                    </h2>
+                    <p class="text-indigo-100 text-base sm:text-lg leading-relaxed mb-6">
+                        Use <strong class="text-amber-300">"used to + base verb"</strong> for actions that were repeated habits in the past but are <span class="underline decoration-amber-400 decoration-2">no longer true today</span>. Combine it with <strong class="text-emerald-300">Present Simple</strong> to highlight how your life has changed!
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="speakText('I used to play video games every day, but now I usually read books.')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center space-x-2 transition-all shadow-md">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Listen Key Model Sentence</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Structure Breakdown Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- PAST HABITS CARD -->
+                <div class="bg-white rounded-3xl p-6 border-2 border-amber-200/80 shadow-sm hover:shadow-md transition-shadow relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">1. Past Habits (<span class="text-amber-600">THEN</span>)</h3>
+                                <p class="text-xs text-slate-500">Repeated actions in the past that stopped</p>
+                            </div>
+                        </div>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full">used to + verb</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Positive -->
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider block mb-1"><i class="fa-solid fa-plus-circle mr-1"></i> Positive Form</span>
+                            <div class="flex justify-between items-center text-sm font-semibold text-slate-800">
+                                <span>Subject + <strong class="text-amber-600">used to</strong> + base verb</span>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-200 flex justify-between items-center">
+                                <span>"She <strong class="text-amber-600">used to watch</strong> cartoons every morning."</span>
+                                <button onclick="speakText('She used to watch cartoons every morning.')" class="text-slate-400 hover:text-amber-600"><i class="fa-solid fa-volume-high"></i></button>
+                            </p>
+                        </div>
+
+                        <!-- Negative -->
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-xs font-bold text-rose-600 uppercase tracking-wider block mb-1"><i class="fa-solid fa-minus-circle mr-1"></i> Negative Form</span>
+                            <div class="flex justify-between items-center text-sm font-semibold text-slate-800">
+                                <span>Subject + <strong class="text-amber-600">didn't use to</strong> + base verb</span>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-200 flex justify-between items-center">
+                                <span>"I <strong class="text-amber-600">didn't use to like</strong> broccoli as a kid."</span>
+                                <button onclick="speakText('I didn\'t use to like broccoli as a kid.')" class="text-slate-400 hover:text-amber-600"><i class="fa-solid fa-volume-high"></i></button>
+                            </p>
+                        </div>
+
+                        <!-- Question -->
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider block mb-1"><i class="fa-solid fa-circle-question mr-1"></i> Question Form</span>
+                            <div class="flex justify-between items-center text-sm font-semibold text-slate-800">
+                                <span>Did + Subject + <strong class="text-amber-600">use to</strong> + base verb?</span>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-200 flex justify-between items-center">
+                                <span>"What <strong class="text-amber-600">did you use to do</strong> in your free time?"</span>
+                                <button onclick="speakText('What did you use to do in your free time?')" class="text-slate-400 hover:text-amber-600"><i class="fa-solid fa-volume-high"></i></button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRESENT HABITS CARD -->
+                <div class="bg-white rounded-3xl p-6 border-2 border-emerald-200/80 shadow-sm hover:shadow-md transition-shadow relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">2. Current Habits (<span class="text-emerald-600">NOW</span>)</h3>
+                                <p class="text-xs text-slate-500">Regular routines &amp; habits in the present</p>
+                            </div>
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Present Simple</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Key Adverbs -->
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider block mb-1"><i class="fa-solid fa-tags mr-1"></i> Common Connectors &amp; Adverbs</span>
+                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">now</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">usually</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">these days</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">today</span>
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">every day</span>
+                            </div>
+                        </div>
+
+                        <!-- Example Comparisons -->
+                        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block"><i class="fa-solid fa-code-compare mr-1"></i> Full Comparison Examples</span>
+                            
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-slate-800">5 years ago vs. Today</span>
+                                    <button onclick="speakText('I used to walk to work, but now I take the subway.')" class="text-slate-400 hover:text-emerald-600"><i class="fa-solid fa-volume-high"></i></button>
+                                </div>
+                                <p class="text-slate-600">
+                                    "I <strong class="text-amber-600">used to walk</strong> to work, <span class="text-indigo-600 font-bold">but now</span> I <strong class="text-emerald-600">take</strong> the subway."
+                                </p>
+                            </div>
+
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-slate-800">Childhood vs. Adult Routine</span>
+                                    <button onclick="speakText('He used to sleep late, but now he usually wakes up at 6 AM.')" class="text-slate-400 hover:text-emerald-600"><i class="fa-solid fa-volume-high"></i></button>
+                                </div>
+                                <p class="text-slate-600">
+                                    "He <strong class="text-amber-600">used to sleep</strong> late, <span class="text-indigo-600 font-bold">but now</span> he <strong class="text-emerald-600">usually wakes up</strong> at 6 AM."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Common Mistakes Tip Banner -->
+            <div class="bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-amber-200 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-start space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex-shrink-0 flex items-center justify-center text-xl shadow-md">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-900 text-base">Watch Out! Common A2 English Mistake</h4>
+                        <p class="text-xs text-slate-600 mt-1">
+                            Don't forget: In negative sentences or questions with <strong class="text-rose-600">did / didn't</strong>, drop the 'd' from 'used to'!
+                        </p>
+                        <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                            <span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-lg line-through">I didn't used to like tea.</span>
+                            <span class="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg">I didn't use to like tea. ✓</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="switchTab('practice')" class="whitespace-nowrap px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all shadow-md">
+                    Test Your Knowledge <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="section-practice" class="tab-content hidden space-y-8">
+            <!-- Exercise Tabs Selector -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Grammar Practice Mode</h2>
+                    <p class="text-xs text-slate-500">Earn +10 points for each correct answer!</p>
+                </div>
+                <div class="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl w-full sm:w-auto">
+                    <button id="subtab-blanks" onclick="switchPracticeSubtab('blanks')" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white text-indigo-600 shadow-sm">
+                        <i class="fa-solid fa-list-check mr-1.5"></i> Fill in the Blanks
+                    </button>
+                    <button id="subtab-unscramble" onclick="switchPracticeSubtab('unscramble')" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-indigo-600">
+                        <i class="fa-solid fa-puzzle-piece mr-1.5"></i> Sentence Builder
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUBTAB 1: FILL IN THE BLANKS -->
+            <div id="practice-blanks-container" class="space-y-6">
+                <!-- Progress Header -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="w-full md:w-1/2">
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-2">
+                            <span>Questions Completed</span>
+                            <span id="blanksProgressText">0 / 6</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div id="blanksProgressBar" class="bg-indigo-600 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+                    <button onclick="resetBlanksExercise()" class="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center space-x-1">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Reset Questions</span>
+                    </button>
+                </div>
+
+                <!-- Questions List -->
+                <div id="blanksQuestionsList" class="space-y-4">
+                    <!-- Dynamic Question Cards Inserted via JS -->
+                </div>
+            </div>
+
+            <!-- SUBTAB 2: SENTENCE UNSCRAMBLE / BUILDER -->
+            <div id="practice-unscramble-container" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                                Unscramble Exercise <span id="unscrambleIndexText">1/5</span>
+                            </span>
+                            <h3 class="text-lg font-bold text-slate-900 mt-1">Reconstruct the Comparison Sentence</h3>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="playCurrentUnscrambleAudio()" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors" title="Listen to Hint Audio">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Target / Drop Zone Area -->
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-slate-500">Tap or drag words to build the sentence below:</p>
+                        <div id="unscrambleDropzone" class="min-h-[80px] p-4 bg-slate-50 border-2 border-dashed border-indigo-200 rounded-2xl flex flex-wrap gap-2 items-center transition-colors">
+                            <span id="dropzonePlaceholder" class="text-xs text-slate-400 font-medium">Click words from the bank below to place them here...</span>
+                        </div>
+                    </div>
+
+                    <!-- Word Bank Chips -->
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-slate-500">Word Bank:</p>
+                        <div id="unscrambleWordBank" class="flex flex-wrap gap-2 p-4 bg-slate-100 rounded-2xl min-h-[70px]">
+                            <!-- Dynamic word chips -->
+                        </div>
+                    </div>
+
+                    <!-- Feedback Alert -->
+                    <div id="unscrambleFeedback" class="hidden p-4 rounded-2xl text-xs font-medium space-y-1"></div>
+
+                    <!-- Action Controls -->
+                    <div class="flex flex-wrap justify-between items-center gap-3 pt-2 border-t border-slate-100">
+                        <button onclick="clearUnscrambleAnswer()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-colors">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Clear Selection
+                        </button>
+                        <div class="flex space-x-2">
+                            <button id="unscrambleCheckBtn" onclick="checkUnscrambleAnswer()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-md">
+                                Check Sentence
+                            </button>
+                            <button id="unscrambleNextBtn" onclick="nextUnscrambleQuestion()" class="hidden px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-md">
+                                Next Sentence <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-creator" class="tab-content hidden space-y-8">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div>
+                    <span class="bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Personal Grammar Poster
+                    </span>
+                    <h2 class="text-2xl font-extrabold text-slate-900 mt-2">"Then &amp; Now" Habit Card Creator</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">
+                        Select a category, enter your real-life past and present habits, and create a stylized comparison poster to review!
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    <!-- Form Input Controls (Left Column) -->
+                    <div class="lg:col-span-5 space-y-5 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <!-- Category Selector -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">1. Choose Habit Category</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="selectCategory('food', '🍕 Food & Diet', 'fa-utensils')" class="cat-btn active border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-indigo-600 text-indigo-600 shadow-sm">
+                                    <i class="fa-solid fa-utensils text-base"></i>
+                                    <span>Food</span>
+                                </button>
+                                <button onclick="selectCategory('hobbies', '🎮 Hobbies & Free Time', 'fa-gamepad')" class="cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600">
+                                    <i class="fa-solid fa-gamepad text-base"></i>
+                                    <span>Hobbies</span>
+                                </button>
+                                <button onclick="selectCategory('sleep', '🛌 Sleep & Routine', 'fa-bed')" class="cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600">
+                                    <i class="fa-solid fa-bed text-base"></i>
+                                    <span>Sleep</span>
+                                </button>
+                                <button onclick="selectCategory('transport', '🚗 Transport', 'fa-car')" class="cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600">
+                                    <i class="fa-solid fa-car text-base"></i>
+                                    <span>Transport</span>
+                                </button>
+                                <button onclick="selectCategory('tech', '📱 Tech & Media', 'fa-mobile-screen')" class="cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600">
+                                    <i class="fa-solid fa-mobile-screen text-base"></i>
+                                    <span>Tech</span>
+                                </button>
+                                <button onclick="selectCategory('sports', '⚽ Fitness & Sports', 'fa-dumbbell')" class="cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600">
+                                    <i class="fa-solid fa-dumbbell text-base"></i>
+                                    <span>Sports</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- User Name Input -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Your Name / Avatar Label</label>
+                            <input type="text" id="posterNameInput" value="Alex" oninput="updatePosterPreview()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <!-- Past Habit Input -->
+                        <div>
+                            <label class="block text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">
+                                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Past Habit (used to...)
+                            </label>
+                            <input type="text" id="posterPastInput" value="eat fast food every Friday" oninput="updatePosterPreview()" placeholder="e.g. play soccer after school" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+
+                        <!-- Present Habit Input -->
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
+                                <i class="fa-solid fa-calendar-check mr-1"></i> Present Habit (now, I usually...)
+                            </label>
+                            <input type="text" id="posterPresentInput" value="cook healthy meals at home" oninput="updatePosterPreview()" placeholder="e.g. go to the gym 3 times a week" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+
+                        <!-- Save & Add to Gallery Button -->
+                        <button onclick="saveCurrentPoster()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-md flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>Save Card to My Collection (+15 pts)</span>
+                        </button>
+                    </div>
+
+                    <!-- Live Poster Preview (Right Column) -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Live Preview Card</span>
+                            <button onclick="speakPosterContent()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                                <i class="fa-solid fa-volume-high"></i>
+                                <span>Listen Read Aloud</span>
+                            </button>
+                        </div>
+
+                        <!-- Stylized Poster Box -->
+                        <div id="posterPreviewBox" class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden border border-indigo-500/20">
+                            <!-- Background Accent -->
+                            <div class="absolute -right-12 -top-12 w-40 h-40 bg-indigo-500/20 rounded-full blur-2xl"></div>
+                            <div class="absolute -left-12 -bottom-12 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl"></div>
+
+                            <div class="relative z-10 space-y-6">
+                                <!-- Poster Header -->
+                                <div class="flex justify-between items-center border-b border-indigo-800/60 pb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-xl bg-indigo-500/30 border border-indigo-400/30 text-indigo-300 flex items-center justify-center text-lg">
+                                            <i id="posterCatIcon" class="fa-solid fa-utensils"></i>
+                                        </div>
+                                        <div>
+                                            <h3 id="posterNameDisplay" class="font-bold text-base text-white">Alex's Habits</h3>
+                                            <span id="posterCatDisplay" class="text-xs text-indigo-300 font-medium">🍕 Food &amp; Diet</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] font-extrabold tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-3 py-1 rounded-full uppercase">
+                                        THEN &amp; NOW
+                                    </span>
+                                </div>
+
+                                <!-- Grid comparison -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <!-- THEN BOX -->
+                                    <div class="bg-amber-950/40 border border-amber-500/30 p-4 rounded-2xl space-y-2">
+                                        <div class="flex items-center justify-between text-amber-400">
+                                            <span class="text-xs font-black uppercase tracking-wider"><i class="fa-solid fa-history mr-1"></i> THEN (Past)</span>
+                                            <span class="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-300">used to</span>
+                                        </div>
+                                        <p class="text-xs text-amber-100 font-medium leading-relaxed">
+                                            "Five years ago, I <strong id="posterPastText" class="text-amber-300">used to eat fast food every Friday</strong>."
+                                        </p>
+                                    </div>
+
+                                    <!-- NOW BOX -->
+                                    <div class="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
+                                        <div class="flex items-center justify-between text-emerald-400">
+                                            <span class="text-xs font-black uppercase tracking-wider"><i class="fa-solid fa-sparkles mr-1"></i> NOW (Present)</span>
+                                            <span class="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300">usually</span>
+                                        </div>
+                                        <p class="text-xs text-emerald-100 font-medium leading-relaxed">
+                                            "But now, I <strong id="posterPresentText" class="text-emerald-300">cook healthy meals at home</strong>."
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Full Combined Sentence -->
+                                <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 text-xs leading-relaxed text-slate-300">
+                                    <span class="text-indigo-400 font-bold uppercase block text-[10px] mb-1">Full Speaking Sentence:</span>
+                                    "<span id="posterFullSentence">I used to eat fast food every Friday, but now I usually cook healthy meals at home.</span>"
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Copy Sentence Button -->
+                        <div class="flex justify-end">
+                            <button onclick="copyPosterSentence()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5">
+                                <i class="fa-solid fa-copy"></i>
+                                <span>Copy Text to Clipboard</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection Gallery Grid -->
+                <div class="pt-6 border-t border-slate-200 space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900">Saved Habit Cards Collection</h3>
+                    <div id="savedCardsGallery" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamic saved cards -->
+                        <div class="p-4 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-center text-xs text-slate-400 py-8 col-span-full">
+                            No cards saved yet! Fill in your details above and click "Save Card to My Collection".
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-speaking" class="tab-content hidden space-y-8">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <span class="bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                            Interactive Speaking Cards
+                        </span>
+                        <h2 class="text-2xl font-extrabold text-slate-900 mt-2">Pair Speaking &amp; Discussion Cards</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Practice asking and answering questions with a partner using the timer!</p>
+                    </div>
+
+                    <!-- Discussion Timer Widget -->
+                    <div class="bg-slate-900 text-white px-5 py-3 rounded-2xl flex items-center space-x-4 shadow-lg">
+                        <div class="text-center">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">Partner Timer</span>
+                            <span id="timerDisplay" class="text-xl font-black font-mono text-emerald-400">00:45</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="toggleTimer()" id="timerToggleBtn" class="w-9 h-9 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 flex items-center justify-center font-bold text-xs transition-colors">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button onclick="resetTimer()" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-xs transition-colors">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discussion Card Flip Component -->
+                <div class="max-w-xl mx-auto py-4">
+                    <div id="speakingCardFlip" class="flip-card min-h-[320px] w-full cursor-pointer" onclick="flipSpeakingCard()">
+                        <div class="flip-card-inner relative w-full h-full rounded-3xl shadow-xl">
+                            <!-- FRONT OF CARD -->
+                            <div class="flip-card-front absolute inset-0 bg-gradient-to-br from-indigo-600 to-indigo-900 text-white rounded-3xl p-8 flex flex-col justify-between border-2 border-indigo-400/30">
+                                <div class="flex justify-between items-center">
+                                    <span id="speakingCardCategory" class="text-xs font-extrabold uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                                        Card #1 • Free Time
+                                    </span>
+                                    <span class="text-xs text-indigo-200"><i class="fa-solid fa-rotate mr-1"></i> Tap to flip for model answer</span>
+                                </div>
+
+                                <div class="my-auto py-6 text-center space-y-4">
+                                    <p id="speakingCardQuestion" class="text-xl sm:text-2xl font-extrabold leading-snug">
+                                        "What did you use to do after school when you were 10 years old?"
+                                    </p>
+                                </div>
+
+                                <div class="flex justify-between items-center pt-4 border-t border-white/10">
+                                    <button onclick="event.stopPropagation(); speakCurrentQuestion()" class="px-3.5 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-bold transition-colors flex items-center space-x-2">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                        <span>Listen Question</span>
+                                    </button>
+                                    <span class="text-[11px] text-indigo-200 font-medium">Ask your partner!</span>
+                                </div>
+                            </div>
+
+                            <!-- BACK OF CARD -->
+                            <div class="flip-card-back absolute inset-0 bg-slate-900 text-white rounded-3xl p-8 flex flex-col justify-between border-2 border-emerald-500/30">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full border border-emerald-500/30">
+                                        Sentence Starters &amp; Ideas
+                                    </span>
+                                    <span class="text-xs text-slate-400"><i class="fa-solid fa-rotate mr-1"></i> Tap to view question</span>
+                                </div>
+
+                                <div class="my-auto py-4 space-y-3">
+                                    <div class="bg-slate-800/90 p-4 rounded-2xl border border-slate-700 text-left space-y-2">
+                                        <span class="text-amber-400 font-bold text-xs uppercase block">How to Answer:</span>
+                                        <p id="speakingCardAnswerHint" class="text-xs sm:text-sm text-slate-200">
+                                            "I <strong class="text-amber-400">used to play</strong> soccer in the park, but now I <strong class="text-emerald-400">usually study</strong> or scroll on my phone."
+                                        </p>
+                                    </div>
+
+                                    <div class="bg-indigo-950/50 p-3 rounded-xl border border-indigo-500/20 text-left">
+                                        <span class="text-xs font-bold text-indigo-300 block">Follow-up question for your partner:</span>
+                                        <p class="text-xs text-slate-300 mt-0.5">"Do you still enjoy doing that today?"</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center pt-2">
+                                    <span class="text-[11px] text-emerald-400 font-bold">Answer in complete sentences!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deck Navigation Controls -->
+                <div class="flex justify-center items-center space-x-4">
+                    <button onclick="prevSpeakingCard()" class="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 font-bold text-xs text-slate-700 transition-colors shadow-sm">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Previous Card
+                    </button>
+                    <span id="speakingCardCounter" class="text-xs font-bold text-slate-500">1 of 6</span>
+                    <button onclick="nextSpeakingCard()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold text-xs text-white transition-colors shadow-md">
+                        Next Card <i class="fa-solid fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-badges" class="tab-content hidden space-y-8">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+                <div>
+                    <span class="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Gamification Hub
+                    </span>
+                    <h2 class="text-2xl font-extrabold text-slate-900 mt-2">Badges &amp; Grammar Mastery</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">Complete exercises and practice habits to earn points and unlock all badges!</p>
+                </div>
+
+                <!-- Progress overview bar -->
+                <div class="bg-gradient-to-r from-indigo-50 via-slate-50 to-amber-50 p-6 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span id="userLevelTitle" class="text-sm font-extrabold text-indigo-900">Level 1: Beginner Explorer</span>
+                            <p class="text-xs text-slate-500">Keep completing exercises to reach Level 3!</p>
+                        </div>
+                        <span id="totalPointsLabel" class="text-xl font-black text-amber-600">0 / 100 Points</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden p-0.5">
+                        <div id="levelProgressBar" class="bg-gradient-to-r from-indigo-500 to-amber-500 h-full rounded-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <!-- Badges Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Badge 1 -->
+                    <div id="badge-grammar" class="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50 opacity-60 transition-all flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl flex-shrink-0 badge-icon">
+                            <i class="fa-solid fa-book-reader"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Grammar Scholar</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Read the Grammar Guide &amp; listen to model sentences.</p>
+                            <span class="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600 badge-status">Locked</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge 2 -->
+                    <div id="badge-blanks" class="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50 opacity-60 transition-all flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl flex-shrink-0 badge-icon">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Fill-in Master</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Score 50 points in Fill in the Blanks practice.</p>
+                            <span class="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600 badge-status">Locked</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge 3 -->
+                    <div id="badge-unscramble" class="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50 opacity-60 transition-all flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl flex-shrink-0 badge-icon">
+                            <i class="fa-solid fa-puzzle-piece"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Sentence Architect</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Complete all unscramble builder sentences.</p>
+                            <span class="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600 badge-status">Locked</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge 4 -->
+                    <div id="badge-poster" class="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50 opacity-60 transition-all flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl flex-shrink-0 badge-icon">
+                            <i class="fa-solid fa-palette"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Habit Designer</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Create and save a personal Then &amp; Now habit card.</p>
+                            <span class="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600 badge-status">Locked</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge 5 -->
+                    <div id="badge-speaking" class="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50 opacity-60 transition-all flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-200 text-slate-400 flex items-center justify-center text-xl flex-shrink-0 badge-icon">
+                            <i class="fa-solid fa-microphone"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Speaking Champion</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Practice with the pair speaking card timer.</p>
+                            <span class="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600 badge-status">Locked</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-1">
+            <p class="font-semibold text-slate-700">Then &amp; Now: CEFR Level A2 English Learning Tool</p>
+            <p>Designed for interactive classroom learning, self-study, and habit comparison practice.</p>
+        </div>
+    </footer>
+
+    <script>
+        // APP STATE DATA
+        const state = {
+            score: 0,
+            soundEnabled: true,
+            unlockedBadges: new Set(),
+            savedPosters: [],
+            currentSubtab: 'blanks',
+            
+            // Fill in blanks data
+            blanksData: [
+                {
+                    id: 1,
+                    context: "Five years ago, Sarah watched cartoons every morning. Today she reads the news.",
+                    sentence: "Five years ago, Sarah _____ cartoons every morning, but now she _____ the news.",
+                    verb1: "watch",
+                    verb2: "read",
+                    options1: ["used to watch", "watches", "didn't watch"],
+                    options2: ["reads", "used to read", "read"],
+                    correct1: "used to watch",
+                    correct2: "reads",
+                    explanation: "Use 'used to watch' for Sarah's past habit, and 'reads' (Present Simple) for her current action.",
+                    user1: "",
+                    user2: "",
+                    answered: false
+                },
+                {
+                    id: 2,
+                    context: "I drank soda with every meal in high school. Now I prefer water.",
+                    sentence: "I _____ soda with every meal, but now I _____ water.",
+                    verb1: "drink",
+                    verb2: "prefer",
+                    options1: ["used to drink", "drinks", "didn't drink"],
+                    options2: ["prefer", "used to prefer", "prefers"],
+                    correct1: "used to drink",
+                    correct2: "prefer",
+                    explanation: "Use 'used to drink' for past habits and 'prefer' for present state.",
+                    user1: "",
+                    user2: "",
+                    answered: false
+                },
+                {
+                    id: 3,
+                    context: "David disliked vegetables as a child. Now he eats salad every day.",
+                    sentence: "David _____ vegetables when he was a child, but now he _____ a salad every day.",
+                    verb1: "not / like",
+                    verb2: "eat",
+                    options1: ["didn't use to like", "didn't used to like", "used to like"],
+                    options2: ["eats", "eat", "used to eat"],
+                    correct1: "didn't use to like",
+                    correct2: "eats",
+                    explanation: "In negative past habits, use 'didn't use to like' (no 'd' on 'use'). Now he 'eats' (Present Simple + third person -s).",
+                    user1: "",
+                    user2: "",
+                    answered: false
+                },
+                {
+                    id: 4,
+                    context: "We lived in a small quiet village. Now we live in a big city.",
+                    sentence: "We _____ in a small village, but now we _____ in a big city.",
+                    verb1: "live",
+                    verb2: "live",
+                    options1: ["used to live", "lives", "didn't live"],
+                    options2: ["live", "used to live", "lived"],
+                    correct1: "used to live",
+                    correct2: "live",
+                    explanation: "Past state = 'used to live'. Present state = 'live'.",
+                    user1: "",
+                    user2: "",
+                    answered: false
+                },
+                {
+                    id: 5,
+                    context: "They walked to work last year. Today they take the subway.",
+                    sentence: "They _____ to work, but now they _____ the subway.",
+                    verb1: "walk",
+                    verb2: "take",
+                    options1: ["used to walk", "walks", "didn't walk"],
+                    options2: ["take", "used to take", "takes"],
+                    correct1: "used to walk",
+                    correct2: "take",
+                    explanation: "Past transport = 'used to walk'. Current transport = 'take'.",
+                    user1: "",
+                    user2: "",
+                    answered: false
+                }
+            ],
+
+            // Sentence Unscramble Data
+            unscrambleIndex: 0,
+            unscrambleData: [
+                {
+                    words: ["I", "used", "to", "play", "video", "games,", "but", "now", "I", "read", "books."],
+                    audioText: "I used to play video games, but now I read books."
+                },
+                {
+                    words: ["She", "didn't", "use", "to", "eat", "vegetables,", "but", "now", "she", "loves", "salads."],
+                    audioText: "She didn't use to eat vegetables, but now she loves salads."
+                },
+                {
+                    words: ["We", "used", "to", "live", "in", "Spain,", "but", "now", "we", "live", "in", "London."],
+                    audioText: "We used to live in Spain, but now we live in London."
+                },
+                {
+                    words: ["He", "used", "to", "stay", "up", "late,", "but", "now", "he", "sleeps", "early."],
+                    audioText: "He used to stay up late, but now he sleeps early."
+                }
+            ],
+            currentUnscrambleSelection: [],
+
+            // Speaking Deck Data
+            speakingIndex: 0,
+            speakingDeck: [
+                {
+                    cat: "Card #1 • Free Time",
+                    question: "What did you use to do in your free time five years ago?",
+                    hint: "I used to play video games or watch TV, but now I usually go to the gym or read books."
+                },
+                {
+                    cat: "Card #2 • Food & Drink",
+                    question: "What food did you use to eat a lot when you were a child?",
+                    hint: "I used to eat sugary cereals every morning, but now I usually eat oatmeal or eggs."
+                },
+                {
+                    cat: "Card #3 • Transport",
+                    question: "How did you use to get to school or work in the past?",
+                    hint: "I used to walk or take the bus, but now I usually drive a car or ride a bike."
+                },
+                {
+                    cat: "Card #4 • Bedtime Habits",
+                    question: "What time did you use to go to bed on weekends?",
+                    hint: "I used to stay up until 2 AM, but now I usually go to sleep at 11 PM."
+                },
+                {
+                    cat: "Card #5 • Music & Media",
+                    question: "What kind of music did you use to listen to when you were younger?",
+                    hint: "I used to listen to pop music, but now I usually listen to podcasts or rock music."
+                }
+            ],
+
+            // Poster Generator State
+            poster: {
+                cat: 'food',
+                catTitle: '🍕 Food & Diet',
+                catIcon: 'fa-utensils',
+                name: 'Alex',
+                past: 'eat fast food every Friday',
+                present: 'cook healthy meals at home'
+            },
+
+            // Timer State
+            timerInterval: null,
+            timerSeconds: 45
+        };
+
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'wrong') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'pop') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'badge') {
+                // Triumphant arpeggio
+                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + (idx * 0.08));
+                    gain.gain.setValueAtTime(0.2, now + (idx * 0.08));
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + (idx * 0.08) + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + (idx * 0.08));
+                    osc.stop(now + (idx * 0.08) + 0.3);
+                });
+            }
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (state.soundEnabled) {
+                icon.className = "fa-solid fa-volume-high text-lg";
+                playSound('pop');
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-lg text-rose-500";
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9; // Friendly clear pace for learners
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function switchTab(tabId) {
+            playSound('pop');
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show target
+            const targetSection = document.getElementById(`section-${tabId}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            const targetBtn = document.getElementById(`tab-${tabId}`);
+            if (targetBtn) targetBtn.classList.add('active');
+
+            // Unlock grammar scholar badge if grammar guide opened
+            if (tabId === 'grammar') {
+                unlockBadge('grammar');
+            }
+        }
+
+        function switchPracticeSubtab(subtabId) {
+            playSound('pop');
+            state.currentSubtab = subtabId;
+            const blanksContainer = document.getElementById('practice-blanks-container');
+            const unscrambleContainer = document.getElementById('practice-unscramble-container');
+            const btnBlanks = document.getElementById('subtab-blanks');
+            const btnUnscramble = document.getElementById('subtab-unscramble');
+
+            if (subtabId === 'blanks') {
+                blanksContainer.classList.remove('hidden');
+                unscrambleContainer.classList.add('hidden');
+                btnBlanks.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white text-indigo-600 shadow-sm";
+                btnUnscramble.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-indigo-600";
+            } else {
+                blanksContainer.classList.add('hidden');
+                unscrambleContainer.classList.remove('hidden');
+                btnUnscramble.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all bg-white text-indigo-600 shadow-sm";
+                btnBlanks.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 hover:text-indigo-600";
+                loadUnscrambleQuestion();
+            }
+        }
+
+        function renderBlanksExercise() {
+            const listContainer = document.getElementById('blanksQuestionsList');
+            listContainer.innerHTML = '';
+
+            state.blanksData.forEach((q, idx) => {
+                const qCard = document.createElement('div');
+                qCard.className = `bg-white p-6 rounded-3xl border ${q.answered ? (q.isCorrect ? 'border-emerald-300 bg-emerald-50/20' : 'border-rose-300 bg-rose-50/20') : 'border-slate-200'} shadow-sm space-y-4 transition-all`;
+
+                qCard.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-8 h-8 rounded-xl ${q.answered ? (q.isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700') : 'bg-indigo-100 text-indigo-700'} flex items-center justify-center font-bold text-xs">
+                                #${idx + 1}
+                            </span>
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Context Situation</span>
+                                <p class="text-xs text-slate-600 font-medium">${q.context}</p>
+                            </div>
+                        </div>
+                        <button onclick="speakText('${q.sentence.replace('_____', q.correct1).replace('_____', q.correct2)}')" class="text-slate-400 hover:text-indigo-600 p-2" title="Listen Sentence">
+                            <i class="fa-solid fa-volume-high text-sm"></i>
+                        </button>
+                    </div>
+
+                    <!-- Sentence dropdowns area -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 leading-loose text-sm font-semibold text-slate-800">
+                        ${getBlanksSentenceHTML(q, idx)}
+                    </div>
+
+                    <!-- Answer feedback banner -->
+                    ${q.answered ? `
+                        <div class="p-4 rounded-2xl text-xs ${q.isCorrect ? 'bg-emerald-100/80 text-emerald-900 border border-emerald-200' : 'bg-rose-100/80 text-rose-900 border border-rose-200'} space-y-1">
+                            <div class="font-bold flex items-center space-x-1.5">
+                                <i class="fa-solid ${q.isCorrect ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-rose-600'} text-sm"></i>
+                                <span>${q.isCorrect ? 'Great job! Correct!' : 'Not quite right yet.'}</span>
+                            </div>
+                            <p class="text-slate-700">${q.explanation}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex justify-end space-x-2 pt-1">
+                        ${!q.answered ? `
+                            <button onclick="checkBlankQuestion(${idx})" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm">
+                                Submit Answer
+                            </button>
+                        ` : `
+                            <button onclick="retryBlankQuestion(${idx})" class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs transition-colors">
+                                Try Again
+                            </button>
+                        `}
+                    </div>
+                `;
+
+                listContainer.appendChild(qCard);
+            });
+
+            updateBlanksProgress();
+        }
+
+        function getBlanksSentenceHTML(q, idx) {
+            const parts = q.sentence.split('_____');
+            
+            const opt1HTML = `
+                <select id="select-1-${idx}" onchange="state.blanksData[${idx}].user1 = this.value" class="inline-block mx-1 px-3 py-1.5 rounded-xl border ${q.answered ? (q.user1 === q.correct1 ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold' : 'border-rose-500 bg-rose-50 text-rose-900 font-bold') : 'border-slate-300 bg-white text-slate-800'} text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- select past habit (${q.verb1}) --</option>
+                    ${q.options1.map(opt => `<option value="${opt}" ${q.user1 === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>
+            `;
+
+            const opt2HTML = `
+                <select id="select-2-${idx}" onchange="state.blanksData[${idx}].user2 = this.value" class="inline-block mx-1 px-3 py-1.5 rounded-xl border ${q.answered ? (q.user2 === q.correct2 ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold' : 'border-rose-500 bg-rose-50 text-rose-900 font-bold') : 'border-slate-300 bg-white text-slate-800'} text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- select present habit (${q.verb2}) --</option>
+                    ${q.options2.map(opt => `<option value="${opt}" ${q.user2 === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                </select>
+            `;
+
+            return parts[0] + opt1HTML + parts[1] + opt2HTML + parts[2];
+        }
+
+        function checkBlankQuestion(idx) {
+            const q = state.blanksData[idx];
+            if (!q.user1 || !q.user2) {
+                alert("Please select options for both blanks before submitting!");
+                return;
+            }
+
+            q.answered = true;
+            q.isCorrect = (q.user1 === q.correct1 && q.user2 === q.correct2);
+
+            if (q.isCorrect) {
+                playSound('correct');
+                addPoints(10);
+            } else {
+                playSound('wrong');
+            }
+
+            renderBlanksExercise();
+            checkBlanksBadge();
+        }
+
+        function retryBlankQuestion(idx) {
+            playSound('pop');
+            const q = state.blanksData[idx];
+            q.answered = false;
+            q.user1 = "";
+            q.user2 = "";
+            renderBlanksExercise();
+        }
+
+        function resetBlanksExercise() {
+            playSound('pop');
+            state.blanksData.forEach(q => {
+                q.answered = false;
+                q.user1 = "";
+                q.user2 = "";
+                q.isCorrect = false;
+            });
+            renderBlanksExercise();
+        }
+
+        function updateBlanksProgress() {
+            const answeredCount = state.blanksData.filter(q => q.answered && q.isCorrect).length;
+            const total = state.blanksData.length;
+            document.getElementById('blanksProgressText').innerText = `${answeredCount} / ${total}`;
+            const pct = (answeredCount / total) * 100;
+            document.getElementById('blanksProgressBar').style.width = `${pct}%`;
+        }
+
+        function checkBlanksBadge() {
+            const correctCount = state.blanksData.filter(q => q.answered && q.isCorrect).length;
+            if (correctCount >= 5) {
+                unlockBadge('blanks');
+            }
+        }
+
+        function loadUnscrambleQuestion() {
+            const q = state.unscrambleData[state.unscrambleIndex];
+            state.currentUnscrambleSelection = [];
+
+            document.getElementById('unscrambleIndexText').innerText = `${state.unscrambleIndex + 1}/${state.unscrambleData.length}`;
+
+            // Shuffle words
+            const shuffled = [...q.words].sort(() => Math.random() - 0.5);
+
+            renderUnscrambleChips(shuffled);
+            renderUnscrambleDropzone();
+
+            // Hide feedback
+            const feedback = document.getElementById('unscrambleFeedback');
+            feedback.classList.add('hidden');
+
+            document.getElementById('unscrambleCheckBtn').classList.remove('hidden');
+            document.getElementById('unscrambleNextBtn').classList.add('hidden');
+        }
+
+        function renderUnscrambleChips(wordArray) {
+            const bank = document.getElementById('unscrambleWordBank');
+            bank.innerHTML = '';
+            wordArray.forEach((w, idx) => {
+                const chip = document.createElement('button');
+                chip.className = "word-chip px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:border-indigo-500 font-bold text-xs text-slate-800 shadow-sm transition-transform active:scale-95";
+                chip.innerText = w;
+                chip.onclick = () => selectWordChip(w, chip);
+                bank.appendChild(chip);
+            });
+        }
+
+        function selectWordChip(word, chipElement) {
+            playSound('pop');
+            state.currentUnscrambleSelection.push(word);
+            chipElement.classList.add('opacity-30', 'pointer-events-none');
+            renderUnscrambleDropzone();
+        }
+
+        function renderUnscrambleDropzone() {
+            const dz = document.getElementById('unscrambleDropzone');
+            dz.innerHTML = '';
+
+            if (state.currentUnscrambleSelection.length === 0) {
+                dz.innerHTML = '<span id="dropzonePlaceholder" class="text-xs text-slate-400 font-medium">Click words from the bank below to place them here...</span>';
+                return;
+            }
+
+            state.currentUnscrambleSelection.forEach((w, idx) => {
+                const chip = document.createElement('span');
+                chip.className = "word-chip px-3.5 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md flex items-center space-x-1 cursor-pointer hover:bg-indigo-700 transition-all";
+                chip.innerHTML = `<span>${w}</span> <i class="fa-solid fa-xmark text-[10px] opacity-70 ml-1"></i>`;
+                chip.onclick = () => removeWordFromSelection(idx);
+                dz.appendChild(chip);
+            });
+        }
+
+        function removeWordFromSelection(index) {
+            playSound('pop');
+            const removedWord = state.currentUnscrambleSelection.splice(index, 1)[0];
+            
+            // Re-enable in word bank
+            const bankChips = document.querySelectorAll('#unscrambleWordBank .word-chip');
+            for (let chip of bankChips) {
+                if (chip.innerText === removedWord && chip.classList.contains('opacity-30')) {
+                    chip.classList.remove('opacity-30', 'pointer-events-none');
+                    break;
+                }
+            }
+            renderUnscrambleDropzone();
+        }
+
+        function clearUnscrambleAnswer() {
+            playSound('pop');
+            const q = state.unscrambleData[state.unscrambleIndex];
+            loadUnscrambleQuestion();
+        }
+
+        function checkUnscrambleAnswer() {
+            const q = state.unscrambleData[state.unscrambleIndex];
+            const userSentence = state.currentUnscrambleSelection.join(' ');
+            const correctSentence = q.words.join(' ');
+
+            const feedback = document.getElementById('unscrambleFeedback');
+            feedback.classList.remove('hidden');
+
+            if (userSentence === correctSentence) {
+                playSound('correct');
+                addPoints(10);
+                feedback.className = "p-4 rounded-2xl text-xs font-medium space-y-1 bg-emerald-100 text-emerald-900 border border-emerald-300";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-check text-emerald-600"></i><span>Excellent! Sentence is perfectly structured!</span></div>
+                    <p class="text-emerald-800">"${correctSentence}"</p>
+                `;
+                speakText(correctSentence);
+
+                document.getElementById('unscrambleCheckBtn').classList.add('hidden');
+                document.getElementById('unscrambleNextBtn').classList.remove('hidden');
+
+                if (state.unscrambleIndex === state.unscrambleData.length - 1) {
+                    unlockBadge('unscramble');
+                }
+            } else {
+                playSound('wrong');
+                feedback.className = "p-4 rounded-2xl text-xs font-medium space-y-1 bg-rose-100 text-rose-900 border border-rose-300";
+                feedback.innerHTML = `
+                    <div class="font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-xmark text-rose-600"></i><span>Not quite right. Keep trying!</span></div>
+                    <p class="text-rose-800">Check the word order of "used to" and "now".</p>
+                `;
+            }
+        }
+
+        function playCurrentUnscrambleAudio() {
+            const q = state.unscrambleData[state.unscrambleIndex];
+            speakText(q.audioText);
+        }
+
+        function nextUnscrambleQuestion() {
+            playSound('pop');
+            state.unscrambleIndex = (state.unscrambleIndex + 1) % state.unscrambleData.length;
+            loadUnscrambleQuestion();
+        }
+
+        function selectCategory(catKey, catTitle, catIcon) {
+            playSound('pop');
+            state.poster.cat = catKey;
+            state.poster.catTitle = catTitle;
+            state.poster.catIcon = catIcon;
+
+            // Highlight category buttons
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-slate-200 text-slate-600";
+            });
+            event.currentTarget.className = "cat-btn active border p-2.5 rounded-xl bg-white text-center hover:border-indigo-500 transition-all text-xs font-bold flex flex-col items-center gap-1 border-indigo-600 text-indigo-600 shadow-sm";
+
+            updatePosterPreview();
+        }
+
+        function updatePosterPreview() {
+            state.poster.name = document.getElementById('posterNameInput').value || 'My';
+            state.poster.past = document.getElementById('posterPastInput').value || '...';
+            state.poster.present = document.getElementById('posterPresentInput').value || '...';
+
+            document.getElementById('posterNameDisplay').innerText = `${state.poster.name}'s Habits`;
+            document.getElementById('posterCatDisplay').innerText = state.poster.catTitle;
+            document.getElementById('posterCatIcon').className = `fa-solid ${state.poster.catIcon}`;
+
+            document.getElementById('posterPastText').innerText = `used to ${state.poster.past}`;
+            document.getElementById('posterPresentText').innerText = `${state.poster.present}`;
+
+            const fullSentence = `I used to ${state.poster.past}, but now I usually ${state.poster.present}.`;
+            document.getElementById('posterFullSentence').innerText = fullSentence;
+        }
+
+        function speakPosterContent() {
+            const fullSentence = document.getElementById('posterFullSentence').innerText;
+            speakText(fullSentence);
+        }
+
+        function copyPosterSentence() {
+            const fullSentence = document.getElementById('posterFullSentence').innerText;
+            
+            // Clipboard fallback
+            const tempInput = document.createElement('textarea');
+            tempInput.value = fullSentence;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            playSound('pop');
+            alert('Copied habit sentence to clipboard:\n\n' + fullSentence);
+        }
+
+        function saveCurrentPoster() {
+            playSound('correct');
+            addPoints(15);
+            unlockBadge('poster');
+
+            const posterData = {
+                name: state.poster.name,
+                catTitle: state.poster.catTitle,
+                catIcon: state.poster.catIcon,
+                past: state.poster.past,
+                present: state.poster.present,
+                id: Date.now()
+            };
+
+            state.savedPosters.push(posterData);
+            renderSavedGallery();
+        }
+
+        function renderSavedGallery() {
+            const gallery = document.getElementById('savedCardsGallery');
+            if (state.savedPosters.length === 0) return;
+
+            gallery.innerHTML = '';
+            state.savedPosters.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 text-white p-5 rounded-2xl border border-indigo-500/30 space-y-3 shadow-md relative";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold text-indigo-300"><i class="fa-solid ${item.catIcon} mr-1"></i> ${item.catTitle}</span>
+                        <span class="text-[10px] text-slate-400 font-bold">${item.name}</span>
+                    </div>
+                    <div class="text-xs space-y-1.5 text-slate-300">
+                        <p><strong class="text-amber-400">Then:</strong> used to ${item.past}</p>
+                        <p><strong class="text-emerald-400">Now:</strong> ${item.present}</p>
+                    </div>
+                    <button onclick="speakText('I used to ${item.past}, but now I usually ${item.present}.')" class="text-slate-400 hover:text-white text-xs font-bold flex items-center space-x-1 pt-1">
+                        <i class="fa-solid fa-volume-high"></i> <span>Listen</span>
+                    </button>
+                `;
+                gallery.appendChild(card);
+            });
+        }
+
+        function renderSpeakingCard() {
+            const cardData = state.speakingDeck[state.speakingIndex];
+            
+            document.getElementById('speakingCardCategory').innerText = cardData.cat;
+            document.getElementById('speakingCardQuestion').innerText = `"${cardData.question}"`;
+            document.getElementById('speakingCardAnswerHint').innerHTML = cardData.hint;
+            document.getElementById('speakingCardCounter').innerText = `${state.speakingIndex + 1} of ${state.speakingDeck.length}`;
+
+            // Reset card flip
+            document.getElementById('speakingCardFlip').classList.remove('flipped');
+        }
+
+        function flipSpeakingCard() {
+            playSound('pop');
+            document.getElementById('speakingCardFlip').classList.toggle('flipped');
+            unlockBadge('speaking');
+        }
+
+        function nextSpeakingCard() {
+            playSound('pop');
+            state.speakingIndex = (state.speakingIndex + 1) % state.speakingDeck.length;
+            renderSpeakingCard();
+        }
+
+        function prevSpeakingCard() {
+            playSound('pop');
+            state.speakingIndex = (state.speakingIndex - 1 + state.speakingDeck.length) % state.speakingDeck.length;
+            renderSpeakingCard();
+        }
+
+        function speakCurrentQuestion() {
+            const q = state.speakingDeck[state.speakingIndex].question;
+            speakText(q);
+        }
+
+        // Timer Logic
+        function toggleTimer() {
+            playSound('pop');
+            const btn = document.getElementById('timerToggleBtn');
+            if (state.timerInterval) {
+                // Pause
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            } else {
+                // Start
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                state.timerInterval = setInterval(() => {
+                    state.timerSeconds--;
+                    updateTimerDisplay();
+                    if (state.timerSeconds <= 0) {
+                        clearInterval(state.timerInterval);
+                        state.timerInterval = null;
+                        btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                        playSound('badge');
+                        alert("Time's up! Switch partner turns now!");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            playSound('pop');
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+            state.timerSeconds = 45;
+            updateTimerDisplay();
+            document.getElementById('timerToggleBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(state.timerSeconds / 60);
+            const secs = state.timerSeconds % 60;
+            const str = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('timerDisplay').innerText = str;
+        }
+
+        function addPoints(pts) {
+            state.score += pts;
+            document.getElementById('scoreDisplay').innerText = `${state.score} pts`;
+            updateBadgesUI();
+        }
+
+        function unlockBadge(badgeKey) {
+            if (!state.unlockedBadges.has(badgeKey)) {
+                state.unlockedBadges.add(badgeKey);
+                playSound('badge');
+                updateBadgesUI();
+            }
+        }
+
+        function updateBadgesUI() {
+            // Count badges
+            const count = state.unlockedBadges.size;
+            document.getElementById('badgesCountDisplay').innerText = `${count} / 5`;
+
+            // Update badges grid
+            const badgeMap = {
+                grammar: 'badge-grammar',
+                blanks: 'badge-blanks',
+                unscramble: 'badge-unscramble',
+                poster: 'badge-poster',
+                speaking: 'badge-speaking'
+            };
+
+            for (let [key, elementId] of Object.entries(badgeMap)) {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    if (state.unlockedBadges.has(key)) {
+                        el.classList.remove('opacity-60', 'bg-slate-50', 'border-slate-200');
+                        el.classList.add('bg-emerald-50/60', 'border-emerald-300', 'shadow-sm');
+
+                        const icon = el.querySelector('.badge-icon');
+                        if (icon) {
+                            icon.className = "w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl flex-shrink-0 shadow-md";
+                        }
+
+                        const status = el.querySelector('.badge-status');
+                        if (status) {
+                            status.className = "inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800";
+                            status.innerText = "Unlocked! ✓";
+                        }
+                    }
+                }
+            }
+
+            // Progress bar
+            const totalPointsLabel = document.getElementById('totalPointsLabel');
+            const levelProgressBar = document.getElementById('levelProgressBar');
+            const userLevelTitle = document.getElementById('userLevelTitle');
+
+            totalPointsLabel.innerText = `${state.score} / 100 Points`;
+            const pct = Math.min((state.score / 100) * 100, 100);
+            levelProgressBar.style.width = `${pct}%`;
+
+            if (state.score >= 80) {
+                userLevelTitle.innerText = "Level 3: Habit Master Expert! 🏆";
+            } else if (state.score >= 40) {
+                userLevelTitle.innerText = "Level 2: Intermediate Explorer 🌟";
+            } else {
+                userLevelTitle.innerText = "Level 1: Beginner Explorer 🚀";
+            }
+        }
+
+        // ON WINDOW LOAD INITIALIZATION
+        window.onload = function () {
+            renderBlanksExercise();
+            renderSpeakingCard();
+            updatePosterPreview();
+            updateBadgesUI();
+        };
+    </script>
+</body>
+</html>
