@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>General vs. Specific Past Event Analyzer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            general: {
+              light: '#fef3c7',
+              border: '#f59e0b',
+              text: '#b45309',
+              darkBg: '#78350f'
+            },
+            specific: {
+              light: '#e0e7ff',
+              border: '#6366f1',
+              text: '#4338ca',
+              darkBg: '#312e81'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .heading-font {
+      font-family: 'Fredoka', sans-serif;
+    }
+    .badge-general {
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+    }
+    .badge-specific {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #6366f1;
+    }
+    .dark .badge-general {
+      background-color: #78350f;
+      color: #fef3c7;
+      border-color: #d97706;
+    }
+    .dark .badge-specific {
+      background-color: #312e81;
+      color: #e0e7ff;
+      border-color: #4f46e5;
+    }
+    /* Pulse animation for level up / feedback */
+    @keyframes bounce-short {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-short {
+      animation: bounce-short 0.4s ease-in-out;
+    }
+    
+    /* Print styling for certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+  <!-- Top Navigation / Gamification Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+          <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+        </div>
+        <div>
+          <h1 class="heading-font text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-indigo-600 dark:from-amber-400 dark:to-indigo-400">
+            Past Analyzer
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">General vs. Specific Past Events (A1 English)</p>
+        </div>
+      </div>
+
+      <!-- Gamification Stats & Controls -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        
+        <!-- XP Points -->
+        <div class="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800 text-xs sm:text-sm font-bold">
+          <i class="fa-solid fa-star text-amber-500"></i>
+          <span id="xp-display">0</span> XP
+        </div>
+
+        <!-- Streak -->
+        <div class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 px-3 py-1.5 rounded-full border border-rose-200 dark:border-rose-800 text-xs sm:text-sm font-bold">
+          <i class="fa-solid fa-fire text-rose-500"></i>
+          <span id="streak-display">0</span>
+        </div>
+
+        <!-- Rank Badge -->
+        <div id="level-badge" class="hidden md:flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 px-3 py-1.5 rounded-full border border-indigo-200 dark:border-indigo-800 text-xs font-semibold">
+          <i class="fa-solid fa-award text-indigo-500"></i>
+          <span id="rank-title">Time Explorer</span>
+        </div>
+
+        <!-- Mute Toggle -->
+        <button id="btn-sound-toggle" title="Toggle Sound Effects" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors">
+          <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+
+        <!-- Dark Mode Toggle -->
+        <button id="btn-theme-toggle" title="Toggle Dark/Light Mode" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+
+        <!-- Quick Help Modal Trigger -->
+        <button id="btn-open-guide" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow transition-colors">
+          <i class="fa-solid fa-circle-question"></i>
+          <span class="hidden sm:inline">Grammar Guide</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+    
+    <!-- Tab Controls Bar -->
+    <nav class="flex space-x-1 sm:space-x-2 bg-slate-200/80 dark:bg-slate-800/80 p-1.5 rounded-2xl overflow-x-auto shadow-inner text-xs sm:text-sm font-medium scrollbar-none">
+      <button data-tab="sorter" class="nav-tab flex-1 min-w-[120px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-bold shadow">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>1. Sorter</span>
+      </button>
+
+      <button data-tab="transformer" class="nav-tab flex-1 min-w-[120px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <i class="fa-solid fa-flask"></i>
+        <span>2. Transformer Lab</span>
+      </button>
+
+      <button data-tab="detective" class="nav-tab flex-1 min-w-[120px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <i class="fa-solid fa-user-ninja"></i>
+        <span>3. Detective Case</span>
+      </button>
+
+      <button data-tab="story" class="nav-tab flex-1 min-w-[120px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+        <i class="fa-solid fa-pen-nib"></i>
+        <span>4. Story & Certificate</span>
+      </button>
+    </nav>
+
+    <!-- MODULE 1: GENERAL VS SPECIFIC SORTER -->
+    <section id="module-sorter" class="module-panel flex flex-col gap-6">
+      
+      <!-- Module Intro Banner -->
+      <div class="bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-emerald-500/10 dark:from-amber-950/30 dark:via-indigo-950/30 dark:to-emerald-950/30 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="heading-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-indigo-500"></i>
+            General vs. Specific Past Sorter
+          </h2>
+          <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+            Read the sentence. Is it a <strong class="text-amber-600 dark:text-amber-400">General Experience</strong> (broad time/habit) or a <strong class="text-indigo-600 dark:text-indigo-400">Specific Past Event</strong> (exact time & place)?
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-0 border-slate-200 dark:border-slate-700 pt-3 sm:pt-0">
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Progress:</span>
+          <div class="w-32 bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+            <div id="sorter-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+          </div>
+          <span id="sorter-counter" class="text-xs font-bold text-slate-700 dark:text-slate-300">0 / 10</span>
+        </div>
+      </div>
+
+      <!-- Sorter Game Card Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: The Active Question Card -->
+        <div class="lg:col-span-8 flex flex-col">
+          <div id="sorter-card-box" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[340px] relative overflow-hidden transition-all">
+            
+            <!-- Category Indicator Badge (Top Left) -->
+            <div id="sorter-hint-badge" class="self-start text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 mb-4 flex items-center gap-1.5">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <span>Sentence #<span id="sorter-current-num">1</span></span>
+            </div>
+
+            <!-- Speech Audio Listener Button & Text -->
+            <div class="my-auto text-center px-2 py-4">
+              <div class="flex justify-center mb-4">
+                <button id="btn-read-sentence" title="Listen to Sentence" class="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center transition-transform hover:scale-110 shadow-sm">
+                  <i class="fa-solid fa-volume-high text-xl"></i>
+                </button>
+              </div>
+
+              <p id="sorter-sentence-text" class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100 leading-relaxed">
+                <!-- Sentence content inserted via JS -->
+              </p>
+              
+              <div id="sorter-time-highlight" class="mt-4 inline-block text-xs sm:text-sm font-semibold px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                <!-- Highlighted signal words -->
+              </div>
+            </div>
+
+            <!-- Interactive Choice Buttons -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+              <button id="btn-choice-general" class="sorter-btn border-2 border-amber-300 hover:border-amber-500 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-900/50 dark:border-amber-800 text-amber-900 dark:text-amber-200 p-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all hover:shadow-md text-base sm:text-lg">
+                <i class="fa-solid fa-globe text-amber-500 text-xl"></i>
+                <span>General Past</span>
+              </button>
+
+              <button id="btn-choice-specific" class="sorter-btn border-2 border-indigo-300 hover:border-indigo-500 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 p-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all hover:shadow-md text-base sm:text-lg">
+                <i class="fa-solid fa-calendar-check text-indigo-500 text-xl"></i>
+                <span>Specific Event</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Explanation & Quick Rules -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+          
+          <!-- Immediate Feedback / Explanation Box -->
+          <div id="sorter-feedback-card" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col justify-between flex-grow">
+            <div>
+              <h3 id="feedback-title" class="heading-font text-lg font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                Analyzer Feedback
+              </h3>
+              <p id="feedback-explanation" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                Choose an answer above to analyze the sentence's time marker and structure!
+              </p>
+            </div>
+
+            <!-- Signal Key Quick Reference -->
+            <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Key Signals:</h4>
+              <div class="flex flex-col gap-2 text-xs">
+                <div class="flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <span><strong>General Signals:</strong> in the past, when I was young, before, lived in</span>
+                </div>
+                <div class="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                  <span><strong>Specific Signals:</strong> yesterday at 4 PM, last night, two hours ago</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Next Button (Hidden until answer chosen) -->
+            <button id="btn-next-sorter" class="hidden mt-6 w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all flex items-center justify-center gap-2">
+              <span>Next Sentence</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MODULE 2: SPECIFICITY TRANSFORMER LAB -->
+    <section id="module-transformer" class="module-panel hidden flex flex-col gap-6">
+      
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <h2 class="heading-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-flask text-emerald-500"></i>
+          The Specificity Transformer Lab
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+          Take a vague, general sentence and upgrade it into a <strong>100% Specific Past Event</strong> by adding precise time, location, and action details!
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Controls Column -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col gap-5">
+          
+          <!-- Step 1: Select Base General Sentence -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              1. Choose a Base General Sentence:
+            </label>
+            <select id="transformer-base-select" class="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="0">"I visited my friend."</option>
+              <option value="1">"She ate dinner."</option>
+              <option value="2">"We played basketball."</option>
+              <option value="3">"He bought a new jacket."</option>
+            </select>
+          </div>
+
+          <!-- Step 2: Add Exact Time Marker -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              2. Add Exact Time Marker (+40% Specificity):
+            </label>
+            <div id="time-chips-container" class="flex flex-wrap gap-2">
+              <!-- JS rendered time option chips -->
+            </div>
+          </div>
+
+          <!-- Step 3: Add Exact Location -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              3. Add Exact Location (+30% Specificity):
+            </label>
+            <div id="location-chips-container" class="flex flex-wrap gap-2">
+              <!-- JS rendered location option chips -->
+            </div>
+          </div>
+
+          <!-- Step 4: Add Action Detail -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              4. Add Specific Action Detail (+30% Specificity):
+            </label>
+            <div id="detail-chips-container" class="flex flex-wrap gap-2">
+              <!-- JS rendered detail option chips -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Output & Live Meter Column -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+          
+          <!-- Live Specificity Meter Box -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col gap-4">
+            
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Specificity Level:</span>
+              <span id="meter-percent" class="heading-font text-2xl font-bold text-amber-500">0%</span>
+            </div>
+
+            <!-- Meter Progress Bar -->
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-5 p-1 overflow-hidden">
+              <div id="meter-bar" class="bg-amber-500 h-full w-0 rounded-full transition-all duration-500 ease-out"></div>
+            </div>
+
+            <!-- Status Label -->
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="text-amber-600 dark:text-amber-400">General Past (Vague)</span>
+              <span id="meter-status" class="text-slate-500 dark:text-slate-400">Needs time & location!</span>
+              <span class="text-emerald-600 dark:text-emerald-400">100% Specific</span>
+            </div>
+          </div>
+
+          <!-- Final Transformed Sentence Result Card -->
+          <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-md flex flex-col justify-between min-h-[220px] relative overflow-hidden">
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <span class="text-xs uppercase tracking-widest text-indigo-300 font-bold">Transformed Result</span>
+                <button id="btn-speak-transformed" title="Listen to sentence" class="w-8 h-8 rounded-full bg-indigo-700 hover:bg-indigo-600 text-white flex items-center justify-center transition-transform hover:scale-105">
+                  <i class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+              </div>
+
+              <p id="transformed-sentence-output" class="text-lg sm:text-xl font-medium leading-relaxed text-indigo-100">
+                <!-- Transformed text goes here -->
+              </p>
+            </div>
+
+            <!-- Explanation of why it's specific -->
+            <div class="mt-4 pt-3 border-t border-indigo-800/60 text-xs text-indigo-200/80">
+              <p id="transformed-explanation">Currently a general statement. Add details to make it a specific past event!</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MODULE 3: DETECTIVE ALIBI ANALYZER -->
+    <section id="module-detective" class="module-panel hidden flex flex-col gap-6">
+      
+      <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+            <i class="fa-solid fa-user-ninja"></i> Special Investigation
+          </div>
+          <h2 class="heading-font text-xl sm:text-2xl font-bold">Case #104: The Missing Golden Trophy</h2>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1">
+            A golden trophy was stolen yesterday at 3:00 PM! Inspect each suspect's alibi statement. Is it a <strong class="text-amber-300">Vague General Habit</strong> (Suspicious) or a <strong class="text-indigo-300">Verifiable Specific Event</strong> (Valid Alibi)?
+          </p>
+        </div>
+
+        <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 text-right">
+          <span class="text-xs text-slate-400 block">Solved Cases</span>
+          <span id="detective-score" class="heading-font text-xl font-bold text-amber-400">0 / 3</span>
+        </div>
+      </div>
+
+      <!-- Suspect Cards List -->
+      <div id="suspects-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- MODULE 4: STORY CREATOR & CERTIFICATE -->
+    <section id="module-story" class="module-panel hidden flex flex-col gap-6">
+      
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <h2 class="heading-font text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-pen-nib text-indigo-500"></i>
+          My Past Story & Achievement Certificate
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+          Combine <strong>1 General Past Habit</strong> and <strong>2 Specific Past Events</strong> to complete your grammar master story and generate your personalized certificate!
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Form Builder Column -->
+        <div class="lg:col-span-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col gap-4">
+          
+          <div>
+            <label for="student-name-input" class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+              Your Name:
+            </label>
+            <input type="text" id="student-name-input" placeholder="e.g. Alex Smith" class="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+
+          <!-- Sentence 1: General -->
+          <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex flex-col gap-2">
+            <span class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-globe"></i> Sentence 1: General Experience / Habit
+            </span>
+            <input type="text" id="story-s1" placeholder="e.g. In the past, I loved playing video games." class="w-full p-2.5 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none" />
+            <span class="text-[11px] text-amber-700 dark:text-amber-400">Use general markers: <em>in the past, when I was young, before</em></span>
+          </div>
+
+          <!-- Sentence 2: Specific Event 1 -->
+          <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 flex flex-col gap-2">
+            <span class="text-xs font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-check"></i> Sentence 2: Specific Event 1
+            </span>
+            <input type="text" id="story-s2" placeholder="e.g. Yesterday at 4:00 PM, I finished a game." class="w-full p-2.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none" />
+            <span class="text-[11px] text-indigo-700 dark:text-indigo-400">Use exact time: <em>yesterday at 4:00 PM, two hours ago</em></span>
+          </div>
+
+          <!-- Sentence 3: Specific Event 2 -->
+          <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 flex flex-col gap-2">
+            <span class="text-xs font-bold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-check"></i> Sentence 3: Specific Event 2
+            </span>
+            <input type="text" id="story-s3" placeholder="e.g. Last night at 8:00 PM, I walked to the store." class="w-full p-2.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none" />
+            <span class="text-[11px] text-indigo-700 dark:text-indigo-400">Include exact details & location!</span>
+          </div>
+
+          <button id="btn-generate-certificate" class="mt-2 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-certificate"></i>
+            <span>Generate Certificate</span>
+          </button>
+        </div>
+
+        <!-- Certificate Preview Column -->
+        <div class="lg:col-span-6 flex flex-col gap-4">
+          
+          <div id="printable-certificate" class="bg-gradient-to-br from-amber-50 via-white to-indigo-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 border-4 border-double border-indigo-400 dark:border-indigo-600 rounded-2xl p-6 shadow-md flex flex-col justify-between min-h-[420px] relative">
+            
+            <!-- Certificate Header -->
+            <div class="text-center">
+              <div class="w-12 h-12 mx-auto rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-2xl font-bold shadow-md mb-2">
+                <i class="fa-solid fa-award"></i>
+              </div>
+              <h3 class="heading-font text-2xl font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+                Certificate of Grammar Mastery
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Differentiating General vs. Specific Past Events</p>
+            </div>
+
+            <!-- Awardee Name -->
+            <div class="text-center my-4">
+              <p class="text-xs uppercase text-slate-500 dark:text-slate-400 font-semibold">This certifies that</p>
+              <h4 id="cert-student-name" class="heading-font text-2xl font-bold text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-300 dark:border-indigo-700 inline-block px-6 py-1 my-1">
+                [ Your Name Here ]
+              </h4>
+              <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">has successfully created a 3-part past event narrative:</p>
+            </div>
+
+            <!-- Generated Narrative Paragraph -->
+            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
+              <p id="cert-story-body" class="italic">
+                "Fill out the fields on the left to view your narrative story here!"
+              </p>
+            </div>
+
+            <!-- Footer Badge & Date -->
+            <div class="flex items-center justify-between mt-4 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-3">
+              <div>
+                <span>Level: <strong>A1 ESL Grammar Master</strong></span>
+              </div>
+              <div class="text-right">
+                <span id="cert-date">Date: September 2026</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Actions: Read aloud, Print, Copy -->
+          <div class="flex items-center gap-3">
+            <button id="btn-read-cert" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-semibold rounded-xl transition-colors text-xs sm:text-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-volume-high"></i>
+              <span>Listen Story</span>
+            </button>
+
+            <button id="btn-print-cert" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-xs sm:text-sm flex items-center justify-center gap-2">
+              <i class="fa-solid fa-print"></i>
+              <span>Print / Save PDF</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- GRAMMAR GUIDE MODAL -->
+  <div id="guide-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col gap-6">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
+        <h3 class="heading-font text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-indigo-500"></i>
+          Grammar Guide: General vs. Specific Past
+        </h3>
+        <button id="btn-close-guide" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Comparison Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- General Column -->
+        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-4 flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold heading-font text-lg">
+            <i class="fa-solid fa-globe"></i>
+            <span>General Past</span>
+          </div>
+          <p class="text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+            Describes broad experiences, habits, or facts in the past without an exact clock time or precise date.
+          </p>
+
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mt-2">Signal Words:</h4>
+          <ul class="text-xs list-disc list-inside text-amber-900 dark:text-amber-200 space-y-1">
+            <li>in the past</li>
+            <li>when I was young / a child</li>
+            <li>before / long ago</li>
+            <li>lived in / studied at</li>
+            <li>many times / often</li>
+          </ul>
+
+          <h4 class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mt-2">Example:</h4>
+          <p class="text-xs bg-white/70 dark:bg-slate-900/70 p-2 rounded-lg italic text-amber-950 dark:text-amber-100">
+            "I traveled to France when I was young."
+          </p>
+        </div>
+
+        <!-- Specific Column -->
+        <div class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-4 flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-indigo-800 dark:text-indigo-300 font-bold heading-font text-lg">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span>Specific Past</span>
+          </div>
+          <p class="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
+            Describes a single finished action that happened at an exact, verifiable time and place.
+          </p>
+
+          <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 mt-2">Signal Words:</h4>
+          <ul class="text-xs list-disc list-inside text-indigo-900 dark:text-indigo-200 space-y-1">
+            <li>yesterday at 4 PM</li>
+            <li>last night at 8:00</li>
+            <li>two hours ago</li>
+            <li>on Monday morning</li>
+            <li>at school / at the park</li>
+          </ul>
+
+          <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 mt-2">Example:</h4>
+          <p class="text-xs bg-white/70 dark:bg-slate-900/70 p-2 rounded-lg italic text-indigo-950 dark:text-indigo-100">
+            "I arrived in Paris yesterday at 4 PM."
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+        <strong class="font-bold text-slate-900 dark:text-white block mb-1">💡 Detective's Rule:</strong>
+        If you can point to a clock or a calendar for the exact moment, it's <strong>Specific</strong>! If it describes a long phase or broad life experience, it's <strong>General</strong>.
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* Web Audio API Sound Synthesizer */
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+      }
+
+      playClick() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+      }
+
+      playCorrect() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      playWrong() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.setValueAtTime(130, now + 0.1);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playLevelUp() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+          gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.2);
+        });
+      }
+    }
+
+    const sfx = new SoundFX();
+
+    // State
+    let xp = 0;
+    let streak = 0;
+    let soundEnabled = true;
+
+    // Sorter Data
+    const sorterItems = [
+      {
+        id: 1,
+        sentence: "I visited my grandmother last Sunday at 2 PM.",
+        highlight: "last Sunday at 2 PM",
+        type: "specific",
+        explanation: "'Last Sunday at 2 PM' specifies an exact clock time and day! It is a Specific Event."
+      },
+      {
+        id: 2,
+        sentence: "I played basketball when I was at school.",
+        highlight: "when I was at school",
+        type: "general",
+        explanation: "'When I was at school' covers a broad time period in the past. It is a General Past Habit."
+      },
+      {
+        id: 3,
+        sentence: "We watched a funny movie two hours ago.",
+        highlight: "two hours ago",
+        type: "specific",
+        explanation: "'Two hours ago' points to a precise moment today. It is a Specific Past Event."
+      },
+      {
+        id: 4,
+        sentence: "She lived in Canada for three years.",
+        highlight: "for three years",
+        type: "general",
+        explanation: "This describes a general long phase in her past life, not an exact timestamp."
+      },
+      {
+        id: 5,
+        sentence: "He lost his apartment keys yesterday morning.",
+        highlight: "yesterday morning",
+        type: "specific",
+        explanation: "'Yesterday morning' pinpoints the specific finished occurrence."
+      },
+      {
+        id: 6,
+        sentence: "They ate ice cream many times in the past.",
+        highlight: "many times in the past",
+        type: "general",
+        explanation: "'Many times in the past' is a broad, repeated experience without exact times."
+      },
+      {
+        id: 7,
+        sentence: "My teacher called me on Monday at 9:00 AM.",
+        highlight: "on Monday at 9:00 AM",
+        type: "specific",
+        explanation: "Includes exact day and hour (9:00 AM). That makes it 100% Specific!"
+      },
+      {
+        id: 8,
+        sentence: "We traveled to Italy during summer.",
+        highlight: "during summer",
+        type: "general",
+        explanation: "'During summer' is a broad seasonal period, not a single exact timestamp."
+      }
+    ];
+
+    let currentSorterIdx = 0;
+
+    // Transformer Options Data
+    const transformerBases = [
+      { base: "I visited my friend", subject: "I" },
+      { base: "She ate dinner", subject: "She" },
+      { base: "We played basketball", subject: "We" },
+      { base: "He bought a sweater", subject: "He" }
+    ];
+
+    const transformerOptions = {
+      times: [
+        { label: "+ Yesterday at 3 PM", text: "yesterday at 3:00 PM", value: 40 },
+        { label: "+ Last night at 8 PM", text: "last night at 8:00 PM", value: 40 },
+        { label: "+ Two hours ago", text: "two hours ago", value: 40 }
+      ],
+      locations: [
+        { label: "+ at the Central Library", text: "at the Central Library", value: 30 },
+        { label: "+ at Mario's Cafe", text: "at Mario's Cafe", value: 30 },
+        { label: "+ in the school park", text: "in the school park", value: 30 }
+      ],
+      details: [
+        { label: "+ and drank hot tea", text: "and drank hot tea", value: 30 },
+        { label: "+ for one hour", text: "for one hour", value: 30 },
+        { label: "+ with my cousin", text: "with my cousin", value: 30 }
+      ]
+    };
+
+    let activeTransformerState = {
+      baseIdx: 0,
+      time: null,
+      location: null,
+      detail: null
+    };
+
+    // Detective Cases Data
+    const suspectCases = [
+      {
+        id: 1,
+        name: "Chef Bob",
+        avatar: "fa-utensils",
+        statement: "I cooked food in the kitchen in the past.",
+        isSpecific: false,
+        explanation: "VAGUE ALIBI! 'In the past' gives no exact time. Chef Bob has no proof where he was yesterday at 3 PM!",
+        verdict: "Suspicious (General)"
+      },
+      {
+        id: 2,
+        name: "Lady Clara",
+        avatar: "fa-book",
+        statement: "Yesterday at 3:00 PM, I was at the city library reading a book.",
+        isSpecific: true,
+        explanation: "VALID ALIBI! Lady Clara gave the exact time (3:00 PM) and location (city library) which can be verified!",
+        verdict: "Cleared (Specific)"
+      },
+      {
+        id: 3,
+        name: "Officer Dan",
+        avatar: "fa-shield-halved",
+        statement: "When I was young, I walked around town every afternoon.",
+        isSpecific: false,
+        explanation: "SUSPICIOUS! 'When I was young' is a general habit from years ago, not an alibi for yesterday!",
+        verdict: "Suspicious (General)"
+      }
+    ];
+
+    let solvedDetectives = new Set();
+
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9; // Slightly slower for A1 learners
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function initTabNavigation() {
+      const tabs = document.querySelectorAll('.nav-tab');
+      const panels = document.querySelectorAll('.module-panel');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          sfx.playClick();
+          const target = tab.getAttribute('data-tab');
+
+          // Style tabs
+          tabs.forEach(t => {
+            t.classList.remove('bg-white', 'dark:bg-slate-700', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold', 'shadow');
+            t.classList.add('text-slate-600', 'dark:text-slate-400');
+          });
+          tab.classList.add('bg-white', 'dark:bg-slate-700', 'text-indigo-600', 'dark:text-indigo-400', 'font-bold', 'shadow');
+          tab.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+          // Show active panel
+          panels.forEach(p => p.classList.add('hidden'));
+          document.getElementById(`module-${target}`).classList.remove('hidden');
+        });
+      });
+    }
+
+    function renderSorterCard() {
+      const item = sorterItems[currentSorterIdx];
+      
+      document.getElementById('sorter-current-num').textContent = currentSorterIdx + 1;
+      document.getElementById('sorter-counter').textContent = `${currentSorterIdx + 1} / ${sorterItems.length}`;
+      
+      const progressPercent = ((currentSorterIdx) / sorterItems.length) * 100;
+      document.getElementById('sorter-progress-bar').style.width = `${progressPercent}%`;
+
+      document.getElementById('sorter-sentence-text').textContent = `"${item.sentence}"`;
+      document.getElementById('sorter-time-highlight').innerHTML = `<i class="fa-solid fa-clock text-amber-500 mr-1"></i> Signal: <strong>${item.highlight}</strong>`;
+
+      // Reset feedback box
+      document.getElementById('feedback-title').innerHTML = `<i class="fa-solid fa-lightbulb text-amber-500"></i> Analyzer Feedback`;
+      document.getElementById('feedback-explanation').textContent = "Choose whether this is a General Experience or a Specific Event!";
+      document.getElementById('btn-next-sorter').classList.add('hidden');
+
+      // Enable buttons
+      document.getElementById('btn-choice-general').disabled = false;
+      document.getElementById('btn-choice-specific').disabled = false;
+      document.getElementById('btn-choice-general').classList.remove('opacity-50');
+      document.getElementById('btn-choice-specific').classList.remove('opacity-50');
+    }
+
+    function handleSorterChoice(chosenType) {
+      const item = sorterItems[currentSorterIdx];
+      const isCorrect = chosenType === item.type;
+
+      document.getElementById('btn-choice-general').disabled = true;
+      document.getElementById('btn-choice-specific').disabled = true;
+      document.getElementById('btn-choice-general').classList.add('opacity-50');
+      document.getElementById('btn-choice-specific').classList.add('opacity-50');
+
+      if (isCorrect) {
+        sfx.playCorrect();
+        xp += 15;
+        streak += 1;
+        updateStats();
+
+        document.getElementById('feedback-title').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> Correct! (+15 XP)`;
+        document.getElementById('feedback-explanation').textContent = item.explanation;
+      } else {
+        sfx.playWrong();
+        streak = 0;
+        updateStats();
+
+        document.getElementById('feedback-title').innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500"></i> Not Quite!`;
+        document.getElementById('feedback-explanation').textContent = item.explanation;
+      }
+
+      document.getElementById('btn-next-sorter').classList.remove('hidden');
+    }
+
+    function initTransformerLab() {
+      const baseSelect = document.getElementById('transformer-base-select');
+      
+      baseSelect.addEventListener('change', (e) => {
+        sfx.playClick();
+        activeTransformerState.baseIdx = parseInt(e.target.value);
+        updateTransformerOutput();
+      });
+
+      // Render Option Chips
+      renderChips('time-chips-container', transformerOptions.times, 'time');
+      renderChips('location-chips-container', transformerOptions.locations, 'location');
+      renderChips('detail-chips-container', transformerOptions.details, 'detail');
+
+      updateTransformerOutput();
+    }
+
+    function renderChips(containerId, options, category) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `chip-btn text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-500 transition-all`;
+        btn.textContent = opt.label;
+
+        btn.addEventListener('click', () => {
+          sfx.playClick();
+          if (activeTransformerState[category] === opt) {
+            activeTransformerState[category] = null; // deselect
+            btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+            btn.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-700', 'dark:text-slate-200');
+          } else {
+            activeTransformerState[category] = opt; // select
+            // reset others in container
+            container.querySelectorAll('.chip-btn').forEach(b => {
+              b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+              b.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-700', 'dark:text-slate-200');
+            });
+            btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+            btn.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'text-slate-700', 'dark:text-slate-200');
+          }
+          updateTransformerOutput();
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    function updateTransformerOutput() {
+      const baseObj = transformerBases[activeTransformerState.baseIdx];
+      let fullText = baseObj.base;
+      let totalPercent = 0;
+
+      if (activeTransformerState.time) {
+        fullText += ` ${activeTransformerState.time.text}`;
+        totalPercent += activeTransformerState.time.value;
+      }
+
+      if (activeTransformerState.location) {
+        fullText += ` ${activeTransformerState.location.text}`;
+        totalPercent += activeTransformerState.location.value;
+      }
+
+      if (activeTransformerState.detail) {
+        fullText += ` ${activeTransformerState.detail.text}`;
+        totalPercent += activeTransformerState.detail.value;
+      }
+
+      fullText += ".";
+
+      // Render Sentence
+      document.getElementById('transformed-sentence-output').textContent = `"${fullText}"`;
+
+      // Render Gauge
+      const meterBar = document.getElementById('meter-bar');
+      const meterPercent = document.getElementById('meter-percent');
+      const meterStatus = document.getElementById('meter-status');
+      const meterExp = document.getElementById('transformed-explanation');
+
+      meterPercent.textContent = `${totalPercent}%`;
+      meterBar.style.width = `${totalPercent}%`;
+
+      if (totalPercent === 0) {
+        meterBar.className = "bg-amber-500 h-full rounded-full transition-all duration-500";
+        meterStatus.textContent = "General Past (Vague)";
+        meterExp.textContent = "Currently a general statement without exact time or place.";
+      } else if (totalPercent < 100) {
+        meterBar.className = "bg-blue-500 h-full rounded-full transition-all duration-500";
+        meterStatus.textContent = "Partially Specific";
+        meterExp.textContent = "Getting better! Add more details to reach 100% specific.";
+      } else {
+        meterBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+        meterStatus.textContent = "100% Highly Specific Event!";
+        meterExp.textContent = "Perfect! This sentence has an exact time, location, and action detail!";
+        sfx.playCorrect();
+      }
+    }
+
+    function renderDetectiveCases() {
+      const container = document.getElementById('suspects-container');
+      container.innerHTML = '';
+
+      suspectCases.forEach((suspect) => {
+        const card = document.createElement('div');
+        card.className = "bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex flex-col justify-between";
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
+                <i class="fa-solid ${suspect.avatar}"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-white">${suspect.name}</h3>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Suspect #${suspect.id}</span>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 mb-4">
+              <p class="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-1">Alibi Statement:</p>
+              <p class="text-sm italic font-medium text-slate-800 dark:text-slate-200">"${suspect.statement}"</p>
+            </div>
+          </div>
+
+          <div id="detective-actions-${suspect.id}" class="flex flex-col gap-2">
+            <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Classify Alibi:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="checkDetectiveAlibi(${suspect.id}, false)" class="py-2 px-3 text-xs font-bold rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 hover:bg-amber-200 transition-colors">
+                Suspicious (General)
+              </button>
+              <button onclick="checkDetectiveAlibi(${suspect.id}, true)" class="py-2 px-3 text-xs font-bold rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-200 transition-colors">
+                Cleared (Specific)
+              </button>
+            </div>
+          </div>
+
+          <div id="detective-result-${suspect.id}" class="hidden mt-3 p-3 rounded-xl text-xs font-medium"></div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function checkDetectiveAlibi(suspectId, userGuessedSpecific) {
+      const suspect = suspectCases.find(s => s.id === suspectId);
+      const isCorrect = userGuessedSpecific === suspect.isSpecific;
+
+      const actionsDiv = document.getElementById(`detective-actions-${suspectId}`);
+      const resultDiv = document.getElementById(`detective-result-${suspectId}`);
+
+      actionsDiv.classList.add('hidden');
+      resultDiv.classList.remove('hidden');
+
+      if (isCorrect) {
+        sfx.playCorrect();
+        xp += 20;
+        solvedDetectives.add(suspectId);
+        updateStats();
+
+        resultDiv.className = "mt-3 p-3 rounded-xl text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200";
+        resultDiv.innerHTML = `<strong><i class="fa-solid fa-circle-check"></i> Great Inspection!</strong><br>${suspect.explanation}`;
+      } else {
+        sfx.playWrong();
+        resultDiv.className = "mt-3 p-3 rounded-xl text-xs font-medium bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200";
+        resultDiv.innerHTML = `<strong><i class="fa-solid fa-circle-xmark"></i> Incorrect Inspection!</strong><br>${suspect.explanation}`;
+      }
+
+      document.getElementById('detective-score').textContent = `${solvedDetectives.size} / ${suspectCases.length}`;
+    }
+
+    function initStoryCreator() {
+      const nameInput = document.getElementById('student-name-input');
+      const s1Input = document.getElementById('story-s1');
+      const s2Input = document.getElementById('story-s2');
+      const s3Input = document.getElementById('story-s3');
+      const btnGen = document.getElementById('btn-generate-certificate');
+
+      btnGen.addEventListener('click', () => {
+        sfx.playLevelUp();
+        
+        const name = nameInput.value.trim() || "A1 Language Explorer";
+        const s1 = s1Input.value.trim() || "In the past, I enjoyed learning English.";
+        const s2 = s2Input.value.trim() || "Yesterday at 3:00 PM, I practiced grammar exercises.";
+        const s3 = s3Input.value.trim() || "Last night at 8:00 PM, I spoke with my friend.";
+
+        document.getElementById('cert-student-name').textContent = name;
+        document.getElementById('cert-story-body').textContent = `"${s1} ${s2} ${s3}"`;
+        
+        const now = new Date();
+        document.getElementById('cert-date').textContent = `Date: ${now.toLocaleDateString()}`;
+
+        xp += 30;
+        updateStats();
+      });
+
+      document.getElementById('btn-read-cert').addEventListener('click', () => {
+        const text = document.getElementById('cert-story-body').textContent;
+        speakText(text);
+      });
+
+      document.getElementById('btn-print-cert').addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('xp-display').textContent = xp;
+      document.getElementById('streak-display').textContent = streak;
+
+      // Update level title based on XP
+      const rankTitle = document.getElementById('rank-title');
+      if (xp >= 100) {
+        rankTitle.textContent = "Master Time Detective";
+      } else if (xp >= 50) {
+        rankTitle.textContent = "Past Inspector";
+      } else {
+        rankTitle.textContent = "Time Explorer";
+      }
+    }
+
+    function initHeaderControls() {
+      // Sound toggle
+      const soundBtn = document.getElementById('btn-sound-toggle');
+      const soundIcon = document.getElementById('sound-icon');
+      soundBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        sfx.enabled = soundEnabled;
+        if (soundEnabled) {
+          soundIcon.className = "fa-solid fa-volume-high";
+        } else {
+          soundIcon.className = "fa-solid fa-volume-xmark text-slate-400";
+        }
+      });
+
+      // Dark mode toggle
+      const themeBtn = document.getElementById('btn-theme-toggle');
+      const themeIcon = document.getElementById('theme-icon');
+      themeBtn.addEventListener('click', () => {
+        sfx.playClick();
+        document.documentElement.classList.toggle('dark');
+        if (document.documentElement.classList.contains('dark')) {
+          themeIcon.className = "fa-solid fa-sun";
+        } else {
+          themeIcon.className = "fa-solid fa-moon";
+        }
+      });
+
+      // Grammar Guide modal controls
+      const openGuideBtn = document.getElementById('btn-open-guide');
+      const closeGuideBtn = document.getElementById('btn-close-guide');
+      const guideModal = document.getElementById('guide-modal');
+
+      openGuideBtn.addEventListener('click', () => {
+        sfx.playClick();
+        guideModal.classList.remove('hidden');
+      });
+
+      closeGuideBtn.addEventListener('click', () => {
+        sfx.playClick();
+        guideModal.classList.add('hidden');
+      });
+
+      guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) {
+          guideModal.classList.add('hidden');
+        }
+      });
+    }
+
+    function initSorterEvents() {
+      document.getElementById('btn-choice-general').addEventListener('click', () => handleSorterChoice('general'));
+      document.getElementById('btn-choice-specific').addEventListener('click', () => handleSorterChoice('specific'));
+
+      document.getElementById('btn-next-sorter').addEventListener('click', () => {
+        sfx.playClick();
+        currentSorterIdx = (currentSorterIdx + 1) % sorterItems.length;
+        renderSorterCard();
+      });
+
+      document.getElementById('btn-read-sentence').addEventListener('click', () => {
+        const item = sorterItems[currentSorterIdx];
+        speakText(item.sentence);
+      });
+
+      document.getElementById('btn-speak-transformed').addEventListener('click', () => {
+        const text = document.getElementById('transformed-sentence-output').textContent;
+        speakText(text);
+      });
+    }
+
+    // App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      initTabNavigation();
+      initHeaderControls();
+      initSorterEvents();
+      initTransformerLab();
+      renderDetectiveCases();
+      initStoryCreator();
+
+      // Render first sorter item
+      renderSorterCard();
+    });
+  </script>
+</body>
+</html>
