@@ -1,1 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Info Express: Beginner Listening & Practice Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#2563eb',
+                            indigo: '#4f46e5',
+                            teal: '#0d9488',
+                            emerald: '#059669',
+                            amber: '#d97706',
+                            rose: '#e11d48',
+                            purple: '#7c3aed'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .pulse-card {
+            animation: pulse-subtle 3s infinite ease-in-out;
+        }
 
+        /* Custom scrollbar for better visual appeal */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print styles for Contact Book export */
+        @media print {
+            body { background: white !important; color: black !important; }
+            header, nav, #toastNotification, .no-print, .lab-nav { display: none !important; }
+            .print-only { display: block !important; }
+            .tab-panel { display: block !important; }
+            #tab-symbols, #tab-qa, #tab-reception, #tab-listening, #tab-quiz { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12 antialiased selection:bg-teal-200">
+
+<div class="max-w-6xl mx-auto px-3 sm:px-6 py-4">
+
+    <!-- App Header Banner with Speech Controls & Gamification Stars -->
+    <header class="bg-gradient-to-r from-blue-700 via-teal-700 to-indigo-800 text-white rounded-3xl p-5 sm:p-7 shadow-xl mb-6">
+        <div class="flex flex-col lg:flex-row justify-between items-center gap-5">
+            
+            <!-- App Title, Level Badge & Star Tracker -->
+            <div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs sm:text-sm font-semibold text-yellow-300 border border-white/20">
+                        🌟 CEFR Level A1
+                    </span>
+                    <span class="bg-yellow-400 text-slate-900 px-3 py-1 rounded-full text-xs sm:text-sm font-black flex items-center gap-1 shadow">
+                        ⭐ <span id="globalStarsCount">0</span> Stars Earned
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight flex items-center gap-3">
+                    📞 Contact Info Express
+                </h1>
+                <p class="text-teal-100 text-sm sm:text-base mt-1">
+                    Beginner Listening, Dictation & Speaking Studio
+                </p>
+            </div>
+
+            <!-- Global Web Speech API Controls -->
+            <div class="bg-white/15 backdrop-blur-md p-4 rounded-2xl border border-white/20 w-full lg:w-auto flex flex-col sm:flex-row items-center gap-3">
+                
+                <!-- Voice Select Dropdown -->
+                <div class="flex flex-col gap-1 w-full sm:w-auto">
+                    <label for="voiceSelect" class="text-xs font-bold text-teal-100 uppercase tracking-wider flex items-center gap-1">
+                        <span>🔊 English Voice:</span>
+                    </label>
+                    <select id="voiceSelect" onchange="onVoiceChange()" class="bg-slate-900 text-white text-xs sm:text-sm font-semibold rounded-xl px-3 py-2 border border-teal-400/40 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full">
+                        <option value="">Loading native English voices...</option>
+                    </select>
+                </div>
+
+                <!-- Speech Rate Controls -->
+                <div class="flex flex-col gap-1 w-full sm:w-auto">
+                    <span class="text-xs font-bold text-teal-100 uppercase tracking-wider">Speed:</span>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="setSpeechRate(0.7, this)" class="rate-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-slate-900 shadow">
+                            🐢 0.7x Slow
+                        </button>
+                        <button onclick="setSpeechRate(1.0, this)" class="rate-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white hover:bg-white/30">
+                            🔊 1.0x Normal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stop Audio Button -->
+                <button onclick="stopTTS()" class="w-full sm:w-auto self-end px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center justify-center gap-1.5">
+                    <span>⏹️</span> Stop
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex flex-wrap gap-2 mb-6 bg-white p-2 rounded-2xl shadow-md border border-slate-200 no-print">
+        <button onclick="switchTab('tab-symbols')" id="nav-tab-symbols" class="tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 bg-teal-600 text-white shadow-md">
+            <span>🔤</span> Symbols & Alphabet
+        </button>
+        <button onclick="switchTab('tab-qa')" id="nav-tab-qa" class="tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+            <span>💬</span> Q&A Studio
+        </button>
+        <button onclick="switchTab('tab-reception')" id="nav-tab-reception" class="tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+            <span>📋</span> Reception Desk
+        </button>
+        <button onclick="switchTab('tab-listening')" id="nav-tab-listening" class="tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+            <span>🎧</span> Listening Lab
+        </button>
+        <button onclick="switchTab('tab-contactbook')" id="nav-tab-contactbook" class="tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100">
+            <span>📖</span> Contact Book
+        </button>
+    </nav>
+
+    <!-- MODULE 1: SYMBOLS & SPELLING GUIDE -->
+    <div id="tab-symbols" class="tab-panel space-y-6">
+        
+        <!-- Key Contact Symbols Grid -->
+        <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                        <span>📧</span> Key Symbols Pronunciation Guide
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        Click any symbol card to hear how to say it in email addresses, websites, and phone numbers!
+                    </p>
+                </div>
+            </div>
+
+            <!-- 5 Symbol Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                
+                <!-- Card @ -->
+                <div onclick="playSymbolAudio('@', 'at', 'carlos@mail.com', 'carlos at mail dot com')" class="bg-blue-50/80 border-2 border-blue-200 hover:border-blue-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-blue-700">@</span>
+                            <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <h3 class="text-lg font-black text-blue-900">"AT"</h3>
+                        <p class="text-xs text-blue-700 font-semibold mt-1">Used in email addresses</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-blue-200/60 text-[11px] font-mono font-bold text-slate-700">
+                        <code>carlos<span class="text-blue-600 font-black">@</span>mail.com</code>
+                    </div>
+                </div>
+
+                <!-- Card . -->
+                <div onclick="playSymbolAudio('.', 'dot', 'web.org', 'web dot org')" class="bg-emerald-50/80 border-2 border-emerald-200 hover:border-emerald-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-emerald-700">.</span>
+                            <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <h3 class="text-lg font-black text-emerald-900">"DOT"</h3>
+                        <p class="text-xs text-emerald-700 font-semibold mt-1">Used in websites & emails</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-emerald-200/60 text-[11px] font-mono font-bold text-slate-700">
+                        <code>web<span class="text-emerald-600 font-black">.</span>org</code>
+                    </div>
+                </div>
+
+                <!-- Card - -->
+                <div onclick="playSymbolAudio('-', 'dash', 'my-name', 'my dash name')" class="bg-amber-50/80 border-2 border-amber-200 hover:border-amber-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-amber-700">-</span>
+                            <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <h3 class="text-lg font-black text-amber-900">"DASH"</h3>
+                        <p class="text-xs text-amber-700 font-semibold mt-1">Hyphen in usernames</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-amber-200/60 text-[11px] font-mono font-bold text-slate-700">
+                        <code>my<span class="text-amber-600 font-black">-</span>name</code>
+                    </div>
+                </div>
+
+                <!-- Card _ -->
+                <div onclick="playSymbolAudio('_', 'underscore', 'carlos_s', 'carlos underscore s')" class="bg-purple-50/80 border-2 border-purple-200 hover:border-purple-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-purple-700">_</span>
+                            <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <h3 class="text-lg font-black text-purple-900">"UNDERSCORE"</h3>
+                        <p class="text-xs text-purple-700 font-semibold mt-1">Line below text</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-purple-200/60 text-[11px] font-mono font-bold text-slate-700">
+                        <code>carlos<span class="text-purple-600 font-black">_</span>s</code>
+                    </div>
+                </div>
+
+                <!-- Card 0 -->
+                <div onclick="playSymbolAudio('0', 'zero or oh', '555-0192', 'five five five, zero, one nine two')" class="bg-rose-50/80 border-2 border-rose-200 hover:border-rose-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-3xl font-black text-rose-700">0</span>
+                            <span class="text-lg group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <h3 class="text-lg font-black text-rose-900">"ZERO / OH"</h3>
+                        <p class="text-xs text-rose-700 font-semibold mt-1">Number in phone digits</p>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-rose-200/60 text-[11px] font-mono font-bold text-slate-700">
+                        <code>555-<span class="text-rose-600 font-black">0</span>192</code>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Interactive A-Z English Alphabet Board -->
+        <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                        <span>🔤</span> English Alphabet Spelling Studio
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        Click any letter to hear its English name, or type a word to hear it spelled out letter-by-letter!
+                    </p>
+                </div>
+
+                <!-- Spell-My-Name Tool -->
+                <div class="w-full md:w-auto flex items-center gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                    <input type="text" id="spellingInput" placeholder="Type name (e.g. SILVA)" class="p-2 bg-white border border-slate-300 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-teal-500 w-40">
+                    <button onclick="spellCustomWord()" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold rounded-xl shadow transition-all flex items-center gap-1 shrink-0">
+                        <span>🗣️</span> Spell Out Loud
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alphabet Keypad Grid A-Z -->
+            <div id="alphabetGrid" class="grid grid-cols-4 sm:grid-cols-7 md:grid-cols-9 gap-2.5">
+                <!-- Javascript populates A-Z buttons -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODULE 2: QUESTIONS & ANSWERS STUDIO -->
+    <div id="tab-qa" class="tab-panel hidden space-y-6">
+        
+        <!-- Key Questions Grid -->
+        <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200">
+            <div class="mb-6 pb-4 border-b border-slate-100">
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                    <span>💬</span> Essential Contact Questions & Model Answers
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                    Click the audio buttons to practice asking and answering contact questions.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Q1: Phone Number -->
+                <div class="bg-blue-50/70 border-2 border-blue-200 rounded-2xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black uppercase text-blue-700 bg-blue-100 px-2.5 py-1 rounded-full">📱 Phone Number</span>
+                            <button onclick="playTTS('What\'s your phone number? It\'s 555-0143.')" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                <span>🔊 Listen All</span>
+                            </button>
+                        </div>
+                        <div onclick="playTTS('What\'s your phone number?')" class="p-2.5 bg-white rounded-xl border border-blue-200 hover:border-blue-400 cursor-pointer transition-all mb-2 flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-blue-500 uppercase block">Question:</span>
+                                <span class="font-extrabold text-slate-800">"What's your phone number?"</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <div onclick="playTTS('It\'s 555-0143.')" class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 hover:border-emerald-400 cursor-pointer transition-all flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase block">Answer:</span>
+                                <span class="font-extrabold text-emerald-900">"It's 555-0143."</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q2: Email Address -->
+                <div class="bg-emerald-50/70 border-2 border-emerald-200 rounded-2xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black uppercase text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">✉️ Email Address</span>
+                            <button onclick="playTTS('What\'s your email address? It\'s carlos_s@mail.com.')" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                                <span>🔊 Listen All</span>
+                            </button>
+                        </div>
+                        <div onclick="playTTS('What\'s your email address?')" class="p-2.5 bg-white rounded-xl border border-emerald-200 hover:border-emerald-400 cursor-pointer transition-all mb-2 flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase block">Question:</span>
+                                <span class="font-extrabold text-slate-800">"What's your email address?"</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <div onclick="playTTS('It\'s carlos_s@mail.com.')" class="p-2.5 bg-emerald-100/80 rounded-xl border border-emerald-300 hover:border-emerald-500 cursor-pointer transition-all flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-emerald-700 uppercase block">Answer:</span>
+                                <span class="font-extrabold text-emerald-900">"It's carlos_s@mail.com."</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3: Street Address -->
+                <div class="bg-amber-50/70 border-2 border-amber-200 rounded-2xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black uppercase text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">🏠 Street Address</span>
+                            <button onclick="playTTS('What\'s your address? It\'s 12 Park Avenue.')" class="text-xs font-bold text-amber-600 hover:text-amber-800 flex items-center gap-1">
+                                <span>🔊 Listen All</span>
+                            </button>
+                        </div>
+                        <div onclick="playTTS('What\'s your address?')" class="p-2.5 bg-white rounded-xl border border-amber-200 hover:border-amber-400 cursor-pointer transition-all mb-2 flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-amber-600 uppercase block">Question:</span>
+                                <span class="font-extrabold text-slate-800">"What's your address?"</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <div onclick="playTTS('It\'s 12 Park Avenue.')" class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 hover:border-emerald-400 cursor-pointer transition-all flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase block">Answer:</span>
+                                <span class="font-extrabold text-emerald-900">"It's 12 Park Avenue."</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4: Spelling Last Name -->
+                <div class="bg-purple-50/70 border-2 border-purple-200 rounded-2xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black uppercase text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full">🔤 Name Spelling</span>
+                            <button onclick="playTTS('How do you spell your last name? S-I-L-V-A.')" class="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                                <span>🔊 Listen All</span>
+                            </button>
+                        </div>
+                        <div onclick="playTTS('How do you spell your last name?')" class="p-2.5 bg-white rounded-xl border border-purple-200 hover:border-purple-400 cursor-pointer transition-all mb-2 flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-purple-600 uppercase block">Question:</span>
+                                <span class="font-extrabold text-slate-800">"How do you spell your last name?"</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                        <div onclick="spellWord('SILVA')" class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 hover:border-emerald-400 cursor-pointer transition-all flex justify-between items-center group">
+                            <div>
+                                <span class="text-[10px] font-bold text-emerald-600 uppercase block">Answer:</span>
+                                <span class="font-extrabold text-emerald-900">"S - I - L - V - A."</span>
+                            </div>
+                            <span class="text-sm group-hover:scale-125 transition-transform">🔊</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Speak My Details Profile Form -->
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-5 sm:p-7 rounded-3xl shadow-xl border border-slate-800">
+            <div class="mb-5 pb-3 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <h2 class="text-xl font-extrabold flex items-center gap-2">
+                        <span>🎙️</span> "Speak My Details" Live Profile Builder
+                    </h2>
+                    <p class="text-xs text-indigo-200 mt-0.5">
+                        Type your info below and click the button to hear the app speak your details in natural English!
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+                <div>
+                    <label class="text-xs font-bold text-indigo-300 uppercase block mb-1">First Name:</label>
+                    <input type="text" id="userFirstName" placeholder="e.g. Carlos" value="Carlos" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-teal-400 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-indigo-300 uppercase block mb-1">Last Name:</label>
+                    <input type="text" id="userLastName" placeholder="e.g. Silva" value="Silva" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-teal-400 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-indigo-300 uppercase block mb-1">Phone Number:</label>
+                    <input type="text" id="userPhone" placeholder="e.g. 555-0143" value="555-0143" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-teal-400 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-indigo-300 uppercase block mb-1">Email Address:</label>
+                    <input type="text" id="userEmail" placeholder="e.g. carlos_s@mail.com" value="carlos_s@mail.com" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-teal-400 outline-none">
+                </div>
+                <div class="sm:col-span-2 lg:col-span-2">
+                    <label class="text-xs font-bold text-indigo-300 uppercase block mb-1">Physical Address:</label>
+                    <input type="text" id="userAddress" placeholder="e.g. 12 Park Avenue" value="12 Park Avenue" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-teal-400 outline-none">
+                </div>
+            </div>
+
+            <button onclick="readCustomDetails()" class="w-full py-3.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-slate-950 font-black rounded-2xl text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2">
+                <span>🔊</span> Read My Details Out Loud
+            </button>
+        </div>
+
+    </div>
+
+    <!-- MODULE 3: RECEPTION DESK SIMULATOR -->
+    <div id="tab-reception" class="tab-panel hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Persona Selector -->
+            <div class="lg:col-span-4 bg-white p-5 rounded-3xl shadow-md border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-800 mb-3 flex items-center gap-2">
+                        <span>🆔</span> Select Identity Card
+                    </h2>
+                    
+                    <div id="presetCardsContainer" class="space-y-2 mb-4">
+                        <!-- Javascript populates 4 preset identity cards -->
+                    </div>
+                </div>
+
+                <div id="activeIdentityCardDisplay" class="bg-slate-900 text-white p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Roleplay Wizard -->
+            <div class="lg:col-span-8 bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                                <span>🏢</span> Language School Registration Desk
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Roleplay: Receptionist asks, you answer!</p>
+                        </div>
+                        <span id="receptionStepBadge" class="text-xs font-black text-teal-700 bg-teal-100 px-3 py-1 rounded-full">
+                            Step 1 / 6
+                        </span>
+                    </div>
+
+                    <!-- Receptionist Bubble -->
+                    <div class="bg-gradient-to-r from-teal-700 to-indigo-800 text-white p-4 rounded-2xl shadow-md mb-4 relative">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-black uppercase text-teal-200">👩‍💼 Virtual Receptionist</span>
+                            <button onclick="playReceptionistCurrentQuestion()" class="text-xs font-bold text-yellow-300 hover:text-white flex items-center gap-1">
+                                <span>🔊 Replay Question</span>
+                            </button>
+                        </div>
+                        <p id="receptionistQuestionText" class="text-base sm:text-lg font-extrabold">
+                            "Hello! Welcome to English Academy. What's your first name?"
+                        </p>
+                    </div>
+
+                    <!-- Student Answer Box -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold uppercase text-slate-500">Your Response:</span>
+                            <button onclick="playStudentCurrentAnswer()" class="text-xs font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1">
+                                <span>🔊 Listen Answer</span>
+                            </button>
+                        </div>
+
+                        <div id="studentModelAnswerDisplay" class="text-sm font-extrabold text-slate-800 bg-white p-3 rounded-xl border border-slate-300">
+                            "My first name is Carlos."
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Progress Checklist -->
+                <div class="mt-6 pt-4 border-t border-slate-100">
+                    <h3 class="text-xs font-bold uppercase text-slate-400 mb-3">Completed Registration Form</h3>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" id="registrationFormFields">
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_firstName">
+                            <span class="text-[10px] text-slate-400 block font-bold">First Name</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_lastName">
+                            <span class="text-[10px] text-slate-400 block font-bold">Last Name</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_spelling">
+                            <span class="text-[10px] text-slate-400 block font-bold">Spelled Name</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_phone">
+                            <span class="text-[10px] text-slate-400 block font-bold">Phone Number</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_email">
+                            <span class="text-[10px] text-slate-400 block font-bold">Email Address</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-xl border border-slate-200" id="field_address">
+                            <span class="text-[10px] text-slate-400 block font-bold">Address</span>
+                            <span class="font-extrabold text-slate-800 value-text">---</span>
+                        </div>
+                    </div>
+
+                    <!-- Wizard Control Buttons -->
+                    <div class="flex justify-between items-center gap-3 mt-5">
+                        <button onclick="prevReceptionStep()" id="receptionPrevBtn" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs sm:text-sm border border-slate-300 transition-all">
+                            ⬅️ Previous Step
+                        </button>
+                        <button onclick="nextReceptionStep()" id="receptionNextBtn" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-2">
+                            <span>Next Question</span> ➡️
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE 4: DEDICATED LISTENING LAB -->
+    <div id="tab-listening" class="tab-panel hidden space-y-6">
+        
+        <!-- Listening Lab Header -->
+        <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                        <span>🎧</span> Beginner Listening & Dictation Lab
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        Practice listening to emails, phone numbers, business introductions, and voicemail recordings!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Listening Lab Exercise Sub-Tabs -->
+            <div class="flex flex-wrap gap-2 mb-6 lab-nav">
+                <button onclick="switchLabSubTab('lab-ex-a')" id="subtab-lab-ex-a" class="lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all bg-indigo-600 text-white shadow">
+                    ✍️ A: Email & Spelling
+                </button>
+                <button onclick="switchLabSubTab('lab-ex-b')" id="subtab-lab-ex-b" class="lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all text-slate-600 hover:bg-slate-100">
+                    📱 B: Phone Dictation
+                </button>
+                <button onclick="switchLabSubTab('lab-ex-c')" id="subtab-lab-ex-c" class="lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all text-slate-600 hover:bg-slate-100">
+                    🎴 C: Business Card Match
+                </button>
+                <button onclick="switchLabSubTab('lab-ex-d')" id="subtab-lab-ex-d" class="lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all text-slate-600 hover:bg-slate-100">
+                    📼 D: Voicemail Form Fill
+                </button>
+            </div>
+
+            <!-- EXERCISE A: EMAIL & SPELLING DICTATION -->
+            <div id="lab-ex-a" class="lab-subpanel space-y-4">
+                <div class="bg-indigo-50/70 border border-indigo-200 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-indigo-900 text-sm sm:text-base">Exercise A: Email & Name Spelling Dictation</h3>
+                        <p class="text-xs text-indigo-700">Listen to the audio recording and type the exact email or spelled name.</p>
+                    </div>
+                    <span id="exAProgressBadge" class="text-xs font-black bg-indigo-200 text-indigo-900 px-3 py-1 rounded-full">Item 1 / 4</span>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4 text-center">
+                    <div class="flex justify-center items-center gap-3">
+                        <button onclick="playExAAudio(0.7)" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🐢 Play Slow (0.7x)</span>
+                        </button>
+                        <button onclick="playExAAudio(1.0)" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🔊 Play Normal (1.0x)</span>
+                        </button>
+                    </div>
+
+                    <div class="max-w-md mx-auto space-y-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase block">Type what you hear:</label>
+                        <input type="text" id="exAInput" placeholder="e.g. maria_20@mail.com" class="w-full p-3 bg-white border border-slate-300 rounded-xl text-center font-mono font-extrabold text-sm text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="flex justify-center gap-2 pt-2">
+                        <button onclick="checkExAAnswer()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs sm:text-sm shadow transition-all">
+                            ✅ Check Answer
+                        </button>
+                        <button onclick="nextExAItem()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-all">
+                            Next Item ➡️
+                        </button>
+                    </div>
+
+                    <div id="exAFeedback" class="text-xs font-bold hidden p-3 rounded-xl"></div>
+                </div>
+            </div>
+
+            <!-- EXERCISE B: PHONE NUMBER DICTATION -->
+            <div id="lab-ex-b" class="lab-subpanel hidden space-y-4">
+                <div class="bg-blue-50/70 border border-blue-200 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-blue-900 text-sm sm:text-base">Exercise B: Phone Number Dictation</h3>
+                        <p class="text-xs text-blue-700">Listen to the spoken digits (including "zero" or "oh") and type the phone number.</p>
+                    </div>
+                    <span id="exBProgressBadge" class="text-xs font-black bg-blue-200 text-blue-900 px-3 py-1 rounded-full">Item 1 / 4</span>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4 text-center">
+                    <div class="flex justify-center items-center gap-3">
+                        <button onclick="playExBAudio(0.7)" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🐢 Play Slow (0.7x)</span>
+                        </button>
+                        <button onclick="playExBAudio(1.0)" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🔊 Play Normal (1.0x)</span>
+                        </button>
+                    </div>
+
+                    <div class="max-w-md mx-auto space-y-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase block">Type digits (e.g. 555-0192):</label>
+                        <input type="text" id="exBInput" placeholder="555-0000" class="w-full p-3 bg-white border border-slate-300 rounded-xl text-center font-mono font-extrabold text-base text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="flex justify-center gap-2 pt-2">
+                        <button onclick="checkExBAnswer()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs sm:text-sm shadow transition-all">
+                            ✅ Check Phone Number
+                        </button>
+                        <button onclick="nextExBItem()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-all">
+                            Next Item ➡️
+                        </button>
+                    </div>
+
+                    <div id="exBFeedback" class="text-xs font-bold hidden p-3 rounded-xl"></div>
+                </div>
+            </div>
+
+            <!-- EXERCISE C: AUDIO BUSINESS CARD MATCH -->
+            <div id="lab-ex-c" class="lab-subpanel hidden space-y-4">
+                <div class="bg-teal-50/70 border border-teal-200 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-teal-900 text-sm sm:text-base">Exercise C: Audio Business Card Match</h3>
+                        <p class="text-xs text-teal-700">Listen to the speaker introduce themselves and select the matching business card!</p>
+                    </div>
+                    <span id="exCProgressBadge" class="text-xs font-black bg-teal-200 text-teal-900 px-3 py-1 rounded-full">Card 1 / 3</span>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-5">
+                    <div class="flex justify-center items-center gap-3">
+                        <button onclick="playExCAudio(0.7)" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🐢 Play Intro (Slow 0.7x)</span>
+                        </button>
+                        <button onclick="playExCAudio(1.0)" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🔊 Play Intro (Normal 1.0x)</span>
+                        </button>
+                    </div>
+
+                    <!-- 3 Business Card Options Grid -->
+                    <div id="exCOptionsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <div id="exCFeedback" class="text-xs font-bold hidden p-3 rounded-xl text-center"></div>
+
+                    <div class="flex justify-end pt-2">
+                        <button onclick="nextExCItem()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-all">
+                            Next Card Challenge ➡️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXERCISE D: VOICEMAIL INTAKE FORM FILL -->
+            <div id="lab-ex-d" class="lab-subpanel hidden space-y-4">
+                <div class="bg-amber-50/70 border border-amber-200 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-extrabold text-amber-900 text-sm sm:text-base">Exercise D: Voicemail Message Intake Form</h3>
+                        <p class="text-xs text-amber-800">Listen to realistic voicemail recordings and extract the caller's details to fill out the form.</p>
+                    </div>
+                    <span id="exDProgressBadge" class="text-xs font-black bg-amber-200 text-amber-900 px-3 py-1 rounded-full">Message 1 / 2</span>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-5">
+                    <div class="flex justify-center items-center gap-3">
+                        <button onclick="playExDAudio(0.7)" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>🐢 Play Voicemail (Slow 0.7x)</span>
+                        </button>
+                        <button onclick="playExDAudio(1.0)" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                            <span>📼 Play Voicemail (Normal 1.0x)</span>
+                        </button>
+                    </div>
+
+                    <!-- Intake Form Inputs Grid -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-300 space-y-4 max-w-2xl mx-auto shadow-sm">
+                        <h4 class="text-xs font-black uppercase text-amber-800 tracking-wider pb-2 border-b border-slate-100 flex items-center gap-2">
+                            <span>📋</span> Voicemail Intake Form
+                        </h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold text-slate-700">
+                            <div>
+                                <label class="block mb-1">First Name:</label>
+                                <input type="text" id="exD_firstName" placeholder="e.g. Laura" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block mb-1">Last Name:</label>
+                                <input type="text" id="exD_lastName" placeholder="e.g. Gomez" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block mb-1">Phone Number:</label>
+                                <input type="text" id="exD_phone" placeholder="e.g. 555-0349" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block mb-1">Email Address:</label>
+                                <input type="text" id="exD_email" placeholder="e.g. laura_g@service.net" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-semibold">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block mb-1">Address:</label>
+                                <input type="text" id="exD_address" placeholder="e.g. 45 Main Street" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-semibold">
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                            <button onclick="checkExDAnswer()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all">
+                                ✅ Submit Intake Form
+                            </button>
+                            <button onclick="nextExDItem()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs sm:text-sm transition-all">
+                                Next Voicemail ➡️
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="exDFeedback" class="text-xs font-bold hidden p-3 rounded-xl max-w-2xl mx-auto"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODULE 5: MY CONTACT BOOK (CLASS MINGLE) -->
+    <div id="tab-contactbook" class="tab-panel hidden space-y-6">
+        <div class="bg-white p-5 sm:p-7 rounded-3xl shadow-md border border-slate-200">
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-800 flex items-center gap-2">
+                        <span>📖</span> My Contact Book (Class Mingle Tracker)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                        Collect classmates' contact details. Click <strong>"🔊 Listen"</strong> to hear spoken read-outs!
+                    </p>
+                </div>
+
+                <div class="flex gap-2 no-print">
+                    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                        <span>🖨️</span> Print Book
+                    </button>
+                    <button onclick="openAddContactModal()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow transition-all flex items-center gap-1.5">
+                        <span>➕</span> Add New Contact
+                    </button>
+                </div>
+            </div>
+
+            <!-- Print Header -->
+            <div class="hidden print-only mb-6">
+                <h1 class="text-2xl font-bold text-black">My English Contact Book</h1>
+                <p class="text-sm text-slate-600">Beginner Contact Information Activity Summary</p>
+            </div>
+
+            <!-- Contacts Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 uppercase text-[11px] font-black border-b border-slate-200">
+                            <th class="p-3">Name</th>
+                            <th class="p-3">Phone Number</th>
+                            <th class="p-3">Email Address</th>
+                            <th class="p-3">Physical Address</th>
+                            <th class="p-3 text-right no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactTableBody" class="divide-y divide-slate-100 font-semibold text-slate-800">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Add Contact Modal Dialog -->
+<div id="addContactModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+            <h3 class="text-lg font-extrabold text-slate-800" id="modalTitle">➕ Add New Contact</h3>
+            <button onclick="closeAddContactModal()" class="text-slate-400 hover:text-slate-600 font-black text-xl">✕</button>
+        </div>
+
+        <input type="hidden" id="modalContactIndex" value="-1">
+
+        <div class="space-y-3 text-xs font-bold text-slate-700">
+            <div>
+                <label class="block mb-1">First Name:</label>
+                <input type="text" id="modalFirstName" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 font-semibold">
+            </div>
+            <div>
+                <label class="block mb-1">Last Name:</label>
+                <input type="text" id="modalLastName" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 font-semibold">
+            </div>
+            <div>
+                <label class="block mb-1">Phone Number:</label>
+                <input type="text" id="modalPhone" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 font-semibold">
+            </div>
+            <div>
+                <label class="block mb-1">Email Address:</label>
+                <input type="text" id="modalEmail" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 font-semibold">
+            </div>
+            <div>
+                <label class="block mb-1">Physical Address:</label>
+                <input type="text" id="modalAddress" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-teal-500 font-semibold">
+            </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <button onclick="closeAddContactModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">Cancel</button>
+            <button onclick="saveModalContact()" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold rounded-xl text-xs shadow">Save Contact</button>
+        </div>
+    </div>
+</div>
+
+<!-- Global Notification Toast -->
+<div id="toastNotification" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl transition-all duration-300 transform translate-y-24 opacity-0 font-bold text-sm z-50 flex items-center gap-2.5 border border-slate-700">
+    <span id="toastIcon">✨</span>
+    <span id="toastMessage">Notification message</span>
+</div>
+
+<script>
+    /* Global Application State */
+    let currentSpeechRate = 0.7; // Default to slow for A1 learners
+    let currentVoice = null;
+    let synth = window.speechSynthesis;
+    let totalStars = 0;
+
+    // Symbol Translator for Web Speech API
+    function translateForTTS(text) {
+        if (!text) return "";
+        let result = text;
+        result = result.replace(/@/g, ' at ');
+        result = result.replace(/_/g, ' underscore ');
+        result = result.replace(/-/g, ' dash ');
+        result = result.replace(/\./g, ' dot ');
+        result = result.replace(/\b0\b/g, ' zero ');
+        return result;
+    }
+
+    // Voice Initialization
+    function initVoices() {
+        if (!synth) return;
+        const voices = synth.getVoices();
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (!voiceSelect) return;
+
+        voiceSelect.innerHTML = '';
+        const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+
+        if (englishVoices.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Default System Voice';
+            voiceSelect.appendChild(opt);
+            return;
+        }
+
+        englishVoices.forEach((voice) => {
+            const opt = document.createElement('option');
+            opt.value = voice.name;
+            opt.textContent = `${voice.name} (${voice.lang})`;
+            if ((voice.lang === 'en-US' || voice.lang === 'en-GB') && !currentVoice) {
+                currentVoice = voice;
+                opt.selected = true;
+            }
+            voiceSelect.appendChild(opt);
+        });
+
+        if (!currentVoice && englishVoices.length > 0) {
+            currentVoice = englishVoices[0];
+        }
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = initVoices;
+    }
+    setTimeout(initVoices, 300);
+
+    function onVoiceChange() {
+        const select = document.getElementById('voiceSelect');
+        const voices = synth.getVoices();
+        currentVoice = voices.find(v => v.name === select.value) || null;
+        showToast("Voice updated!", "🔊");
+    }
+
+    function setSpeechRate(rate, btn) {
+        currentSpeechRate = rate;
+        document.querySelectorAll('.rate-btn').forEach(b => {
+            b.className = 'rate-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white hover:bg-white/30';
+        });
+        btn.className = 'rate-btn px-2.5 py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-slate-900 shadow';
+        showToast(`Speed set to ${rate}x`, "⏱️");
+    }
+
+    function playTTS(text, useSymbolTranslator = true, customRate = null) {
+        if (!synth) return;
+        synth.cancel();
+
+        const cleanText = text.replace(/<[^>]*>?/gm, '');
+        const processedText = useSymbolTranslator ? translateForTTS(cleanText) : cleanText;
+
+        const utterance = new SpeechSynthesisUtterance(processedText);
+        utterance.rate = customRate || currentSpeechRate;
+
+        if (currentVoice) {
+            utterance.voice = currentVoice;
+        } else {
+            utterance.lang = 'en-US';
+        }
+
+        synth.speak(utterance);
+    }
+
+    function stopTTS() {
+        if (synth) synth.cancel();
+    }
+
+    function addStars(amount) {
+        totalStars += amount;
+        document.getElementById('globalStarsCount').textContent = totalStars;
+    }
+
+    // Navigation Tab Switching
+    function switchTab(tabId) {
+        stopTTS();
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.className = 'tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 text-slate-600 hover:bg-slate-100';
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        document.getElementById('nav-' + tabId).className = 'tab-btn flex-1 min-w-[120px] py-3 px-2 sm:px-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-1.5 bg-teal-600 text-white shadow-md';
+    }
+
+    // MODULE 1: SYMBOLS & SPELLING LOGIC
+    function playSymbolAudio(symbol, symbolSpoken, exampleText, exampleSpoken) {
+        const textToSay = `The symbol ${symbol} is called ${symbolSpoken}. Example: ${exampleSpoken}`;
+        playTTS(textToSay, false);
+    }
+
+    const alphabetList = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+
+    function renderAlphabetGrid() {
+        const grid = document.getElementById('alphabetGrid');
+        grid.innerHTML = '';
+
+        alphabetList.forEach(letter => {
+            const btn = document.createElement('button');
+            btn.className = 'p-3 bg-slate-50 border border-slate-200 hover:border-teal-500 hover:bg-teal-50 rounded-2xl font-black text-slate-800 hover:text-teal-700 text-lg sm:text-xl transition-all shadow-sm flex flex-col items-center justify-center gap-0.5 group';
+            btn.innerHTML = `
+                <span>${letter}</span>
+                <span class="text-[9px] text-slate-400 group-hover:text-teal-600 font-bold">🔊</span>
+            `;
+            btn.onclick = () => playLetterAudio(letter);
+            grid.appendChild(btn);
+        });
+    }
+
+    function playLetterAudio(letter) {
+        playTTS(`Letter ${letter}`, false);
+    }
+
+    function spellWord(word) {
+        if (!word) return;
+        const letters = word.toUpperCase().replace(/[^A-Z]/g, '').split('').join(' - ');
+        playTTS(`Spelled: ${letters}`, false);
+    }
+
+    function spellCustomWord() {
+        const val = document.getElementById('spellingInput').value.trim();
+        if (val) {
+            spellWord(val);
+        } else {
+            showToast("Please type a word to spell!", "⚠️");
+        }
+    }
+
+    // MODULE 2: LIVE PROFILE DETAILS READER
+    function readCustomDetails() {
+        const firstName = document.getElementById('userFirstName').value || 'Student';
+        const lastName = document.getElementById('userLastName').value || 'Name';
+        const phone = document.getElementById('userPhone').value || '555-0100';
+        const email = document.getElementById('userEmail').value || 'user@mail.com';
+        const address = document.getElementById('userAddress').value || '10 Main Street';
+
+        const profileText = `My name is ${firstName} ${lastName}. My phone number is ${phone}. My email address is ${email}. My address is ${address}.`;
+        playTTS(profileText, true);
+        showToast("Reading your contact details out loud!", "🔊");
+    }
+
+    // MODULE 3: RECEPTION DESK ROLEPLAY SIMULATOR
+    const identityPresets = [
+        { id: "carlos", firstName: "Carlos", lastName: "Silva", phone: "555-0143", email: "carlos_s@mail.com", address: "12 Park Avenue", avatar: "👨‍💼" },
+        { id: "akina", firstName: "Akina", lastName: "Sato", phone: "555-0892", email: "akina.sato@web.org", address: "88 Oak Street", avatar: "👩‍🎓" },
+        { id: "ethan", firstName: "Ethan", lastName: "Davis", phone: "555-0117", email: "ethan2026@service.net", address: "500 River Road", avatar: "👨‍🎨" },
+        { id: "caroline", firstName: "Caroline", lastName: "Smith", phone: "555-0450", email: "caroline-s@mail.com", address: "142 Pine Street", avatar: "👩‍🏫" }
+    ];
+
+    let activeIdentity = identityPresets[0];
+    let currentReceptionStep = 0;
+
+    const receptionWizardSteps = [
+        {
+            key: "firstName",
+            fieldId: "field_firstName",
+            question: "Hello! Welcome to English Academy. What's your first name?",
+            getAnswer: (id) => `Hello! My first name is ${id.firstName}.`,
+            getValue: (id) => id.firstName
+        },
+        {
+            key: "lastName",
+            fieldId: "field_lastName",
+            question: "And what's your last name?",
+            getAnswer: (id) => `My last name is ${id.lastName}.`,
+            getValue: (id) => id.lastName
+        },
+        {
+            key: "spelling",
+            fieldId: "field_spelling",
+            question: "How do you spell your last name?",
+            getAnswer: (id) => `It is spelled ${id.lastName.toUpperCase().split('').join(' - ')}.`,
+            getValue: (id) => id.lastName.toUpperCase().split('').join(' - ')
+        },
+        {
+            key: "phone",
+            fieldId: "field_phone",
+            question: "Thank you. What's your phone number?",
+            getAnswer: (id) => `My phone number is ${id.phone}.`,
+            getValue: (id) => id.phone
+        },
+        {
+            key: "email",
+            fieldId: "field_email",
+            question: "And what's your email address?",
+            getAnswer: (id) => `My email address is ${id.email}.`,
+            getValue: (id) => id.email
+        },
+        {
+            key: "address",
+            fieldId: "field_address",
+            question: "Lastly, what's your physical address?",
+            getAnswer: (id) => `My address is ${id.address}.`,
+            getValue: (id) => id.address
+        }
+    ];
+
+    function renderIdentityPresets() {
+        const container = document.getElementById('presetCardsContainer');
+        container.innerHTML = '';
+
+        identityPresets.forEach(preset => {
+            const btn = document.createElement('button');
+            const isActive = preset.id === activeIdentity.id;
+            btn.className = `w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between ${
+                isActive 
+                ? 'bg-teal-50 border-teal-500 ring-2 ring-teal-400 text-teal-900 font-extrabold' 
+                : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700 font-bold'
+            }`;
+            btn.innerHTML = `
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">${preset.avatar}</span>
+                    <div>
+                        <div class="text-xs">${preset.firstName} ${preset.lastName}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">${preset.phone}</div>
+                    </div>
+                </div>
+                ${isActive ? '<span class="text-xs text-teal-600 font-black">Active</span>' : ''}
+            `;
+            btn.onclick = () => selectIdentityPreset(preset);
+            container.appendChild(btn);
+        });
+
+        renderActiveIdentityCard();
+    }
+
+    function selectIdentityPreset(preset) {
+        activeIdentity = preset;
+        currentReceptionStep = 0;
+        renderIdentityPresets();
+        updateReceptionWizardStep();
+        resetRegistrationFormDisplay();
+        showToast(`Identity changed to ${preset.firstName}`, "🆔");
+    }
+
+    function renderActiveIdentityCard() {
+        const cardDisplay = document.getElementById('activeIdentityCardDisplay');
+        cardDisplay.innerHTML = `
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <span class="font-extrabold text-teal-400 text-sm">${activeIdentity.avatar} ${activeIdentity.firstName} ${activeIdentity.lastName}</span>
+                <span class="text-[9px] uppercase tracking-widest text-slate-400">Identity Card</span>
+            </div>
+            <div><strong class="text-indigo-300">Phone:</strong> ${activeIdentity.phone}</div>
+            <div><strong class="text-indigo-300">Email:</strong> ${activeIdentity.email}</div>
+            <div><strong class="text-indigo-300">Address:</strong> ${activeIdentity.address}</div>
+        `;
+    }
+
+    function updateReceptionWizardStep() {
+        const step = receptionWizardSteps[currentReceptionStep];
+        document.getElementById('receptionStepBadge').textContent = `Step ${currentReceptionStep + 1} / ${receptionWizardSteps.length}`;
+        
+        const qText = `"${step.question}"`;
+        document.getElementById('receptionistQuestionText').textContent = qText;
+
+        const aText = `"${step.getAnswer(activeIdentity)}"`;
+        document.getElementById('studentModelAnswerDisplay').textContent = aText;
+
+        const targetField = document.getElementById(step.fieldId);
+        if (targetField) {
+            targetField.className = 'p-2 bg-emerald-100/90 border border-emerald-300 rounded-xl transition-all';
+            targetField.querySelector('.value-text').textContent = step.getValue(activeIdentity);
+        }
+
+        playTTS(step.question, false);
+    }
+
+    function playReceptionistCurrentQuestion() {
+        const step = receptionWizardSteps[currentReceptionStep];
+        playTTS(step.question, false);
+    }
+
+    function playStudentCurrentAnswer() {
+        const step = receptionWizardSteps[currentReceptionStep];
+        playTTS(step.getAnswer(activeIdentity), true);
+    }
+
+    function nextReceptionStep() {
+        if (currentReceptionStep < receptionWizardSteps.length - 1) {
+            currentReceptionStep++;
+            updateReceptionWizardStep();
+        } else {
+            playTTS("Registration complete! Welcome to English Academy!", false);
+            addStars(2);
+            showToast("Registration Complete! +2 Stars 🎉", "🏆");
+        }
+    }
+
+    function prevReceptionStep() {
+        if (currentReceptionStep > 0) {
+            currentReceptionStep--;
+            updateReceptionWizardStep();
+        }
+    }
+
+    function resetRegistrationFormDisplay() {
+        receptionWizardSteps.forEach(s => {
+            const field = document.getElementById(s.fieldId);
+            if (field) {
+                field.className = 'p-2 bg-slate-100 rounded-xl border border-slate-200';
+                field.querySelector('.value-text').textContent = '---';
+            }
+        });
+    }
+
+    // MODULE 4: LISTENING LAB EXERCISES LOGIC
+    function switchLabSubTab(subTabId) {
+        stopTTS();
+        document.querySelectorAll('.lab-subpanel').forEach(panel => panel.classList.add('hidden'));
+        document.querySelectorAll('.lab-subtab-btn').forEach(btn => {
+            btn.className = 'lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all text-slate-600 hover:bg-slate-100';
+        });
+
+        document.getElementById(subTabId).classList.remove('hidden');
+        document.getElementById('subtab-' + subTabId).className = 'lab-subtab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-black transition-all bg-indigo-600 text-white shadow';
+    }
+
+    // EXERCISE A: EMAIL & SPELLING DICTATION
+    const exAData = [
+        { text: "maria_20@mail.com", spoken: "m a r i a underscore 2 0 at mail dot com" },
+        { text: "k-martin", spoken: "k dash m a r t i n" },
+        { text: "alex.sato@web.org", spoken: "a l e x dot s a t o at web dot org" },
+        { text: "H-A-R-R-I-S-O-N", spoken: "H A R R I S O N" }
+    ];
+    let exAIndex = 0;
+
+    function renderExAItem() {
+        document.getElementById('exAProgressBadge').textContent = `Item ${exAIndex + 1} / ${exAData.length}`;
+        document.getElementById('exAInput').value = "";
+        const fb = document.getElementById('exAFeedback');
+        fb.className = "text-xs font-bold hidden p-3 rounded-xl";
+    }
+
+    function playExAAudio(rate = 0.7) {
+        const item = exAData[exAIndex];
+        playTTS(item.spoken, false, rate);
+    }
+
+    function checkExAAnswer() {
+        const userVal = document.getElementById('exAInput').value.trim().toLowerCase();
+        const correctVal = exAData[exAIndex].text.toLowerCase();
+        const fb = document.getElementById('exAFeedback');
+
+        fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+        if (userVal === correctVal) {
+            fb.classList.add('bg-emerald-100', 'text-emerald-900');
+            fb.innerHTML = `🎉 Correct! You typed: <strong>${exAData[exAIndex].text}</strong> (+1 Star)`;
+            addStars(1);
+            showToast("Correct Answer! +1 Star", "⭐");
+        } else {
+            fb.classList.add('bg-rose-100', 'text-rose-900');
+            fb.innerHTML = `❌ Try again! Correct answer: <strong>${exAData[exAIndex].text}</strong>`;
+        }
+    }
+
+    function nextExAItem() {
+        exAIndex = (exAIndex + 1) % exAData.length;
+        renderExAItem();
+        playExAAudio(0.7);
+    }
+
+    // EXERCISE B: PHONE NUMBER DICTATION
+    const exBData = [
+        { phone: "555-0192", spoken: "five five five, zero, one nine two" },
+        { phone: "415-555-0810", spoken: "four one five, five five five, zero eight one zero" },
+        { phone: "312-555-0450", spoken: "three one two, five five five, zero four five zero" },
+        { phone: "212-555-0177", spoken: "two one two, five five five, zero one seven seven" }
+    ];
+    let exBIndex = 0;
+
+    function renderExBItem() {
+        document.getElementById('exBProgressBadge').textContent = `Item ${exBIndex + 1} / ${exBData.length}`;
+        document.getElementById('exBInput').value = "";
+        const fb = document.getElementById('exBFeedback');
+        fb.className = "text-xs font-bold hidden p-3 rounded-xl";
+    }
+
+    function playExBAudio(rate = 0.7) {
+        const item = exBData[exBIndex];
+        playTTS(item.spoken, false, rate);
+    }
+
+    function checkExBAnswer() {
+        const userVal = document.getElementById('exBInput').value.trim().replace(/[^0-9]/g, '');
+        const correctVal = exBData[exBIndex].phone.replace(/[^0-9]/g, '');
+        const fb = document.getElementById('exBFeedback');
+
+        fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+        if (userVal === correctVal) {
+            fb.classList.add('bg-emerald-100', 'text-emerald-900');
+            fb.innerHTML = `🎉 Correct phone number: <strong>${exBData[exBIndex].phone}</strong> (+1 Star)`;
+            addStars(1);
+            showToast("Correct Phone Number! +1 Star", "⭐");
+        } else {
+            fb.classList.add('bg-rose-100', 'text-rose-900');
+            fb.innerHTML = `❌ Not quite! Correct number: <strong>${exBData[exBIndex].phone}</strong>`;
+        }
+    }
+
+    function nextExBItem() {
+        exBIndex = (exBIndex + 1) % exBData.length;
+        renderExBItem();
+        playExBAudio(0.7);
+    }
+
+    // EXERCISE C: AUDIO BUSINESS CARD MATCH
+    const exCData = [
+        {
+            intro: "Hello! My name is David Lin. My email is david.l@web.org and my phone number is 555-0812.",
+            cards: [
+                { name: "David Lin", email: "david.l@web.org", phone: "555-0812", correct: true },
+                { name: "David Lee", email: "david_l@web.org", phone: "555-0821", correct: false },
+                { name: "Daniel Lin", email: "d.lin@web.org", phone: "555-0812", correct: false }
+            ]
+        },
+        {
+            intro: "Hi everyone! I am Maria Santos. My phone is 415-555-0199 and my address is 88 Oak Street.",
+            cards: [
+                { name: "Maria Santos", email: "maria@mail.com", phone: "415-555-0199", correct: true },
+                { name: "Mary Santos", email: "maria@mail.com", phone: "415-555-0188", correct: false },
+                { name: "Maria Silva", email: "msilva@mail.com", phone: "415-555-0199", correct: false }
+            ]
+        }
+    ];
+    let exCIndex = 0;
+
+    function renderExCItem() {
+        document.getElementById('exCProgressBadge').textContent = `Card ${exCIndex + 1} / ${exCData.length}`;
+        const container = document.getElementById('exCOptionsContainer');
+        container.innerHTML = '';
+
+        const item = exCData[exCIndex];
+
+        item.cards.forEach((card, idx) => {
+            const btn = document.createElement('button');
+            btn.className = "bg-white border-2 border-slate-200 hover:border-teal-500 rounded-2xl p-4 text-left transition-all hover:shadow-md space-y-2 group";
+            btn.innerHTML = `
+                <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span class="font-extrabold text-slate-800 group-hover:text-teal-700">${card.name}</span>
+                    <span class="text-xs text-slate-400">Card ${String.fromCharCode(65 + idx)}</span>
+                </div>
+                <div class="text-xs text-slate-600 font-mono">📱 ${card.phone}</div>
+                <div class="text-xs text-slate-600 font-mono">✉️ ${card.email}</div>
+            `;
+            btn.onclick = () => selectExCCard(card.correct);
+            container.appendChild(btn);
+        });
+
+        const fb = document.getElementById('exCFeedback');
+        fb.className = "text-xs font-bold hidden p-3 rounded-xl text-center";
+    }
+
+    function playExCAudio(rate = 0.7) {
+        playTTS(exCData[exCIndex].intro, true, rate);
+    }
+
+    function selectExCCard(isCorrect) {
+        const fb = document.getElementById('exCFeedback');
+        fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+        if (isCorrect) {
+            fb.classList.add('bg-emerald-100', 'text-emerald-900');
+            fb.innerHTML = `🎉 Match Found! Excellent listening! (+2 Stars)`;
+            addStars(2);
+            showToast("Match Found! +2 Stars", "⭐");
+        } else {
+            fb.classList.add('bg-rose-100', 'text-rose-900');
+            fb.innerHTML = `❌ Incorrect card. Replay audio and listen carefully to the name & digits!`;
+        }
+    }
+
+    function nextExCItem() {
+        exCIndex = (exCIndex + 1) % exCData.length;
+        renderExCItem();
+        playExCAudio(0.7);
+    }
+
+    // EXERCISE D: VOICEMAIL INTAKE FORM FILL
+    const exDData = [
+        {
+            transcript: "Hi, this is Laura Gomez leaving a message. My phone number is 555-0349. My email address is laura_g@service.net, and I live at 45 Main Street.",
+            expected: { firstName: "Laura", lastName: "Gomez", phone: "555-0349", email: "laura_g@service.net", address: "45 Main Street" }
+        },
+        {
+            transcript: "Hello, my name is Kenji Sato. Phone number is 312-555-0811. Email is kenji.s@web.org. Address is 120 River Road.",
+            expected: { firstName: "Kenji", lastName: "Sato", phone: "312-555-0811", email: "kenji.s@web.org", address: "120 River Road" }
+        }
+    ];
+    let exDIndex = 0;
+
+    function renderExDItem() {
+        document.getElementById('exDProgressBadge').textContent = `Message ${exDIndex + 1} / ${exDData.length}`;
+        document.getElementById('exD_firstName').value = "";
+        document.getElementById('exD_lastName').value = "";
+        document.getElementById('exD_phone').value = "";
+        document.getElementById('exD_email').value = "";
+        document.getElementById('exD_address').value = "";
+
+        const fb = document.getElementById('exDFeedback');
+        fb.className = "text-xs font-bold hidden p-3 rounded-xl max-w-2xl mx-auto";
+    }
+
+    function playExDAudio(rate = 0.7) {
+        playTTS(exDData[exDIndex].transcript, true, rate);
+    }
+
+    function checkExDAnswer() {
+        const exp = exDData[exDIndex].expected;
+        const userFn = document.getElementById('exD_firstName').value.trim();
+        const userLn = document.getElementById('exD_lastName').value.trim();
+        const userPh = document.getElementById('exD_phone').value.trim().replace(/[^0-9]/g, '');
+        const userEm = document.getElementById('exD_email').value.trim().toLowerCase();
+
+        const expPh = exp.phone.replace(/[^0-9]/g, '');
+
+        let matchCount = 0;
+        if (userFn.toLowerCase() === exp.firstName.toLowerCase()) matchCount++;
+        if (userLn.toLowerCase() === exp.lastName.toLowerCase()) matchCount++;
+        if (userPh === expPh) matchCount++;
+        if (userEm === exp.email.toLowerCase()) matchCount++;
+
+        const fb = document.getElementById('exDFeedback');
+        fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-amber-100', 'text-amber-900');
+
+        if (matchCount >= 3) {
+            fb.classList.add('bg-emerald-100', 'text-emerald-900');
+            fb.innerHTML = `🏆 Voicemail Form Completed! Accurate extraction! (+3 Stars)`;
+            addStars(3);
+            showToast("Form Completed! +3 Stars", "⭐");
+        } else {
+            fb.classList.add('bg-amber-100', 'text-amber-900');
+            fb.innerHTML = `⚠️ Partial matches (${matchCount}/4 fields correct). Replay voicemail to hear missing info!`;
+        }
+    }
+
+    function nextExDItem() {
+        exDIndex = (exDIndex + 1) % exDData.length;
+        renderExDItem();
+        playExDAudio(0.7);
+    }
+
+    // MODULE 5: CONTACT BOOK MANAGER
+    let contactBookData = [
+        { firstName: "Akina", lastName: "Sato", phone: "555-0892", email: "akina.sato@web.org", address: "88 Oak Street" },
+        { firstName: "Carlos", lastName: "Silva", phone: "555-0143", email: "carlos_s@mail.com", address: "12 Park Avenue" },
+        { firstName: "Caroline", lastName: "Smith", phone: "555-0450", email: "caroline-s@mail.com", address: "142 Pine Street" }
+    ];
+
+    function renderContactBook() {
+        const tbody = document.getElementById('contactTableBody');
+        tbody.innerHTML = '';
+
+        contactBookData.forEach((contact, index) => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 transition-colors';
+            tr.innerHTML = `
+                <td class="p-3 font-extrabold text-slate-900">${contact.firstName} ${contact.lastName}</td>
+                <td class="p-3 font-mono font-bold text-slate-700">${contact.phone}</td>
+                <td class="p-3 font-mono font-bold text-teal-700">${contact.email}</td>
+                <td class="p-3 text-slate-600">${contact.address}</td>
+                <td class="p-3 text-right space-x-1 no-print">
+                    <button onclick="listenToContact(${index})" class="px-2.5 py-1.5 bg-teal-100 hover:bg-teal-200 text-teal-800 rounded-lg text-xs font-bold transition-all">
+                        🔊 Listen
+                    </button>
+                    <button onclick="editContact(${index})" class="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-all">
+                        ✏️ Edit
+                    </button>
+                    <button onclick="deleteContact(${index})" class="px-2 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg text-xs font-bold transition-all">
+                        🗑️
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function listenToContact(index) {
+        const c = contactBookData[index];
+        const text = `Contact name: ${c.firstName} ${c.lastName}. Phone number: ${c.phone}. Email address: ${c.email}. Address: ${c.address}.`;
+        playTTS(text, true);
+    }
+
+    function openAddContactModal() {
+        document.getElementById('modalContactIndex').value = "-1";
+        document.getElementById('modalTitle').textContent = "➕ Add New Contact";
+        document.getElementById('modalFirstName').value = "";
+        document.getElementById('modalLastName').value = "";
+        document.getElementById('modalPhone').value = "";
+        document.getElementById('modalEmail').value = "";
+        document.getElementById('modalAddress').value = "";
+
+        document.getElementById('addContactModal').classList.remove('hidden');
+    }
+
+    function editContact(index) {
+        const c = contactBookData[index];
+        document.getElementById('modalContactIndex').value = index;
+        document.getElementById('modalTitle').textContent = "✏️ Edit Contact";
+        document.getElementById('modalFirstName').value = c.firstName;
+        document.getElementById('modalLastName').value = c.lastName;
+        document.getElementById('modalPhone').value = c.phone;
+        document.getElementById('modalEmail').value = c.email;
+        document.getElementById('modalAddress').value = c.address;
+
+        document.getElementById('addContactModal').classList.remove('hidden');
+    }
+
+    function closeAddContactModal() {
+        document.getElementById('addContactModal').classList.add('hidden');
+    }
+
+    function saveModalContact() {
+        const idx = parseInt(document.getElementById('modalContactIndex').value);
+        const firstName = document.getElementById('modalFirstName').value.trim();
+        const lastName = document.getElementById('modalLastName').value.trim();
+        const phone = document.getElementById('modalPhone').value.trim();
+        const email = document.getElementById('modalEmail').value.trim();
+        const address = document.getElementById('modalAddress').value.trim();
+
+        if (!firstName) {
+            showToast("Please enter a first name!", "⚠️");
+            return;
+        }
+
+        const newObj = { firstName, lastName, phone, email, address };
+
+        if (idx >= 0) {
+            contactBookData[idx] = newObj;
+            showToast("Contact updated!", "✏️");
+        } else {
+            contactBookData.push(newObj);
+            showToast("New contact saved!", "➕");
+        }
+
+        closeAddContactModal();
+        renderContactBook();
+    }
+
+    function deleteContact(index) {
+        contactBookData.splice(index, 1);
+        renderContactBook();
+        showToast("Contact removed!", "🗑️");
+    }
+
+    function showToast(message, icon = "✨") {
+        const toast = document.getElementById('toastNotification');
+        document.getElementById('toastIcon').textContent = icon;
+        document.getElementById('toastMessage').textContent = message;
+
+        toast.classList.remove('translate-y-24', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-24', 'opacity-0');
+        }, 2200);
+    }
+
+    // App Initialization
+    window.onload = function() {
+        renderAlphabetGrid();
+        renderIdentityPresets();
+        updateReceptionWizardStep();
+        renderExAItem();
+        renderExBItem();
+        renderExCItem();
+        renderExDItem();
+        renderContactBook();
+    };
+</script>
+</body>
+</html>
