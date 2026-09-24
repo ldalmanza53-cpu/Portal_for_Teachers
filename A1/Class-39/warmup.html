@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appearance Validator & Identification Lab</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Fredoka', 'cursive'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        },
+                        accent: {
+                            purple: '#8b5cf6',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                        }
+                    },
+                    animation: {
+                        'bounce-short': 'bounce 0.6s ease-in-out 1',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .tab-btn.active {
+            background-color: #0284c7;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            top: -10px;
+            opacity: 0.8;
+            animation: fall 3s linear infinite;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans min-h-full text-slate-800 flex flex-col justify-between">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Title & Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-tr from-brand-500 to-accent-purple p-2.5 rounded-xl shadow-lg">
+                        <i class="fa-solid font-bold fa-user-check text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-display text-lg sm:text-xl font-bold tracking-wide text-white">
+                            Appearance Lab <span class="text-xs font-sans px-2 py-0.5 rounded-full bg-brand-500/30 text-brand-100 border border-brand-400/30">ESL A1</span>
+                        </h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Validate Descriptors & Identify People</p>
+                    </div>
+                </div>
+
+                <!-- User Stats & Sound Controls -->
+                <div class="flex items-center space-x-3 sm:space-x-6">
+                    <!-- XP Badge -->
+                    <div class="flex items-center space-x-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                        <span id="xp-display" class="text-amber-300">0</span>
+                        <span class="text-xs text-slate-400 font-normal">XP</span>
+                    </div>
+
+                    <!-- Streak Badge -->
+                    <div class="flex items-center space-x-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+                        <i class="fa-solid fa-fire text-rose-500"></i>
+                        <span id="streak-display" class="text-rose-400">0</span>
+                    </div>
+
+                    <!-- Audio Controls -->
+                    <div class="flex items-center space-x-1 border-l border-slate-700 pl-3">
+                        <button id="toggle-sfx-btn" onclick="toggleSFX()" class="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Toggle Sound Effects">
+                            <i id="sfx-icon" class="fa-solid fa-volume-high text-brand-400"></i>
+                        </button>
+                        <button id="guide-modal-btn" onclick="openGuideModal()" class="p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Grammar Cheat Sheet">
+                            <i class="fa-solid fa-book-open text-accent-purple"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        
+        <!-- Grammar Target Bar / Quick Banner -->
+        <div class="mb-6 glass-card rounded-2xl p-4 shadow-sm border border-slate-200/80 bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-brand-500 text-white p-2 rounded-lg font-bold text-sm">
+                        <i class="fa-solid fa-lightbulb"></i> Target Grammar
+                    </span>
+                    <p class="text-xs sm:text-sm font-medium text-slate-700">
+                        <strong class="text-brand-700">BE</strong> (is/are) for age/build • 
+                        <strong class="text-accent-purple">HAVE GOT</strong> (has got) for hair/eyes • 
+                        <strong class="text-accent-emerald">WEAR</strong> (wears) for accessories
+                    </p>
+                </div>
+                <button onclick="openGuideModal()" class="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center space-x-1 underline self-end md:self-auto">
+                    <span>View Examples & Chart</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Activity Module Navigation Tabs -->
+        <div class="flex overflow-x-auto pb-2 mb-6 scrollbar-none gap-2 border-b border-slate-200">
+            <button onclick="switchTab('tab-error-buster')" id="nav-tab-error-buster" class="tab-btn active px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition flex items-center space-x-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>1. Grammar Validator</span>
+            </button>
+            <button onclick="switchTab('tab-identify')" id="nav-tab-identify" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition flex items-center space-x-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-magnifying-glass font-bold"></i>
+                <span>2. Person Detective</span>
+            </button>
+            <button onclick="switchTab('tab-builder')" id="nav-tab-builder" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition flex items-center space-x-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-cubes"></i>
+                <span>3. Sentence Builder</span>
+            </button>
+            <button onclick="switchTab('tab-lie-detector')" id="nav-tab-lie-detector" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition flex items-center space-x-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-user-secret"></i>
+                <span>4. True or Lie?</span>
+            </button>
+            <button onclick="switchTab('tab-badges')" id="nav-tab-badges" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition flex items-center space-x-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-trophy"></i>
+                <span>Badges & Stats</span>
+            </button>
+        </div>
+
+        <!-- ================= MODULE 1: GRAMMAR VALIDATOR (ERROR BUSTER) ================= -->
+        <section id="tab-error-buster" class="tab-content block">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Activity Main Card -->
+                <div class="lg:col-span-2 glass-card rounded-2xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200">
+                            Knowledge Validation Task
+                        </span>
+                        <span id="m1-progress-text" class="text-xs font-semibold text-slate-500">
+                            Question 1 of 8
+                        </span>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div class="mb-6">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2">Is this appearance description grammatically correct?</h2>
+                        <p class="text-xs text-slate-500 mb-4">Read the sentence carefully and validate the verbs (*is/are*, *has got*, *wears*).</p>
+                        
+                        <!-- Sentence Display Box -->
+                        <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-inner relative flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-start space-x-3 w-full">
+                                <button onclick="speakCurrentM1Sentence()" class="mt-1 bg-slate-800 hover:bg-brand-600 text-brand-300 hover:text-white p-3 rounded-xl transition flex-shrink-0" title="Listen to Pronunciation">
+                                    <i class="fa-solid fa-volume-high text-lg"></i>
+                                </button>
+                                <div>
+                                    <span class="text-xs uppercase font-semibold text-slate-400">Statement:</span>
+                                    <p id="m1-sentence-text" class="text-lg sm:text-xl font-semibold tracking-wide text-amber-300 mt-1">
+                                        "He is long dark hair and brown eyes."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Initial Decision Buttons (True / False) -->
+                    <div id="m1-decision-box" class="grid grid-cols-2 gap-4 mb-6">
+                        <button onclick="checkM1Initial(true)" class="p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold flex flex-col items-center justify-center space-y-1 transition transform active:scale-95">
+                            <i class="fa-solid fa-circle-check text-2xl text-emerald-600"></i>
+                            <span>CORRECT</span>
+                        </button>
+                        <button onclick="checkM1Initial(false)" class="p-4 rounded-xl border-2 border-rose-500/40 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold flex flex-col items-center justify-center space-y-1 transition transform active:scale-95">
+                            <i class="fa-solid fa-circle-xmark text-2xl text-rose-600"></i>
+                            <span>INCORRECT (Fix It)</span>
+                        </button>
+                    </div>
+
+                    <!-- Correction Selector (Hidden until incorrect chosen) -->
+                    <div id="m1-correction-box" class="hidden mb-6 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                        <p class="text-sm font-semibold text-slate-700 mb-3">Select the correct grammatical form:</p>
+                        <div id="m1-options-container" class="space-y-2">
+                            <!-- Dynamic Options Rendered Here -->
+                        </div>
+                    </div>
+
+                    <!-- Feedback & Explanation Box -->
+                    <div id="m1-feedback-box" class="hidden p-4 rounded-xl mb-6">
+                        <div class="flex items-start space-x-3">
+                            <div id="m1-feedback-icon" class="text-2xl mt-0.5"></div>
+                            <div>
+                                <h4 id="m1-feedback-title" class="font-bold text-sm"></h4>
+                                <p id="m1-feedback-text" class="text-xs sm:text-sm mt-1"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next Button -->
+                    <div class="flex justify-end">
+                        <button id="m1-next-btn" onclick="nextM1Question()" class="hidden bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                            <span>Next Question</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Side Helper / Tip Box -->
+                <div class="space-y-4">
+                    <div class="glass-card rounded-2xl p-5 border border-slate-200">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2 mb-3">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                            <span>Common Error Trap</span>
+                        </h3>
+                        <div class="space-y-3 text-xs text-slate-600">
+                            <div class="p-2.5 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg">
+                                <p class="font-bold text-rose-800">❌ Don't say:</p>
+                                <p class="italic text-slate-700">"She is blue eyes."</p>
+                            </div>
+                            <div class="p-2.5 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg">
+                                <p class="font-bold text-emerald-800">✅ Do say:</p>
+                                <p class="italic text-slate-700">"She **has got** blue eyes."</p>
+                            </div>
+                            <hr class="border-slate-200">
+                            <div class="p-2.5 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg">
+                                <p class="font-bold text-rose-800">❌ Don't say:</p>
+                                <p class="italic text-slate-700">"He has got tall."</p>
+                            </div>
+                            <div class="p-2.5 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg">
+                                <p class="font-bold text-emerald-800">✅ Do say:</p>
+                                <p class="italic text-slate-700">"He **is** tall."</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 2: PERSON IDENTIFICATION CHALLENGE ================= -->
+        <section id="tab-identify" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-accent-purple bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                            Identification Lab
+                        </span>
+                        <h2 class="text-xl font-bold text-slate-800 mt-1">Match the Description to the Person</h2>
+                    </div>
+                    <span id="m2-progress-text" class="text-xs font-semibold text-slate-500">
+                        Case 1 of 4
+                    </span>
+                </div>
+
+                <!-- Description Clue Box with Audio -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-5 mb-6 shadow-lg border border-indigo-900/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="flex items-start space-x-3">
+                        <button onclick="speakCurrentM2Clue()" class="mt-1 bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-xl transition shadow flex-shrink-0" title="Listen to Audio Description">
+                            <i class="fa-solid fa-volume-high text-xl"></i>
+                        </button>
+                        <div>
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Detective Briefing & Clues:</span>
+                            <p id="m2-description-text" class="text-base sm:text-lg font-medium text-slate-100 mt-1">
+                                "This person is short and has got gray hair. He wears big black glasses and has got a white mustache."
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="speakCurrentM2Clue()" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-200 px-3 py-2 rounded-lg border border-indigo-800 whitespace-nowrap self-end md:self-center">
+                        <i class="fa-solid fa-play mr-1"></i> Read Aloud
+                    </button>
+                </div>
+
+                <!-- Interactive Feature Validation Checklist & Character Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Feature Checklist Column -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <h3 class="font-bold text-slate-800 text-sm mb-3 flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-brand-600"></i>
+                            <span>Validation Checklist</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-3">Check off features mentioned in the description to verify your choice:</p>
+                        <div id="m2-checklist-container" class="space-y-2.5">
+                            <!-- Dynamic checklist items -->
+                        </div>
+                    </div>
+
+                    <!-- Characters Selection Grid -->
+                    <div class="lg:col-span-2">
+                        <p class="text-sm font-bold text-slate-700 mb-3">Who fits all descriptions?</p>
+                        <div id="m2-character-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <!-- Dynamic SVG character cards -->
+                        </div>
+
+                        <!-- Feedback area -->
+                        <div id="m2-feedback-box" class="hidden mt-4 p-4 rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <div id="m2-feedback-icon" class="text-2xl"></div>
+                                <p id="m2-feedback-text" class="text-sm font-semibold"></p>
+                            </div>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="mt-6 flex justify-between items-center">
+                            <button id="m2-check-btn" onclick="validateM2Selection()" class="bg-accent-purple hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition">
+                                Validate Suspect
+                            </button>
+                            <button id="m2-next-btn" onclick="nextM2Question()" class="hidden bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                                <span>Next Case</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 3: INTERACTIVE SENTENCE BUILDER ================= -->
+        <section id="tab-builder" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-accent-emerald bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                            Grammar Construction
+                        </span>
+                        <h2 class="text-xl font-bold text-slate-800 mt-1">Build & Validate Appearance Sentences</h2>
+                    </div>
+                    <span id="m3-progress-text" class="text-xs font-semibold text-slate-500">
+                        Task 1 of 4
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    <!-- Character Spotlight -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center text-center">
+                        <div id="m3-avatar-container" class="w-36 h-36 bg-white rounded-full p-2 border-2 border-slate-200 shadow-inner mb-3 flex items-center justify-center">
+                            <!-- SVG Character inserted dynamically -->
+                        </div>
+                        <h3 id="m3-character-name" class="font-bold text-slate-800 text-lg">Character Name</h3>
+                        <p id="m3-character-hint" class="text-xs text-slate-500 mt-1">Build a description about this person!</p>
+                    </div>
+
+                    <!-- Sentence Workspace -->
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-inner min-h-[100px] flex flex-col justify-between">
+                            <span class="text-xs text-slate-400 font-semibold uppercase">Constructed Sentence:</span>
+                            <div id="m3-sentence-slots" class="flex flex-wrap gap-2 my-3 min-h-[40px] items-center">
+                                <!-- Tap blocks appear here -->
+                            </div>
+                            <div class="flex justify-end">
+                                <button onclick="clearM3Slots()" class="text-xs text-slate-400 hover:text-rose-300 underline">Clear Sentence</button>
+                            </div>
+                        </div>
+
+                        <!-- Word Chip Bank -->
+                        <div>
+                            <p class="text-xs font-bold text-slate-600 uppercase mb-2">Tap word blocks to build:</p>
+                            <div id="m3-word-bank" class="flex flex-wrap gap-2">
+                                <!-- Dynamic word chips -->
+                            </div>
+                        </div>
+
+                        <!-- Feedback Box -->
+                        <div id="m3-feedback-box" class="hidden p-4 rounded-xl">
+                            <div class="flex items-start space-x-3">
+                                <div id="m3-feedback-icon" class="text-xl mt-0.5"></div>
+                                <p id="m3-feedback-text" class="text-xs sm:text-sm"></p>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-between items-center pt-2">
+                            <button id="m3-validate-btn" onclick="validateM3Sentence()" class="bg-accent-emerald hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition">
+                                Validate Sentence Structure
+                            </button>
+                            <button id="m3-next-btn" onclick="nextM3Question()" class="hidden bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                                <span>Next Character</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 4: TRUE OR LIE? VERIFICATION GAME ================= -->
+        <section id="tab-lie-detector" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                            Verification Game
+                        </span>
+                        <h2 class="text-xl font-bold text-slate-800 mt-1">Spot the Lie & Correct It!</h2>
+                    </div>
+                    <span id="m4-progress-text" class="text-xs font-semibold text-slate-500">
+                        Round 1 of 4
+                    </span>
+                </div>
+
+                <p class="text-xs text-slate-600 mb-4">3 statements are TRUE. 1 statement is a LIE! Find the lie about this person.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Character Card -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center text-center">
+                        <div id="m4-avatar-container" class="w-40 h-40 bg-white rounded-2xl p-2 border border-slate-200 shadow-sm mb-3 flex items-center justify-center">
+                            <!-- Dynamic SVG -->
+                        </div>
+                        <h3 id="m4-character-name" class="font-bold text-slate-800 text-base">Character Name</h3>
+                        <p id="m4-character-desc" class="text-xs text-slate-500 mt-1">Examine physical traits closely!</p>
+                    </div>
+
+                    <!-- Statements List -->
+                    <div class="md:col-span-2 space-y-3">
+                        <div id="m4-statements-container" class="space-y-2.5">
+                            <!-- 4 Statements loaded dynamically -->
+                        </div>
+
+                        <!-- Phase 2: Correction Choice (Hidden until lie selected) -->
+                        <div id="m4-correction-section" class="hidden bg-indigo-50 border border-indigo-200 p-4 rounded-xl mt-4">
+                            <h4 class="font-bold text-indigo-900 text-sm mb-2 flex items-center space-x-2">
+                                <i class="fa-solid fa-wrench text-indigo-600"></i>
+                                <span>Great! How do you correct this false statement?</span>
+                            </h4>
+                            <div id="m4-correction-options" class="space-y-2">
+                                <!-- Correction choices -->
+                            </div>
+                        </div>
+
+                        <!-- Feedback Box -->
+                        <div id="m4-feedback-box" class="hidden p-4 rounded-xl mt-4">
+                            <div class="flex items-start space-x-3">
+                                <div id="m4-feedback-icon" class="text-xl mt-0.5"></div>
+                                <p id="m4-feedback-text" class="text-xs sm:text-sm font-semibold"></p>
+                            </div>
+                        </div>
+
+                        <!-- Next Button -->
+                        <div class="flex justify-end pt-2">
+                            <button id="m4-next-btn" onclick="nextM4Question()" class="hidden bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                                <span>Next Round</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: BADGES & PROGRESS SUMMARY ================= -->
+        <section id="tab-badges" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- User Summary Stats -->
+                <div class="glass-card rounded-2xl p-6 border border-slate-200 text-center flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-amber-500 rounded-full flex items-center justify-center shadow-lg text-white text-3xl mb-3">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">Your Learning Rank</h3>
+                    <p id="stats-rank-title" class="text-brand-600 font-bold text-base mb-4">Rookie Inspector</p>
+                    
+                    <div class="w-full space-y-3 border-t border-slate-200 pt-4 text-xs">
+                        <div class="flex justify-between text-slate-600">
+                            <span>Total XP Earned:</span>
+                            <span id="stats-xp-val" class="font-bold text-slate-800">0 XP</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Best Streak:</span>
+                            <span id="stats-streak-val" class="font-bold text-slate-800">0</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Badges Unlocked:</span>
+                            <span id="stats-badges-val" class="font-bold text-slate-800">0 / 5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Badges Grid -->
+                <div class="md:col-span-2 glass-card rounded-2xl p-6 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-medal text-amber-500"></i>
+                        <span>Achievement Badges</span>
+                    </h3>
+                    <div id="badges-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Dynamic Badges -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>✏️ Guided Practice (GP): Validate previous knowledge about physical appearance and identify people.</p>
+            <p class="text-slate-500">Interactive ESL A1 Educational Web Application</p>
+        </div>
+    </footer>
+
+    <!-- ================= GRAMMAR GUIDE MODAL ================= -->
+    <div id="guide-modal" class="fixed inset-0 bg-slate-950/70 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh] border border-slate-200">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-book-open text-brand-600 text-xl"></i>
+                    <h3 class="font-bold text-slate-800 text-lg">Physical Appearance Grammar Rules</h3>
+                </div>
+                <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Reference Table -->
+            <div class="space-y-4 text-xs sm:text-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700">
+                                <th class="p-3 border border-slate-200 font-bold">Category</th>
+                                <th class="p-3 border border-slate-200 font-bold">Verb</th>
+                                <th class="p-3 border border-slate-200 font-bold">Correct Example</th>
+                                <th class="p-3 border border-slate-200 font-bold">❌ Common Mistake</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-600">
+                            <tr>
+                                <td class="p-3 border border-slate-200 font-bold text-brand-700">Height, Age & Build</td>
+                                <td class="p-3 border border-slate-200"><strong>am / is / are</strong></td>
+                                <td class="p-3 border border-slate-200 bg-emerald-50 text-emerald-900">She <strong>is</strong> tall and slim.</td>
+                                <td class="p-3 border border-slate-200 bg-rose-50 text-rose-900">She <s>has got</s> tall.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 border border-slate-200 font-bold text-accent-purple">Hair, Eyes & Facial Features</td>
+                                <td class="p-3 border border-slate-200"><strong>have got / has got</strong></td>
+                                <td class="p-3 border border-slate-200 bg-emerald-50 text-emerald-900">He <strong>has got</strong> curly brown hair.</td>
+                                <td class="p-3 border border-slate-200 bg-rose-50 text-rose-900">He <s>is</s> curly brown hair.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 border border-slate-200 font-bold text-accent-emerald">Accessories & Clothes</td>
+                                <td class="p-3 border border-slate-200"><strong>wear / wears</strong></td>
+                                <td class="p-3 border border-slate-200 bg-emerald-50 text-emerald-900">They <strong>wear</strong> round glasses.</td>
+                                <td class="p-3 border border-slate-200 bg-rose-50 text-rose-900">They <s>have got</s> glasses eyes.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-xl">
+                    <h4 class="font-bold text-indigo-900 text-xs uppercase">Pro Tip for A1 Learners:</h4>
+                    <p class="text-slate-700 mt-1">
+                        Use <strong>is/are</strong> with adjectives (tall, short, slim, young, old). Use <strong>has got</strong> with nouns (hair, eyes, beard, mustache).
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeGuideModal()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-5 py-2 rounded-xl text-sm">
+                    Got it! Close Guide
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        
+        // --- Web Audio Synthesizer for SFX ---
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.sfxEnabled = true;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playCorrect() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.16); // G5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            playError() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            }
+            playClick() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(450, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+            playBadge() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+        }
+
+        const soundFX = new SoundManager();
+
+        function toggleSFX() {
+            soundFX.sfxEnabled = !soundFX.sfxEnabled;
+            const icon = document.getElementById('sfx-icon');
+            if (soundFX.sfxEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-brand-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        // --- Text-to-Speech Helper ---
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.88; // Slightly slower for A1 English learners
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // SVG Character Generators
+        const CHARACTERS = {
+            mrThomas: {
+                id: 'mrThomas',
+                name: 'Mr. Thomas',
+                traits: {
+                    height: 'Short',
+                    hair: 'Short gray hair',
+                    eyes: 'Dark eyes',
+                    features: 'White mustache',
+                    accessories: 'Black round glasses'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Shirt -->
+                    <path d="M 20 88 C 20 70, 35 68, 50 68 C 65 68, 80 70, 80 88 Z" fill="#1e293b"/>
+                    <path d="M 42 68 L 50 78 L 58 68 Z" fill="#ffffff"/>
+                    <!-- Head -->
+                    <circle cx="50" cy="45" r="22" fill="#fde047" opacity="0.3"/>
+                    <circle cx="50" cy="45" r="20" fill="#fcd34d"/>
+                    <!-- Ears -->
+                    <circle cx="29" cy="45" r="4" fill="#fcd34d"/>
+                    <circle cx="71" cy="45" r="4" fill="#fcd34d"/>
+                    <!-- Gray Hair -->
+                    <path d="M 30 40 C 30 22, 70 22, 70 40 C 65 30, 35 30, 30 40 Z" fill="#cbd5e1"/>
+                    <!-- Eyes behind glasses -->
+                    <circle cx="42" cy="43" r="2" fill="#1e293b"/>
+                    <circle cx="58" cy="43" r="2" fill="#1e293b"/>
+                    <!-- Glasses -->
+                    <circle cx="42" cy="43" r="6" fill="none" stroke="#0f172a" stroke-width="2"/>
+                    <circle cx="58" cy="43" r="6" fill="none" stroke="#0f172a" stroke-width="2"/>
+                    <line x1="48" y1="43" x2="52" y2="43" stroke="#0f172a" stroke-width="2"/>
+                    <!-- White Mustache -->
+                    <path d="M 38 52 C 45 49, 50 54, 50 54 C 50 54, 55 49, 62 52 C 60 57, 40 57, 38 52 Z" fill="#f8fafc"/>
+                    <!-- Smile -->
+                    <path d="M 45 58 Q 50 62 55 58" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>`
+            },
+            anna: {
+                id: 'anna',
+                name: 'Anna',
+                traits: {
+                    height: 'Tall & slim',
+                    hair: 'Long straight blonde hair',
+                    eyes: 'Green eyes',
+                    features: 'Smooth skin',
+                    accessories: 'No glasses'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Long Blonde Hair Back -->
+                    <path d="M 24 35 C 20 60, 24 85, 32 88 C 35 70, 30 40, 30 35 Z" fill="#fde047"/>
+                    <path d="M 76 35 C 80 60, 76 85, 68 88 C 65 70, 70 40, 70 35 Z" fill="#fde047"/>
+                    <!-- Top Outfit -->
+                    <path d="M 25 88 C 25 72, 35 70, 50 70 C 65 70, 75 72, 75 88 Z" fill="#ec4899"/>
+                    <!-- Neck & Face -->
+                    <rect x="45" y="60" width="10" height="12" fill="#fde047" opacity="0.3"/>
+                    <circle cx="50" cy="42" r="19" fill="#fef08a"/>
+                    <!-- Blonde Hair Front Bangs -->
+                    <path d="M 31 38 C 35 22, 65 22, 69 38 C 60 28, 40 28, 31 38 Z" fill="#fde047"/>
+                    <!-- Green Eyes -->
+                    <circle cx="42" cy="42" r="2.5" fill="#10b981"/>
+                    <circle cx="58" cy="42" r="2.5" fill="#10b981"/>
+                    <!-- Cheeks -->
+                    <circle cx="38" cy="48" r="3" fill="#f43f5e" opacity="0.25"/>
+                    <circle cx="62" cy="48" r="3" fill="#f43f5e" opacity="0.25"/>
+                    <!-- Smile -->
+                    <path d="M 44 52 Q 50 57 56 52" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round"/>
+                </svg>`
+            },
+            carlos: {
+                id: 'carlos',
+                name: 'Carlos',
+                traits: {
+                    height: 'Medium height',
+                    hair: 'Short curly black hair',
+                    eyes: 'Dark brown eyes',
+                    features: 'Dark beard',
+                    accessories: 'Yellow hoodie'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Hoodie -->
+                    <path d="M 20 88 C 20 68, 35 66, 50 66 C 65 66, 80 68, 80 88 Z" fill="#eab308"/>
+                    <!-- Head -->
+                    <circle cx="50" cy="44" r="20" fill="#d97706" opacity="0.4"/>
+                    <circle cx="50" cy="44" r="19" fill="#f59e0b" opacity="0.7"/>
+                    <!-- Curly Black Hair -->
+                    <circle cx="38" cy="27" r="6" fill="#0f172a"/>
+                    <circle cx="46" cy="24" r="7" fill="#0f172a"/>
+                    <circle cx="54" cy="24" r="7" fill="#0f172a"/>
+                    <circle cx="62" cy="27" r="6" fill="#0f172a"/>
+                    <circle cx="33" cy="33" r="6" fill="#0f172a"/>
+                    <circle cx="67" cy="33" r="6" fill="#0f172a"/>
+                    <!-- Eyes -->
+                    <circle cx="42" cy="42" r="2.5" fill="#0f172a"/>
+                    <circle cx="58" cy="42" r="2.5" fill="#0f172a"/>
+                    <!-- Dark Beard -->
+                    <path d="M 34 46 C 34 60, 66 60, 66 46 C 66 54, 34 54, 34 46 Z" fill="#0f172a"/>
+                    <!-- Smile inside beard -->
+                    <path d="M 45 50 Q 50 54 55 50" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>`
+            },
+            lucy: {
+                id: 'lucy',
+                name: 'Lucy',
+                traits: {
+                    height: 'Young & chubby',
+                    hair: 'Short wavy brown hair',
+                    eyes: 'Blue eyes',
+                    features: 'Round cheeks',
+                    accessories: 'Red glasses'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Outfit -->
+                    <path d="M 18 88 C 18 70, 32 68, 50 68 C 68 68, 82 70, 82 88 Z" fill="#8b5cf6"/>
+                    <!-- Round Chubby Head -->
+                    <circle cx="50" cy="46" r="23" fill="#fed7aa"/>
+                    <!-- Short Wavy Brown Hair -->
+                    <path d="M 26 44 C 22 28, 38 20, 50 20 C 62 20, 78 28, 74 44 C 70 30, 30 30, 26 44 Z" fill="#78350f"/>
+                    <!-- Blue Eyes -->
+                    <circle cx="40" cy="45" r="3" fill="#0284c7"/>
+                    <circle cx="60" cy="45" r="3" fill="#0284c7"/>
+                    <!-- Red Glasses -->
+                    <circle cx="40" cy="45" r="7" fill="none" stroke="#ef4444" stroke-width="2"/>
+                    <circle cx="60" cy="45" r="7" fill="none" stroke="#ef4444" stroke-width="2"/>
+                    <line x1="47" y1="45" x2="53" y2="45" stroke="#ef4444" stroke-width="2"/>
+                    <!-- Cheeks -->
+                    <circle cx="33" cy="52" r="3.5" fill="#f43f5e" opacity="0.3"/>
+                    <circle cx="67" cy="52" r="3.5" fill="#f43f5e" opacity="0.3"/>
+                    <!-- Smile -->
+                    <path d="M 44 55 Q 50 60 56 55" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round"/>
+                </svg>`
+            },
+            david: {
+                id: 'david',
+                name: 'David',
+                traits: {
+                    height: 'Tall',
+                    hair: 'Bald head',
+                    eyes: 'Dark brown eyes',
+                    features: 'Thick brown beard',
+                    accessories: 'Green polo shirt'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Green Polo -->
+                    <path d="M 20 88 C 20 68, 35 66, 50 66 C 65 66, 80 68, 80 88 Z" fill="#047857"/>
+                    <path d="M 46 66 L 50 76 L 54 66 Z" fill="#ffffff"/>
+                    <!-- Smooth Bald Head -->
+                    <circle cx="50" cy="42" r="21" fill="#fcd34d"/>
+                    <!-- Eyes -->
+                    <circle cx="41" cy="40" r="2.5" fill="#451a03"/>
+                    <circle cx="59" cy="40" r="2.5" fill="#451a03"/>
+                    <path d="M 37 35 Q 41 33 45 35" fill="none" stroke="#78350f" stroke-width="1.5"/>
+                    <path d="M 55 35 Q 59 33 63 35" fill="none" stroke="#78350f" stroke-width="1.5"/>
+                    <!-- Thick Brown Beard -->
+                    <path d="M 30 42 C 30 65, 70 65, 70 42 C 70 58, 30 58, 30 42 Z" fill="#78350f"/>
+                    <!-- Smile -->
+                    <path d="M 44 48 Q 50 53 56 48" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>`
+            },
+            maya: {
+                id: 'maya',
+                name: 'Maya',
+                traits: {
+                    height: 'Medium height',
+                    hair: 'Long dark curly hair',
+                    eyes: 'Hazel eyes',
+                    features: 'Green beanie hat',
+                    accessories: 'Gold round glasses'
+                },
+                svg: `
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <!-- Long Curly Dark Hair Back -->
+                    <circle cx="30" cy="55" r="10" fill="#1e1b4b"/>
+                    <circle cx="70" cy="55" r="10" fill="#1e1b4b"/>
+                    <circle cx="28" cy="70" r="12" fill="#1e1b4b"/>
+                    <circle cx="72" cy="70" r="12" fill="#1e1b4b"/>
+                    <!-- Teal Jacket -->
+                    <path d="M 20 88 C 20 70, 35 68, 50 68 C 65 68, 80 70, 80 88 Z" fill="#0d9488"/>
+                    <!-- Face -->
+                    <circle cx="50" cy="45" r="20" fill="#f59e0b" opacity="0.5"/>
+                    <!-- Green Cap / Beanie -->
+                    <path d="M 28 38 C 28 20, 72 20, 72 38 Z" fill="#15803d"/>
+                    <rect x="26" y="35" width="48" height="6" rx="3" fill="#166534"/>
+                    <!-- Hazel Eyes -->
+                    <circle cx="41" cy="45" r="2.5" fill="#b45309"/>
+                    <circle cx="59" cy="45" r="2.5" fill="#b45309"/>
+                    <!-- Gold Glasses -->
+                    <circle cx="41" cy="45" r="6.5" fill="none" stroke="#eab308" stroke-width="2"/>
+                    <circle cx="59" cy="45" r="6.5" fill="none" stroke="#eab308" stroke-width="2"/>
+                    <line x1="47.5" y1="45" x2="52.5" y2="45" stroke="#eab308" stroke-width="2"/>
+                    <!-- Smile -->
+                    <path d="M 44 54 Q 50 59 56 54" fill="none" stroke="#991b1b" stroke-width="2" stroke-linecap="round"/>
+                </svg>`
+            }
+        };
+
+        // Global App State
+        const state = {
+            xp: 0,
+            streak: 0,
+            level: 'Rookie Inspector',
+            unlockedBadges: new Set(),
+            // Module 1 State
+            m1Index: 0,
+            m1Answered: false,
+            // Module 2 State
+            m2Index: 0,
+            m2CheckedOptions: new Set(),
+            m2SelectedChar: null,
+            // Module 3 State
+            m3Index: 0,
+            m3SelectedChips: [],
+            // Module 4 State
+            m4Index: 0,
+            m4SelectedLie: null,
+            m4Phase: 'findLie' // 'findLie' or 'correctLie'
+        };
+
+        // --- Data: Module 1 (Grammar Error Buster) ---
+        const M1_QUESTIONS = [
+            {
+                sentence: "He is long dark hair and brown eyes.",
+                isCorrect: false,
+                correctForm: "He has got long dark hair and brown eyes.",
+                options: [
+                    "He has got long dark hair and brown eyes.",
+                    "He wears long dark hair and brown eyes.",
+                    "He is long dark hair and brown eyes."
+                ],
+                explanation: "We use **has got** for hair and eye descriptors! Use **is** for height, age, and build."
+            },
+            {
+                sentence: "She is tall and slim.",
+                isCorrect: true,
+                correctForm: "She is tall and slim.",
+                options: [],
+                explanation: "Perfect! **is** is correctly used with height and build adjectives."
+            },
+            {
+                sentence: "My brother has got a brown beard and wears glasses.",
+                isCorrect: true,
+                correctForm: "My brother has got a brown beard and wears glasses.",
+                options: [],
+                explanation: "Spot on! **has got** for the beard feature and **wears** for glasses accessories."
+            },
+            {
+                sentence: "The teacher is wavy blonde hair.",
+                isCorrect: false,
+                correctForm: "The teacher has got wavy blonde hair.",
+                options: [
+                    "The teacher has got wavy blonde hair.",
+                    "The teacher wears wavy blonde hair.",
+                    "The teacher is wavy blonde hair."
+                ],
+                explanation: "Remember: People aren't hair! We say: She **has got** wavy blonde hair."
+            },
+            {
+                sentence: "Carlos wears a dark beard and curly hair.",
+                isCorrect: false,
+                correctForm: "Carlos has got a dark beard and curly hair.",
+                options: [
+                    "Carlos has got a dark beard and curly hair.",
+                    "Carlos is a dark beard and curly hair.",
+                    "Carlos wears a dark beard and curly hair."
+                ],
+                explanation: "We use **wears** for removable accessories (glasses/hats/clothes). Use **has got** for beards and hair!"
+            },
+            {
+                sentence: "Lucy is young and wears red glasses.",
+                isCorrect: true,
+                correctForm: "Lucy is young and wears red glasses.",
+                options: [],
+                explanation: "Great job! **is** for age (young) and **wears** for glasses."
+            },
+            {
+                sentence: "David has got bald and tall.",
+                isCorrect: false,
+                correctForm: "David is bald and tall.",
+                options: [
+                    "David is bald and tall.",
+                    "David wears bald and tall.",
+                    "David has got bald and tall."
+                ],
+                explanation: "Bald and tall are adjectives! We use **is** (e.g. He is bald and tall)."
+            },
+            {
+                sentence: "They are slim and friendly.",
+                isCorrect: true,
+                correctForm: "They are slim and friendly.",
+                options: [],
+                explanation: "Correct! **are** matches the plural subject 'They' with adjectives."
+            }
+        ];
+
+        // --- Data: Module 2 (Person Identification Challenge) ---
+        const M2_QUESTIONS = [
+            {
+                targetChar: CHARACTERS.mrThomas,
+                clue: "This person is short and has got gray hair. He wears big black glasses and has got a white mustache.",
+                checklist: [
+                    { id: 'chk_height', text: 'Short height (is short)' },
+                    { id: 'chk_hair', text: 'Gray hair (has got gray hair)' },
+                    { id: 'chk_glasses', text: 'Black glasses (wears glasses)' },
+                    { id: 'chk_feature', text: 'White mustache (has got a mustache)' }
+                ],
+                options: [CHARACTERS.mrThomas, CHARACTERS.carlos, CHARACTERS.david, CHARACTERS.lucy]
+            },
+            {
+                targetChar: CHARACTERS.anna,
+                clue: "She is tall and slim with long straight blonde hair. She has got green eyes and she doesn't wear glasses.",
+                checklist: [
+                    { id: 'chk_height', text: 'Tall and slim build' },
+                    { id: 'chk_hair', text: 'Long straight blonde hair' },
+                    { id: 'chk_eyes', text: 'Green eyes' },
+                    { id: 'chk_glasses', text: 'No glasses' }
+                ],
+                options: [CHARACTERS.anna, CHARACTERS.maya, CHARACTERS.lucy, CHARACTERS.mrThomas]
+            },
+            {
+                targetChar: CHARACTERS.carlos,
+                clue: "This man is medium height and young. He has got short curly black hair and a dark beard.",
+                checklist: [
+                    { id: 'chk_height', text: 'Medium height' },
+                    { id: 'chk_hair', text: 'Short curly black hair' },
+                    { id: 'chk_beard', text: 'Dark beard' }
+                ],
+                options: [CHARACTERS.carlos, CHARACTERS.david, CHARACTERS.mrThomas, CHARACTERS.anna]
+            },
+            {
+                targetChar: CHARACTERS.maya,
+                clue: "She has got long dark curly hair and hazel eyes. She wears round gold glasses and a green hat.",
+                checklist: [
+                    { id: 'chk_hair', text: 'Long dark curly hair' },
+                    { id: 'chk_eyes', text: 'Hazel eyes' },
+                    { id: 'chk_glasses', text: 'Gold round glasses' },
+                    { id: 'chk_hat', text: 'Green hat' }
+                ],
+                options: [CHARACTERS.maya, CHARACTERS.anna, CHARACTERS.lucy, CHARACTERS.carlos]
+            }
+        ];
+
+        // --- Data: Module 3 (Sentence Builder) ---
+        const M3_QUESTIONS = [
+            {
+                char: CHARACTERS.mrThomas,
+                targetSentence: "He has got short gray hair and wears black glasses.",
+                chips: ["He", "has got", "short gray hair", "and", "wears", "black glasses.", "is", "long hair"]
+            },
+            {
+                char: CHARACTERS.anna,
+                targetSentence: "She is tall and slim with long blonde hair.",
+                chips: ["She", "is", "tall and slim", "with", "long blonde hair.", "has got", "wears", "short"]
+            },
+            {
+                char: CHARACTERS.david,
+                targetSentence: "David is bald and has got a thick brown beard.",
+                chips: ["David", "is", "bald", "and", "has got", "a thick brown beard.", "wears", "blonde hair"]
+            },
+            {
+                char: CHARACTERS.lucy,
+                targetSentence: "Lucy is young and wears red glasses.",
+                chips: ["Lucy", "is", "young", "and", "wears", "red glasses.", "has got", "beard"]
+            }
+        ];
+
+        // --- Data: Module 4 (True or Lie Verification) ---
+        const M4_QUESTIONS = [
+            {
+                char: CHARACTERS.mrThomas,
+                statements: [
+                    { text: "He is short.", isLie: false },
+                    { text: "He has got a white mustache.", isLie: false },
+                    { text: "He has got long dark curly hair.", isLie: true },
+                    { text: "He wears black round glasses.", isLie: false }
+                ],
+                lieCorrectionOptions: [
+                    "He has got short gray hair.",
+                    "He is very tall.",
+                    "He wears a purple hat."
+                ],
+                correctCorrectionIndex: 0
+            },
+            {
+                char: CHARACTERS.anna,
+                statements: [
+                    { text: "She is tall and slim.", isLie: false },
+                    { text: "She has got green eyes.", isLie: false },
+                    { text: "She wears a thick dark beard.", isLie: true },
+                    { text: "She has got long straight blonde hair.", isLie: false }
+                ],
+                lieCorrectionOptions: [
+                    "She has got smooth skin and no beard.",
+                    "She is bald.",
+                    "She wears red glasses."
+                ],
+                correctCorrectionIndex: 0
+            },
+            {
+                char: CHARACTERS.carlos,
+                statements: [
+                    { text: "He has got short curly black hair.", isLie: false },
+                    { text: "He is old and bald.", isLie: true },
+                    { text: "He has got a dark beard.", isLie: false },
+                    { text: "He wears a yellow hoodie.", isLie: false }
+                ],
+                lieCorrectionOptions: [
+                    "He is young and has curly black hair.",
+                    "He has got gray hair.",
+                    "He is very short."
+                ],
+                correctCorrectionIndex: 0
+            },
+            {
+                char: CHARACTERS.david,
+                statements: [
+                    { text: "He is bald.", isLie: false },
+                    { text: "He has got a thick brown beard.", isLie: false },
+                    { text: "He is tall.", isLie: false },
+                    { text: "He wears a green hat and pink glasses.", isLie: true }
+                ],
+                lieCorrectionOptions: [
+                    "He doesn't wear a hat or pink glasses.",
+                    "He has got long blonde hair.",
+                    "He is short and chubby."
+                ],
+                correctCorrectionIndex: 0
+            }
+        ];
+
+        // --- Badges List ---
+        const BADGES = [
+            { id: 'b_inspector', title: 'Grammar Inspector', desc: 'Complete 3 Grammar Error Buster questions.', icon: 'fa-shield-halved', color: 'from-sky-500 to-blue-600' },
+            { id: 'b_detective', title: 'Identity Detective', desc: 'Identify 2 characters correctly.', icon: 'fa-magnifying-glass', color: 'from-purple-500 to-indigo-600' },
+            { id: 'b_builder', title: 'Sentence Architect', desc: 'Build 2 correct appearance sentences.', icon: 'fa-cubes', color: 'from-emerald-500 to-teal-600' },
+            { id: 'b_liedetector', title: 'Lie Detector', desc: 'Spot and fix a lie in Module 4.', icon: 'fa-user-secret', color: 'from-amber-500 to-orange-600' },
+            { id: 'b_master', title: 'Appearance Master', desc: 'Reach 300 XP in the lab.', icon: 'fa-trophy', color: 'from-rose-500 to-red-600' }
+        ];
+
+
+        // --- Navigation Switcher ---
+        function switchTab(tabId) {
+            soundFX.playClick();
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (tabId === 'tab-badges') renderBadges();
+        }
+
+        // --- Score & XP System ---
+        function addXP(amount) {
+            state.xp += amount;
+            state.streak += 1;
+            document.getElementById('xp-display').innerText = state.xp;
+            document.getElementById('streak-display').innerText = state.streak;
+
+            // Check level
+            if (state.xp >= 300) {
+                state.level = 'Master Inspector';
+                unlockBadge('b_master');
+            } else if (state.xp >= 150) {
+                state.level = 'Senior Detective';
+            }
+            
+            document.getElementById('stats-xp-val').innerText = `${state.xp} XP`;
+            document.getElementById('stats-streak-val').innerText = state.streak;
+            document.getElementById('stats-rank-title').innerText = state.level;
+        }
+
+        function resetStreak() {
+            state.streak = 0;
+            document.getElementById('streak-display').innerText = 0;
+        }
+
+        function unlockBadge(badgeId) {
+            if (!state.unlockedBadges.has(badgeId)) {
+                state.unlockedBadges.add(badgeId);
+                soundFX.playBadge();
+                renderBadges();
+                document.getElementById('stats-badges-val').innerText = `${state.unlockedBadges.size} / ${BADGES.length}`;
+            }
+        }
+
+        // --- Modals ---
+        function openGuideModal() {
+            soundFX.playClick();
+            document.getElementById('guide-modal').classList.remove('hidden');
+        }
+        function closeGuideModal() {
+            soundFX.playClick();
+            document.getElementById('guide-modal').classList.add('hidden');
+        }
+
+        // ================= MODULE 1 LOGIC =================
+        function renderM1() {
+            const q = M1_QUESTIONS[state.m1Index];
+            state.m1Answered = false;
+
+            document.getElementById('m1-progress-text').innerText = `Question ${state.m1Index + 1} of ${M1_QUESTIONS.length}`;
+            document.getElementById('m1-sentence-text').innerText = `"${q.sentence}"`;
+            
+            // Reset UI
+            document.getElementById('m1-decision-box').classList.remove('hidden');
+            document.getElementById('m1-correction-box').classList.add('hidden');
+            document.getElementById('m1-feedback-box').classList.add('hidden');
+            document.getElementById('m1-next-btn').classList.add('hidden');
+        }
+
+        function speakCurrentM1Sentence() {
+            const q = M1_QUESTIONS[state.m1Index];
+            speakText(q.sentence);
+        }
+
+        function checkM1Initial(userThinksCorrect) {
+            soundFX.playClick();
+            const q = M1_QUESTIONS[state.m1Index];
+
+            if (userThinksCorrect === q.isCorrect) {
+                if (q.isCorrect) {
+                    // Correct answer for true sentence
+                    soundFX.playCorrect();
+                    addXP(25);
+                    if (state.m1Index >= 2) unlockBadge('b_inspector');
+                    showM1Feedback(true, "Spot on! That sentence is grammatically correct.", q.explanation);
+                } else {
+                    // Correctly identified that it's wrong -> Show fix options
+                    soundFX.playClick();
+                    document.getElementById('m1-decision-box').classList.add('hidden');
+                    renderM1Options(q);
+                }
+            } else {
+                // Incorrect initial assessment
+                soundFX.playError();
+                resetStreak();
+                if (q.isCorrect) {
+                    showM1Feedback(false, "Oops! This sentence is actually correct.", q.explanation);
+                } else {
+                    showM1Feedback(false, "Incorrect! This sentence has a grammar error.", q.explanation);
+                }
+            }
+        }
+
+        function renderM1Options(q) {
+            const box = document.getElementById('m1-correction-box');
+            const container = document.getElementById('m1-options-container');
+            box.classList.remove('hidden');
+            container.innerHTML = '';
+
+            q.options.forEach((optText) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:bg-brand-50 hover:border-brand-300 font-medium text-xs sm:text-sm text-slate-700 transition flex items-center justify-between";
+                btn.innerHTML = `<span>${optText}</span> <i class="fa-solid fa-arrow-right text-slate-300"></i>`;
+                btn.onclick = () => {
+                    if (optText === q.correctForm) {
+                        soundFX.playCorrect();
+                        addXP(30);
+                        if (state.m1Index >= 2) unlockBadge('b_inspector');
+                        showM1Feedback(true, "Great job fixing it!", q.explanation);
+                        box.classList.add('hidden');
+                    } else {
+                        soundFX.playError();
+                        resetStreak();
+                        btn.classList.add('bg-rose-50', 'border-rose-300');
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function showM1Feedback(isCorrect, title, explanation) {
+            const fbBox = document.getElementById('m1-feedback-box');
+            const icon = document.getElementById('m1-feedback-icon');
+            const titleEl = document.getElementById('m1-feedback-title');
+            const textEl = document.getElementById('m1-feedback-text');
+
+            fbBox.classList.remove('hidden');
+            if (isCorrect) {
+                fbBox.className = "p-4 rounded-xl mb-6 bg-emerald-50 border border-emerald-200 text-emerald-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i>`;
+            } else {
+                fbBox.className = "p-4 rounded-xl mb-6 bg-rose-50 border border-rose-200 text-rose-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i>`;
+            }
+            titleEl.innerText = title;
+            textEl.innerHTML = explanation;
+
+            document.getElementById('m1-next-btn').classList.remove('hidden');
+        }
+
+        function nextM1Question() {
+            soundFX.playClick();
+            state.m1Index = (state.m1Index + 1) % M1_QUESTIONS.length;
+            renderM1();
+        }
+
+        // ================= MODULE 2 LOGIC =================
+        function renderM2() {
+            const q = M2_QUESTIONS[state.m2Index];
+            state.m2CheckedOptions.clear();
+            state.m2SelectedChar = null;
+
+            document.getElementById('m2-progress-text').innerText = `Case ${state.m2Index + 1} of ${M2_QUESTIONS.length}`;
+            document.getElementById('m2-description-text').innerText = `"${q.clue}"`;
+
+            // Render Checklist
+            const chkContainer = document.getElementById('m2-checklist-container');
+            chkContainer.innerHTML = '';
+            q.checklist.forEach(item => {
+                const label = document.createElement('label');
+                label.className = "flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-100 cursor-pointer text-xs font-medium text-slate-700 transition";
+                label.innerHTML = `
+                    <input type="checkbox" onchange="toggleM2Checklist('${item.id}')" class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
+                    <span>${item.text}</span>
+                `;
+                chkContainer.appendChild(label);
+            });
+
+            // Render Characters Grid
+            const grid = document.getElementById('m2-character-grid');
+            grid.innerHTML = '';
+            q.options.forEach(char => {
+                const card = document.createElement('div');
+                card.id = `m2-char-card-${char.id}`;
+                card.className = "p-3 bg-white border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-brand-400 hover:shadow-md transition flex flex-col items-center text-center";
+                card.innerHTML = `
+                    <div class="w-20 h-20 mb-2">${char.svg}</div>
+                    <span class="font-bold text-xs text-slate-800">${char.name}</span>
+                `;
+                card.onclick = () => selectM2Char(char);
+                grid.appendChild(card);
+            });
+
+            // Hide Feedback & Reset Buttons
+            document.getElementById('m2-feedback-box').classList.add('hidden');
+            document.getElementById('m2-check-btn').classList.remove('hidden');
+            document.getElementById('m2-next-btn').classList.add('hidden');
+        }
+
+        function speakCurrentM2Clue() {
+            const q = M2_QUESTIONS[state.m2Index];
+            speakText(q.clue);
+        }
+
+        function toggleM2Checklist(id) {
+            soundFX.playClick();
+            if (state.m2CheckedOptions.has(id)) {
+                state.m2CheckedOptions.delete(id);
+            } else {
+                state.m2CheckedOptions.add(id);
+            }
+        }
+
+        function selectM2Char(char) {
+            soundFX.playClick();
+            state.m2SelectedChar = char;
+            document.querySelectorAll('[id^="m2-char-card-"]').forEach(c => {
+                c.classList.remove('border-brand-500', 'bg-brand-50/50', 'ring-2', 'ring-brand-400');
+                c.classList.add('border-slate-200', 'bg-white');
+            });
+
+            const activeCard = document.getElementById(`m2-char-card-${char.id}`);
+            if (activeCard) {
+                activeCard.classList.remove('border-slate-200', 'bg-white');
+                activeCard.classList.add('border-brand-500', 'bg-brand-50/50', 'ring-2', 'ring-brand-400');
+            }
+        }
+
+        function validateM2Selection() {
+            if (!state.m2SelectedChar) {
+                showM2Feedback(false, "Please tap on a character to select them first!");
+                return;
+            }
+
+            const q = M2_QUESTIONS[state.m2Index];
+            if (state.m2SelectedChar.id === q.targetChar.id) {
+                soundFX.playCorrect();
+                addXP(35);
+                if (state.m2Index >= 1) unlockBadge('b_detective');
+                showM2Feedback(true, `Excellent detective work! That is ${q.targetChar.name}!`);
+                document.getElementById('m2-check-btn').classList.add('hidden');
+                document.getElementById('m2-next-btn').classList.remove('hidden');
+            } else {
+                soundFX.playError();
+                resetStreak();
+                showM2Feedback(false, `Not quite! Check the features again. Read the clue carefully.`);
+            }
+        }
+
+        function showM2Feedback(isCorrect, msg) {
+            const fbBox = document.getElementById('m2-feedback-box');
+            const icon = document.getElementById('m2-feedback-icon');
+            const text = document.getElementById('m2-feedback-text');
+
+            fbBox.classList.remove('hidden');
+            if (isCorrect) {
+                fbBox.className = "mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i>`;
+            } else {
+                fbBox.className = "mt-4 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i>`;
+            }
+            text.innerText = msg;
+        }
+
+        function nextM2Question() {
+            soundFX.playClick();
+            state.m2Index = (state.m2Index + 1) % M2_QUESTIONS.length;
+            renderM2();
+        }
+
+        // ================= MODULE 3 LOGIC =================
+        function renderM3() {
+            const q = M3_QUESTIONS[state.m3Index];
+            state.m3SelectedChips = [];
+
+            document.getElementById('m3-progress-text').innerText = `Task ${state.m3Index + 1} of ${M3_QUESTIONS.length}`;
+            document.getElementById('m3-avatar-container').innerHTML = q.char.svg;
+            document.getElementById('m3-character-name').innerText = q.char.name;
+
+            // Render word chips
+            const bank = document.getElementById('m3-word-bank');
+            bank.innerHTML = '';
+            
+            // Shuffle chips display
+            const shuffledChips = [...q.chips].sort(() => 0.5 - Math.random());
+            shuffledChips.forEach((chipText, idx) => {
+                const chipBtn = document.createElement('button');
+                chipBtn.id = `m3-chip-${idx}`;
+                chipBtn.className = "px-3 py-2 bg-white border border-slate-300 hover:border-brand-400 hover:bg-brand-50 rounded-xl font-semibold text-xs sm:text-sm text-slate-700 shadow-sm transition transform active:scale-95";
+                chipBtn.innerText = chipText;
+                chipBtn.onclick = () => addM3Chip(chipText, chipBtn);
+                bank.appendChild(chipBtn);
+            });
+
+            renderM3Slots();
+            document.getElementById('m3-feedback-box').classList.add('hidden');
+            document.getElementById('m3-validate-btn').classList.remove('hidden');
+            document.getElementById('m3-next-btn').classList.add('hidden');
+        }
+
+        function addM3Chip(text, btnEl) {
+            soundFX.playClick();
+            state.m3SelectedChips.push({ text, btnEl });
+            btnEl.classList.add('opacity-40', 'pointer-events-none');
+            renderM3Slots();
+        }
+
+        function removeM3Chip(index) {
+            soundFX.playClick();
+            const item = state.m3SelectedChips[index];
+            if (item && item.btnEl) {
+                item.btnEl.classList.remove('opacity-40', 'pointer-events-none');
+            }
+            state.m3SelectedChips.splice(index, 1);
+            renderM3Slots();
+        }
+
+        function clearM3Slots() {
+            soundFX.playClick();
+            state.m3SelectedChips.forEach(item => {
+                if (item.btnEl) item.btnEl.classList.remove('opacity-40', 'pointer-events-none');
+            });
+            state.m3SelectedChips = [];
+            renderM3Slots();
+        }
+
+        function renderM3Slots() {
+            const container = document.getElementById('m3-sentence-slots');
+            container.innerHTML = '';
+            if (state.m3SelectedChips.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-500 italic">Tap words below to place them here...</span>`;
+                return;
+            }
+
+            state.m3SelectedChips.forEach((item, idx) => {
+                const block = document.createElement('span');
+                block.className = "px-3 py-1.5 bg-brand-500 text-white rounded-lg font-medium text-xs sm:text-sm cursor-pointer hover:bg-rose-500 transition flex items-center space-x-1";
+                block.innerHTML = `<span>${item.text}</span> <i class="fa-solid fa-xmark text-xs opacity-70"></i>`;
+                block.onclick = () => removeM3Chip(idx);
+                container.appendChild(block);
+            });
+        }
+
+        function validateM3Sentence() {
+            const constructed = state.m3SelectedChips.map(c => c.text).join(' ');
+            const q = M3_QUESTIONS[state.m3Index];
+
+            if (constructed.trim().toLowerCase() === q.targetSentence.trim().toLowerCase()) {
+                soundFX.playCorrect();
+                addXP(40);
+                if (state.m3Index >= 1) unlockBadge('b_builder');
+                speakText(constructed);
+                showM3Feedback(true, `Grammatically perfect sentence! "${q.targetSentence}"`);
+                document.getElementById('m3-validate-btn').classList.add('hidden');
+                document.getElementById('m3-next-btn').classList.remove('hidden');
+            } else {
+                soundFX.playError();
+                resetStreak();
+                showM3Feedback(false, `Not quite right! Check verb matching (is vs has got vs wears). Target example: "${q.targetSentence}"`);
+            }
+        }
+
+        function showM3Feedback(isCorrect, msg) {
+            const fbBox = document.getElementById('m3-feedback-box');
+            const icon = document.getElementById('m3-feedback-icon');
+            const text = document.getElementById('m3-feedback-text');
+
+            fbBox.classList.remove('hidden');
+            if (isCorrect) {
+                fbBox.className = "p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i>`;
+            } else {
+                fbBox.className = "p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i>`;
+            }
+            text.innerText = msg;
+        }
+
+        function nextM3Question() {
+            soundFX.playClick();
+            state.m3Index = (state.m3Index + 1) % M3_QUESTIONS.length;
+            renderM3();
+        }
+
+        // ================= MODULE 4 LOGIC =================
+        function renderM4() {
+            const q = M4_QUESTIONS[state.m4Index];
+            state.m4Phase = 'findLie';
+
+            document.getElementById('m4-progress-text').innerText = `Round ${state.m4Index + 1} of ${M4_QUESTIONS.length}`;
+            document.getElementById('m4-avatar-container').innerHTML = q.char.svg;
+            document.getElementById('m4-character-name').innerText = q.char.name;
+
+            // Render Statements
+            const container = document.getElementById('m4-statements-container');
+            container.innerHTML = '';
+            q.statements.forEach((stmt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 bg-white border-2 border-slate-200 hover:border-amber-400 rounded-xl font-medium text-xs sm:text-sm text-slate-800 transition flex items-center justify-between shadow-sm";
+                btn.innerHTML = `<span>${idx + 1}. "${stmt.text}"</span> <span class="text-xs text-slate-400 font-semibold">Tap if Lie</span>`;
+                btn.onclick = () => selectM4Lie(stmt, btn);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('m4-correction-section').classList.add('hidden');
+            document.getElementById('m4-feedback-box').classList.add('hidden');
+            document.getElementById('m4-next-btn').classList.add('hidden');
+        }
+
+        function selectM4Lie(stmt, btnEl) {
+            soundFX.playClick();
+            const q = M4_QUESTIONS[state.m4Index];
+
+            if (stmt.isLie) {
+                soundFX.playCorrect();
+                btnEl.classList.remove('border-slate-200', 'bg-white');
+                btnEl.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+                btnEl.innerHTML = `<span>"${stmt.text}"</span> <span class="text-xs bg-rose-500 text-white font-bold px-2 py-0.5 rounded">LIE FOUND!</span>`;
+                
+                // Show Phase 2: Correction Choice
+                showM4Corrections(q);
+            } else {
+                soundFX.playError();
+                resetStreak();
+                btnEl.classList.add('bg-emerald-50', 'border-emerald-300');
+                btnEl.innerHTML = `<span>"${stmt.text}"</span> <span class="text-xs text-emerald-700 font-bold">TRUE STATEMENT</span>`;
+            }
+        }
+
+        function showM4Corrections(q) {
+            const sec = document.getElementById('m4-correction-section');
+            const optsContainer = document.getElementById('m4-correction-options');
+            sec.classList.remove('hidden');
+            optsContainer.innerHTML = '';
+
+            q.lieCorrectionOptions.forEach((corrText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl border border-slate-200 bg-white hover:bg-indigo-100 font-medium text-xs sm:text-sm text-slate-800 transition";
+                btn.innerText = corrText;
+                btn.onclick = () => {
+                    if (idx === q.correctCorrectionIndex) {
+                        soundFX.playCorrect();
+                        addXP(45);
+                        unlockBadge('b_liedetector');
+                        showM4Feedback(true, "Great detective work! You spotted the lie and validated the correct description!");
+                        sec.classList.add('hidden');
+                        document.getElementById('m4-next-btn').classList.remove('hidden');
+                    } else {
+                        soundFX.playError();
+                        btn.classList.add('bg-rose-100', 'border-rose-300');
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function showM4Feedback(isCorrect, msg) {
+            const fbBox = document.getElementById('m4-feedback-box');
+            const icon = document.getElementById('m4-feedback-icon');
+            const text = document.getElementById('m4-feedback-text');
+
+            fbBox.classList.remove('hidden');
+            if (isCorrect) {
+                fbBox.className = "p-4 rounded-xl mt-4 bg-emerald-50 border border-emerald-200 text-emerald-900";
+                icon.innerHTML = `<i class="fa-solid fa-shield-cat text-emerald-600"></i>`;
+            } else {
+                fbBox.className = "p-4 rounded-xl mt-4 bg-rose-50 border border-rose-200 text-rose-900";
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i>`;
+            }
+            text.innerText = msg;
+        }
+
+        function nextM4Question() {
+            soundFX.playClick();
+            state.m4Index = (state.m4Index + 1) % M4_QUESTIONS.length;
+            renderM4();
+        }
+
+        // ================= BADGES LOGIC =================
+        function renderBadges() {
+            const grid = document.getElementById('badges-grid');
+            grid.innerHTML = '';
+
+            BADGES.forEach(badge => {
+                const unlocked = state.unlockedBadges.has(badge.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl border flex items-center space-x-3 transition ${
+                    unlocked ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-100/60 border-slate-200 opacity-60'
+                }`;
+
+                card.innerHTML = `
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr ${badge.color} text-white flex items-center justify-center text-xl flex-shrink-0 shadow-md ${!unlocked ? 'grayscale' : ''}">
+                        <i class="fa-solid ${badge.icon}"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 flex items-center space-x-1.5">
+                            <span>${badge.title}</span>
+                            ${unlocked ? '<i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>' : ''}
+                        </h4>
+                        <p class="text-xs text-slate-500 mt-0.5">${badge.desc}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize App
+        window.onload = function() {
+            renderM1();
+            renderM2();
+            renderM3();
+            renderM4();
+            renderBadges();
+        };
+    </script>
+</body>
+</html>
