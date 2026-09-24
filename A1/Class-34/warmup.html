@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📍 Town Map & Quantity Validator (A1 English)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f9ff;
+      color: #0f172a;
+    }
+
+    h1, h2, h3, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    /* Active Tab Styling */
+    .nav-tab-active {
+      background-color: #4f46e5 !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    /* Building Card Animations & Hover */
+    .map-building-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .map-building-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 24px -6px rgba(79, 70, 229, 0.2);
+    }
+
+    .map-building-card.selected-building {
+      ring: 4px;
+      border-color: #4f46e5;
+      background-color: #eef2ff;
+      transform: scale(1.03);
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.35);
+    }
+
+    /* Road layout styling */
+    .street-lane {
+      background-color: #cbd5e1;
+      background-image: repeating-linear-gradient(90deg, #ffffff 0, #ffffff 15px, transparent 15px, transparent 30px);
+      background-size: 100% 4px;
+      background-position: center;
+      background-repeat: repeat-x;
+    }
+
+    .street-lane-vert {
+      background-color: #cbd5e1;
+      background-image: repeating-linear-gradient(0deg, #ffffff 0, #ffffff 15px, transparent 15px, transparent 30px);
+      background-size: 4px 100%;
+      background-position: center;
+      background-repeat: repeat-y;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e0f2fe;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #818cf8;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4f46e5;
+    }
+
+    /* Pulse Glow Animation */
+    @keyframes audioPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+    }
+
+    .speaking-pulse {
+      animation: audioPulse 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-sky-50/50">
+
+  <!-- HEADER -->
+  <header class="bg-gradient-to-r from-indigo-700 via-purple-700 to-sky-600 text-white shadow-lg py-5 px-4 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="text-center md:text-left flex items-center gap-3">
+        <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-indigo-950 text-2xl shadow-md font-extrabold">
+          📍
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
+            Town Map & Quantity Validator
+          </h1>
+          <p class="text-indigo-100 text-xs sm:text-sm font-medium">
+            Validate Places, Prepositions (<i>next to, between, opposite</i>), and Quantities (<i>There is / There are</i>)
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/20 text-xs font-bold text-amber-200 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
+          <span>A1 Beginner Level</span>
+        </div>
+        <button onclick="testSpeech()" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-black px-3.5 py-1.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-volume-high"></i> Test Sound
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-white border-b border-indigo-100 shadow-xs sticky top-[76px] z-40">
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto py-2.5">
+      <button onclick="switchTab('tab-map')" id="nav-tab-map" class="nav-tab nav-tab-active px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-map-location-dot"></i> 1. Live Town Map
+      </button>
+      <button onclick="switchTab('tab-quantities')" id="nav-tab-quantities" class="nav-tab px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-arrow-down-1-9"></i> 2. "There is / are"
+      </button>
+      <button onclick="switchTab('tab-locations')" id="nav-tab-locations" class="nav-tab px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-compass"></i> 3. Prepositions
+      </button>
+      <button onclick="switchTab('tab-builder')" id="nav-tab-builder" class="nav-tab px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-cubes"></i> 4. Town Builder
+      </button>
+      <button onclick="switchTab('tab-quiz')" id="nav-tab-quiz" class="nav-tab px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-clipboard-check"></i> 5. Diagnostic Quiz
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-grow">
+
+    <!-- TAB 1: LIVE MAP EXPLORER -->
+    <section id="tab-map" class="tab-content space-y-6">
+      <div class="bg-white border border-indigo-100 rounded-3xl p-5 sm:p-6 shadow-sm space-y-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-city text-indigo-600"></i> Interactive Town Map Grid
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Click any building to view its exact position, check quantity counts, and listen to spoken English descriptions!
+            </p>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-2xl flex items-center gap-3">
+            <i class="fa-solid fa-circle-info text-indigo-600 text-lg"></i>
+            <span class="text-xs font-bold text-indigo-900">
+              Legend: <b>Main Street</b> (Horizontal) | <b>Park Avenue</b> (Vertical)
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          <!-- MAP CANVAS CONTAINER -->
+          <div class="lg:col-span-8 bg-emerald-50/70 p-4 sm:p-6 rounded-3xl border-2 border-emerald-200 shadow-inner relative overflow-hidden">
+            
+            <div class="space-y-4">
+              <!-- STREET LABEL MAIN STREET -->
+              <div class="flex items-center justify-between bg-amber-100/80 px-3 py-1 rounded-xl text-amber-900 text-xs font-black tracking-wider uppercase border border-amber-200">
+                <span>🛣️ MAIN STREET</span>
+                <span>NORTH ZONE</span>
+              </div>
+
+              <!-- ROW 1 BUILDINGS -->
+              <div class="grid grid-cols-3 gap-3">
+                <div onclick="inspectBuilding('bank')" id="bldg-bank" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-building-columns"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Bank</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('bakery')" id="bldg-bakery" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-bread-slice"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Bakery</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('school')" id="bldg-school" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-school"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">School</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MAIN ROAD SEPARATOR -->
+              <div class="h-6 street-lane rounded-lg flex items-center justify-center text-[10px] font-black text-slate-500 tracking-widest uppercase">
+                MAIN STREET
+              </div>
+
+              <!-- ROW 2 BUILDINGS -->
+              <div class="grid grid-cols-3 gap-3">
+                <div onclick="inspectBuilding('park')" id="bldg-park" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-tree"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Park</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('cafe1')" id="bldg-cafe1" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-mug-hot"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Café 1</h3>
+                    <span class="text-[10px] font-bold text-orange-600">Part of 2</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('cafe2')" id="bldg-cafe2" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-mug-hot"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Café 2</h3>
+                    <span class="text-[10px] font-bold text-orange-600">Part of 2</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PARK AVENUE SEPARATOR -->
+              <div class="flex items-center justify-between bg-sky-100/80 px-3 py-1 rounded-xl text-sky-900 text-xs font-black tracking-wider uppercase border border-sky-200">
+                <span>🛣️ PARK AVENUE</span>
+                <span>SOUTH ZONE</span>
+              </div>
+
+              <!-- ROW 3 BUILDINGS -->
+              <div class="grid grid-cols-3 gap-3">
+                <div onclick="inspectBuilding('hospital')" id="bldg-hospital" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-hospital"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Hospital</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('supermarket')" id="bldg-supermarket" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Supermarket</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+
+                <div onclick="inspectBuilding('library')" id="bldg-library" class="map-building-card bg-white p-3 sm:p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2 shadow-2xs">
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl sm:text-2xl">
+                    <i class="fa-solid fa-book"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">Library</h3>
+                    <span class="text-[10px] font-bold text-slate-400">1 Place</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- BUILDING INSPECTOR SIDEBAR -->
+          <div class="lg:col-span-4 flex flex-col h-full">
+            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-xl flex-grow flex flex-col justify-between border border-indigo-900 space-y-6">
+              
+              <div class="space-y-5">
+                <div class="flex items-center justify-between border-b border-indigo-800/80 pb-3">
+                  <span class="bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase px-3 py-1 rounded-full border border-indigo-500/30 flex items-center gap-1.5">
+                    <i class="fa-solid fa-magnifying-glass-location"></i> Place Inspector
+                  </span>
+                  <span id="inspect-quantity-badge" class="bg-amber-400 text-indigo-950 text-xs font-black px-2.5 py-0.5 rounded-full">
+                    Select a Building
+                  </span>
+                </div>
+
+                <div id="inspector-content" class="space-y-4">
+                  <div class="text-center py-8 text-slate-400 space-y-3">
+                    <i class="fa-solid fa-hand-pointer text-4xl animate-bounce text-indigo-400"></i>
+                    <p class="text-sm font-semibold">Click any building on the map grid to inspect its location and listen to grammar sentences!</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="inspector-actions" class="hidden space-y-3 pt-4 border-t border-indigo-800/80">
+                <button onclick="speakInspectorSentences()" id="btn-inspector-speak" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold py-3 px-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95">
+                  <i class="fa-solid fa-volume-high text-lg"></i> Listen Sentence
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: QUANTITIES PRACTICE -->
+    <section id="tab-quantities" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-indigo-100 rounded-3xl p-6 shadow-sm space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-arrow-down-1-9 text-indigo-600"></i> Quantities: "There is" vs "There are"
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Count the places on the map and choose the correct grammar form!
+            </p>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 px-3.5 py-2 rounded-xl text-amber-900 text-xs font-bold self-start sm:self-center">
+            💡 Rule: <b>There is 1...</b> (Singular) | <b>There are 2/3...</b> (Plural)
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="quantities-practice-container">
+          <!-- Dynamically populated by JS -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: PREPOSITIONS PRACTICE -->
+    <section id="tab-locations" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-indigo-100 rounded-3xl p-6 shadow-sm space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-compass text-indigo-600"></i> Prepositions of Place Practice
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Master <b>next to</b>, <b>between</b>, <b>opposite</b>, and <b>near</b> using the town map layout!
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-900">
+            <span>Preposition Key:</span>
+            <span class="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[10px]">next to</span>
+            <span class="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[10px]">between</span>
+            <span class="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[10px]">opposite</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Mini Reference Map Side -->
+          <div class="lg:col-span-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="font-extrabold text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-map"></i> Quick Map Helper
+            </h3>
+            <div class="text-xs space-y-2 bg-white p-3 rounded-xl border border-slate-200 font-medium text-slate-700">
+              <p>• <b>Bank | Bakery | School</b> (Main St)</p>
+              <p>• <b>Park | Café 1 | Café 2</b> (Middle)</p>
+              <p>• <b>Hospital | Supermarket | Library</b> (Park Ave)</p>
+            </div>
+            <p class="text-[11px] text-slate-400 italic">
+              "Opposite" means across the street from each other. "Between" means in the middle of two places.
+            </p>
+          </div>
+
+          <!-- Questions Side -->
+          <div class="lg:col-span-8 space-y-4" id="prepositions-questions-container">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 4: TOWN BUILDER -->
+    <section id="tab-builder" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-indigo-100 rounded-3xl p-6 shadow-sm space-y-6">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-cubes text-indigo-600"></i> Interactive Town Builder
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Select a building from the palette and place it on the 3x3 town grid. Watch the grammar generator create real-time sentences!
+            </p>
+          </div>
+          <button onclick="resetTownBuilder()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 self-start md:self-center">
+            <i class="fa-solid fa-rotate-left"></i> Clear Grid
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          <!-- PALETTE & GRID -->
+          <div class="lg:col-span-7 space-y-5">
+            
+            <!-- PALETTE SELECTOR -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <label class="block text-xs font-black uppercase text-slate-500 tracking-wider">
+                1. Pick a building to place:
+              </label>
+              <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="builder-palette">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- BUILDER GRID -->
+            <div>
+              <label class="block text-xs font-black uppercase text-slate-500 tracking-wider mb-2">
+                2. Tap an empty grid square to place or remove:
+              </label>
+              <div class="grid grid-cols-3 gap-3 bg-emerald-100/70 p-4 rounded-2xl border-2 border-emerald-300 shadow-inner" id="builder-grid-cells">
+                <!-- 9 Grid Slots -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- GENERATED SENTENCES OUTPUT -->
+          <div class="lg:col-span-5 flex flex-col h-full">
+            <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white p-6 rounded-3xl shadow-xl flex-grow flex flex-col justify-between border border-indigo-900 space-y-6">
+              
+              <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-indigo-800 pb-3">
+                  <span class="bg-amber-400/20 text-amber-300 text-xs font-black uppercase px-3 py-1 rounded-full border border-amber-400/30 flex items-center gap-1">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Grammar Generator
+                  </span>
+                  <span class="text-xs text-slate-400 font-bold" id="builder-item-count">0 Buildings</span>
+                </div>
+
+                <div id="builder-sentences-box" class="space-y-3 text-xs sm:text-sm font-medium text-slate-200 leading-relaxed min-h-[160px]">
+                  <p class="text-slate-400 italic">Start placing buildings on the grid to generate sentences with "There is", "There are", and prepositions!</p>
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-indigo-800/80">
+                <button onclick="speakBuilderSentences()" id="btn-builder-speak" class="w-full bg-amber-400 hover:bg-amber-300 text-indigo-950 font-black py-3 px-4 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95">
+                  <i class="fa-solid fa-volume-high text-lg"></i> Read Town Description
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 5: DIAGNOSTIC QUIZ -->
+    <section id="tab-quiz" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-indigo-100 rounded-3xl p-6 shadow-sm space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-clipboard-check text-indigo-600"></i> A1 Diagnostic Assessment Quiz
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              5 questions to validate student knowledge of Places, Prepositions, and Quantities!
+            </p>
+          </div>
+          <div class="bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-2xl text-center self-start sm:self-center">
+            <span class="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">Score Tracker</span>
+            <span id="quiz-score-badge" class="text-lg font-black text-indigo-950">0 / 5</span>
+          </div>
+        </div>
+
+        <div id="quiz-questions-list" class="space-y-6 max-w-3xl mx-auto">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- COMPLETION BANNER -->
+        <div id="quiz-completion-banner" class="hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-sky-700 text-white rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl border border-indigo-400">
+          <i class="fa-solid fa-trophy text-5xl text-amber-300"></i>
+          <h3 class="text-2xl font-black">Diagnostic Completed!</h3>
+          <p id="quiz-score-summary" class="text-indigo-100 text-base font-semibold">Great job validating your town knowledge!</p>
+          <button onclick="resetDiagnosticQuiz()" class="bg-white text-indigo-950 font-black px-6 py-3 rounded-xl shadow-md hover:bg-amber-300 transition active:scale-95">
+            Retake Diagnostic 🔄
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-6 px-4 text-center text-xs border-t border-slate-800">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>© 2026 Town Map & Quantity Validator — A1 ESL Interactive Learning Tool.</p>
+      <div class="flex items-center gap-4 text-slate-300 font-semibold">
+        <span><i class="fa-solid fa-headphones text-amber-400"></i> Speech Synthesis Enabled</span>
+        <span><i class="fa-solid fa-check-circle text-emerald-400"></i> Immediate Feedback</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+
+    // Web Speech API Wrapper
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function testSpeech() {
+      speakText("Welcome to the Town Map and Quantity Validator!");
+    }
+
+    // Tab Switcher Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('nav-tab-active'));
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).classList.add('nav-tab-active');
+    }
+
+
+    // Map Buildings Data
+    const townData = {
+      bank: {
+        name: "Bank",
+        icon: "fa-building-columns",
+        color: "text-blue-600",
+        bg: "bg-blue-100",
+        quantitySentence: "There is one bank on the map.",
+        locationSentence: "The bank is on Main Street. It is next to the bakery and opposite the park.",
+        count: 1
+      },
+      bakery: {
+        name: "Bakery",
+        icon: "fa-bread-slice",
+        color: "text-amber-700",
+        bg: "bg-amber-100",
+        quantitySentence: "There is one bakery on the map.",
+        locationSentence: "The bakery is on Main Street. It is between the bank and the school.",
+        count: 1
+      },
+      school: {
+        name: "School",
+        icon: "fa-school",
+        color: "text-indigo-700",
+        bg: "bg-indigo-100",
+        quantitySentence: "There is one school on the map.",
+        locationSentence: "The school is on Main Street. It is next to the bakery and opposite Café 2.",
+        count: 1
+      },
+      park: {
+        name: "Park",
+        icon: "fa-tree",
+        color: "text-emerald-700",
+        bg: "bg-emerald-100",
+        quantitySentence: "There is one park on the map.",
+        locationSentence: "The park is next to Café 1 and opposite the bank.",
+        count: 1
+      },
+      cafe1: {
+        name: "Café 1",
+        icon: "fa-mug-hot",
+        color: "text-orange-700",
+        bg: "bg-orange-100",
+        quantitySentence: "There are two cafés on the map.",
+        locationSentence: "Café 1 is between the park and Café 2. It is opposite the bakery.",
+        count: 2
+      },
+      cafe2: {
+        name: "Café 2",
+        icon: "fa-mug-hot",
+        color: "text-orange-700",
+        bg: "bg-orange-100",
+        quantitySentence: "There are two cafés on the map.",
+        locationSentence: "Café 2 is next to Café 1 and opposite the school.",
+        count: 2
+      },
+      hospital: {
+        name: "Hospital",
+        icon: "fa-hospital",
+        color: "text-rose-700",
+        bg: "bg-rose-100",
+        quantitySentence: "There is one hospital on the map.",
+        locationSentence: "The hospital is on Park Avenue. It is next to the supermarket.",
+        count: 1
+      },
+      supermarket: {
+        name: "Supermarket",
+        icon: "fa-cart-shopping",
+        color: "text-teal-700",
+        bg: "bg-teal-100",
+        quantitySentence: "There is one supermarket on the map.",
+        locationSentence: "The supermarket is between the hospital and the library.",
+        count: 1
+      },
+      library: {
+        name: "Library",
+        icon: "fa-book",
+        color: "text-purple-700",
+        bg: "bg-purple-100",
+        quantitySentence: "There is one library on the map.",
+        locationSentence: "The library is on Park Avenue. It is next to the supermarket.",
+        count: 1
+      }
+    };
+
+    let activeInspectedBuilding = null;
+
+    function inspectBuilding(key) {
+      document.querySelectorAll('.map-building-card').forEach(c => c.classList.remove('selected-building'));
+      document.getElementById(`bldg-${key}`).classList.add('selected-building');
+
+      const data = townData[key];
+      activeInspectedBuilding = data;
+
+      const container = document.getElementById('inspector-content');
+      document.getElementById('inspect-quantity-badge').innerText = data.count === 1 ? 'Quantity: 1' : `Quantity: ${data.count}`;
+
+      container.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl ${data.bg} ${data.color} flex items-center justify-center text-2xl shadow-sm">
+            <i class="fa-solid ${data.icon}"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-black text-white">${data.name}</h3>
+            <span class="text-xs font-bold text-amber-300">Target Building</span>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-indigo-900/50 p-4 rounded-2xl border border-indigo-800 text-xs sm:text-sm">
+          <div>
+            <span class="text-[10px] font-black uppercase text-indigo-300 tracking-wider block">Quantity Structure:</span>
+            <p class="font-extrabold text-amber-300">"${data.quantitySentence}"</p>
+          </div>
+          <div>
+            <span class="text-[10px] font-black uppercase text-indigo-300 tracking-wider block">Location Sentence:</span>
+            <p class="font-medium text-slate-200">"${data.locationSentence}"</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('inspector-actions').classList.remove('hidden');
+      speakText(`${data.name}. ${data.quantitySentence} ${data.locationSentence}`);
+    }
+
+    function speakInspectorSentences() {
+      if (activeInspectedBuilding) {
+        speakText(`${activeInspectedBuilding.quantitySentence} ${activeInspectedBuilding.locationSentence}`);
+      }
+    }
+
+
+    const quantitiesExercises = [
+      {
+        id: "q1",
+        place: "Supermarkets",
+        icon: "fa-cart-shopping",
+        color: "text-teal-600 bg-teal-50",
+        prompt: "How many supermarkets are on the map?",
+        options: ["There is one supermarket.", "There are two supermarkets.", "There isn't a supermarket."],
+        correct: 0,
+        audioText: "Correct! There is one supermarket."
+      },
+      {
+        id: "q2",
+        place: "Cafés",
+        icon: "fa-mug-hot",
+        color: "text-orange-600 bg-orange-50",
+        prompt: "How many cafés are on the map?",
+        options: ["There is two cafés.", "There are two cafés.", "There are three cafés."],
+        correct: 1,
+        audioText: "Great job! There are two cafés."
+      },
+      {
+        id: "q3",
+        place: "Cinemas",
+        icon: "fa-film",
+        color: "text-purple-600 bg-purple-50",
+        prompt: "How many cinemas are on the map?",
+        options: ["There is one cinema.", "There are two cinemas.", "There isn't a cinema."],
+        correct: 2,
+        audioText: "Correct! There isn't a cinema."
+      },
+      {
+        id: "q4",
+        place: "Schools",
+        icon: "fa-school",
+        color: "text-indigo-600 bg-indigo-50",
+        prompt: "How many schools are on the map?",
+        options: ["There is one school.", "There are one school.", "There are two schools."],
+        correct: 0,
+        audioText: "Excellent! There is one school."
+      }
+    ];
+
+    function renderQuantitiesPractice() {
+      const container = document.getElementById('quantities-practice-container');
+      container.innerHTML = '';
+
+      quantitiesExercises.forEach((ex, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4 shadow-2xs";
+
+        const optionsHTML = ex.options.map((opt, oIdx) => `
+          <button onclick="checkQuantityAnswer('${ex.id}', ${oIdx}, ${ex.correct})" class="q-opt-btn-${ex.id} w-full text-left font-bold text-xs sm:text-sm p-3 rounded-xl border border-slate-300 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition">
+            ${opt}
+          </button>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl ${ex.color} flex items-center justify-center text-lg">
+              <i class="fa-solid ${ex.icon}"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-sm text-slate-900">${ex.place}</h3>
+              <p class="text-xs text-slate-500 font-medium">${ex.prompt}</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            ${optionsHTML}
+          </div>
+
+          <div id="q-feedback-${ex.id}" class="hidden text-xs font-bold p-3 rounded-xl"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function checkQuantityAnswer(exId, selectedIdx, correctIdx) {
+      const feedback = document.getElementById(`q-feedback-${exId}`);
+      feedback.classList.remove('hidden');
+
+      const btns = document.querySelectorAll(`.q-opt-btn-${exId}`);
+      btns.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === correctIdx) {
+          btn.className = "w-full text-left font-black text-xs sm:text-sm p-3 rounded-xl border border-emerald-600 bg-emerald-600 text-white";
+        } else if (idx === selectedIdx) {
+          btn.className = "w-full text-left font-black text-xs sm:text-sm p-3 rounded-xl border border-rose-600 bg-rose-600 text-white";
+        }
+      });
+
+      if (selectedIdx === correctIdx) {
+        feedback.className = "text-xs font-bold p-3 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300";
+        feedback.innerHTML = "🎉 Correct! Good job identifying quantity!";
+        const ex = quantitiesExercises.find(e => e.id === exId);
+        speakText(ex.audioText);
+      } else {
+        feedback.className = "text-xs font-bold p-3 rounded-xl bg-rose-100 text-rose-900 border border-rose-300";
+        feedback.innerHTML = "❌ Not quite! Remember: Use 'There is' for 1 item and 'There are' for 2+ items.";
+        speakText("Try again! Check singular versus plural.");
+      }
+    }
+
+
+    const prepositionsExercises = [
+      {
+        id: "p1",
+        question: "1. The Bakery is __________ the Bank and the School.",
+        options: ["next to", "between", "opposite"],
+        correct: 1,
+        exp: "'Between' means in the middle of two places."
+      },
+      {
+        id: "p2",
+        question: "2. The Park is __________ the Bank across Main Street.",
+        options: ["opposite", "between", "next to"],
+        correct: 0,
+        exp: "'Opposite' means across the road or street."
+      },
+      {
+        id: "p3",
+        question: "3. The Supermarket is __________ the Hospital and the Library.",
+        options: ["opposite", "near", "between"],
+        correct: 2,
+        exp: "The supermarket sits directly in the middle."
+      },
+      {
+        id: "p4",
+        question: "4. Café 2 is __________ Café 1.",
+        options: ["next to", "between", "opposite"],
+        correct: 0,
+        exp: "'Next to' means directly beside."
+      }
+    ];
+
+    function renderPrepositionsPractice() {
+      const container = document.getElementById('prepositions-questions-container');
+      container.innerHTML = '';
+
+      prepositionsExercises.forEach(ex => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 shadow-2xs";
+
+        const optionsHTML = ex.options.map((opt, oIdx) => `
+          <button onclick="checkPrepositionAnswer('${ex.id}', ${oIdx}, ${ex.correct})" class="p-opt-btn-${ex.id} font-extrabold text-xs px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-indigo-50 transition">
+            ${opt}
+          </button>
+        `).join('');
+
+        card.innerHTML = `
+          <p class="font-extrabold text-xs sm:text-sm text-slate-800">${ex.question}</p>
+          <div class="flex flex-wrap gap-2">
+            ${optionsHTML}
+          </div>
+          <div id="p-feedback-${ex.id}" class="hidden text-xs font-bold p-3 rounded-xl"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function checkPrepositionAnswer(exId, selectedIdx, correctIdx) {
+      const feedback = document.getElementById(`p-feedback-${exId}`);
+      feedback.classList.remove('hidden');
+
+      const btns = document.querySelectorAll(`.p-opt-btn-${exId}`);
+      btns.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === correctIdx) {
+          btn.className = "font-black text-xs px-4 py-2 rounded-xl border border-emerald-600 bg-emerald-600 text-white";
+        } else if (idx === selectedIdx) {
+          btn.className = "font-black text-xs px-4 py-2 rounded-xl border border-rose-600 bg-rose-600 text-white";
+        }
+      });
+
+      const ex = prepositionsExercises.find(e => e.id === exId);
+      if (selectedIdx === correctIdx) {
+        feedback.className = "text-xs font-bold p-3 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300";
+        feedback.innerHTML = `✔️ Correct! ${ex.exp}`;
+        speakText("Correct!");
+      } else {
+        feedback.className = "text-xs font-bold p-3 rounded-xl bg-rose-100 text-rose-900 border border-rose-300";
+        feedback.innerHTML = `❌ Incorrect. ${ex.exp}`;
+        speakText("Keep practicing!");
+      }
+    }
+
+
+    const paletteBuildings = [
+      { type: "bank", name: "Bank", icon: "fa-building-columns", color: "text-blue-600" },
+      { type: "park", name: "Park", icon: "fa-tree", color: "text-emerald-600" },
+      { type: "cafe", name: "Café", icon: "fa-mug-hot", color: "text-orange-600" },
+      { type: "bakery", name: "Bakery", icon: "fa-bread-slice", color: "text-amber-600" },
+      { type: "school", name: "School", icon: "fa-school", color: "text-indigo-600" }
+    ];
+
+    let selectedPaletteItem = "bank";
+    let customGridState = Array(9).fill(null); // 3x3 grid
+
+    function renderBuilderPalette() {
+      const container = document.getElementById('builder-palette');
+      container.innerHTML = '';
+
+      paletteBuildings.forEach(item => {
+        const isSelected = selectedPaletteItem === item.type;
+        const btn = document.createElement('button');
+        btn.onclick = () => {
+          selectedPaletteItem = item.type;
+          renderBuilderPalette();
+        };
+        btn.className = `p-2.5 rounded-xl border-2 flex flex-col items-center gap-1 transition ${isSelected ? 'border-amber-400 bg-amber-50 shadow-xs' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+        btn.innerHTML = `
+          <i class="fa-solid ${item.icon} ${item.color} text-lg"></i>
+          <span class="text-[10px] font-extrabold text-slate-800">${item.name}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderBuilderGrid() {
+      const container = document.getElementById('builder-grid-cells');
+      container.innerHTML = '';
+
+      customGridState.forEach((item, slotIdx) => {
+        const slot = document.createElement('div');
+        slot.onclick = () => handleSlotClick(slotIdx);
+        slot.className = "h-20 sm:h-24 bg-white rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 cursor-pointer flex flex-col items-center justify-center p-2 text-center transition shadow-2xs relative";
+
+        if (item) {
+          const pb = paletteBuildings.find(p => p.type === item);
+          slot.classList.remove('border-dashed');
+          slot.classList.add('border-solid', 'border-emerald-500', 'bg-emerald-50');
+          slot.innerHTML = `
+            <i class="fa-solid ${pb.icon} ${pb.color} text-2xl mb-1"></i>
+            <span class="text-xs font-black text-slate-800">${pb.name}</span>
+            <span class="text-[9px] text-slate-400 font-bold">Slot ${slotIdx + 1}</span>
+          `;
+        } else {
+          slot.innerHTML = `
+            <i class="fa-solid fa-plus text-slate-300 text-lg mb-1"></i>
+            <span class="text-[10px] text-slate-400 font-bold">Empty</span>
+          `;
+        }
+
+        container.appendChild(slot);
+      });
+
+      updateBuilderSentences();
+    }
+
+    function handleSlotClick(idx) {
+      if (customGridState[idx] === selectedPaletteItem) {
+        customGridState[idx] = null; // Toggle remove
+      } else {
+        customGridState[idx] = selectedPaletteItem; // Place building
+      }
+      renderBuilderGrid();
+    }
+
+    function resetTownBuilder() {
+      customGridState = Array(9).fill(null);
+      renderBuilderGrid();
+    }
+
+    function updateBuilderSentences() {
+      const box = document.getElementById('builder-sentences-box');
+      const countBadge = document.getElementById('builder-item-count');
+
+      // Count types
+      const counts = {};
+      let totalPlaced = 0;
+      customGridState.forEach(type => {
+        if (type) {
+          counts[type] = (counts[type] || 0) + 1;
+          totalPlaced++;
+        }
+      });
+
+      countBadge.innerText = `${totalPlaced} Places`;
+
+      if (totalPlaced === 0) {
+        box.innerHTML = `<p class="text-slate-400 italic">Start placing buildings on the grid to generate sentences with "There is", "There are", and prepositions!</p>`;
+        return;
+      }
+
+      let quantitySentences = [];
+      Object.keys(counts).forEach(type => {
+        const pb = paletteBuildings.find(p => p.type === type);
+        const cnt = counts[type];
+        if (cnt === 1) {
+          quantitySentences.push(`There is 1 ${pb.name.toLowerCase()}`);
+        } else {
+          quantitySentences.push(`There are ${cnt} ${pb.name.toLowerCase()}s`);
+        }
+      });
+
+      let locationSentences = [];
+
+      // Adjacent pairs (horizontal)
+      const horizontalPairs = [[0,1], [1,2], [3,4], [4,5], [6,7], [7,8]];
+      horizontalPairs.forEach(([a, b]) => {
+        if (customGridState[a] && customGridState[b]) {
+          const nameA = paletteBuildings.find(p => p.type === customGridState[a]).name;
+          const nameB = paletteBuildings.find(p => p.type === customGridState[b]).name;
+          locationSentences.push(`The ${nameA} is next to the ${nameB}.`);
+        }
+      });
+
+      // Opposite pairs (across road vertical)
+      const oppositePairs = [[0,3], [1,4], [2,5], [3,6], [4,7], [5,8]];
+      oppositePairs.forEach(([a, b]) => {
+        if (customGridState[a] && customGridState[b]) {
+          const nameA = paletteBuildings.find(p => p.type === customGridState[a]).name;
+          const nameB = paletteBuildings.find(p => p.type === customGridState[b]).name;
+          locationSentences.push(`The ${nameA} is opposite the ${nameB}.`);
+        }
+      });
+
+      box.innerHTML = `
+        <div class="space-y-2">
+          <p class="font-extrabold text-amber-300">"In my town, ${quantitySentences.join(', ')}."</p>
+          ${locationSentences.slice(0, 3).map(s => `<p class="text-slate-200">• ${s}</p>`).join('')}
+        </div>
+      `;
+    }
+
+    function speakBuilderSentences() {
+      const box = document.getElementById('builder-sentences-box');
+      speakText(box.innerText);
+    }
+
+
+    const quizQuestions = [
+      {
+        q: "1. Complete the sentence: '__________ a bank on Main Street.'",
+        options: ["There is", "There are", "There be"],
+        correct: 0,
+        explanation: "Use 'There is' for 1 singular item."
+      },
+      {
+        q: "2. Complete the sentence: '__________ two cafés near the park.'",
+        options: ["There is", "There are", "There isn't"],
+        correct: 1,
+        explanation: "Use 'There are' for plural counts (two cafés)."
+      },
+      {
+        q: "3. 'The bakery is in the middle of the bank and the school.' Which preposition is this?",
+        options: ["next to", "opposite", "between"],
+        correct: 2,
+        explanation: "'Between' means in the middle of two objects."
+      },
+      {
+        q: "4. 'The park is directly across the street from the bank.' Where is the park?",
+        options: ["opposite the bank", "next to the bank", "under the bank"],
+        correct: 0,
+        explanation: "'Opposite' means across the road or street."
+      },
+      {
+        q: "5. 'Is there a cinema on the map grid?'",
+        options: ["Yes, there is one.", "No, there isn't a cinema.", "Yes, there are two."],
+        correct: 1,
+        explanation: "There is no cinema on our map layout!"
+      }
+    ];
+
+    let userQuizAnswers = {};
+
+    function renderDiagnosticQuiz() {
+      const container = document.getElementById('quiz-questions-list');
+      container.innerHTML = '';
+
+      quizQuestions.forEach((item, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3";
+
+        const optionsHTML = item.options.map((opt, oIdx) => `
+          <button onclick="handleQuizAnswer(${qIdx}, ${oIdx})" class="quiz-btn-${qIdx} w-full text-left font-bold text-slate-800 bg-white border border-slate-300 hover:border-indigo-500 hover:bg-indigo-50 p-3 rounded-xl transition text-xs sm:text-sm">
+            ${opt}
+          </button>
+        `).join('');
+
+        card.innerHTML = `
+          <p class="font-extrabold text-slate-900 text-sm sm:text-base">${item.q}</p>
+          <div class="space-y-2">
+            ${optionsHTML}
+          </div>
+          <div id="quiz-exp-${qIdx}" class="hidden text-xs font-bold p-3 rounded-xl"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function handleQuizAnswer(qIdx, oIdx) {
+      if (userQuizAnswers[qIdx] !== undefined) return;
+
+      userQuizAnswers[qIdx] = oIdx;
+      const question = quizQuestions[qIdx];
+      const expBox = document.getElementById(`quiz-exp-${qIdx}`);
+
+      const buttons = document.querySelectorAll(`.quiz-btn-${qIdx}`);
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === question.correct) {
+          btn.className = "w-full text-left font-black text-white bg-emerald-600 border border-emerald-600 p-3 rounded-xl text-xs sm:text-sm";
+        } else if (idx === oIdx) {
+          btn.className = "w-full text-left font-black text-white bg-rose-600 border border-rose-600 p-3 rounded-xl text-xs sm:text-sm";
+        }
+      });
+
+      expBox.classList.remove('hidden');
+      if (oIdx === question.correct) {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300";
+        expBox.innerHTML = `✔️ Correct! ${question.explanation}`;
+        speakText("Correct answer!");
+      } else {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-rose-100 text-rose-900 border border-rose-300";
+        expBox.innerHTML = `❌ Incorrect. ${question.explanation}`;
+        speakText("Incorrect.");
+      }
+
+      updateQuizScore();
+    }
+
+    function updateQuizScore() {
+      let score = 0;
+      Object.keys(userQuizAnswers).forEach(qIdx => {
+        if (userQuizAnswers[qIdx] === quizQuestions[qIdx].correct) {
+          score++;
+        }
+      });
+
+      document.getElementById('quiz-score-badge').innerText = `${score} / ${quizQuestions.length}`;
+
+      if (Object.keys(userQuizAnswers).length === quizQuestions.length) {
+        document.getElementById('quiz-completion-banner').classList.remove('hidden');
+        document.getElementById('quiz-score-summary').innerText = `You scored ${score} out of ${quizQuestions.length}!`;
+      }
+    }
+
+    function resetDiagnosticQuiz() {
+      userQuizAnswers = {};
+      document.getElementById('quiz-score-badge').innerText = `0 / ${quizQuestions.length}`;
+      document.getElementById('quiz-completion-banner').classList.add('hidden');
+      renderDiagnosticQuiz();
+    }
+
+    // ON LOAD INITIALIZATION
+    window.onload = function() {
+      renderQuantitiesPractice();
+      renderPrepositionsPractice();
+      renderBuilderPalette();
+      renderBuilderGrid();
+      renderDiagnosticQuiz();
+    };
+  </script>
+</body>
+</html>
