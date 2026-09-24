@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Events Master: General vs. Specific Past Tense</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        general: {
+                            light: '#fef3c7',
+                            DEFAULT: '#f59e0b',
+                            dark: '#b45309',
+                        },
+                        specific: {
+                            light: '#dbeafe',
+                            DEFAULT: '#2563eb',
+                            dark: '#1e40af',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+        .bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pulse-subtle {
+            animation: pulseSubtle 2s infinite;
+        }
+        @keyframes pulseSubtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .draggable-item {
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .drop-zone {
+            transition: all 0.2s ease;
+        }
+        .drop-zone.drag-over {
+            transform: scale(1.02);
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-full flex flex-col transition-colors duration-300">
+
+    <!-- Top Header Navigation -->
+    <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <i class="fa-solid font-bold text-lg fa-hourglass-half"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg sm:text-xl text-slate-900 dark:text-white leading-tight">Past Events Master</h1>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-medium">A1 Grammar: General vs. Specific</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="hidden md:flex items-center space-x-6 bg-slate-100 dark:bg-slate-700/60 py-1.5 px-4 rounded-full border border-slate-200 dark:border-slate-600">
+                <div class="flex items-center space-x-2 text-amber-500 font-bold text-sm">
+                    <i class="fa-solid fa-star text-base"></i>
+                    <span id="stat-xp">0 XP</span>
+                </div>
+                <div class="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex items-center space-x-2 text-emerald-500 font-bold text-sm">
+                    <i class="fa-solid fa-fire text-base"></i>
+                    <span id="stat-streak">0 Day Streak</span>
+                </div>
+                <div class="h-4 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex items-center space-x-2 text-indigo-500 font-bold text-sm">
+                    <i class="fa-solid fa-trophy text-base"></i>
+                    <span id="stat-accuracy">100% Acc</span>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button id="sound-toggle" onclick="toggleAudio()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="Toggle Sound Effects">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="theme-toggle" onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="Toggle Dark Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="switchTab('report')" class="hidden sm:flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 font-semibold text-sm hover:bg-blue-100 dark:hover:bg-blue-900/60 transition">
+                    <i class="fa-solid fa-award"></i>
+                    <span>Report</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 overflow-x-auto scrollbar-none sticky top-16 z-40">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-2 sm:space-x-4">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-house"></i>
+                <span>Dashboard</span>
+            </button>
+            <button onclick="switchTab('classifier')" id="nav-classifier" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-list-check"></i>
+                <span>1. Sentence Classifier</span>
+            </button>
+            <button onclick="switchTab('sorting')" id="nav-sorting" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>2. Time Marker Bucket</span>
+            </button>
+            <button onclick="switchTab('builder')" id="nav-builder" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>3. Past Log Builder</span>
+            </button>
+            <button onclick="switchTab('roleplay')" id="nav-roleplay" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-comments"></i>
+                <span>4. Speaking Assistant</span>
+            </button>
+            <button onclick="switchTab('report')" id="nav-report" class="tab-btn py-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>Report Card</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ==================== TAB 1: DASHBOARD ==================== -->
+        <section id="tab-dashboard" class="space-y-8 bounce-in">
+            <!-- Hero Welcome Card -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white p-6 sm:p-10 shadow-xl shadow-blue-500/10">
+                <div class="relative z-10 max-w-3xl">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold uppercase tracking-wider mb-4">
+                        <i class="fa-solid fa-bolt text-amber-300"></i>
+                        <span>A1 Diagnostic & Practice Suite</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-display font-extrabold mb-3 leading-tight">
+                        Master Talking About the Past!
+                    </h2>
+                    <p class="text-blue-100 text-sm sm:text-base mb-6 leading-relaxed">
+                        Learn when to describe general experiences (<span class="underline decoration-amber-300 font-semibold">"I have visited before"</span>) versus specific events with time markers (<span class="underline decoration-cyan-300 font-semibold">"I visited yesterday at 5 PM"</span>).
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="switchTab('classifier')" class="px-6 py-3 rounded-xl bg-white text-blue-700 font-bold shadow-lg hover:bg-blue-50 transition transform active:scale-95 flex items-center space-x-2">
+                            <span>Start Activity 1</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button onclick="toggleRuleModal(true)" class="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold transition flex items-center space-x-2 border border-white/20">
+                            <i class="fa-solid fa-book-open"></i>
+                            <span>Quick Grammar Rules</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Background Graphic Element -->
+                <div class="absolute -right-10 -bottom-10 opacity-20 pointer-events-none">
+                    <i class="fa-solid fa-clock text-[240px]"></i>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats & Progress Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Activity Progress Summary -->
+                <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">Overall Mastery</h3>
+                        <span id="dash-percentage" class="text-sm font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-3 py-1 rounded-full">0%</span>
+                    </div>
+                    <!-- Master Progress Bar -->
+                    <div class="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden mb-4">
+                        <div id="dash-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-0 transition-all duration-700"></div>
+                    </div>
+                    <p id="dash-status-text" class="text-xs text-slate-500 dark:text-slate-400">Complete activities to increase your mastery score!</p>
+                </div>
+
+                <!-- XP & Badge Tracker -->
+                <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">Level & Badges</h3>
+                        <span id="user-level" class="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/40 px-2.5 py-1 rounded-full">Level 1: Novice</span>
+                    </div>
+                    <div class="flex items-center space-x-3 my-3">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/50 text-amber-500 flex items-center justify-center text-2xl font-bold shadow-inner">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Badges Unlocked</p>
+                            <p id="badge-count" class="text-lg font-bold text-slate-800 dark:text-slate-100">0 of 4 Unlocked</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 pt-1" id="badge-icons-preview">
+                        <div title="Classifier Master" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-list-check"></i></div>
+                        <div title="Bucket Sorting Hero" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div title="Log Builder Pro" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-pen"></i></div>
+                        <div title="Roleplay Champion" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-comments"></i></div>
+                    </div>
+                </div>
+
+                <!-- Learning Tip Card -->
+                <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-slate-800 dark:to-slate-800">
+                    <div class="flex items-center space-x-2 text-amber-600 dark:text-amber-400 font-bold mb-2">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <h4>Pro Tip for A1 Grammar</h4>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
+                        If a sentence tells you <b>EXACTLY WHEN</b> (e.g. <i>yesterday, last night, in 2021</i>), it is <b>SPECIFIC</b>. If it only says <i>before</i> or <i>in the past</i>, it is <b>GENERAL</b>!
+                    </p>
+                    <button onclick="speakText('If a sentence tells you exactly when, it is specific. If it only says before or in the past, it is general.')" class="text-xs text-amber-700 dark:text-amber-300 font-semibold hover:underline flex items-center space-x-1">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Listen to Tip</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Cards Grid -->
+            <div>
+                <h3 class="font-display font-bold text-xl text-slate-900 dark:text-white mb-4">Interactive Learning Activities</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Activity 1 Card -->
+                    <div onclick="switchTab('classifier')" class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 transition cursor-pointer group shadow-sm hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Activity 1</span>
+                            <span id="act1-badge" class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">Not Started</span>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-slate-800 dark:text-slate-100 mb-2">Sentence Classifier</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Analyze past tense sentences and label them as General or Specific.</p>
+                        <div class="flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <span>8 Questions</span>
+                            <i class="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Activity 2 Card -->
+                    <div onclick="switchTab('sorting')" class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-500 transition cursor-pointer group shadow-sm hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Activity 2</span>
+                            <span id="act2-badge" class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">Not Started</span>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-slate-800 dark:text-slate-100 mb-2">Time Marker Bucket</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Drag or tap time expressions into General vs. Specific buckets.</p>
+                        <div class="flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <span>6 Items to Sort</span>
+                            <i class="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Activity 3 Card -->
+                    <div onclick="switchTab('builder')" class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 transition cursor-pointer group shadow-sm hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Activity 3</span>
+                            <span id="act3-badge" class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">Not Started</span>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-slate-800 dark:text-slate-100 mb-2">Past Log Builder</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Fill in the blanks with correct past verbs and matching time markers.</p>
+                        <div class="flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <span>4 Sentences</span>
+                            <i class="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Activity 4 Card -->
+                    <div onclick="switchTab('roleplay')" class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-700 hover:border-purple-500 dark:hover:border-purple-500 transition cursor-pointer group shadow-sm hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xl font-bold mb-4 group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Activity 4</span>
+                            <span id="act4-badge" class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500">Not Started</span>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-slate-800 dark:text-slate-100 mb-2">Speaking Assistant</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Practice turn-based dialogue responding to general and specific questions.</p>
+                        <div class="flex items-center justify-between text-xs font-semibold text-purple-600 dark:text-purple-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <span>Interactive Roleplay</span>
+                            <i class="fa-solid fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: ACTIVITY 1 - SENTENCE CLASSIFIER ==================== -->
+        <section id="tab-classifier" class="hidden space-y-6">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div>
+                    <div class="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-circle-dot"></i>
+                        <span>Activity 1 of 4</span>
+                    </div>
+                    <h2 class="text-2xl font-display font-bold text-slate-900 dark:text-white">Sentence Classifier</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Is the past action General (no exact time) or Specific (exact time given)?</p>
+                </div>
+                <!-- Quiz Progress -->
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-xs text-slate-400">Progress</p>
+                        <p id="classifier-step-text" class="text-sm font-bold text-slate-800 dark:text-slate-100">Question 1 / 6</p>
+                    </div>
+                    <button onclick="resetClassifier()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition" title="Restart Quiz">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Classifier Card -->
+            <div class="glass-card rounded-3xl p-6 sm:p-10 border border-slate-200 dark:border-slate-700 shadow-lg max-w-3xl mx-auto space-y-8">
+                <!-- Sentence Presentation -->
+                <div class="text-center space-y-4">
+                    <span class="inline-block px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs font-semibold">Read & Listen carefully:</span>
+                    <div class="relative bg-slate-50 dark:bg-slate-800/80 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-inner flex items-center justify-between">
+                        <p id="classifier-sentence" class="text-xl sm:text-2xl font-display font-bold text-slate-800 dark:text-slate-100 leading-snug">
+                            "I saw that movie last night."
+                        </p>
+                        <button id="classifier-tts-btn" onclick="speakCurrentClassifierSentence()" class="ml-4 p-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30 transition transform active:scale-90 flex-shrink-0" title="Listen to Pronunciation">
+                            <i class="fa-solid fa-volume-high text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selection Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="btn-general" onclick="submitClassifierAnswer('General')" class="group p-6 rounded-2xl border-2 border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-slate-800 hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition text-left relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm">A</span>
+                            <i class="fa-solid fa-globe text-amber-500 text-xl group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">General Past</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Broad past experience with NO exact time marker (e.g. <i>before, in the past</i>).</p>
+                    </button>
+
+                    <button id="btn-specific" onclick="submitClassifierAnswer('Specific')" class="group p-6 rounded-2xl border-2 border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-slate-800 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 transition text-left relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">B</span>
+                            <i class="fa-solid fa-bullseye text-blue-600 text-xl group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">Specific Past</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Describes an exact time, date, or moment (e.g. <i>last night, on Saturday</i>).</p>
+                    </button>
+                </div>
+
+                <!-- Explanation Feedback Box -->
+                <div id="classifier-feedback" class="hidden rounded-2xl p-5 border transition-all duration-300">
+                    <div class="flex items-start space-x-3">
+                        <div id="classifier-feedback-icon" class="text-xl mt-0.5"></div>
+                        <div class="flex-grow space-y-1">
+                            <h4 id="classifier-feedback-title" class="font-display font-bold text-base"></h4>
+                            <p id="classifier-feedback-body" class="text-xs sm:text-sm text-slate-600 dark:text-slate-300"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Control Button -->
+                <div class="flex justify-end pt-2">
+                    <button id="classifier-next-btn" onclick="nextClassifierQuestion()" class="hidden px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20 transition flex items-center space-x-2">
+                        <span>Next Question</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: ACTIVITY 2 - TIME MARKER BUCKET ==================== -->
+        <section id="tab-sorting" class="hidden space-y-6">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div>
+                    <div class="inline-flex items-center space-x-2 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-circle-dot"></i>
+                        <span>Activity 2 of 4</span>
+                    </div>
+                    <h2 class="text-2xl font-display font-bold text-slate-900 dark:text-white">Time Marker Sorting Bucket</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Drag or tap time expressions to drop them into the correct General or Specific bucket!</p>
+                </div>
+                <button onclick="resetSortingGame()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                    <span>Reset Game</span>
+                </button>
+            </div>
+
+            <!-- Unsorted Cards Pool -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Time Expression Cards (Tap or Drag to Sort)</h3>
+                <div id="sorting-pool" class="flex flex-wrap gap-3 min-h-[60px] items-center p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-600">
+                    <!-- Cards injected via JS -->
+                </div>
+            </div>
+
+            <!-- Buckets Container -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Bucket 1: General Time -->
+                <div id="bucket-general" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'General')" class="drop-zone glass-card rounded-3xl p-6 border-2 border-dashed border-amber-300 dark:border-amber-700/60 bg-amber-50/20 dark:bg-amber-950/10 min-h-[220px] flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-amber-200/60 dark:border-amber-900/40">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                    <i class="fa-solid fa-globe"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">General Time</h4>
+                                    <p class="text-xs text-amber-600 dark:text-amber-400">No exact date or hour</p>
+                                </div>
+                            </div>
+                            <span id="count-general" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300">0 items</span>
+                        </div>
+                        <div id="bucket-general-items" class="flex flex-wrap gap-2">
+                            <!-- Injected dropped items -->
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center text-xs text-amber-600/60 dark:text-amber-400/50 italic">
+                        Drop General Time expressions here
+                    </div>
+                </div>
+
+                <!-- Bucket 2: Specific Time -->
+                <div id="bucket-specific" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'Specific')" class="drop-zone glass-card rounded-3xl p-6 border-2 border-dashed border-blue-300 dark:border-blue-700/60 bg-blue-50/20 dark:bg-blue-950/10 min-h-[220px] flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-blue-200/60 dark:border-blue-900/40">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">Specific Time</h4>
+                                    <p class="text-xs text-blue-600 dark:text-blue-400">Exact date, time, or day</p>
+                                </div>
+                            </div>
+                            <span id="count-specific" class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">0 items</span>
+                        </div>
+                        <div id="bucket-specific-items" class="flex flex-wrap gap-2">
+                            <!-- Injected dropped items -->
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center text-xs text-blue-600/60 dark:text-blue-400/50 italic">
+                        Drop Specific Time expressions here
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sorting Feedback Action Bar -->
+            <div id="sorting-feedback" class="hidden glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-700 text-center space-y-3">
+                <p id="sorting-status-msg" class="text-sm font-bold text-slate-800 dark:text-slate-100"></p>
+                <button onclick="switchTab('builder')" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition inline-flex items-center space-x-2">
+                    <span>Continue to Activity 3</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: ACTIVITY 3 - PAST LOG BUILDER ==================== -->
+        <section id="tab-builder" class="hidden space-y-6">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div>
+                    <div class="inline-flex items-center space-x-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-circle-dot"></i>
+                        <span>Activity 3 of 4</span>
+                    </div>
+                    <h2 class="text-2xl font-display font-bold text-slate-900 dark:text-white">Past Log Builder</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Complete each sentence with the correct simple past verb form and a matching time expression.</p>
+                </div>
+                <div id="builder-score" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 px-4 py-2 rounded-xl">
+                    Score: 0 / 4
+                </div>
+            </div>
+
+            <!-- Builder Interactive Cards Stack -->
+            <div id="builder-items-container" class="space-y-6 max-w-3xl mx-auto">
+                <!-- Dynamic Sentences standard list rendered via JS -->
+            </div>
+
+            <div class="text-center pt-4">
+                <button id="builder-finish-btn" onclick="checkBuilderSentences()" class="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-600/20 transition transform active:scale-95 inline-flex items-center space-x-2">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Check All Log Entries</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: ACTIVITY 4 - INTERACTIVE SPEAKING ROLEPLAY ==================== -->
+        <section id="tab-roleplay" class="hidden space-y-6">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div>
+                    <div class="inline-flex items-center space-x-2 text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">
+                        <i class="fa-solid fa-circle-dot"></i>
+                        <span>Activity 4 of 4</span>
+                    </div>
+                    <h2 class="text-2xl font-display font-bold text-slate-900 dark:text-white">Speaking Assistant & Dialogue Roleplay</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Practice responding to General questions first, then answering Specific follow-up questions!</p>
+                </div>
+            </div>
+
+            <!-- Theme Card Deck Selector -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Select Practice Topic Card</h3>
+                <div id="roleplay-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Cards rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Chat Dialogue Screen Container -->
+            <div class="glass-card rounded-3xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg max-w-3xl mx-auto flex flex-col h-[520px]">
+                <!-- Chat Header -->
+                <div class="bg-slate-100 dark:bg-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></span>
+                        </div>
+                        <div>
+                            <h4 class="font-display font-bold text-sm text-slate-800 dark:text-slate-100">Alex (English Bot Partner)</h4>
+                            <p class="text-xs text-purple-600 dark:text-purple-400 font-medium" id="roleplay-topic-label">Topic: Pizza & Dining Out</p>
+                        </div>
+                    </div>
+                    <button onclick="restartRoleplay()" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 transition">
+                        Restart Dialogue
+                    </button>
+                </div>
+
+                <!-- Chat Log Messages Stream -->
+                <div id="roleplay-chat-messages" class="flex-grow p-6 overflow-y-auto space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
+                    <!-- Dynamic Messages injected here -->
+                </div>
+
+                <!-- Chat Input / Multi-Choice Options Panel -->
+                <div id="roleplay-controls" class="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <p id="roleplay-prompt-hint" class="text-xs text-slate-500 font-medium text-center">Choose your response or tap microphone to speak:</p>
+                    <div id="roleplay-options-container" class="grid grid-cols-1 gap-2">
+                        <!-- Options generated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 6: SUMMARY REPORT CARD ==================== -->
+        <section id="tab-report" class="hidden space-y-6">
+            <div id="report-card-container" class="glass-card rounded-3xl p-8 sm:p-12 border-2 border-blue-100 dark:border-slate-700 shadow-xl max-w-4xl mx-auto space-y-8 bg-white dark:bg-slate-800 relative overflow-hidden">
+                <!-- Certificate Header -->
+                <div class="text-center space-y-3 border-b border-slate-200 dark:border-slate-700 pb-8">
+                    <div class="inline-flex p-4 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-3xl mb-2">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-slate-900 dark:text-white">A1 Past Tense Diagnostic Report</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Past Events Master: General vs. Specific Past Tense</p>
+                </div>
+
+                <!-- Student Summary Metrics -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                        <p class="text-xs text-slate-400 mb-1">Total XP Earned</p>
+                        <p id="rpt-xp" class="text-2xl font-display font-bold text-amber-500">0 XP</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                        <p class="text-xs text-slate-400 mb-1">Grammar Accuracy</p>
+                        <p id="rpt-accuracy" class="text-2xl font-display font-bold text-blue-600 dark:text-blue-400">100%</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                        <p class="text-xs text-slate-400 mb-1">Badges Collected</p>
+                        <p id="rpt-badges" class="text-2xl font-display font-bold text-indigo-500">0 / 4</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+                        <p class="text-xs text-slate-400 mb-1">Mastery Status</p>
+                        <p id="rpt-level" class="text-2xl font-display font-bold text-emerald-500">Level 1</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown Table -->
+                <div class="space-y-4">
+                    <h3 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100">Activity Completion Breakdown</h3>
+                    <div class="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+                        <div class="p-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                            <span class="font-semibold text-sm">1. Sentence Classifier</span>
+                            <span id="rpt-act1" class="text-xs font-bold px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600">Not Completed</span>
+                        </div>
+                        <div class="p-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                            <span class="font-semibold text-sm">2. Time Marker Bucket</span>
+                            <span id="rpt-act2" class="text-xs font-bold px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600">Not Completed</span>
+                        </div>
+                        <div class="p-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                            <span class="font-semibold text-sm">3. Past Log Builder</span>
+                            <span id="rpt-act3" class="text-xs font-bold px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600">Not Completed</span>
+                        </div>
+                        <div class="p-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                            <span class="font-semibold text-sm">4. Dialogue Roleplay</span>
+                            <span id="rpt-act4" class="text-xs font-bold px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-700 text-slate-600">Not Completed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Footer -->
+                <div class="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <button onclick="resetAllProgress()" class="text-xs text-red-500 font-semibold hover:underline">
+                        <i class="fa-solid fa-trash-can"></i> Reset All Data
+                    </button>
+                    <div class="flex space-x-3">
+                        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm hover:bg-slate-200 transition">
+                            <i class="fa-solid fa-print"></i> Print Report
+                        </button>
+                        <button onclick="triggerConfetti()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition">
+                            <i class="fa-solid fa-sparkles"></i> Celebrate!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rule Sheet Modal -->
+    <div id="rule-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-white dark:bg-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200 dark:border-slate-700 animate-bounceIn">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-slate-900 dark:text-white">Grammar Reference Cheat Sheet</h3>
+                </div>
+                <button onclick="toggleRuleModal(false)" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                <!-- General Rule -->
+                <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-1">
+                    <h4 class="font-bold text-amber-700 dark:text-amber-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-globe"></i>
+                        <span>General Past Experience</span>
+                    </h4>
+                    <p>Use when talking about an event that happened, but <b>NOT WHEN</b> it happened.</p>
+                    <p class="font-mono text-slate-700 dark:text-slate-200 pt-1">Time Markers: <i>before, in the past, a long time ago, once</i></p>
+                    <p class="italic text-slate-500">Example: "She visited her grandparents before."</p>
+                </div>
+
+                <!-- Specific Rule -->
+                <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-1">
+                    <h4 class="font-bold text-blue-700 dark:text-blue-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-bullseye"></i>
+                        <span>Specific Past Event</span>
+                    </h4>
+                    <p>Use when pinpointing the <b>EXACT TIME, DATE, OR DAY</b> of the event.</p>
+                    <p class="font-mono text-slate-700 dark:text-slate-200 pt-1">Time Markers: <i>yesterday, last Friday, two days ago, in 2021, at 8:00 AM</i></p>
+                    <p class="italic text-slate-500">Example: "I saw that movie last night."</p>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <button onclick="toggleRuleModal(false)" class="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* State Data Object */
+        const state = {
+            xp: 0,
+            streak: 1,
+            soundEnabled: true,
+            activities: {
+                classifier: { completed: false, score: 0, total: 6 },
+                sorting: { completed: false, score: 0, total: 6 },
+                builder: { completed: false, score: 0, total: 4 },
+                roleplay: { completed: false, score: 0, total: 2 }
+            },
+            badges: {
+                act1: false,
+                act2: false,
+                act3: false,
+                act4: false
+            }
+        };
+
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                if (type === 'correct') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.3); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'victory') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.12);
+                        osc.stop(now + idx * 0.12 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log('Audio Context Error:', e);
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // stop current sound
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85; // slightly slower for A1 learners
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /* Toggle Audio Settings */
+        function toggleAudio() {
+            state.soundEnabled = !state.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (state.soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high';
+                playSound('click');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark';
+            }
+        }
+
+        /* Toggle Dark Mode */
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.className = 'fa-solid fa-sun';
+            } else {
+                icon.className = 'fa-solid fa-moon';
+            }
+        }
+
+        /* Toggle Rules Modal */
+        function toggleRuleModal(show) {
+            playSound('click');
+            const modal = document.getElementById('rule-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            const tabs = ['dashboard', 'classifier', 'sorting', 'builder', 'roleplay', 'report'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.classList.remove('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
+                    navBtn.classList.add('border-transparent', 'text-slate-500');
+                }
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNavBtn = document.getElementById(`nav-${tabId}`);
+            if (activeNavBtn) {
+                activeNavBtn.classList.add('border-blue-600', 'text-blue-600', 'dark:text-blue-400');
+                activeNavBtn.classList.remove('border-transparent', 'text-slate-500');
+            }
+
+            updateDashboardUI();
+            if (tabId === 'report') renderReportCard();
+        }
+
+        function addXP(amount) {
+            state.xp += amount;
+            document.getElementById('stat-xp').innerText = `${state.xp} XP`;
+            updateDashboardUI();
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        const classifierQuestions = [
+            { text: "I saw that movie last night.", answer: "Specific", detail: "'last night' gives an exact time!" },
+            { text: "She visited her grandparents before.", answer: "General", detail: "'before' does NOT give an exact date or time." },
+            { text: "They played soccer on Saturday afternoon.", answer: "Specific", detail: "'on Saturday afternoon' is a specific day/time." },
+            { text: "We lived in Spain in 2021.", answer: "Specific", detail: "'in 2021' specifies the exact year." },
+            { text: "He ate sushi once in the past.", answer: "General", detail: "'in the past' is a general period without exact date." },
+            { text: "I bought a new phone two days ago.", answer: "Specific", detail: "'two days ago' pinpoints the specific past moment." }
+        ];
+
+        let classifierIndex = 0;
+        let classifierAnswered = false;
+
+        function loadClassifierQuestion() {
+            classifierAnswered = false;
+            const q = classifierQuestions[classifierIndex];
+            document.getElementById('classifier-step-text').innerText = `Question ${classifierIndex + 1} / ${classifierQuestions.length}`;
+            document.getElementById('classifier-sentence').innerText = `"${q.text}"`;
+            
+            // Reset Feedback UI
+            const fb = document.getElementById('classifier-feedback');
+            fb.className = 'hidden rounded-2xl p-5 border transition-all duration-300';
+            document.getElementById('classifier-next-btn').classList.add('hidden');
+
+            // Reset Buttons
+            document.getElementById('btn-general').disabled = false;
+            document.getElementById('btn-specific').disabled = false;
+            document.getElementById('btn-general').classList.remove('opacity-50', 'ring-4', 'ring-emerald-500');
+            document.getElementById('btn-specific').classList.remove('opacity-50', 'ring-4', 'ring-emerald-500');
+        }
+
+        function speakCurrentClassifierSentence() {
+            speakText(classifierQuestions[classifierIndex].text);
+        }
+
+        function submitClassifierAnswer(chosen) {
+            if (classifierAnswered) return;
+            classifierAnswered = true;
+
+            const q = classifierQuestions[classifierIndex];
+            const isCorrect = chosen === q.answer;
+            const fb = document.getElementById('classifier-feedback');
+            const fbTitle = document.getElementById('classifier-feedback-title');
+            const fbBody = document.getElementById('classifier-feedback-body');
+            const fbIcon = document.getElementById('classifier-feedback-icon');
+
+            fb.classList.remove('hidden');
+
+            if (isCorrect) {
+                playSound('correct');
+                addXP(20);
+                state.activities.classifier.score += 1;
+                fb.className = 'rounded-2xl p-5 border bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 bounce-in';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+                fbTitle.innerText = "Correct! Well done!";
+                fbBody.innerText = `Yes! ${q.detail}`;
+            } else {
+                playSound('wrong');
+                fb.className = 'rounded-2xl p-5 border bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-100 bounce-in';
+                fbIcon.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-500"></i>';
+                fbTitle.innerText = `Not quite. It's ${q.answer} Past.`;
+                fbBody.innerText = q.detail;
+            }
+
+            speakText(isCorrect ? `Correct! ${q.detail}` : `Incorrect. ${q.detail}`);
+
+            document.getElementById('btn-general').disabled = true;
+            document.getElementById('btn-specific').disabled = true;
+            document.getElementById('classifier-next-btn').classList.remove('hidden');
+        }
+
+        function nextClassifierQuestion() {
+            classifierIndex++;
+            if (classifierIndex < classifierQuestions.length) {
+                loadClassifierQuestion();
+            } else {
+                state.activities.classifier.completed = true;
+                state.badges.act1 = true;
+                playSound('victory');
+                triggerConfetti();
+                alertCustom("Activity 1 Completed!", "Great job classifying general vs specific past sentences!");
+                switchTab('sorting');
+            }
+        }
+
+        function resetClassifier() {
+            classifierIndex = 0;
+            state.activities.classifier.score = 0;
+            loadClassifierQuestion();
+        }
+
+        const sortingItemsData = [
+            { id: 'item1', text: 'last Friday', category: 'Specific' },
+            { id: 'item2', text: 'a long time ago', category: 'General' },
+            { id: 'item3', text: 'at 8:00 AM yesterday', category: 'Specific' },
+            { id: 'item4', text: 'in the past', category: 'General' },
+            { id: 'item5', text: 'three years ago', category: 'Specific' },
+            { id: 'item6', text: 'before', category: 'General' }
+        ];
+
+        let activeSelectedItemId = null; // For tap-to-sort mobile support
+
+        function initSortingPool() {
+            const pool = document.getElementById('sorting-pool');
+            pool.innerHTML = '';
+            document.getElementById('bucket-general-items').innerHTML = '';
+            document.getElementById('bucket-specific-items').innerHTML = '';
+            document.getElementById('count-general').innerText = '0 items';
+            document.getElementById('count-specific').innerText = '0 items';
+            document.getElementById('sorting-feedback').classList.add('hidden');
+
+            sortingItemsData.forEach(item => {
+                const card = document.createElement('div');
+                card.id = item.id;
+                card.draggable = true;
+                card.setAttribute('ondragstart', 'handleDragStart(event)');
+                card.setAttribute('onclick', 'handleCardTap(this)');
+                card.className = 'draggable-item px-3.5 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 shadow-sm text-xs font-bold text-slate-800 dark:text-slate-100 hover:border-blue-500 transition flex items-center space-x-2';
+                card.innerHTML = `
+                    <span>${item.text}</span>
+                    <button onclick="event.stopPropagation(); speakText('${item.text}')" class="text-slate-400 hover:text-blue-500">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                pool.appendChild(card);
+            });
+        }
+
+        function handleDragStart(ev) {
+            ev.dataTransfer.setData("text/plain", ev.target.id);
+            playSound('click');
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(ev) {
+            ev.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(ev, category) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const itemId = ev.dataTransfer.getData("text/plain");
+            moveCardToBucket(itemId, category);
+        }
+
+        function handleCardTap(cardElem) {
+            playSound('click');
+            if (activeSelectedItemId === cardElem.id) {
+                cardElem.classList.remove('ring-4', 'ring-blue-500');
+                activeSelectedItemId = null;
+                return;
+            }
+            if (activeSelectedItemId) {
+                const prev = document.getElementById(activeSelectedItemId);
+                if (prev) prev.classList.remove('ring-4', 'ring-blue-500');
+            }
+            activeSelectedItemId = cardElem.id;
+            cardElem.classList.add('ring-4', 'ring-blue-500');
+
+            // Hint to user
+            speakText(`Selected ${cardElem.innerText}. Now tap General or Specific bucket!`);
+        }
+
+        // Tap listener for buckets
+        document.addEventListener('DOMContentLoaded', () => {
+            const bGen = document.getElementById('bucket-general');
+            const bSpec = document.getElementById('bucket-specific');
+            if (bGen && bSpec) {
+                bGen.addEventListener('click', () => {
+                    if (activeSelectedItemId) moveCardToBucket(activeSelectedItemId, 'General');
+                });
+                bSpec.addEventListener('click', () => {
+                    if (activeSelectedItemId) moveCardToBucket(activeSelectedItemId, 'Specific');
+                });
+            }
+        });
+
+        function moveCardToBucket(itemId, targetCategory) {
+            const itemObj = sortingItemsData.find(i => i.id === itemId);
+            const cardElem = document.getElementById(itemId);
+            if (!itemObj || !cardElem) return;
+
+            const isCorrect = itemObj.category === targetCategory;
+
+            if (isCorrect) {
+                playSound('correct');
+                addXP(15);
+                const targetContainer = document.getElementById(targetCategory === 'General' ? 'bucket-general-items' : 'bucket-specific-items');
+                cardElem.classList.remove('ring-4', 'ring-blue-500');
+                cardElem.className = `px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm flex items-center space-x-2 ${
+                    targetCategory === 'General' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-300'
+                }`;
+                targetContainer.appendChild(cardElem);
+                activeSelectedItemId = null;
+            } else {
+                playSound('wrong');
+                speakText(`Try again! ${itemObj.text} is ${itemObj.category} time.`);
+                return;
+            }
+
+            updateBucketCounts();
+            checkSortingCompletion();
+        }
+
+        function updateBucketCounts() {
+            const genCount = document.getElementById('bucket-general-items').children.length;
+            const specCount = document.getElementById('bucket-specific-items').children.length;
+            document.getElementById('count-general').innerText = `${genCount} items`;
+            document.getElementById('count-specific').innerText = `${specCount} items`;
+        }
+
+        function checkSortingCompletion() {
+            const pool = document.getElementById('sorting-pool');
+            if (pool.children.length === 0) {
+                state.activities.sorting.completed = true;
+                state.activities.sorting.score = 6;
+                state.badges.act2 = true;
+                playSound('victory');
+                triggerConfetti();
+
+                const fb = document.getElementById('sorting-feedback');
+                fb.classList.remove('hidden');
+                document.getElementById('sorting-status-msg').innerText = "🎉 Excellent! All time expressions correctly sorted into General and Specific buckets!";
+            }
+        }
+
+        function resetSortingGame() {
+            initSortingPool();
+        }
+
+        const builderData = [
+            {
+                id: 1,
+                context: 'Specific',
+                template: "I [VERB] to the supermarket [TIME].",
+                verbOptions: ["go", "went", "gone"],
+                correctVerb: "went",
+                timeOptions: ["yesterday morning", "before"],
+                correctTime: "yesterday morning",
+                explanation: "'went' is the past of go, and 'yesterday morning' specifies when."
+            },
+            {
+                id: 2,
+                context: 'General',
+                template: "She [VERB] karaoke [TIME].",
+                verbOptions: ["try", "tried", "tries"],
+                correctVerb: "tried",
+                timeOptions: ["last night", "in the past"],
+                correctTime: "in the past",
+                explanation: "'tried' is past tense, and 'in the past' is a general experience."
+            },
+            {
+                id: 3,
+                context: 'Specific',
+                template: "We [VERB] a football match [TIME].",
+                verbOptions: ["watch", "watched", "watching"],
+                correctVerb: "watched",
+                timeOptions: ["last Sunday", "a long time ago"],
+                correctTime: "last Sunday",
+                explanation: "'watched' + 'last Sunday' pinpoints a specific past time."
+            },
+            {
+                id: 4,
+                context: 'General',
+                template: "They [VERB] London [TIME].",
+                verbOptions: ["visit", "visited", "visiting"],
+                correctVerb: "visited",
+                timeOptions: ["on Tuesday", "before"],
+                correctTime: "before",
+                explanation: "'visited' + 'before' describes general past travel experience."
+            }
+        ];
+
+        function renderBuilderSentences() {
+            const container = document.getElementById('builder-items-container');
+            container.innerHTML = '';
+
+            builderData.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = "glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 space-y-4";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${
+                            item.context === 'Specific' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                        }">Context Goal: ${item.context} Past</span>
+                        <button onclick="speakBuilderSentence(${item.id})" class="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline flex items-center space-x-1">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Listen</span>
+                        </button>
+                    </div>
+
+                    <div class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100 flex flex-wrap items-center gap-2">
+                        <span>Sentence ${item.id}:</span>
+                        <select id="builder-verb-${item.id}" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm font-bold focus:ring-2 focus:ring-emerald-500">
+                            <option value="">-- select verb --</option>
+                            ${item.verbOptions.map(v => `<option value="${v}">${v}</option>`).join('')}
+                        </select>
+                        <select id="builder-time-${item.id}" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm font-bold focus:ring-2 focus:ring-emerald-500">
+                            <option value="">-- select time --</option>
+                            ${item.timeOptions.map(t => `<option value="${t}">${t}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div id="builder-feedback-${item.id}" class="hidden text-xs p-3 rounded-xl"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkBuilderSentences() {
+            let correctCount = 0;
+
+            builderData.forEach((item) => {
+                const verbVal = document.getElementById(`builder-verb-${item.id}`).value;
+                const timeVal = document.getElementById(`builder-time-${item.id}`).value;
+                const fb = document.getElementById(`builder-feedback-${item.id}`);
+
+                fb.classList.remove('hidden');
+
+                if (verbVal === item.correctVerb && timeVal === item.correctTime) {
+                    correctCount++;
+                    fb.className = 'text-xs p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-medium';
+                    fb.innerText = `✓ Correct! ${item.explanation}`;
+                } else {
+                    fb.className = 'text-xs p-3 rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 font-medium';
+                    fb.innerText = `✗ Correct answer: "${item.correctVerb}" ... "${item.correctTime}". (${item.explanation})`;
+                }
+            });
+
+            document.getElementById('builder-score').innerText = `Score: ${correctCount} / ${builderData.length}`;
+            state.activities.builder.score = correctCount;
+
+            if (correctCount === builderData.length) {
+                state.activities.builder.completed = true;
+                state.badges.act3 = true;
+                playSound('victory');
+                addXP(50);
+                triggerConfetti();
+            } else {
+                playSound('wrong');
+            }
+        }
+
+        function speakBuilderSentence(id) {
+            const item = builderData.find(b => b.id === id);
+            const verbVal = document.getElementById(`builder-verb-${id}`).value || item.correctVerb;
+            const timeVal = document.getElementById(`builder-time-${id}`).value || item.correctTime;
+            
+            let fullText = "";
+            if (id === 1) fullText = `I ${verbVal} to the supermarket ${timeVal}.`;
+            if (id === 2) fullText = `She ${verbVal} karaoke ${timeVal}.`;
+            if (id === 3) fullText = `We ${verbVal} a football match ${timeVal}.`;
+            if (id === 4) fullText = `They ${verbVal} London ${timeVal}.`;
+
+            speakText(fullText);
+        }
+
+        const roleplayTopics = [
+            {
+                id: 'pizza',
+                title: 'Pizza & Dining',
+                icon: 'fa-pizza-slice',
+                color: 'text-amber-500',
+                genQ: "Did you eat pizza before?",
+                genA: "Yes, I did eat pizza before!",
+                specQ: "When did you eat pizza?",
+                specA: "I ate pizza yesterday evening."
+            },
+            {
+                id: 'travel',
+                title: 'Travel & City Visit',
+                icon: 'fa-plane',
+                color: 'text-blue-500',
+                genQ: "Have you visited another city before?",
+                genA: "Yes, I visited another city before.",
+                specQ: "When did you visit that city?",
+                specA: "I visited London two years ago."
+            },
+            {
+                id: 'shoes',
+                title: 'Buying New Shoes',
+                icon: 'fa-shoe-prints',
+                color: 'text-emerald-500',
+                genQ: "Did you buy new shoes recently?",
+                genA: "Yes, I bought new shoes!",
+                specQ: "When did you buy them?",
+                specA: "I bought them last Friday."
+            }
+        ];
+
+        let currentTopic = roleplayTopics[0];
+        let roleplayStep = 1; // 1: Bot General Q -> User General A, 2: Bot Specific Q -> User Specific A
+
+        function initRoleplayCards() {
+            const container = document.getElementById('roleplay-cards');
+            container.innerHTML = '';
+
+            roleplayTopics.forEach(t => {
+                const btn = document.createElement('button');
+                btn.onclick = () => selectRoleplayTopic(t.id);
+                btn.className = `p-3 rounded-xl border text-left flex items-center space-x-3 transition ${
+                    t.id === currentTopic.id ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 ring-2 ring-purple-500' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                }`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${t.icon} ${t.color} text-lg"></i>
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-100">${t.title}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectRoleplayTopic(topicId) {
+            playSound('click');
+            currentTopic = roleplayTopics.find(t => t.id === topicId);
+            document.getElementById('roleplay-topic-label').innerText = `Topic: ${currentTopic.title}`;
+            initRoleplayCards();
+            restartRoleplay();
+        }
+
+        function restartRoleplay() {
+            roleplayStep = 1;
+            const messages = document.getElementById('roleplay-chat-messages');
+            messages.innerHTML = '';
+
+            // Bot Question 1
+            appendBotMessage(currentTopic.genQ);
+            renderRoleplayOptions();
+        }
+
+        function appendBotMessage(text) {
+            const messages = document.getElementById('roleplay-chat-messages');
+            const msgHtml = `
+                <div class="flex items-start space-x-3 bounce-in">
+                    <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm max-w-xs sm:max-w-md">
+                        <p class="text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-medium">${text}</p>
+                        <button onclick="speakText('${text}')" class="mt-2 text-[10px] text-purple-600 dark:text-purple-400 font-bold hover:underline flex items-center space-x-1">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Listen to Question</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            messages.innerHTML += msgHtml;
+            messages.scrollTop = messages.scrollHeight;
+            speakText(text);
+        }
+
+        function appendUserMessage(text) {
+            const messages = document.getElementById('roleplay-chat-messages');
+            const msgHtml = `
+                <div class="flex items-start justify-end space-x-3 bounce-in">
+                    <div class="bg-purple-600 text-white p-4 rounded-2xl rounded-tr-none shadow-sm max-w-xs sm:max-w-md">
+                        <p class="text-xs sm:text-sm font-medium">${text}</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+            `;
+            messages.innerHTML += msgHtml;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function renderRoleplayOptions() {
+            const container = document.getElementById('roleplay-options-container');
+            container.innerHTML = '';
+
+            if (roleplayStep === 1) {
+                // User general options
+                const opt1 = currentTopic.genA;
+                const btn1 = document.createElement('button');
+                btn1.onclick = () => handleUserSpeechChoice(opt1, true);
+                btn1.className = "p-3 rounded-xl bg-purple-50 dark:bg-slate-700 border border-purple-200 dark:border-slate-600 hover:bg-purple-100 text-purple-900 dark:text-purple-100 font-semibold text-xs text-left transition flex items-center justify-between";
+                btn1.innerHTML = `<span>"${opt1}" (General Response)</span> <i class="fa-solid fa-microphone"></i>`;
+                container.appendChild(btn1);
+            } else if (roleplayStep === 2) {
+                // User specific options
+                const opt2 = currentTopic.specA;
+                const btn2 = document.createElement('button');
+                btn2.onclick = () => handleUserSpeechChoice(opt2, true);
+                btn2.className = "p-3 rounded-xl bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 hover:bg-blue-100 text-blue-900 dark:text-blue-100 font-semibold text-xs text-left transition flex items-center justify-between";
+                btn2.innerHTML = `<span>"${opt2}" (Specific Response)</span> <i class="fa-solid fa-microphone"></i>`;
+                container.appendChild(btn2);
+            } else {
+                container.innerHTML = `
+                    <div class="text-center p-3 text-emerald-600 font-bold text-xs">
+                        🎉 Great dialogue roleplay completed! You practiced both General & Specific answers.
+                    </div>
+                `;
+            }
+        }
+
+        function handleUserSpeechChoice(text, isCorrect) {
+            playSound('correct');
+            appendUserMessage(text);
+            addXP(25);
+
+            if (roleplayStep === 1) {
+                roleplayStep = 2;
+                setTimeout(() => {
+                    appendBotMessage(currentTopic.specQ);
+                    renderRoleplayOptions();
+                }, 1000);
+            } else if (roleplayStep === 2) {
+                roleplayStep = 3;
+                state.activities.roleplay.completed = true;
+                state.badges.act4 = true;
+                playSound('victory');
+                triggerConfetti();
+                renderRoleplayOptions();
+            }
+        }
+
+        function updateDashboardUI() {
+            // Count badges
+            let badgeTotal = 0;
+            if (state.badges.act1) badgeTotal++;
+            if (state.badges.act2) badgeTotal++;
+            if (state.badges.act3) badgeTotal++;
+            if (state.badges.act4) badgeTotal++;
+
+            document.getElementById('badge-count').innerText = `${badgeTotal} of 4 Unlocked`;
+
+            // Calculate overall completion %
+            let completedCount = 0;
+            if (state.activities.classifier.completed) completedCount++;
+            if (state.activities.sorting.completed) completedCount++;
+            if (state.activities.builder.completed) completedCount++;
+            if (state.activities.roleplay.completed) completedCount++;
+
+            const percentage = Math.round((completedCount / 4) * 100);
+            document.getElementById('dash-percentage').innerText = `${percentage}%`;
+            document.getElementById('dash-progress-bar').style.width = `${percentage}%`;
+
+            // Badges Preview Highlight
+            const preview = document.getElementById('badge-icons-preview').children;
+            if (state.badges.act1) preview[0].className = "w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center text-xs font-bold shadow";
+            if (state.badges.act2) preview[1].className = "w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center text-xs font-bold shadow";
+            if (state.badges.act3) preview[2].className = "w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow";
+            if (state.badges.act4) preview[3].className = "w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center text-xs font-bold shadow";
+
+            // Level indicator
+            if (state.xp >= 150) {
+                document.getElementById('user-level').innerText = "Level 3: Past Master";
+            } else if (state.xp >= 60) {
+                document.getElementById('user-level').innerText = "Level 2: Time Detective";
+            } else {
+                document.getElementById('user-level').innerText = "Level 1: Novice";
+            }
+
+            // Update Activity Card Badges on Dashboard
+            document.getElementById('act1-badge').innerText = state.activities.classifier.completed ? 'Completed' : 'Not Started';
+            if (state.activities.classifier.completed) document.getElementById('act1-badge').className = 'text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold';
+
+            document.getElementById('act2-badge').innerText = state.activities.sorting.completed ? 'Completed' : 'Not Started';
+            if (state.activities.sorting.completed) document.getElementById('act2-badge').className = 'text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold';
+
+            document.getElementById('act3-badge').innerText = state.activities.builder.completed ? 'Completed' : 'Not Started';
+            if (state.activities.builder.completed) document.getElementById('act3-badge').className = 'text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold';
+
+            document.getElementById('act4-badge').innerText = state.activities.roleplay.completed ? 'Completed' : 'Not Started';
+            if (state.activities.roleplay.completed) document.getElementById('act4-badge').className = 'text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold';
+        }
+
+        function renderReportCard() {
+            document.getElementById('rpt-xp').innerText = `${state.xp} XP`;
+            document.getElementById('rpt-badges').innerText = `${Object.values(state.badges).filter(Boolean).length} / 4`;
+            document.getElementById('rpt-level').innerText = document.getElementById('user-level').innerText;
+
+            document.getElementById('rpt-act1').innerText = state.activities.classifier.completed ? 'Passed (100%)' : 'Pending';
+            document.getElementById('rpt-act2').innerText = state.activities.sorting.completed ? 'Passed (100%)' : 'Pending';
+            document.getElementById('rpt-act3').innerText = state.activities.builder.completed ? `Passed (${state.activities.builder.score}/4)` : 'Pending';
+            document.getElementById('rpt-act4').innerText = state.activities.roleplay.completed ? 'Passed (100%)' : 'Pending';
+        }
+
+        /* Reset Progress */
+        function resetAllProgress() {
+            if (confirm("Are you sure you want to reset all your learning scores and badges?")) {
+                state.xp = 0;
+                state.activities = {
+                    classifier: { completed: false, score: 0, total: 6 },
+                    sorting: { completed: false, score: 0, total: 6 },
+                    builder: { completed: false, score: 0, total: 4 },
+                    roleplay: { completed: false, score: 0, total: 2 }
+                };
+                state.badges = { act1: false, act2: false, act3: false, act4: false };
+                document.getElementById('stat-xp').innerText = '0 XP';
+                resetClassifier();
+                resetSortingGame();
+                renderBuilderSentences();
+                restartRoleplay();
+                updateDashboardUI();
+                switchTab('dashboard');
+            }
+        }
+
+        /* Custom Modal Alert replacement (No browser alert) */
+        function alertCustom(title, msg) {
+            speakText(`${title}. ${msg}`);
+        }
+
+        /* Initialize Everything on Page Load */
+        window.onload = function() {
+            loadClassifierQuestion();
+            initSortingPool();
+            renderBuilderSentences();
+            initRoleplayCards();
+            restartRoleplay();
+            updateDashboardUI();
+        };
+    </script>
+</body>
+</html>
