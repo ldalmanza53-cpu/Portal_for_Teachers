@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Town Explorer: Ask & Describe Places (A1 English)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles for Interactive Polish -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    .tab-active {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Map grid isometric/tile effect */
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .map-grid {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+      }
+    }
+
+    .place-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .place-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -8px rgba(14, 165, 233, 0.25);
+    }
+
+    .place-card.selected {
+      border-color: #0284c7;
+      background-color: #f0f9ff;
+      ring: 4px;
+      ring-color: #bae6fd;
+    }
+
+    /* Flip card effect for vocabulary */
+    .flip-card {
+      background-color: transparent;
+      perspective: 1000px;
+      height: 180px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card:hover .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+
+    .token-btn {
+      transition: all 0.2s ease;
+    }
+
+    .token-btn:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <header class="bg-gradient-to-r from-sky-700 via-sky-600 to-teal-600 text-white shadow-lg py-6 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="text-center md:text-left">
+        <h1 class="text-2xl sm:text-3xl font-extrabold flex items-center justify-center md:justify-start gap-3">
+          <i class="fa-solid font-bold fa-city text-amber-300"></i> Town Explorer
+        </h1>
+        <p class="text-sky-100 text-sm sm:text-base font-medium mt-1">
+          A1 English Practice: Ask about & describe town places, locations, and prepositions!
+        </p>
+      </div>
+      <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-white/20 flex items-center gap-2">
+        <span class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></span>
+        <span>A1 Beginner Level</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto py-3">
+      <button onclick="switchTab('map-tab')" id="nav-map-tab" class="tab-btn tab-active px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-map-location-dot"></i> 1. Town Map Inspector
+      </button>
+      <button onclick="switchTab('generator-tab')" id="nav-generator-tab" class="tab-btn px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 2. Town Guide Generator
+      </button>
+      <button onclick="switchTab('vocab-tab')" id="nav-vocab-tab" class="tab-btn px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-book-open"></i> 3. Opposite Adjectives
+      </button>
+      <button onclick="switchTab('builder-tab')" id="nav-builder-tab" class="tab-btn px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-puzzle-piece"></i> 4. Sentence Builder
+      </button>
+      <button onclick="switchTab('quiz-tab')" id="nav-quiz-tab" class="tab-btn px-3 sm:px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-circle-question"></i> 5. Diagnostic Quiz
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-grow">
+
+    <section id="map-tab" class="tab-content space-y-6">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-sky-900 flex items-center gap-2">
+              <i class="fa-solid fa-map text-sky-600"></i> Explore Town Places
+            </h2>
+            <p class="text-slate-500 text-sm mt-1">
+              Click on any place in the town to inspect target Q&A dialogues and hear pronunciation!
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 rounded-lg font-semibold">
+            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+            <span>Tip: Click 🔊 to listen to native audio!</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Interactive Map Tiles (Grid) -->
+          <div class="lg:col-span-7">
+            <div id="map-grid-container" class="map-grid bg-slate-100 p-4 rounded-2xl border-2 border-dashed border-slate-300">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- Inspector Panel -->
+          <div class="lg:col-span-5 flex flex-col">
+            <div id="inspector-panel" class="bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200 rounded-2xl p-6 flex-grow shadow-sm flex flex-col justify-between">
+              <!-- Default state filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="generator-tab" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold text-sky-900 flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles text-sky-600"></i> Town Guide Card Generator
+          </h2>
+          <p class="text-slate-500 text-sm mt-1">
+            Choose a location, preposition, and adjectives to generate a custom A1 Town Description card!
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <!-- Control Panel -->
+          <div class="lg:col-span-6 space-y-4">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-500 mb-1">1. Select Target Place:</label>
+              <select id="gen-place" onchange="generateGuideCard()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                <option value="Café">☕ Café</option>
+                <option value="Library">📚 Library</option>
+                <option value="Park">🌿 Park</option>
+                <option value="Hospital">🏥 Hospital</option>
+                <option value="Cinema">🎬 Cinema</option>
+                <option value="Supermarket">🛒 Supermarket</option>
+                <option value="Museum">🏛️ Museum</option>
+                <option value="Hotel">🏨 Hotel</option>
+                <option value="Train Station">🚂 Train Station</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">2. Preposition:</label>
+                <select id="gen-prep" onchange="generateGuideCard()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                  <option value="next to">next to</option>
+                  <option value="opposite">opposite</option>
+                  <option value="near">near</option>
+                  <option value="between">between</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">3. Neighboring Place:</label>
+                <select id="gen-neighbor" onchange="generateGuideCard()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                  <option value="the park">the park</option>
+                  <option value="the hotel">the hotel</option>
+                  <option value="the cinema">the cinema</option>
+                  <option value="the library">the library</option>
+                  <option value="the train station">the train station</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">4. Primary Adjective:</label>
+                <select id="gen-adj1" onchange="generateGuideCard()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                  <option value="big">big</option>
+                  <option value="small">small</option>
+                  <option value="modern">modern</option>
+                  <option value="old">old</option>
+                  <option value="clean">clean</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">5. Secondary Adjective:</label>
+                <select id="gen-adj2" onchange="generateGuideCard()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                  <option value="quiet">quiet</option>
+                  <option value="busy">busy</option>
+                  <option value="noisy">noisy</option>
+                  <option value="beautiful">beautiful</option>
+                  <option value="popular">popular</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button onclick="readGeneratedGuide()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-volume-high"></i> Listen to Full Guide Card
+              </button>
+            </div>
+          </div>
+
+          <!-- Generated Card Preview -->
+          <div class="lg:col-span-6 flex flex-col">
+            <div class="bg-gradient-to-tr from-sky-600 via-indigo-600 to-purple-600 p-1 rounded-2xl shadow-xl flex-grow">
+              <div class="bg-white rounded-[14px] p-6 h-full flex flex-col justify-between space-y-6">
+                <div>
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <span class="bg-sky-100 text-sky-800 text-xs font-black uppercase px-3 py-1 rounded-full">
+                      🏙️ Official Town Guide
+                    </span>
+                    <span id="guide-badge-place" class="text-xl font-bold text-slate-800">☕ Café</span>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <p class="text-xs font-bold text-slate-400 uppercase mb-1">Target Question 1:</p>
+                      <p class="font-bold text-slate-700" id="guide-q1">"Is there a Café in your town?"</p>
+                      <p class="font-extrabold text-sky-700 text-lg mt-1" id="guide-a1">"Yes, there is!"</p>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <p class="text-xs font-bold text-slate-400 uppercase mb-1">Target Question 2 (Location):</p>
+                      <p class="font-bold text-slate-700" id="guide-q2">"Where is the Café?"</p>
+                      <p class="font-extrabold text-sky-700 text-lg mt-1" id="guide-a2">"It is next to the park."</p>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <p class="text-xs font-bold text-slate-400 uppercase mb-1">Target Question 3 (Description):</p>
+                      <p class="font-bold text-slate-700" id="guide-q3">"What is it like?"</p>
+                      <p class="font-extrabold text-sky-700 text-lg mt-1" id="guide-a3">"It is big and quiet!"</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+                  <span>A1 Conversation Model</span>
+                  <span class="text-emerald-600 font-bold">READY TO SPEAK ✔️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="vocab-tab" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-sky-900 flex items-center gap-2">
+              <i class="fa-solid fa-book-open text-sky-600"></i> Opposite Descriptive Adjectives
+            </h2>
+            <p class="text-slate-500 text-sm mt-1">
+              Hover/tap on cards to flip them and practice opposite pairs for describing places!
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6" id="vocab-cards-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <section id="builder-tab" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-sky-900 flex items-center gap-2">
+              <i class="fa-solid fa-puzzle-piece text-sky-600"></i> Sentence Constructor
+            </h2>
+            <p class="text-slate-500 text-sm mt-1">
+              Click word tokens in the correct order to construct past and present place descriptions!
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase text-slate-400">Puzzle Progress:</span>
+            <span id="builder-progress" class="bg-sky-100 text-sky-800 text-sm font-extrabold px-3 py-1 rounded-full">1 / 4</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6 max-w-3xl mx-auto">
+          <div class="flex items-center justify-between">
+            <span id="builder-hint-badge" class="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-md">
+              Target Question / Sentence
+            </span>
+            <button onclick="speakCurrentSentenceTarget()" class="text-sky-600 hover:text-sky-800 text-sm font-bold flex items-center gap-1">
+              <i class="fa-solid fa-volume-high"></i> Listen Prompt
+            </button>
+          </div>
+
+          <p id="builder-prompt-text" class="text-lg font-bold text-slate-800 text-center py-2 border-b border-slate-200">
+            Prompt: "Where is the library? (It is next to the park.)"
+          </p>
+
+          <!-- Drop/Built Sentence Zone -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Your Constructed Sentence:</label>
+            <div id="built-sentence-zone" class="min-h-[60px] bg-white border-2 border-dashed border-sky-300 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+              <span class="text-slate-400 text-sm italic font-medium">Click word tokens below to construct your sentence...</span>
+            </div>
+          </div>
+
+          <!-- Tokens Bank -->
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Available Word Tokens:</label>
+            <div id="tokens-bank" class="flex flex-wrap gap-2.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Controls & Feedback -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
+            <button onclick="clearBuiltTokens()" class="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm transition">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Clear All
+            </button>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <button onclick="checkBuiltSentence()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-check"></i> Validate Sentence
+              </button>
+              <button onclick="nextBuilderPuzzle()" id="next-puzzle-btn" class="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-md transition hidden flex items-center justify-center gap-2">
+                Next Puzzle <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="builder-feedback" class="hidden p-4 rounded-xl text-sm font-bold text-center"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="quiz-tab" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h2 class="text-xl font-bold text-sky-900 flex items-center gap-2">
+              <i class="fa-solid fa-circle-question text-sky-600"></i> A1 Diagnostic Place Quiz
+            </h2>
+            <p class="text-slate-500 text-sm mt-1">
+              Verify your mastery of asking about places, using prepositions, and choosing adjectives!
+            </p>
+          </div>
+          <div class="bg-sky-50 border border-sky-200 px-4 py-2 rounded-xl text-center">
+            <p class="text-xs font-bold text-sky-600 uppercase">Current Score</p>
+            <p id="quiz-score" class="text-xl font-black text-sky-900">0 / 5</p>
+          </div>
+        </div>
+
+        <div id="quiz-questions-container" class="space-y-6 max-w-3xl mx-auto">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="quiz-final-card" class="hidden bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-8 text-center space-y-4 max-w-2xl mx-auto shadow-xl">
+          <i class="fa-solid fa-award text-5xl text-amber-300"></i>
+          <h3 class="text-2xl font-black">Quiz Completed!</h3>
+          <p id="quiz-final-text" class="text-emerald-100 text-lg">You scored 5 out of 5!</p>
+          <button onclick="resetQuiz()" class="bg-white text-emerald-800 font-extrabold px-6 py-3 rounded-xl shadow-md hover:bg-emerald-50 transition">
+            Try Again 🔄
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-900 text-slate-400 py-6 px-4 text-center text-xs border-t border-slate-800">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>© 2026 Town Explorer — Guided Practice Activity for A1 ESL Learners.</p>
+      <div class="flex items-center gap-4 text-slate-300 font-semibold">
+        <span><i class="fa-solid fa-headphones text-sky-400"></i> Web Speech Audio</span>
+        <span><i class="fa-solid fa-check-double text-emerald-400"></i> Instant Diagnostics</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    
+    // Web Speech API Helper
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Tab Switching Logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).classList.add('tab-active');
+    }
+
+    const townPlacesData = [
+      {
+        id: "park",
+        name: "Park",
+        icon: "fa-tree",
+        color: "from-emerald-500 to-green-600",
+        q1: "Is there a park near here?",
+        a1: "Yes, there is a big park!",
+        q2: "Where is it?",
+        a2: "It is next to the cinema.",
+        q3: "What is it like?",
+        a3: "It is beautiful, quiet, and green."
+      },
+      {
+        id: "cafe",
+        name: "Café",
+        icon: "fa-mug-hot",
+        color: "from-amber-500 to-orange-600",
+        q1: "Is there a café in town?",
+        a1: "Yes, there is a nice café.",
+        q2: "Where is it?",
+        a2: "It is near the library.",
+        q3: "What is it like?",
+        a3: "It is small, modern, and quiet."
+      },
+      {
+        id: "library",
+        name: "Library",
+        icon: "fa-book",
+        color: "from-blue-500 to-sky-600",
+        q1: "Is there a library in your city?",
+        a1: "Yes, there is a public library.",
+        q2: "Where is it?",
+        a2: "It is between the café and hotel.",
+        q3: "What is it like?",
+        a3: "It is big, clean, and quiet."
+      },
+      {
+        id: "hospital",
+        name: "Hospital",
+        icon: "fa-hospital",
+        color: "from-rose-500 to-red-600",
+        q1: "Is there a hospital nearby?",
+        a1: "Yes, there is a city hospital.",
+        q2: "Where is it?",
+        a2: "It is opposite the supermarket.",
+        q3: "What is it like?",
+        a3: "It is clean, modern, and busy."
+      },
+      {
+        id: "cinema",
+        name: "Cinema",
+        icon: "fa-film",
+        color: "from-purple-500 to-indigo-600",
+        q1: "Is there a cinema in this area?",
+        a1: "Yes, there is a movie cinema.",
+        q2: "Where is it?",
+        a2: "It is next to the park.",
+        q3: "What is it like?",
+        a3: "It is large and very popular!"
+      },
+      {
+        id: "supermarket",
+        name: "Supermarket",
+        icon: "fa-cart-shopping",
+        color: "from-teal-500 to-emerald-600",
+        q1: "Is there a supermarket here?",
+        a1: "Yes, there is a supermarket.",
+        q2: "Where is it?",
+        a2: "It is opposite the hospital.",
+        q3: "What is it like?",
+        a3: "It is very busy and big."
+      },
+      {
+        id: "museum",
+        name: "Museum",
+        icon: "fa-landmark",
+        color: "from-yellow-600 to-amber-700",
+        q1: "Is there a museum in your town?",
+        a1: "Yes, there is an art museum.",
+        q2: "Where is it?",
+        a2: "It is near the train station.",
+        q3: "What is it like?",
+        a3: "It is old, interesting, and quiet."
+      },
+      {
+        id: "hotel",
+        name: "Hotel",
+        icon: "fa-hotel",
+        color: "from-cyan-500 to-blue-600",
+        q1: "Is there a hotel in the center?",
+        a1: "Yes, there is a grand hotel.",
+        q2: "Where is it?",
+        a2: "It is next to the library.",
+        q3: "What is it like?",
+        a3: "It is new, modern, and clean."
+      },
+      {
+        id: "train",
+        name: "Train Station",
+        icon: "fa-train",
+        color: "from-slate-600 to-slate-800",
+        q1: "Is there a train station nearby?",
+        a1: "Yes, there is a train station.",
+        q2: "Where is it?",
+        a2: "It is near the museum.",
+        q3: "What is it like?",
+        a3: "It is noisy, busy, and large."
+      }
+    ];
+
+    let selectedPlace = townPlacesData[0];
+
+    function renderMapGrid() {
+      const container = document.getElementById('map-grid-container');
+      container.innerHTML = '';
+
+      townPlacesData.forEach(place => {
+        const isSelected = place.id === selectedPlace.id;
+        const card = document.createElement('div');
+        card.className = `place-card p-4 rounded-xl border-2 bg-white flex flex-col items-center justify-center text-center gap-2 shadow-sm ${isSelected ? 'selected border-sky-500 ring-4 ring-sky-100' : 'border-slate-200'}`;
+        card.onclick = () => selectMapPlace(place.id);
+
+        card.innerHTML = `
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-tr ${place.color} text-white flex items-center justify-center text-xl shadow-md">
+            <i class="fa-solid ${place.icon}"></i>
+          </div>
+          <span class="font-extrabold text-sm text-slate-800">${place.name}</span>
+          <span class="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full uppercase">Tap to inspect</span>
+        `;
+        container.appendChild(card);
+      });
+
+      renderInspectorPanel();
+    }
+
+    function selectMapPlace(placeId) {
+      selectedPlace = townPlacesData.find(p => p.id === placeId);
+      renderMapGrid();
+      speak(`${selectedPlace.name}. ${selectedPlace.q2} ${selectedPlace.a2}`);
+    }
+
+    function renderInspectorPanel() {
+      const panel = document.getElementById('inspector-panel');
+      panel.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between border-b border-sky-200 pb-3 mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr ${selectedPlace.color} text-white flex items-center justify-center text-lg shadow-md">
+                <i class="fa-solid ${selectedPlace.icon}"></i>
+              </div>
+              <h3 class="text-xl font-extrabold text-sky-950">${selectedPlace.name} Inspector</h3>
+            </div>
+            <button onclick="speakSelectedPlaceFull()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-volume-high"></i> Read All
+            </button>
+          </div>
+
+          <div class="space-y-3">
+            <div class="bg-white/80 backdrop-blur-sm p-3.5 rounded-xl border border-sky-100 shadow-2xs">
+              <p class="text-[11px] font-extrabold text-sky-600 uppercase">Q: Asking Existence</p>
+              <p class="font-bold text-slate-800 text-sm mt-0.5">${selectedPlace.q1}</p>
+              <div class="flex items-center justify-between mt-1">
+                <p class="font-extrabold text-emerald-600 text-sm">A: "${selectedPlace.a1}"</p>
+                <button onclick="speak('${selectedPlace.q1} ${selectedPlace.a1}')" class="text-sky-600 hover:text-sky-800 text-xs">🔊</button>
+              </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm p-3.5 rounded-xl border border-sky-100 shadow-2xs">
+              <p class="text-[11px] font-extrabold text-sky-600 uppercase">Q: Asking Location (Preposition)</p>
+              <p class="font-bold text-slate-800 text-sm mt-0.5">${selectedPlace.q2}</p>
+              <div class="flex items-center justify-between mt-1">
+                <p class="font-extrabold text-emerald-600 text-sm">A: "${selectedPlace.a2}"</p>
+                <button onclick="speak('${selectedPlace.q2} ${selectedPlace.a2}')" class="text-sky-600 hover:text-sky-800 text-xs">🔊</button>
+              </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-sm p-3.5 rounded-xl border border-sky-100 shadow-2xs">
+              <p class="text-[11px] font-extrabold text-sky-600 uppercase">Q: Asking Description (Adjectives)</p>
+              <p class="font-bold text-slate-800 text-sm mt-0.5">${selectedPlace.q3}</p>
+              <div class="flex items-center justify-between mt-1">
+                <p class="font-extrabold text-emerald-600 text-sm">A: "${selectedPlace.a3}"</p>
+                <button onclick="speak('${selectedPlace.q3} ${selectedPlace.a3}')" class="text-sky-600 hover:text-sky-800 text-xs">🔊</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-sky-200 text-center text-xs font-bold text-sky-700">
+          Target Grammar: Is there a...? / Where is the...? / It is + [Adjective]
+        </div>
+      `;
+    }
+
+    function speakSelectedPlaceFull() {
+      const text = `${selectedPlace.name}. Question 1: ${selectedPlace.q1} Answer: ${selectedPlace.a1}. Question 2: ${selectedPlace.q2} Answer: ${selectedPlace.a2}. Question 3: ${selectedPlace.q3} Answer: ${selectedPlace.a3}.`;
+      speak(text);
+    }
+
+    function generateGuideCard() {
+      const place = document.getElementById('gen-place').value;
+      const prep = document.getElementById('gen-prep').value;
+      const neighbor = document.getElementById('gen-neighbor').value;
+      const adj1 = document.getElementById('gen-adj1').value;
+      const adj2 = document.getElementById('gen-adj2').value;
+
+      document.getElementById('guide-badge-place').innerText = place;
+      document.getElementById('guide-q1').innerText = `"Is there a ${place} in your town?"`;
+      document.getElementById('guide-a1').innerText = `"Yes, there is!"`;
+
+      document.getElementById('guide-q2').innerText = `"Where is the ${place}?"`;
+      document.getElementById('guide-a2').innerText = `"It is ${prep} ${neighbor}."`;
+
+      document.getElementById('guide-q3').innerText = `"What is it like?"`;
+      document.getElementById('guide-a3').innerText = `"It is ${adj1} and ${adj2}!"`;
+    }
+
+    function readGeneratedGuide() {
+      const place = document.getElementById('gen-place').value;
+      const prep = document.getElementById('gen-prep').value;
+      const neighbor = document.getElementById('gen-neighbor').value;
+      const adj1 = document.getElementById('gen-adj1').value;
+      const adj2 = document.getElementById('gen-adj2').value;
+
+      const fullText = `Is there a ${place} in your town? Yes, there is! Where is the ${place}? It is ${prep} ${neighbor}. What is it like? It is ${adj1} and ${adj2}!`;
+      speak(fullText);
+    }
+
+    const oppositeAdjectivesData = [
+      { pair1: "Big", pair2: "Small", ex1: "The park is big.", ex2: "The café is small.", icon: "fa-arrows-left-right-to-line" },
+      { pair1: "Quiet", pair2: "Noisy", ex1: "The library is quiet.", ex2: "The station is noisy.", icon: "fa-volume-xmark" },
+      { pair1: "Clean", pair2: "Dirty", ex1: "The hotel is clean.", ex2: "The street is dirty.", icon: "fa-sparkles" },
+      { pair1: "Modern", pair2: "Old", ex1: "The cinema is modern.", ex2: "The museum is old.", icon: "fa-building" },
+      { pair1: "Busy", pair2: "Peaceful", ex1: "The market is busy.", ex2: "The garden is peaceful.", icon: "fa-users" },
+      { pair1: "Beautiful", pair2: "Ugly", ex1: "The fountain is beautiful.", ex2: "The wall is ugly.", icon: "fa-heart" },
+      { pair1: "Cheap", pair2: "Expensive", ex1: "The bus is cheap.", ex2: "The hotel is expensive.", icon: "fa-tag" },
+      { pair1: "Near", pair2: "Far", ex1: "The shop is near.", ex2: "The airport is far.", icon: "fa-route" }
+    ];
+
+    function renderVocabCards() {
+      const container = document.getElementById('vocab-cards-container');
+      container.innerHTML = '';
+
+      oppositeAdjectivesData.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "flip-card";
+        card.innerHTML = `
+          <div class="flip-card-inner">
+            <div class="flip-card-front bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md">
+              <i class="fa-solid ${item.icon} text-3xl mb-2 text-amber-300"></i>
+              <h4 class="text-xl font-extrabold">${item.pair1} ↔ ${item.pair2}</h4>
+              <span class="text-[10px] font-bold mt-2 bg-white/20 px-2.5 py-1 rounded-full uppercase">Hover to flip</span>
+            </div>
+            <div class="flip-card-back bg-slate-900 text-white shadow-md">
+              <p class="text-xs font-bold text-sky-400 uppercase mb-1">Example Sentences:</p>
+              <p class="text-xs font-semibold text-slate-200">"${item.ex1}"</p>
+              <p class="text-xs font-semibold text-slate-200 mt-1">"${item.ex2}"</p>
+              <button onclick="event.stopPropagation(); speak('${item.ex1} ${item.ex2}');" class="mt-3 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1 rounded-lg">
+                🔊 Pronounce
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    const builderPuzzles = [
+      {
+        prompt: "Where is the library? (It is next to the park.)",
+        tokens: ["It", "is", "next", "to", "the", "park."],
+        correct: "It is next to the park."
+      },
+      {
+        prompt: "Is there a café in your town? (Yes, there is a small café.)",
+        tokens: ["Yes,", "there", "is", "a", "small", "café."],
+        correct: "Yes, there is a small café."
+      },
+      {
+        prompt: "What is the hospital like? (It is clean and modern.)",
+        tokens: ["It", "is", "clean", "and", "modern."],
+        correct: "It is clean and modern."
+      },
+      {
+        prompt: "Where is the museum? (It is opposite the station.)",
+        tokens: ["It", "is", "opposite", "the", "station."],
+        correct: "It is opposite the station."
+      }
+    ];
+
+    let currentPuzzleIndex = 0;
+    let currentBuiltTokens = [];
+
+    function renderBuilderPuzzle() {
+      const puzzle = builderPuzzles[currentPuzzleIndex];
+      document.getElementById('builder-progress').innerText = `${currentPuzzleIndex + 1} / ${builderPuzzles.length}`;
+      document.getElementById('builder-prompt-text').innerText = `Prompt: "${puzzle.prompt}"`;
+
+      // Clear built zone
+      currentBuiltTokens = [];
+      renderBuiltTokens();
+
+      // Render tokens (shuffled)
+      const shuffled = [...puzzle.tokens].sort(() => Math.random() - 0.5);
+      const bank = document.getElementById('tokens-bank');
+      bank.innerHTML = '';
+
+      shuffled.forEach(token => {
+        const btn = document.createElement('button');
+        btn.className = "token-btn bg-white hover:bg-sky-50 text-slate-800 font-bold border border-slate-300 rounded-xl px-4 py-2 text-sm shadow-2xs";
+        btn.innerText = token;
+        btn.onclick = () => addTokenToSentence(token, btn);
+        bank.appendChild(btn);
+      });
+
+      document.getElementById('builder-feedback').className = "hidden p-4 rounded-xl text-sm font-bold text-center";
+      document.getElementById('next-puzzle-btn').classList.add('hidden');
+    }
+
+    function addTokenToSentence(token, btnElement) {
+      currentBuiltTokens.push(token);
+      btnElement.classList.add('opacity-30', 'pointer-events-none');
+      renderBuiltTokens();
+    }
+
+    function renderBuiltTokens() {
+      const zone = document.getElementById('built-sentence-zone');
+      zone.innerHTML = '';
+
+      if (currentBuiltTokens.length === 0) {
+        zone.innerHTML = `<span class="text-slate-400 text-sm italic font-medium">Click word tokens below to construct your sentence...</span>`;
+        return;
+      }
+
+      currentBuiltTokens.forEach((token, idx) => {
+        const chip = document.createElement('span');
+        chip.className = "bg-sky-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-sm shadow-2xs flex items-center gap-1";
+        chip.innerHTML = `${token} <i class="fa-solid fa-xmark text-xs opacity-70 hover:opacity-100 cursor-pointer" onclick="removeBuiltToken(${idx})"></i>`;
+        zone.appendChild(chip);
+      });
+    }
+
+    function removeBuiltToken(index) {
+      currentBuiltTokens.splice(index, 1);
+      // Re-enable in token bank by re-rendering whole puzzle state tokens
+      renderBuiltTokens();
+      // Reset token bank buttons opacity
+      const tokensInBank = document.querySelectorAll('#tokens-bank button');
+      tokensInBank.forEach(btn => {
+        btn.classList.remove('opacity-30', 'pointer-events-none');
+      });
+    }
+
+    function clearBuiltTokens() {
+      renderBuilderPuzzle();
+    }
+
+    function checkBuiltSentence() {
+      const puzzle = builderPuzzles[currentPuzzleIndex];
+      const builtSentence = currentBuiltTokens.join(' ');
+      const fb = document.getElementById('builder-feedback');
+      fb.classList.remove('hidden');
+
+      if (builtSentence === puzzle.correct) {
+        fb.className = "p-4 rounded-xl text-sm font-extrabold text-center bg-emerald-100 text-emerald-800 border border-emerald-300";
+        fb.innerHTML = `🎉 Correct! "${builtSentence}"`;
+        speak(`Excellent! ${builtSentence}`);
+
+        if (currentPuzzleIndex < builderPuzzles.length - 1) {
+          document.getElementById('next-puzzle-btn').classList.remove('hidden');
+        }
+      } else {
+        fb.className = "p-4 rounded-xl text-sm font-extrabold text-center bg-rose-100 text-rose-800 border border-rose-300";
+        fb.innerHTML = `❌ Try again! Match the word order carefully.`;
+        speak("Try again!");
+      }
+    }
+
+    function nextBuilderPuzzle() {
+      if (currentPuzzleIndex < builderPuzzles.length - 1) {
+        currentPuzzleIndex++;
+        renderBuilderPuzzle();
+      }
+    }
+
+    function speakCurrentSentenceTarget() {
+      speak(builderPuzzles[currentPuzzleIndex].prompt);
+    }
+
+    const quizQuestions = [
+      {
+        q: "1. Complete the question: '__________ a park near here?'",
+        options: ["Is there", "Where is", "What is"],
+        correct: 0,
+        exp: "'Is there a...' asks about the existence of a place."
+      },
+      {
+        q: "2. 'Where is the hospital?' - 'It is __________ the supermarket.' (Across from)",
+        options: ["next to", "opposite", "between"],
+        correct: 1,
+        exp: "'Opposite' means directly across from another place."
+      },
+      {
+        q: "3. Choose the opposite adjective: 'The library is quiet, but the station is __________.'",
+        options: ["clean", "small", "noisy"],
+        correct: 2,
+        exp: "'Noisy' is the direct opposite of 'quiet'."
+      },
+      {
+        q: "4. Complete: 'What is the café like?' - 'It __________ small and modern.'",
+        options: ["is", "are", "have"],
+        correct: 0,
+        exp: "Use 'It is + adjective' to describe a place."
+      },
+      {
+        q: "5. 'The hotel is __________ the cinema and the library.'",
+        options: ["between", "next", "opposite to"],
+        correct: 0,
+        exp: "'Between' is used for a place located in the middle of two other places."
+      }
+    ];
+
+    let quizAnswers = {};
+
+    function renderQuiz() {
+      const container = document.getElementById('quiz-questions-container');
+      container.innerHTML = '';
+
+      quizQuestions.forEach((item, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3";
+
+        let optionsHTML = item.options.map((opt, optIdx) => `
+          <button onclick="answerQuizQuestion(${qIdx}, ${optIdx}, this)" class="quiz-opt-btn w-full text-left font-bold text-slate-700 bg-white border border-slate-300 hover:border-sky-500 hover:bg-sky-50 p-3 rounded-xl transition text-sm">
+            ${opt}
+          </button>
+        `).join('');
+
+        card.innerHTML = `
+          <p class="font-extrabold text-slate-800 text-base">${item.q}</p>
+          <div class="space-y-2" id="quiz-options-${qIdx}">
+            ${optionsHTML}
+          </div>
+          <div id="quiz-exp-${qIdx}" class="hidden text-xs font-bold p-3 rounded-xl"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function answerQuizQuestion(qIdx, optIdx, btnElement) {
+      if (quizAnswers[qIdx] !== undefined) return; // Prevent double answering
+
+      quizAnswers[qIdx] = optIdx;
+      const question = quizQuestions[qIdx];
+      const optionsBox = document.getElementById(`quiz-options-${qIdx}`);
+      const expBox = document.getElementById(`quiz-exp-${qIdx}`);
+
+      const buttons = optionsBox.querySelectorAll('button');
+      buttons.forEach((b, idx) => {
+        b.disabled = true;
+        if (idx === question.correct) {
+          b.className = "w-full text-left font-extrabold text-white bg-emerald-600 border border-emerald-600 p-3 rounded-xl text-sm";
+        } else if (idx === optIdx) {
+          b.className = "w-full text-left font-extrabold text-white bg-rose-600 border border-rose-600 p-3 rounded-xl text-sm";
+        }
+      });
+
+      expBox.classList.remove('hidden');
+      if (optIdx === question.correct) {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200";
+        expBox.innerHTML = `✔️ Correct! ${question.exp}`;
+        speak("Correct!");
+      } else {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-rose-100 text-rose-800 border border-rose-200";
+        expBox.innerHTML = `❌ Incorrect. ${question.exp}`;
+        speak("Incorrect.");
+      }
+
+      updateQuizScore();
+    }
+
+    function updateQuizScore() {
+      let score = 0;
+      Object.keys(quizAnswers).forEach(qIdx => {
+        if (quizAnswers[qIdx] === quizQuestions[qIdx].correct) {
+          score++;
+        }
+      });
+
+      document.getElementById('quiz-score').innerText = `${score} / ${quizQuestions.length}`;
+
+      if (Object.keys(quizAnswers).length === quizQuestions.length) {
+        document.getElementById('quiz-final-card').classList.remove('hidden');
+        document.getElementById('quiz-final-text').innerText = `You scored ${score} out of ${quizQuestions.length}!`;
+      }
+    }
+
+    function resetQuiz() {
+      quizAnswers = {};
+      document.getElementById('quiz-score').innerText = `0 / ${quizQuestions.length}`;
+      document.getElementById('quiz-final-card').classList.add('hidden');
+      renderQuiz();
+    }
+
+    window.onload = function() {
+      renderMapGrid();
+      generateGuideCard();
+      renderVocabCards();
+      renderBuilderPuzzle();
+      renderQuiz();
+    };
+  </script>
+</body>
+</html>
