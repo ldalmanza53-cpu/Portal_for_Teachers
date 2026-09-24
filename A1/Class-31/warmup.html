@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event & Movie Reviewer: Expressing Opinions</title>
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --primary-dark: #6d28d9;
+      --secondary: #0284c7;
+      --accent: #f59e0b;
+      --correct: #10b981;
+      --incorrect: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #6d28d9, #7c3aed, #0284c7);
+      color: white;
+      text-align: center;
+      padding: 26px 16px;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+    }
+
+    header h1 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    header p {
+      color: #ddd6fe;
+      font-size: 1.05rem;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      background: white;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      padding: 10px 18px;
+      border: 2px solid transparent;
+      background: var(--bg);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn:hover {
+      background: #e2e8f0;
+      color: var(--text);
+    }
+
+    .nav-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    main {
+      max-width: 960px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .app-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* REVIEW CREATOR STYLES */
+    .reviewer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .reviewer-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: white;
+    }
+
+    .star-rating-select {
+      display: flex;
+      gap: 8px;
+      font-size: 1.8rem;
+      cursor: pointer;
+    }
+
+    .star {
+      color: #cbd5e1;
+      transition: color 0.15s;
+    }
+
+    .star.active {
+      color: #f59e0b;
+    }
+
+    /* LIVE TICKET / REVIEW CARD */
+    .review-card-preview {
+      background: #faf5ff;
+      border: 2px dashed #a855f7;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.08);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 340px;
+    }
+
+    .ticket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e9d5ff;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+
+    .ticket-badge {
+      background: #7c3aed;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    .review-stars-display {
+      font-size: 1.4rem;
+      color: #f59e0b;
+    }
+
+    .review-body {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: #3b0764;
+      flex-grow: 1;
+      margin: 12px 0;
+    }
+
+    .highlight-past {
+      color: #0284c7;
+      font-weight: bold;
+    }
+
+    .highlight-adj {
+      color: #7c3aed;
+      font-weight: bold;
+      background: #f3e8ff;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .review-footer {
+      border-top: 1px dashed #d8b4fe;
+      padding-top: 10px;
+      font-weight: 700;
+      color: #6b21a8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* WORD & ADJECTIVE BANK */
+    .adj-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .adj-grid { grid-template-columns: 1fr; }
+    }
+
+    .adj-category {
+      background: #f8fafc;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .adj-category.positive { border-color: #86efac; background: #f0fdf4; }
+    .adj-category.negative { border-color: #fca5a5; background: #fff1f2; }
+
+    .category-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .adj-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(0,0,0,0.05);
+      font-weight: 700;
+    }
+
+    /* CONSTRUCTOR STYLES */
+    .sentence-box {
+      background: #f1f5f9;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .word-tokens {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    .token-btn {
+      padding: 8px 14px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: all 0.15s;
+    }
+
+    .token-btn:hover {
+      border-color: var(--primary);
+      background: #f3e8ff;
+    }
+
+    .built-zone {
+      min-height: 48px;
+      background: white;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    /* CHAT DIALOGUE */
+    .chat-bubble {
+      max-width: 80%;
+      padding: 14px 18px;
+      border-radius: 18px;
+      margin-bottom: 14px;
+      position: relative;
+      font-size: 1rem;
+    }
+
+    .chat-left {
+      background: #f3e8ff;
+      color: #5b21b6;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-right {
+      background: #e0f2fe;
+      color: #0369a1;
+      align-self: flex-end;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-sender {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* QUIZ STYLES */
+    .quiz-q-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .opt-btn {
+      padding: 10px 18px;
+      border: 2px solid var(--border);
+      background: white;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 6px 6px 6px 0;
+    }
+
+    .opt-btn:hover { border-color: var(--primary); background: #f3e8ff; }
+    .opt-btn.correct { background: var(--correct); color: white; border-color: var(--correct); }
+    .opt-btn.incorrect { background: var(--incorrect); color: white; border-color: var(--incorrect); }
+
+    /* BUTTONS */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-secondary:hover { background: #cbd5e1; }
+
+    .audio-btn {
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .audio-btn:hover { background: #16a34a; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎬 Event & Movie Reviewer</h1>
+    <p>Describe past events, rate your experiences, and express your opinions in English!</p>
+  </header>
+
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('creator')">⭐ 1. Event Reviewer</button>
+    <button class="nav-btn" onclick="switchTab('bank')">💬 2. Opinion Bank</button>
+    <button class="nav-btn" onclick="switchTab('builder')">✏️ 3. Sentence Builder</button>
+    <button class="nav-btn" onclick="switchTab('dialogue')">🗣️ 4. Review Dialogue</button>
+    <button class="nav-btn" onclick="switchTab('quiz')">🧩 5. Opinion Quiz</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: REVIEW CREATOR -->
+    <section id="creator" class="tab-content active">
+      <div class="app-card">
+        <div class="section-title">⭐ Interactive Event & Movie Review Generator</div>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">Pick a recent past event, rate it with stars, choose opinion words, and build your review!</p>
+
+        <div class="reviewer-grid">
+          <!-- FORM INPUTS -->
+          <div>
+            <div class="form-group">
+              <label for="rev-reviewer">Your Name (Reviewer):</label>
+              <input type="text" id="rev-reviewer" class="form-input" value="Maria" oninput="updateReview()">
+            </div>
+
+            <div class="form-group">
+              <label for="rev-type">Event Type:</label>
+              <select id="rev-type" class="form-select" onchange="updateReview()">
+                <option value="Movie 🎬">Movie 🎬</option>
+                <option value="Restaurant 🍕">Restaurant 🍕</option>
+                <option value="Concert 🎵">Concert 🎵</option>
+                <option value="Weekend Trip 🚗">Weekend Trip 🚗</option>
+                <option value="Park & Picnic 🌳">Park & Picnic 🌳</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="rev-title">Event Title / Name:</label>
+              <input type="text" id="rev-title" class="form-input" value="Spider-Man" oninput="updateReview()">
+            </div>
+
+            <div class="form-group">
+              <label for="rev-time">When did you go/watch?:</label>
+              <select id="rev-time" class="form-select" onchange="updateReview()">
+                <option value="Last weekend">Last weekend</option>
+                <option value="Yesterday">Yesterday</option>
+                <option value="Last night">Last night</option>
+                <option value="Two days ago">Two days ago</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Star Rating (Click to rate):</label>
+              <div class="star-rating-select" id="star-selector">
+                <span class="star active" onclick="setRating(1)">★</span>
+                <span class="star active" onclick="setRating(2)">★</span>
+                <span class="star active" onclick="setRating(3)">★</span>
+                <span class="star active" onclick="setRating(4)">★</span>
+                <span class="star active" onclick="setRating(5)">★</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="rev-adj">Main Opinion Adjective:</label>
+              <select id="rev-adj" class="form-select" onchange="updateReview()">
+                <option value="amazing ✨">amazing ✨</option>
+                <option value="delicious 😋">delicious 😋</option>
+                <option value="fun 🎉">fun 🎉</option>
+                <option value="relaxing 🧘">relaxing 🧘</option>
+                <option value="boring 😴">boring 😴</option>
+                <option value="terrible ❌">terrible ❌</option>
+                <option value="expensive 💰">expensive 💰</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="rev-reason">Reason / Reaction:</label>
+              <select id="rev-reason" class="form-select" onchange="updateReview()">
+                <option value="I liked it a lot because the action was exciting.">I liked it a lot because the action was exciting.</option>
+                <option value="the food was hot and tasty.">the food was hot and tasty.</option>
+                <option value="the music was super cool.">the music was super cool.</option>
+                <option value="I didn't like it because it was too long.">I didn't like it because it was too long.</option>
+                <option value="it was very peaceful and sunny.">it was very peaceful and sunny.</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- TICKET / REVIEW PREVIEW -->
+          <div>
+            <div class="review-card-preview" id="review-preview">
+              <div class="ticket-header">
+                <span class="ticket-badge" id="preview-badge">Movie 🎬</span>
+                <span class="review-stars-display" id="preview-stars">★★★★★</span>
+              </div>
+
+              <div style="font-weight: 800; font-size: 1.25rem; color: #4c1d95;" id="preview-title">
+                "Spider-Man"
+              </div>
+
+              <div class="review-body" id="preview-body">
+                <!-- Built by JS -->
+              </div>
+
+              <div class="review-footer">
+                <span>Reviewed by: <strong id="preview-reviewer" style="color:#7c3aed;">Maria</strong></span>
+                <span>VERIFIED REVIEW ✔️</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; text-align: center; display: flex; gap: 10px; justify-content: center;">
+              <button class="btn btn-primary" onclick="readReview()">🔊 Listen to Review</button>
+              <button class="btn btn-secondary" onclick="alert('Review saved! Share it with your classmates during speaking practice!')">📸 Share Review</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: OPINION BANK -->
+    <section id="bank" class="tab-content">
+      <div class="app-card">
+        <div class="section-title">💬 Opinion Adjectives & Reactions</div>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">Use these words to tell your friends if an event was good 👍 or bad 👎!</p>
+
+        <div class="adj-grid">
+          <!-- POSITIVE ADJECTIVES -->
+          <div class="adj-category positive">
+            <div class="category-title" style="color: #15803d;">👍 POSITIVE OPINIONS</div>
+            
+            <div class="adj-item">
+              <span><strong>amazing</strong> (It was amazing!)</span>
+              <button class="audio-btn" onclick="speak('It was amazing!')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>delicious</strong> (The food was delicious!)</span>
+              <button class="audio-btn" onclick="speak('The food was delicious!')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>fun</strong> (The concert was super fun!)</span>
+              <button class="audio-btn" onclick="speak('The concert was super fun!')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>relaxing</strong> (My weekend was relaxing.)</span>
+              <button class="audio-btn" onclick="speak('My weekend was relaxing.')">🔊</button>
+            </div>
+          </div>
+
+          <!-- NEGATIVE ADJECTIVES -->
+          <div class="adj-category negative">
+            <div class="category-title" style="color: #b91c1c;">👎 NEGATIVE OPINIONS</div>
+
+            <div class="adj-item">
+              <span><strong>boring</strong> (The movie was boring.)</span>
+              <button class="audio-btn" onclick="speak('The movie was boring.')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>terrible</strong> (The pizza was terrible.)</span>
+              <button class="audio-btn" onclick="speak('The pizza was terrible.')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>expensive</strong> (The ticket was expensive.)</span>
+              <button class="audio-btn" onclick="speak('The ticket was expensive.')">🔊</button>
+            </div>
+            <div class="adj-item">
+              <span><strong>scary</strong> (The film was scary.)</span>
+              <button class="audio-btn" onclick="speak('The film was scary.')">🔊</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SENTENCE BUILDER -->
+    <section id="builder" class="tab-content">
+      <div class="app-card">
+        <div class="section-title">✏️ Opinion Sentence Constructor</div>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">Reorder the word tokens to construct proper past event and opinion sentences!</p>
+
+        <!-- CHALLENGE 1 -->
+        <div class="sentence-box">
+          <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 6px;">CHALLENGE 1: (Past Movie & Positive Opinion)</div>
+          <div class="built-zone" id="zone-1"></div>
+          <div class="word-tokens" id="tokens-1">
+            <button class="token-btn" onclick="addToken(1, 'I')">I</button>
+            <button class="token-btn" onclick="addToken(1, 'watched')">watched</button>
+            <button class="token-btn" onclick="addToken(1, 'a')">a</button>
+            <button class="token-btn" onclick="addToken(1, 'movie')">movie</button>
+            <button class="token-btn" onclick="addToken(1, 'and')">and</button>
+            <button class="token-btn" onclick="addToken(1, 'it')">it</button>
+            <button class="token-btn" onclick="addToken(1, 'was')">was</button>
+            <button class="token-btn" onclick="addToken(1, 'amazing!')">amazing!</button>
+          </div>
+          <div>
+            <button class="btn btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="checkSentence(1, 'I watched a movie and it was amazing!')">Check Sentence ✔️</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" onclick="clearZone(1)">Clear 🔄</button>
+          </div>
+        </div>
+
+        <!-- CHALLENGE 2 -->
+        <div class="sentence-box">
+          <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 6px;">CHALLENGE 2: (Restaurant & Negative Reason)</div>
+          <div class="built-zone" id="zone-2"></div>
+          <div class="word-tokens" id="tokens-2">
+            <button class="token-btn" onclick="addToken(2, 'I')">I</button>
+            <button class="token-btn" onclick="addToken(2, 'didn\'t')">didn't</button>
+            <button class="token-btn" onclick="addToken(2, 'like')">like</button>
+            <button class="token-btn" onclick="addToken(2, 'the')">the</button>
+            <button class="token-btn" onclick="addToken(2, 'food')">food</button>
+            <button class="token-btn" onclick="addToken(2, 'because')">because</button>
+            <button class="token-btn" onclick="addToken(2, 'it')">it</button>
+            <button class="token-btn" onclick="addToken(2, 'was')">was</button>
+            <button class="token-btn" onclick="addToken(2, 'terrible.')">terrible.</button>
+          </div>
+          <div>
+            <button class="btn btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="checkSentence(2, 'I didn\'t like the food because it was terrible.')">Check Sentence ✔️</button>
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" onclick="clearZone(2)">Clear 🔄</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: REVIEW DIALOGUE -->
+    <section id="dialogue" class="tab-content">
+      <div class="app-card">
+        <div class="section-title">🗣️ Conversational Review Exchange</div>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">Listen to and practice asking for opinions about past weekend activities!</p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- BUBBLE 1 -->
+          <div class="chat-bubble chat-left">
+            <div class="chat-sender">Student A (Question 1)</div>
+            "What did you do last weekend?"
+            <button class="audio-btn" style="margin-left:8px;" onclick="speak('What did you do last weekend?')">🔊</button>
+          </div>
+
+          <!-- BUBBLE 2 -->
+          <div class="chat-bubble chat-right">
+            <div class="chat-sender">Student B (Answer 1)</div>
+            "I watched the new action movie on Saturday!"
+            <button class="audio-btn" style="margin-left:8px;" onclick="speak('I watched the new action movie on Saturday!')">🔊</button>
+          </div>
+
+          <!-- BUBBLE 3 -->
+          <div class="chat-bubble chat-left">
+            <div class="chat-sender">Student A (Question 2)</div>
+            "How was it? Did you like it?"
+            <button class="audio-btn" style="margin-left:8px;" onclick="speak('How was it? Did you like it?')">🔊</button>
+          </div>
+
+          <!-- BUBBLE 4 -->
+          <div class="chat-bubble chat-right">
+            <div class="chat-sender">Student B (Answer 2)</div>
+            "It was amazing! I liked it a lot because the actors were great."
+            <button class="audio-btn" style="margin-left:8px;" onclick="speak('It was amazing! I liked it a lot because the actors were great.')">🔊</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: OPINION QUIZ -->
+    <section id="quiz" class="tab-content">
+      <div class="app-card">
+        <div class="section-title">🧩 Past Opinions Quiz</div>
+        <p style="color: var(--text-muted); margin-bottom: 16px;">Test your knowledge of past verbs and opinion adjectives!</p>
+
+        <div class="quiz-q-box">
+          <div style="font-weight: 700; margin-bottom: 8px;">1. "How __________ the movie last night?"</div>
+          <div>
+            <button class="opt-btn" onclick="checkQuiz(this, true)">was</button>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">is</button>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">were</button>
+          </div>
+        </div>
+
+        <div class="quiz-q-box">
+          <div style="font-weight: 700; margin-bottom: 8px;">2. "The pizza was delicious! I __________ it very much."</div>
+          <div>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">like</button>
+            <button class="opt-btn" onclick="checkQuiz(this, true)">liked</button>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">liking</button>
+          </div>
+        </div>
+
+        <div class="quiz-q-box">
+          <div style="font-weight: 700; margin-bottom: 8px;">3. "I didn't like the concert because it was very __________."</div>
+          <div>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">amazing</button>
+            <button class="opt-btn" onclick="checkQuiz(this, true)">boring</button>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">delicious</button>
+          </div>
+        </div>
+
+        <div class="quiz-q-box">
+          <div style="font-weight: 700; margin-bottom: 8px;">4. Which question asks for an opinion?</div>
+          <div>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">Where did you go?</button>
+            <button class="opt-btn" onclick="checkQuiz(this, true)">How was it?</button>
+            <button class="opt-btn" onclick="checkQuiz(this, false)">When did you go?</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let currentRating = 5;
+
+    // TAB SWITCHER
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // SPEECH SYNTHESIS
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.9;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    // RATING SYSTEM
+    function setRating(stars) {
+      currentRating = stars;
+      const starElems = document.querySelectorAll('#star-selector .star');
+      starElems.forEach((s, idx) => {
+        if (idx < stars) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+      updateReview();
+    }
+
+    // UPDATE LIVE REVIEW PREVIEW
+    function updateReview() {
+      const reviewer = document.getElementById('rev-reviewer').value.trim() || 'Maria';
+      const type = document.getElementById('rev-type').value;
+      const title = document.getElementById('rev-title').value.trim() || 'Event';
+      const time = document.getElementById('rev-time').value;
+      const adj = document.getElementById('rev-adj').value;
+      const reason = document.getElementById('rev-reason').value;
+
+      document.getElementById('preview-badge').innerText = type;
+      document.getElementById('preview-title').innerText = `"${title}"`;
+      document.getElementById('preview-reviewer').innerText = reviewer;
+
+      // Render Star display
+      let starsStr = '★'.repeat(currentRating) + '☆'.repeat(5 - currentRating);
+      document.getElementById('preview-stars').innerText = starsStr;
+
+      // Action verb mapping based on type
+      let verbStr = "went to";
+      if (type.includes("Movie")) verbStr = "watched";
+      if (type.includes("Restaurant")) verbStr = "ate at";
+      if (type.includes("Concert")) verbStr = "went to";
+
+      const bodyText = `${time}, I <span class="highlight-past">${verbStr}</span> ${title}. It <span class="highlight-past">was</span> <span class="highlight-adj">${adj}</span>! ${reason}`;
+      document.getElementById('preview-body').innerHTML = bodyText;
+    }
+
+    function readReview() {
+      const text = document.getElementById('preview-body').innerText;
+      speak(text);
+    }
+
+    // TAB 3: SENTENCE CONSTRUCTOR
+    const builtSentences = { 1: [], 2: [] };
+
+    function addToken(id, word) {
+      builtSentences[id].push(word);
+      renderZone(id);
+    }
+
+    function clearZone(id) {
+      builtSentences[id] = [];
+      renderZone(id);
+    }
+
+    function renderZone(id) {
+      document.getElementById(`zone-${id}`).innerText = builtSentences[id].join(' ');
+    }
+
+    function checkSentence(id, correctStr) {
+      const currentStr = builtSentences[id].join(' ');
+      if (currentStr === correctStr) {
+        alert("🎉 Perfect! Correct opinion sentence structure!");
+        speak("Correct! Well done!");
+      } else {
+        alert(`❌ Not quite! The expected sentence is: "${correctStr}"`);
+        speak("Try again!");
+      }
+    }
+
+    // TAB 5: QUIZ LOGIC
+    function checkQuiz(btn, isCorrect) {
+      const parent = btn.parentElement;
+      parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('correct', 'incorrect'));
+
+      if (isCorrect) {
+        btn.classList.add('correct');
+        speak("Correct!");
+      } else {
+        btn.classList.add('incorrect');
+        speak("Try again!");
+      }
+    }
+
+    // INIT
+    updateReview();
+  </script>
+</body>
+</html>
