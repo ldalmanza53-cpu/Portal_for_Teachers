@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Activity Tracker & Timeline Master (A1 ESL)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .badge-subject { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-verb { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-object { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+        .badge-time { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        
+        .dark .badge-subject { background-color: #1e3a8a; color: #93c5fd; border-color: #1d4ed8; }
+        .dark .badge-verb { background-color: #14532d; color: #86efac; border-color: #15803d; }
+        .dark .badge-object { background-color: #581c87; color: #d8b4fe; border-color: #7e22ce; }
+        .dark .badge-time { background-color: #78350f; color: #fde047; border-color: #b45309; }
+
+        .timeline-dropzone.drag-over {
+            border-color: #0284c7 !important;
+            background-color: #f0f9ff !important;
+        }
+        .dark .timeline-dropzone.drag-over {
+            background-color: #0c4a6e !important;
+        }
+
+        /* Certificate Print Styling */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-certificate, #printable-certificate * { visibility: visible; }
+            #printable-certificate { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 pb-12">
+
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-500 text-white p-2.5 rounded-xl shadow-md">
+                    <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">Past Activity Tracker</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">A1 English: Talking About Finished Activities</p>
+                </div>
+            </div>
+
+            <!-- Stats & Settings -->
+            <div class="flex items-center space-x-3 sm:space-x-5">
+                <!-- XP Counter -->
+                <div class="flex items-center bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-full px-3 py-1.5 shadow-sm">
+                    <i class="fa-solid fa-bolt text-amber-500 mr-2 text-sm animate-pulse"></i>
+                    <span class="text-xs text-amber-700 dark:text-amber-300 font-semibold mr-1">XP:</span>
+                    <span id="xp-counter" class="text-sm font-extrabold text-amber-600 dark:text-amber-400">0</span>
+                </div>
+
+                <!-- Level Badge -->
+                <div class="hidden sm:flex items-center bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800 rounded-full px-3 py-1.5">
+                    <i class="fa-solid fa-graduation-cap text-indigo-500 mr-2 text-sm"></i>
+                    <span id="level-badge" class="text-xs font-bold text-indigo-600 dark:text-indigo-300">Level 1: Novice</span>
+                </div>
+
+                <!-- Audio Sound FX Toggle -->
+                <button id="sound-toggle-btn" onclick="toggleSound()" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Sound Effects">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+
+                <!-- Light/Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation Bar -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <nav class="flex space-x-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto pb-2 scrollbar-none" aria-label="Tabs">
+            <button onclick="switchTab('timeline')" id="tab-timeline" class="tab-btn active inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap bg-brand-500 text-white shadow-sm transition">
+                <i class="fa-solid fa-timeline mr-2"></i> Module 1: Activity Timeline
+            </button>
+            <button onclick="switchTab('interview')" id="tab-interview" class="tab-btn inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+                <i class="fa-solid fa-comments mr-2"></i> Module 2: Find Someone Who...
+            </button>
+            <button onclick="switchTab('verblab')" id="tab-verblab" class="tab-btn inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+                <i class="fa-solid fa-flask mr-2"></i> Module 3: Verb Lab
+            </button>
+            <button onclick="switchTab('story')" id="tab-story" class="tab-btn inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+                <i class="fa-solid fa-pen-nib mr-2"></i> Module 4: Story Writer
+            </button>
+        </nav>
+    </div>
+
+    <!-- Custom Toast / Feedback Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+
+        <!-- MODULE 1: INTERACTIVE YESTERDAY TIMELINE -->
+        <section id="module-timeline" class="tab-content block space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center">
+                            <span class="bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 p-2 rounded-lg mr-3 text-sm">Module 1</span>
+                            Yesterday Timeline & Sentence Builder
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Select an activity card or tap a time slot to build past simple sentences with grammar color-coding!</p>
+                    </div>
+                    <button onclick="clearTimeline()" class="self-start md:self-auto text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 px-3 py-2 rounded-lg transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset Timeline
+                    </button>
+                </div>
+
+                <!-- Palette of Activities -->
+                <div class="mb-8 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center">
+                        <i class="fa-solid fa-hand-pointer mr-2"></i> Available Activities (Tap to select or Drag into Timeline)
+                    </h3>
+                    <div id="activity-palette" class="flex flex-wrap gap-2.5">
+                        <!-- Activity Pills dynamically rendered here -->
+                    </div>
+                </div>
+
+                <!-- Timeline Slots Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Slot 1 -->
+                    <div class="timeline-slot bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between" data-time="Yesterday Morning">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center">
+                                <i class="fa-solid fa-sun mr-1.5"></i> Yesterday Morning
+                            </span>
+                            <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">Time Block 1</span>
+                        </div>
+                        <div class="timeline-dropzone min-h-[70px] rounded-lg p-2 transition flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs text-center border border-slate-200 dark:border-slate-800" data-slot="Yesterday Morning">
+                            Drag or assign activity here
+                        </div>
+                        <div class="sentence-output mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 min-h-[48px]">
+                            <p class="text-xs text-slate-400 italic">No sentence generated yet.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slot 2 -->
+                    <div class="timeline-slot bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between" data-time="Yesterday Afternoon">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center">
+                                <i class="fa-solid fa-cloud-sun mr-1.5"></i> Yesterday Afternoon
+                            </span>
+                            <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">Time Block 2</span>
+                        </div>
+                        <div class="timeline-dropzone min-h-[70px] rounded-lg p-2 transition flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs text-center border border-slate-200 dark:border-slate-800" data-slot="Yesterday Afternoon">
+                            Drag or assign activity here
+                        </div>
+                        <div class="sentence-output mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 min-h-[48px]">
+                            <p class="text-xs text-slate-400 italic">No sentence generated yet.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slot 3 -->
+                    <div class="timeline-slot bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between" data-time="Last Night">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center">
+                                <i class="fa-solid fa-moon mr-1.5"></i> Last Night
+                            </span>
+                            <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">Time Block 3</span>
+                        </div>
+                        <div class="timeline-dropzone min-h-[70px] rounded-lg p-2 transition flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs text-center border border-slate-200 dark:border-slate-800" data-slot="Last Night">
+                            Drag or assign activity here
+                        </div>
+                        <div class="sentence-output mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 min-h-[48px]">
+                            <p class="text-xs text-slate-400 italic">No sentence generated yet.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slot 4 -->
+                    <div class="timeline-slot bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between" data-time="Last Weekend">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center">
+                                <i class="fa-solid fa-calendar-week mr-1.5"></i> Last Weekend
+                            </span>
+                            <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">Time Block 4</span>
+                        </div>
+                        <div class="timeline-dropzone min-h-[70px] rounded-lg p-2 transition flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs text-center border border-slate-200 dark:border-slate-800" data-slot="Last Weekend">
+                            Drag or assign activity here
+                        </div>
+                        <div class="sentence-output mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 min-h-[48px]">
+                            <p class="text-xs text-slate-400 italic">No sentence generated yet.</p>
+                        </div>
+                    </div>
+
+                    <!-- Slot 5 -->
+                    <div class="timeline-slot bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between md:col-span-2 lg:col-span-2" data-time="Two Days Ago">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide flex items-center">
+                                <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Two Days Ago
+                            </span>
+                            <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium">Time Block 5</span>
+                        </div>
+                        <div class="timeline-dropzone min-h-[70px] rounded-lg p-2 transition flex items-center justify-center text-slate-400 dark:text-slate-500 text-xs text-center border border-slate-200 dark:border-slate-800" data-slot="Two Days Ago">
+                            Drag or assign activity here
+                        </div>
+                        <div class="sentence-output mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 min-h-[48px]">
+                            <p class="text-xs text-slate-400 italic">No sentence generated yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grammar Legend -->
+                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <span class="font-bold text-slate-500 dark:text-slate-400">Grammar Color Key:</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-md font-semibold badge-subject">Subject (I)</span>
+                        <span class="px-2.5 py-1 rounded-md font-semibold badge-verb">Past Verb (e.g. cleaned)</span>
+                        <span class="px-2.5 py-1 rounded-md font-semibold badge-object">Complement / Object</span>
+                        <span class="px-2.5 py-1 rounded-md font-semibold badge-time">Time Expression</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: VIRTUAL INTERVIEW SIMULATOR -->
+        <section id="module-interview" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center">
+                            <span class="bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 p-2 rounded-lg mr-3 text-sm">Module 2</span>
+                            "Find Someone Who..." Virtual Classroom
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Interrogate your virtual classmates to complete your activity checklist!</p>
+                    </div>
+                    <div class="flex items-center bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-xl">
+                        <i class="fa-solid fa-list-check text-emerald-600 dark:text-emerald-400 mr-2"></i>
+                        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300">Checklist: <span id="checklist-progress">0/4</span> Completed</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left: Question Builder Panel -->
+                    <div class="lg:col-span-2 bg-slate-50 dark:bg-slate-900/60 p-5 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
+                                <i class="fa-solid fa-circle-question text-brand-500 mr-2"></i> Formulate Your Question
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                <!-- Select Classmate -->
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">1. Classmate</label>
+                                    <select id="select-classmate" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="Alex">Alex 👦🏻</option>
+                                        <option value="Sofia">Sofia 👧🏽</option>
+                                        <option value="David">David 🧔🏼</option>
+                                        <option value="Emma">Emma 👩👩</option>
+                                    </select>
+                                </div>
+
+                                <!-- Select Action -->
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">2. Base Action</label>
+                                    <select id="select-action" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="cook dinner">cook dinner</option>
+                                        <option value="go to the park">go to the park</option>
+                                        <option value="watch a film">watch a film</option>
+                                        <option value="study English">study English</option>
+                                        <option value="clean your room">clean your room</option>
+                                        <option value="eat pizza">eat pizza</option>
+                                    </select>
+                                </div>
+
+                                <!-- Select Time Expression -->
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">3. Time Expression</label>
+                                    <select id="select-time" class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                                        <option value="last night">last night</option>
+                                        <option value="last weekend">last weekend</option>
+                                        <option value="yesterday">yesterday</option>
+                                        <option value="two days ago">two days ago</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Generated Question Preview -->
+                            <div class="bg-white dark:bg-slate-800 p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-between mb-4">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">Question Preview:</span>
+                                    <p id="question-preview-text" class="text-sm font-bold text-brand-600 dark:text-brand-400">Did you cook dinner last night?</p>
+                                </div>
+                                <button onclick="speakCurrentQuestion()" class="text-slate-400 hover:text-brand-500 p-2 rounded-md transition" title="Listen to question">
+                                    <i class="fa-solid fa-volume-high text-base"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="askClassmate()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center">
+                            <i class="fa-solid fa-paper-plane mr-2"></i> Ask Classmate!
+                        </button>
+                    </div>
+
+                    <!-- Right: Classmate Response Bubble -->
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-5 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
+                                <i class="fa-solid fa-user-group text-indigo-500 mr-2"></i> Classmate Response
+                            </h3>
+
+                            <div id="classmate-avatar-container" class="flex items-center space-x-3 mb-4">
+                                <div id="active-avatar-icon" class="text-4xl bg-white dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-700">👦🏻</div>
+                                <div>
+                                    <h4 id="active-classmate-name" class="font-bold text-slate-900 dark:text-white text-base">Alex</h4>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">Virtual Classmate</span>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Chat Speech Bubble -->
+                            <div class="relative bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm min-h-[100px] flex flex-col justify-between">
+                                <p id="classmate-response-text" class="text-sm text-slate-700 dark:text-slate-300 italic">
+                                    "Ask me a question to see my answer!"
+                                </p>
+                                <div class="mt-2 flex items-center justify-end">
+                                    <button id="listen-response-btn" onclick="speakResponseText()" class="hidden text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center">
+                                        <i class="fa-solid fa-volume-high mr-1"></i> Listen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Classmate Checklist -->
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Target Checklist Goals</h4>
+                            <ul id="checklist-items-container" class="space-y-1.5 text-xs">
+                                <!-- Rendered dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: PAST SIMPLE VERB LABORATORY -->
+        <section id="module-verblab" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center">
+                            <span class="bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 p-2 rounded-lg mr-3 text-sm">Module 3</span>
+                            Past Simple Verb Laboratory
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Master Regular vs Irregular verbs, fill-in-the-blank challenges, and error spotting!</p>
+                    </div>
+
+                    <!-- Sub-tabs for Verb Lab -->
+                    <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <button onclick="switchLabSubtab('sorter')" id="lab-subtab-sorter" class="lab-sub-btn active text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm transition">Regular vs Irregular</button>
+                        <button onclick="switchLabSubtab('fill')" id="lab-subtab-fill" class="lab-sub-btn text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 transition">Fill in Blank</button>
+                        <button onclick="switchLabSubtab('error')" id="lab-subtab-error" class="lab-sub-btn text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 transition">Error Spotting</button>
+                    </div>
+                </div>
+
+                <!-- Sub-tab 1: Regular vs Irregular Verb Sorter -->
+                <div id="verblab-sorter" class="lab-section block">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Click each verb to assign it to either the Regular (-ed ending) or Irregular category.</p>
+                    
+                    <div id="sorter-verb-pool" class="flex flex-wrap gap-2.5 mb-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700 min-h-[60px]">
+                        <!-- Dynamically populated verb tags -->
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Regular Bucket -->
+                        <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border-2 border-emerald-300 dark:border-emerald-800 rounded-xl p-4 min-h-[160px]">
+                            <h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-300 mb-2 flex items-center">
+                                <i class="fa-solid fa-square-check mr-2"></i> Regular Verbs (Ends in -ed)
+                            </h3>
+                            <div id="bucket-regular" class="flex flex-wrap gap-2 pt-2">
+                                <!-- Sorted cards -->
+                            </div>
+                        </div>
+
+                        <!-- Irregular Bucket -->
+                        <div class="bg-purple-50/50 dark:bg-purple-950/20 border-2 border-purple-300 dark:border-purple-800 rounded-xl p-4 min-h-[160px]">
+                            <h3 class="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2 flex items-center">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Irregular Verbs (Word changes!)
+                            </h3>
+                            <div id="bucket-irregular" class="flex flex-wrap gap-2 pt-2">
+                                <!-- Sorted cards -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-tab 2: Fill in the Blank Quiz -->
+                <div id="verblab-fill" class="lab-section hidden space-y-4">
+                    <div id="fill-quiz-container" class="space-y-3">
+                        <!-- Questions dynamically generated -->
+                    </div>
+                    <button onclick="checkFillQuiz()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow transition">
+                        Check Answers
+                    </button>
+                </div>
+
+                <!-- Sub-tab 3: Error Spotting Challenge -->
+                <div id="verblab-error" class="lab-section hidden space-y-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Remember: After <strong>"didn't"</strong>, we use the <strong>BASE verb</strong> (e.g., <em>I didn't go</em> NOT <em>I didn't went</em>)!</p>
+                    <div id="error-quiz-container" class="space-y-3">
+                        <!-- Questions dynamically generated -->
+                    </div>
+                    <button onclick="checkErrorQuiz()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-5 py-2.5 rounded-lg shadow transition">
+                        Check Corrections
+                    </button>
+                </div>
+
+                <!-- Collapsible Grammar Rules Drawer -->
+                <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <button onclick="toggleRulesDrawer()" class="flex items-center justify-between w-full text-left font-bold text-sm text-slate-800 dark:text-slate-200 hover:text-brand-500">
+                        <span class="flex items-center"><i class="fa-solid fa-book-open text-brand-500 mr-2"></i> Quick Grammar Guide: Past Simple Rules</span>
+                        <i id="rules-chevron" class="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div id="rules-drawer" class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1.5">1. Regular Verbs (+ed)</h4>
+                            <p class="text-slate-600 dark:text-slate-400">Add <strong>-ed</strong> to base verb:</p>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5 text-slate-500">
+                                <li>clean $\rightarrow$ clean<strong>ed</strong></li>
+                                <li>watch $\rightarrow$ watch<strong>ed</strong></li>
+                                <li>cook $\rightarrow$ cook<strong>ed</strong></li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1.5">2. Common Irregular Verbs</h4>
+                            <p class="text-slate-600 dark:text-slate-400">Verbs that change spelling:</p>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5 text-slate-500">
+                                <li>go $\rightarrow$ <strong>went</strong></li>
+                                <li>eat $\rightarrow$ <strong>ate</strong></li>
+                                <li>buy $\rightarrow$ <strong>bought</strong></li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1.5">3. Negative Form (didn't)</h4>
+                            <p class="text-slate-600 dark:text-slate-400">Subject + <strong>didn't</strong> + <strong>Base Verb</strong>:</p>
+                            <p class="mt-1 font-mono text-[11px] text-emerald-600 dark:text-emerald-400">✓ I didn't go to school.</p>
+                            <p class="font-mono text-[11px] text-rose-500 line-through">✗ I didn't went to school.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: MY PAST ACTIVITY STORY WRITER -->
+        <section id="module-story" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Form Builder -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center">
+                            <span class="bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-300 p-2 rounded-lg mr-3 text-sm">Module 4</span>
+                            My Past Activity Story Builder
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Fill in the guided template to generate your personalized past activity summary!</p>
+                    </div>
+
+                    <!-- Input 1: Student Name -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Your Name</label>
+                        <input type="text" id="story-name" value="Alex" placeholder="Enter your name" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+
+                    <!-- Input 2: Yesterday Morning -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">1. What did you do yesterday morning?</label>
+                        <select id="story-morning" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="cleaned my room">cleaned my room</option>
+                            <option value="cooked breakfast">cooked breakfast</option>
+                            <option value="drank coffee">drank coffee</option>
+                            <option value="went to school">went to school</option>
+                        </select>
+                    </div>
+
+                    <!-- Input 3: Negative Activity (In the afternoon) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">2. What DIDN'T you do in the afternoon?</label>
+                        <select id="story-afternoon-neg" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="watch TV">watch TV</option>
+                            <option value="play video games">play video games</option>
+                            <option value="go outside">go outside</option>
+                            <option value="buy groceries">buy groceries</option>
+                        </select>
+                    </div>
+
+                    <!-- Input 4: Last Night Activity -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">3. What did you do last night?</label>
+                        <select id="story-night" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="watched a great movie">watched a great movie</option>
+                            <option value="ate delicious pizza">ate delicious pizza</option>
+                            <option value="studied English for 1 hour">studied English for 1 hour</option>
+                            <option value="read a good book">read a good book</option>
+                        </select>
+                    </div>
+
+                    <!-- Input 5: Feeling -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">4. How did you feel at the end of the day?</label>
+                        <select id="story-feeling" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value="happy and relaxed">happy and relaxed</option>
+                            <option value="tired but satisfied">tired but satisfied</option>
+                            <option value="ready for a good sleep">ready for a good sleep</option>
+                        </select>
+                    </div>
+
+                    <button onclick="generateStory()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Generate My Story Certificate
+                    </button>
+                </div>
+
+                <!-- Right: Rendered Story Card & Certificate -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center">
+                                <i class="fa-solid fa-certificate text-amber-500 mr-2"></i> Story Card Preview
+                            </h3>
+                            <span class="text-[10px] bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 font-bold px-2.5 py-1 rounded-full border border-brand-200 dark:border-brand-800">A1 English Master</span>
+                        </div>
+
+                        <!-- Printable Certificate Box -->
+                        <div id="printable-certificate" class="bg-amber-50/40 dark:bg-slate-900 p-6 rounded-2xl border-2 border-amber-300/80 dark:border-amber-700/50 relative shadow-inner">
+                            <div class="text-center mb-4 border-b border-amber-200 dark:border-slate-700 pb-3">
+                                <span class="text-2xl">🎓</span>
+                                <h4 class="font-extrabold text-slate-900 dark:text-white text-base">Past Activity Record</h4>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Written by <span id="certificate-author-name" class="font-bold text-brand-600 dark:text-brand-400">Alex</span></p>
+                            </div>
+
+                            <p id="generated-story-text" class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed italic">
+                                "Yesterday was a productive day! In the morning, I cleaned my room. In the afternoon, I didn't watch TV. Last night, I watched a great movie. At the end of the day, I felt happy and relaxed."
+                            </p>
+
+                            <div class="mt-6 flex items-center justify-between text-[11px] text-slate-400">
+                                <span>Level: A1 Beginner</span>
+                                <span>Verified by ESL Tracker</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls for Certificate -->
+                    <div class="mt-6 flex flex-wrap items-center gap-2">
+                        <button onclick="readStoryOutLoud()" class="flex-1 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold py-2.5 px-3 rounded-lg transition flex items-center justify-center">
+                            <i class="fa-solid fa-volume-high mr-1.5"></i> Read Out Loud
+                        </button>
+                        <button onclick="copyStoryToClipboard()" class="flex-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 px-3 rounded-lg transition flex items-center justify-center">
+                            <i class="fa-solid fa-copy mr-1.5"></i> Copy Text
+                        </button>
+                        <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2.5 px-4 rounded-lg transition flex items-center justify-center shadow">
+                            <i class="fa-solid fa-print mr-1.5"></i> Print / Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Global Application State
+        const state = {
+            xp: 0,
+            soundEnabled: true,
+            theme: 'light',
+            selectedPaletteActivity: null,
+            timeline: {
+                "Yesterday Morning": null,
+                "Yesterday Afternoon": null,
+                "Last Night": null,
+                "Last Weekend": null,
+                "Two Days Ago": null
+            },
+            classmates: {
+                "Alex": {
+                    avatar: "👦🏻",
+                    responses: {
+                        "cook dinner|last night": "Yes, I did! I cooked pasta last night.",
+                        "go to the park|last weekend": "No, I didn't. I stayed home last weekend.",
+                        "watch a film|yesterday": "No, I didn't watch a film yesterday.",
+                        "study English|two days ago": "Yes, I did! I studied English for two hours two days ago.",
+                        "clean your room|yesterday": "Yes, I did! I cleaned my room yesterday morning."
+                    }
+                },
+                "Sofia": {
+                    avatar: "👧🏽",
+                    responses: {
+                        "cook dinner|last night": "No, I didn't. I ordered pizza last night.",
+                        "go to the park|last weekend": "Yes, I did! I went to the park last weekend.",
+                        "watch a film|yesterday": "Yes, I did! I watched a film yesterday.",
+                        "study English|two days ago": "No, I didn't study English two days ago."
+                    }
+                },
+                "David": {
+                    avatar: "🧔🏼",
+                    responses: {
+                        "cook dinner|last night": "No, I didn't cook dinner last night.",
+                        "go to the park|last weekend": "No, I didn't go to the park.",
+                        "watch a film|yesterday": "No, I didn't watch a film.",
+                        "study English|two days ago": "Yes, I did! I studied English two days ago."
+                    }
+                },
+                "Emma": {
+                    avatar: "👩👩",
+                    responses: {
+                        "cook dinner|last night": "Yes, I did! I cooked fish last night.",
+                        "go to the park|last weekend": "Yes, I did! I walked in the park last weekend.",
+                        "watch a film|yesterday": "Yes, I did! I watched a movie yesterday.",
+                        "study English|two days ago": "No, I didn't."
+                    }
+                }
+            },
+            checklist: [
+                { id: 1, text: "Find someone who cooked dinner last night", classmate: "Alex", action: "cook dinner", time: "last night", done: false },
+                { id: 2, text: "Find someone who went to the park last weekend", classmate: "Sofia", action: "go to the park", time: "last weekend", done: false },
+                { id: 3, text: "Find someone who studied English two days ago", classmate: "David", action: "study English", time: "two days ago", done: false },
+                { id: 4, text: "Find someone who watched a film yesterday", classmate: "Emma", action: "watch a film", time: "yesterday", done: false }
+            ]
+        };
+
+        // Palette Activities Data
+        const activitiesData = [
+            { id: "act1", base: "clean room", pastVerb: "cleaned", object: "my room", icon: "🧹", type: "regular" },
+            { id: "act2", base: "watch a film", pastVerb: "watched", object: "a film", icon: "🎬", type: "regular" },
+            { id: "act3", base: "go to the park", pastVerb: "went", object: "to the park", icon: "🌳", type: "irregular" },
+            { id: "act4", base: "cook dinner", pastVerb: "cooked", object: "dinner", icon: "🍳", type: "regular" },
+            { id: "act5", base: "visit friends", pastVerb: "visited", object: "friends", icon: "👥", type: "regular" },
+            { id: "act6", base: "read a book", pastVerb: "read", object: "a book", icon: "📚", type: "irregular" },
+            { id: "act7", base: "eat pizza", pastVerb: "ate", object: "pizza", icon: "🍕", type: "irregular" },
+            { id: "act8", base: "buy groceries", pastVerb: "bought", object: "groceries", icon: "🛒", type: "irregular" }
+        ];
+
+        // Web Audio API Synthesizer for FX
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {
+                console.warn('Web Audio error:', e);
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.88; // Slightly slower for A1 learners
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function addXP(amount) {
+            state.xp += amount;
+            document.getElementById('xp-counter').textContent = state.xp;
+            
+            // Level calculation
+            const levelBadge = document.getElementById('level-badge');
+            if (state.xp >= 150) {
+                levelBadge.textContent = "Level 3: Expert";
+            } else if (state.xp >= 70) {
+                levelBadge.textContent = "Level 2: Explorer";
+            } else {
+                levelBadge.textContent = "Level 1: Novice";
+            }
+
+            playSound('success');
+            showToast(`+${amount} XP Earned!`);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all transform translate-y-2 opacity-0 flex items-center space-x-2 pointer-events-auto";
+            toast.innerHTML = `<i class="fa-solid fa-star text-amber-400"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon text-lg';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-lg';
+            }
+            playSound('click');
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (state.soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-lg';
+                showToast("Sound effects ON");
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-lg';
+            }
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition";
+            });
+
+            document.getElementById(`module-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.className = "tab-btn active inline-flex items-center px-4 py-2.5 font-medium text-sm rounded-lg whitespace-nowrap bg-brand-500 text-white shadow-sm transition";
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('activity-palette');
+            container.innerHTML = '';
+
+            activitiesData.forEach(act => {
+                const btn = document.createElement('button');
+                const isSelected = state.selectedPaletteActivity === act.id;
+                btn.className = `px-3 py-2 rounded-xl text-xs font-semibold flex items-center border transition transform active:scale-95 ${
+                    isSelected 
+                    ? 'bg-brand-500 text-white border-brand-600 shadow-md ring-2 ring-brand-300' 
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`;
+                btn.draggable = true;
+                btn.innerHTML = `<span class="mr-1.5 text-sm">${act.icon}</span> ${act.base}`;
+                
+                btn.onclick = () => {
+                    playSound('click');
+                    if (state.selectedPaletteActivity === act.id) {
+                        state.selectedPaletteActivity = null;
+                    } else {
+                        state.selectedPaletteActivity = act.id;
+                        showToast(`Selected: ${act.base}. Now tap a timeline slot!`);
+                    }
+                    renderPalette();
+                };
+
+                btn.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', act.id);
+                };
+
+                container.appendChild(btn);
+            });
+        }
+
+        function setupTimelineSlots() {
+            document.querySelectorAll('.timeline-slot').forEach(slotEl => {
+                const timeKey = slotEl.getAttribute('data-time');
+                const dropzone = slotEl.querySelector('.timeline-dropzone');
+
+                // Tap slot to assign if palette activity is selected
+                slotEl.onclick = () => {
+                    if (state.selectedPaletteActivity) {
+                        assignActivityToSlot(timeKey, state.selectedPaletteActivity);
+                        state.selectedPaletteActivity = null;
+                        renderPalette();
+                    }
+                };
+
+                // Drag & Drop handlers
+                dropzone.ondragover = (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('drag-over');
+                };
+                dropzone.ondragleave = () => {
+                    dropzone.classList.remove('drag-over');
+                };
+                dropzone.ondrop = (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('drag-over');
+                    const actId = e.dataTransfer.getData('text/plain');
+                    if (actId) {
+                        assignActivityToSlot(timeKey, actId);
+                    }
+                };
+            });
+        }
+
+        function assignActivityToSlot(timeKey, activityId) {
+            const activity = activitiesData.find(a => a.id === activityId);
+            if (!activity) return;
+
+            state.timeline[timeKey] = activity;
+            addXP(10);
+            renderTimelineSlots();
+        }
+
+        function renderTimelineSlots() {
+            document.querySelectorAll('.timeline-slot').forEach(slotEl => {
+                const timeKey = slotEl.getAttribute('data-time');
+                const dropzone = slotEl.querySelector('.timeline-dropzone');
+                const sentenceOutput = slotEl.querySelector('.sentence-output');
+                const act = state.timeline[timeKey];
+
+                if (act) {
+                    dropzone.innerHTML = `
+                        <div class="flex items-center justify-between w-full bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span class="text-xs font-bold flex items-center"><span class="mr-1 text-base">${act.icon}</span> ${act.base}</span>
+                            <button onclick="event.stopPropagation(); removeSlotActivity('${timeKey}')" class="text-rose-500 hover:text-rose-700 text-xs p-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    // Form constructed sentence
+                    const fullSentence = `${timeKey}, I ${act.pastVerb} ${act.object}.`;
+                    
+                    sentenceOutput.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-wrap items-center gap-1 text-xs">
+                                <span class="px-1.5 py-0.5 rounded badge-time font-semibold">${timeKey},</span>
+                                <span class="px-1.5 py-0.5 rounded badge-subject font-semibold">I</span>
+                                <span class="px-1.5 py-0.5 rounded badge-verb font-bold">${act.pastVerb}</span>
+                                <span class="px-1.5 py-0.5 rounded badge-object font-semibold">${act.object}.</span>
+                            </div>
+                            <button onclick="event.stopPropagation(); speakText('${fullSentence}')" class="text-brand-500 hover:text-brand-700 p-1.5 rounded-lg transition" title="Listen">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    dropzone.innerHTML = `<span class="text-slate-400 dark:text-slate-500 text-xs text-center">Drag or assign activity here</span>`;
+                    sentenceOutput.innerHTML = `<p class="text-xs text-slate-400 italic">No sentence generated yet.</p>`;
+                }
+            });
+        }
+
+        function removeSlotActivity(timeKey) {
+            playSound('click');
+            state.timeline[timeKey] = null;
+            renderTimelineSlots();
+        }
+
+        function clearTimeline() {
+            playSound('click');
+            Object.keys(state.timeline).forEach(k => state.timeline[k] = null);
+            renderTimelineSlots();
+            showToast("Timeline cleared!");
+        }
+
+        function setupInterviewListeners() {
+            const classmateSelect = document.getElementById('select-classmate');
+            const actionSelect = document.getElementById('select-action');
+            const timeSelect = document.getElementById('select-time');
+
+            const updatePreview = () => {
+                const action = actionSelect.value;
+                const time = timeSelect.value;
+                document.getElementById('question-preview-text').textContent = `Did you ${action} ${time}?`;
+            };
+
+            classmateSelect.onchange = () => {
+                playSound('click');
+                updateActiveAvatar();
+            };
+            actionSelect.onchange = updatePreview;
+            timeSelect.onchange = updatePreview;
+
+            updateActiveAvatar();
+            renderChecklist();
+        }
+
+        function updateActiveAvatar() {
+            const name = document.getElementById('select-classmate').value;
+            const classmate = state.classmates[name];
+            document.getElementById('active-avatar-icon').textContent = classmate.avatar;
+            document.getElementById('active-classmate-name').textContent = name;
+        }
+
+        function speakCurrentQuestion() {
+            const questionText = document.getElementById('question-preview-text').textContent;
+            speakText(questionText);
+        }
+
+        function askClassmate() {
+            playSound('click');
+            const name = document.getElementById('select-classmate').value;
+            const action = document.getElementById('select-action').value;
+            const time = document.getElementById('select-time').value;
+
+            const classmate = state.classmates[name];
+            const key = `${action}|${time}`;
+            const response = classmate.responses[key] || `No, I didn't ${action} ${time}.`;
+
+            const responseTextEl = document.getElementById('classmate-response-text');
+            responseTextEl.textContent = `"${response}"`;
+
+            document.getElementById('listen-response-btn').classList.remove('hidden');
+
+            // Speak response aloud automatically
+            speakText(response);
+
+            // Check if matches a checklist item
+            const matchIndex = state.checklist.findIndex(item => item.classmate === name && item.action === action && item.time === time);
+            if (matchIndex !== -1 && !state.checklist[matchIndex].done) {
+                state.checklist[matchIndex].done = true;
+                addXP(25);
+                renderChecklist();
+                showToast(`Checklist target achieved! (${name})`);
+            }
+        }
+
+        function speakResponseText() {
+            const text = document.getElementById('classmate-response-text').textContent;
+            speakText(text);
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-items-container');
+            container.innerHTML = '';
+
+            let completedCount = 0;
+            state.checklist.forEach(item => {
+                if (item.done) completedCount++;
+                const li = document.createElement('li');
+                li.className = `p-2 rounded-lg flex items-center justify-between border ${
+                    item.done 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold' 
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                }`;
+                li.innerHTML = `
+                    <span>${item.text}</span>
+                    <i class="fa-solid ${item.done ? 'fa-circle-check text-emerald-500' : 'fa-circle text-slate-300 dark:text-slate-600'}"></i>
+                `;
+                container.appendChild(li);
+            });
+
+            document.getElementById('checklist-progress').textContent = `${completedCount}/${state.checklist.length}`;
+        }
+
+        const sorterVerbs = [
+            { text: "cleaned", type: "regular" },
+            { text: "went", type: "irregular" },
+            { text: "watched", type: "regular" },
+            { text: "ate", type: "irregular" },
+            { text: "cooked", type: "regular" },
+            { text: "bought", type: "irregular" },
+            { text: "visited", type: "regular" },
+            { text: "drank", type: "irregular" }
+        ];
+
+        function initVerbLab() {
+            renderSorterPool();
+            renderFillQuiz();
+            renderErrorQuiz();
+        }
+
+        function switchLabSubtab(subtabId) {
+            playSound('click');
+            document.querySelectorAll('.lab-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.lab-sub-btn').forEach(btn => {
+                btn.className = "lab-sub-btn text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 transition";
+            });
+
+            document.getElementById(`verblab-${subtabId}`).classList.remove('hidden');
+            const activeSub = document.getElementById(`lab-subtab-${subtabId}`);
+            activeSub.className = "lab-sub-btn active text-xs font-bold px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm transition";
+        }
+
+        function renderSorterPool() {
+            const pool = document.getElementById('sorter-verb-pool');
+            pool.innerHTML = '';
+
+            sorterVerbs.forEach((v, index) => {
+                const chip = document.createElement('div');
+                chip.className = "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-xs font-bold shadow-sm flex items-center space-x-2";
+                chip.innerHTML = `
+                    <span>${v.text}</span>
+                    <button onclick="sortVerb(${index}, 'regular')" class="text-emerald-600 hover:bg-emerald-50 p-1 rounded" title="Regular">+Reg</button>
+                    <button onclick="sortVerb(${index}, 'irregular')" class="text-purple-600 hover:bg-purple-50 p-1 rounded" title="Irregular">+Irreg</button>
+                `;
+                pool.appendChild(chip);
+            });
+        }
+
+        function sortVerb(index, targetType) {
+            const verb = sorterVerbs[index];
+            if (verb.type === targetType) {
+                addXP(10);
+                const bucket = document.getElementById(`bucket-${targetType}`);
+                const card = document.createElement('span');
+                card.className = "bg-white dark:bg-slate-800 border px-2.5 py-1 rounded-md text-xs font-bold shadow-sm";
+                card.textContent = verb.text;
+                bucket.appendChild(card);
+                sorterVerbs.splice(index, 1);
+                renderSorterPool();
+            } else {
+                playSound('error');
+                showToast("Oops! Incorrect category. Try again!");
+            }
+        }
+
+        // Fill in Blank Data
+        const fillQuestions = [
+            { sentence: "Yesterday, I ________ (go) to the supermarket.", answer: "went" },
+            { sentence: "She ________ (clean) her room last Sunday.", answer: "cleaned" },
+            { sentence: "We ________ (eat) delicious pizza last night.", answer: "ate" }
+        ];
+
+        function renderFillQuiz() {
+            const container = document.getElementById('fill-quiz-container');
+            container.innerHTML = '';
+            fillQuestions.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2";
+                div.innerHTML = `
+                    <p class="text-xs font-medium text-slate-800 dark:text-slate-200">${q.sentence}</p>
+                    <input type="text" id="fill-ans-${i}" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2.5 py-1 text-xs font-bold w-32 outline-none focus:ring-2 focus:ring-brand-500">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkFillQuiz() {
+            let allCorrect = true;
+            fillQuestions.forEach((q, i) => {
+                const input = document.getElementById(`fill-ans-${i}`);
+                if (input.value.trim().toLowerCase() === q.answer) {
+                    input.className = "bg-emerald-50 dark:bg-emerald-950 border border-emerald-500 rounded px-2.5 py-1 text-xs font-bold w-32 text-emerald-600";
+                } else {
+                    input.className = "bg-rose-50 dark:bg-rose-950 border border-rose-500 rounded px-2.5 py-1 text-xs font-bold w-32 text-rose-600";
+                    allCorrect = false;
+                }
+            });
+
+            if (allCorrect) {
+                addXP(20);
+            } else {
+                playSound('error');
+            }
+        }
+
+        // Error Spotting Data
+        const errorQuestions = [
+            { incorrect: "I didn't went to the park yesterday.", correct: "I didn't go to the park yesterday." },
+            { incorrect: "She didn't watched TV last night.", correct: "She didn't watch TV last night." }
+        ];
+
+        function renderErrorQuiz() {
+            const container = document.getElementById('error-quiz-container');
+            container.innerHTML = '';
+            errorQuestions.forEach((q, i) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2";
+                div.innerHTML = `
+                    <p class="text-xs text-rose-600 dark:text-rose-400 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Incorrect: "${q.incorrect}"</p>
+                    <input type="text" id="error-ans-${i}" placeholder="Type the corrected sentence here..." class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2.5 py-1.5 text-xs font-medium outline-none focus:ring-2 focus:ring-brand-500">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkErrorQuiz() {
+            let allCorrect = true;
+            errorQuestions.forEach((q, i) => {
+                const input = document.getElementById(`error-ans-${i}`);
+                if (input.value.trim().toLowerCase() === q.correct.toLowerCase()) {
+                    input.className = "w-full bg-emerald-50 dark:bg-emerald-950 border border-emerald-500 rounded px-2.5 py-1.5 text-xs font-bold text-emerald-600";
+                } else {
+                    input.className = "w-full bg-rose-50 dark:bg-rose-950 border border-rose-500 rounded px-2.5 py-1.5 text-xs font-bold text-rose-600";
+                    allCorrect = false;
+                }
+            });
+
+            if (allCorrect) {
+                addXP(20);
+            } else {
+                playSound('error');
+            }
+        }
+
+        function toggleRulesDrawer() {
+            playSound('click');
+            const drawer = document.getElementById('rules-drawer');
+            const chevron = document.getElementById('rules-chevron');
+            drawer.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        }
+
+        function generateStory() {
+            playSound('click');
+            const name = document.getElementById('story-name').value || "Alex";
+            const morning = document.getElementById('story-morning').value;
+            const afternoonNeg = document.getElementById('story-afternoon-neg').value;
+            const night = document.getElementById('story-night').value;
+            const feeling = document.getElementById('story-feeling').value;
+
+            document.getElementById('certificate-author-name').textContent = name;
+
+            const story = `Yesterday was a busy day for ${name}! In the morning, I ${morning}. In the afternoon, I didn't ${afternoonNeg}. Last night, I ${night}. At the end of the day, I felt ${feeling}.`;
+
+            document.getElementById('generated-story-text').textContent = `"${story}"`;
+            addXP(15);
+            showToast("Story Generated!");
+        }
+
+        function readStoryOutLoud() {
+            const storyText = document.getElementById('generated-story-text').textContent;
+            speakText(storyText);
+        }
+
+        function copyStoryToClipboard() {
+            const text = document.getElementById('generated-story-text').textContent;
+            
+            // Fallback clipboard logic
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Copied to clipboard!");
+                }).catch(() => {
+                    executeCopyFallback(text);
+                });
+            } else {
+                executeCopyFallback(text);
+            }
+        }
+
+        function executeCopyFallback(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Copied to clipboard!");
+        }
+
+        window.onload = function() {
+            renderPalette();
+            setupTimelineSlots();
+            renderTimelineSlots();
+            setupInterviewListeners();
+            initVerbLab();
+        };
+    </script>
+</body>
+</html>
