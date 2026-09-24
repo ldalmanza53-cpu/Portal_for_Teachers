@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Neighborhood Explorer & Visualizer (A1 English)</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles for Interactive Feedback & Animations -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    .tab-active {
+      background-color: #059669 !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Place Grid Cards */
+    .place-toggle-card {
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .place-toggle-card.active-place {
+      border-color: #059669;
+      background-color: #ecfdf5;
+      box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* Vocabulary Flip Card */
+    .flip-card {
+      perspective: 1000px;
+      min-height: 190px;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flip-card:hover .flip-card-inner, .flip-card.flipped .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+    }
+
+    .flip-card-back {
+      transform: rotateY(180deg);
+    }
+
+    .token-btn {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .token-btn:active {
+      transform: scale(0.95);
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-50">
+
+  <header class="bg-gradient-to-r from-emerald-700 via-teal-700 to-sky-700 text-white shadow-xl py-6 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="text-center md:text-left">
+        <h1 class="text-2xl sm:text-3xl font-black flex items-center justify-center md:justify-start gap-3 tracking-tight">
+          <i class="fa-solid fa-house-tree text-amber-300 text-3xl"></i>
+          <span>My Neighborhood Explorer</span>
+        </h1>
+        <p class="text-emerald-100 text-xs sm:text-sm font-medium mt-1">
+          Interactive A1 English Practice: Describe places, use "There is / There are", and master neighborhood vocabulary!
+        </p>
+      </div>
+      <div class="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-xs font-bold text-emerald-50">
+        <span class="w-3 h-3 bg-amber-400 rounded-full animate-ping"></span>
+        <span>A1 Beginner Speaking Lab</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-6xl mx-auto px-2 sm:px-4 flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto py-3">
+      <button onclick="switchTab('tab-builder')" id="nav-tab-builder" class="tab-btn tab-active px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-city"></i> 1. Neighborhood Builder
+      </button>
+      <button onclick="switchTab('tab-vocab')" id="nav-tab-vocab" class="tab-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-book-bookmark"></i> 2. Vocabulary & Adjectives
+      </button>
+      <button onclick="switchTab('tab-sentence')" id="nav-tab-sentence" class="tab-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-puzzle-piece"></i> 3. Sentence Constructor
+      </button>
+      <button onclick="switchTab('tab-interview')" id="nav-tab-interview" class="tab-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-comments"></i> 4. Interview Simulator
+      </button>
+      <button onclick="switchTab('tab-quiz')" id="nav-tab-quiz" class="tab-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap transition">
+        <i class="fa-solid fa-circle-check"></i> 5. Diagnostic Quiz
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-grow">
+
+    <section id="tab-builder" class="tab-content space-y-6">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-map-location-dot text-emerald-600"></i> Interactive Neighborhood Map & Live Visualizer
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Click places to add them to your neighborhood map, pick adjectives, and watch your live A1 English description build automatically!
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-2 rounded-xl font-bold self-start lg:self-center">
+            <i class="fa-solid fa-volume-high text-amber-500"></i>
+            <span>Click 🔊 to hear native pronunciation!</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <!-- Control Panel: Places & Traits -->
+          <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Housing & Residence Type -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+                1. Where do you live?
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <button onclick="setHousing('house')" id="btn-house" class="p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs transition">
+                  <i class="fa-solid fa-house text-emerald-600"></i> A House
+                </button>
+                <button onclick="setHousing('apartment')" id="btn-apartment" class="p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-slate-300 bg-white text-slate-700 transition">
+                  <i class="fa-solid fa-building text-slate-500"></i> An Apartment
+                </button>
+              </div>
+            </div>
+
+            <!-- Toggleable Places Grid -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-black uppercase tracking-wider text-slate-500">
+                  2. Select Places in Your Neighborhood:
+                </label>
+                <span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                  Tap to Add / Remove
+                </span>
+              </div>
+              <div id="places-toggle-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <!-- Dynamically generated by JS -->
+              </div>
+            </div>
+
+            <!-- Neighborhood Adjectives Selectors -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+                3. Choose Neighborhood Characteristics (Pick 1-3):
+              </label>
+              <div id="traits-chips-container" class="flex flex-wrap gap-2">
+                <!-- Dynamically generated by JS -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Description Output Card -->
+          <div class="lg:col-span-5 flex flex-col">
+            <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-3xl p-6 shadow-xl flex-grow flex flex-col justify-between space-y-6 relative border border-slate-700">
+              
+              <div class="space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                  <span class="bg-emerald-500/20 text-emerald-300 text-xs font-black uppercase px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                    <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> Live A1 Description Card
+                  </span>
+                  <i class="fa-solid fa-quote-right text-slate-600 text-xl"></i>
+                </div>
+
+                <div id="live-description-text" class="space-y-3 text-slate-200 text-sm leading-relaxed font-medium">
+                  <!-- Generated by JS -->
+                </div>
+              </div>
+
+              <div class="space-y-3 pt-4 border-t border-slate-700/80">
+                <button onclick="speakLiveDescription()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3.5 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95">
+                  <i class="fa-solid fa-volume-high text-lg"></i> Listen to Description
+                </button>
+
+                <div class="grid grid-cols-2 gap-2 text-center text-[11px] font-bold text-slate-400">
+                  <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                    <span class="block text-emerald-400 font-extrabold text-sm" id="stat-places-count">0</span> Places Included
+                  </div>
+                  <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                    <span class="block text-amber-400 font-extrabold text-sm" id="stat-traits-count">0</span> Traits Picked
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-vocab" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-8">
+        
+        <div>
+          <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-book-open text-emerald-600"></i> Neighborhood Places Vocabulary
+          </h2>
+          <p class="text-slate-500 text-xs sm:text-sm mt-1">
+            Learn target places with English example sentences and instant audio pronunciation!
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="vocab-places-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="pt-6 border-t border-slate-200">
+          <div class="mb-4">
+            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-arrows-left-right-to-line text-sky-600"></i> Opposite Adjectives Flashcards
+            </h3>
+            <p class="text-slate-500 text-xs sm:text-sm">
+              Hover or tap any card to flip it and practice opposite pairs for describing neighborhoods!
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5" id="vocab-opposites-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="tab-sentence" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-puzzle-piece text-emerald-600"></i> A1 Sentence Constructor
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Click word tokens in order to build correct sentences using <i>there is/are</i> and prepositions!
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-black uppercase text-slate-400">Puzzle:</span>
+            <span id="builder-puzzle-progress" class="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full">1 / 5</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6 max-w-3xl mx-auto shadow-2xs">
+          <div class="flex items-center justify-between">
+            <span class="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded-lg">
+              🎯 Target Prompt
+            </span>
+            <button onclick="speakBuilderPrompt()" class="text-emerald-700 hover:text-emerald-900 text-xs font-black flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-volume-high text-sm"></i> Listen Prompt
+            </button>
+          </div>
+
+          <p id="builder-prompt-display" class="text-base sm:text-lg font-bold text-slate-800 text-center py-2 border-b border-slate-200">
+            Prompt loading...
+          </p>
+
+          <!-- Constructed sentence zone -->
+          <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+              Your Constructed Sentence:
+            </label>
+            <div id="built-sentence-dropzone" class="min-h-[64px] bg-white border-2 border-dashed border-emerald-300 rounded-2xl p-3 flex flex-wrap gap-2 items-center">
+              <span class="text-slate-400 text-xs sm:text-sm italic font-medium">Click word tokens below to construct your sentence...</span>
+            </div>
+          </div>
+
+          <!-- Token Bank -->
+          <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+              Available Word Tokens:
+            </label>
+            <div id="tokens-bank-container" class="flex flex-wrap gap-2.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Controls & Feedback -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
+            <button onclick="resetBuilderPuzzle()" class="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs sm:text-sm transition">
+              <i class="fa-solid fa-rotate-left"></i> Reset Tokens
+            </button>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <button onclick="validateBuilderSentence()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-check"></i> Check Sentence
+              </button>
+              <button onclick="nextBuilderPuzzle()" id="next-builder-btn" class="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition hidden flex items-center justify-center gap-2">
+                Next Puzzle <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="builder-feedback-box" class="hidden p-4 rounded-xl text-xs sm:text-sm font-bold text-center"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-interview" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-comments text-emerald-600"></i> "Neighborhood Reporter" Interview Simulator
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Practice A1 dialogue roleplay between Student A (Reporter) and Student B (Resident)!
+            </p>
+          </div>
+          <button onclick="speakFullInterviewDialogue()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 self-start md:self-center">
+            <i class="fa-solid fa-circle-play"></i> Listen Full Dialogue
+          </button>
+        </div>
+
+        <div class="max-w-3xl mx-auto space-y-4" id="interview-chat-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-quiz" class="tab-content space-y-6 hidden">
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-600"></i> A1 Diagnostic Neighborhood Quiz
+            </h2>
+            <p class="text-slate-500 text-xs sm:text-sm mt-1">
+              Test your understanding of "there is / there are", articles, prepositions, and adjectives!
+            </p>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl text-center self-start sm:self-center">
+            <span class="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">Score Tracker</span>
+            <span id="quiz-score-badge" class="text-lg font-black text-emerald-950">0 / 6</span>
+          </div>
+        </div>
+
+        <div id="quiz-questions-list" class="space-y-6 max-w-3xl mx-auto">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="quiz-completion-banner" class="hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-sky-700 text-white rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto shadow-xl border border-emerald-400">
+          <i class="fa-solid fa-trophy text-5xl text-amber-300"></i>
+          <h3 class="text-2xl font-black">Outstanding Job!</h3>
+          <p id="quiz-score-summary" class="text-emerald-100 text-base font-semibold">You got 6 out of 6 correct!</p>
+          <button onclick="resetGrammarQuiz()" class="bg-white text-emerald-900 font-black px-6 py-3 rounded-xl shadow-md hover:bg-emerald-50 transition active:scale-95">
+            Retake Quiz 🔄
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-900 text-slate-400 py-6 px-4 text-center text-xs border-t border-slate-800">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p>© 2026 My Neighborhood Explorer — A1 English Grammar & Speaking Activity.</p>
+      <div class="flex items-center gap-4 text-slate-300 font-semibold">
+        <span><i class="fa-solid fa-headphones text-emerald-400"></i> Web Speech Audio</span>
+        <span><i class="fa-solid fa-check text-emerald-400"></i> Interactive Practice</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    
+    // Web Speech synthesis audio player
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Tab switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).classList.add('tab-active');
+    }
+
+    const neighborhoodPlacesList = [
+      { id: 'park', name: 'Park', icon: 'fa-tree', category: 'singular', color: 'text-emerald-600', prefix: 'a' },
+      { id: 'supermarket', name: 'Supermarket', icon: 'fa-cart-shopping', category: 'singular', color: 'text-blue-600', prefix: 'a' },
+      { id: 'bakery', name: 'Bakery', icon: 'fa-bread-slice', category: 'singular', color: 'text-amber-600', prefix: 'a' },
+      { id: 'bus_stop', name: 'Bus Stop', icon: 'fa-bus', category: 'singular', color: 'text-red-600', prefix: 'a' },
+      { id: 'cafe', name: 'Café', icon: 'fa-mug-hot', category: 'singular', color: 'text-orange-600', prefix: 'a' },
+      { id: 'pharmacy', name: 'Pharmacy', icon: 'fa-capsules', category: 'singular', color: 'text-teal-600', prefix: 'a' },
+      { id: 'school', name: 'School', icon: 'fa-school', category: 'singular', color: 'text-indigo-600', prefix: 'a' },
+      { id: 'gym', name: 'Gym', icon: 'fa-dumbbell', category: 'singular', color: 'text-rose-600', prefix: 'a' },
+      { id: 'apartment_building', name: 'Apartment Building', icon: 'fa-building', category: 'singular', color: 'text-sky-600', prefix: 'an' },
+      { id: 'train_station', name: 'Train Station', icon: 'fa-train', category: 'singular', color: 'text-slate-700', prefix: 'a' }
+    ];
+
+    const traitsList = ['Quiet', 'Noisy', 'Green', 'Busy', 'Clean', 'Safe', 'Modern', 'Friendly'];
+
+    let builderState = {
+      housing: 'house', // 'house' or 'apartment'
+      selectedPlaces: ['park', 'bakery', 'cafe', 'supermarket'],
+      selectedTraits: ['Quiet', 'Green', 'Clean']
+    };
+
+    function setHousing(type) {
+      builderState.housing = type;
+      const btnHouse = document.getElementById('btn-house');
+      const btnApt = document.getElementById('btn-apartment');
+
+      if (type === 'house') {
+        btnHouse.className = "p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs transition";
+        btnApt.className = "p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-slate-300 bg-white text-slate-700 transition";
+      } else {
+        btnApt.className = "p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-emerald-600 bg-emerald-50 text-emerald-900 shadow-2xs transition";
+        btnHouse.className = "p-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 border-slate-300 bg-white text-slate-700 transition";
+      }
+
+      updateLiveDescription();
+    }
+
+    function togglePlace(id) {
+      if (builderState.selectedPlaces.includes(id)) {
+        builderState.selectedPlaces = builderState.selectedPlaces.filter(p => p !== id);
+      } else {
+        builderState.selectedPlaces.push(id);
+      }
+      renderPlacesGrid();
+      updateLiveDescription();
+    }
+
+    function toggleTrait(trait) {
+      if (builderState.selectedTraits.includes(trait)) {
+        builderState.selectedTraits = builderState.selectedTraits.filter(t => t !== trait);
+      } else {
+        if (builderState.selectedTraits.length < 3) {
+          builderState.selectedTraits.push(trait);
+        }
+      }
+      renderTraitsChips();
+      updateLiveDescription();
+    }
+
+    function renderPlacesGrid() {
+      const container = document.getElementById('places-toggle-grid');
+      container.innerHTML = '';
+
+      neighborhoodPlacesList.forEach(place => {
+        const isSelected = builderState.selectedPlaces.includes(place.id);
+        const card = document.createElement('div');
+        card.className = `place-toggle-card p-3 rounded-xl border-2 cursor-pointer flex items-center gap-3 bg-white ${isSelected ? 'active-place' : 'border-slate-200 hover:border-slate-300'}`;
+        card.onclick = () => togglePlace(place.id);
+
+        card.innerHTML = `
+          <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-lg ${place.color}">
+            <i class="fa-solid ${place.icon}"></i>
+          </div>
+          <div class="flex-grow min-w-0">
+            <p class="font-extrabold text-xs text-slate-800 truncate">${place.name}</p>
+            <span class="text-[10px] font-bold ${isSelected ? 'text-emerald-700' : 'text-slate-400'}">
+              ${isSelected ? '✔️ Added' : '+ Add'}
+            </span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderTraitsChips() {
+      const container = document.getElementById('traits-chips-container');
+      container.innerHTML = '';
+
+      traitsList.forEach(trait => {
+        const isSelected = builderState.selectedTraits.includes(trait);
+        const chip = document.createElement('button');
+        chip.onclick = () => toggleTrait(trait);
+        chip.className = `px-3 py-1.5 rounded-xl font-extrabold text-xs transition ${isSelected ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'}`;
+        chip.innerText = `${isSelected ? '✓ ' : ''}${trait}`;
+        container.appendChild(chip);
+      });
+    }
+
+    function updateLiveDescription() {
+      const container = document.getElementById('live-description-text');
+      const housingWord = builderState.housing === 'house' ? 'a house' : 'an apartment';
+
+      // Traits string
+      let traitsStr = "nice";
+      if (builderState.selectedTraits.length > 0) {
+        if (builderState.selectedTraits.length === 1) {
+          traitsStr = builderState.selectedTraits[0].toLowerCase();
+        } else if (builderState.selectedTraits.length === 2) {
+          traitsStr = `${builderState.selectedTraits[0].toLowerCase()} and ${builderState.selectedTraits[1].toLowerCase()}`;
+        } else {
+          traitsStr = `${builderState.selectedTraits[0].toLowerCase()}, ${builderState.selectedTraits[1].toLowerCase()}, and ${builderState.selectedTraits[2].toLowerCase()}`;
+        }
+      }
+
+      // Places objects selected
+      const selectedObjects = neighborhoodPlacesList.filter(p => builderState.selectedPlaces.includes(p.id));
+      const unselectedObjects = neighborhoodPlacesList.filter(p => !builderState.selectedPlaces.includes(p.id));
+
+      let placesSentencesHTML = "";
+
+      if (selectedObjects.length === 0) {
+        placesSentencesHTML = `<p><span class="text-amber-400 font-bold">There aren't many places</span> in my neighborhood right now!</p>`;
+      } else if (selectedObjects.length === 1) {
+        const p = selectedObjects[0];
+        placesSentencesHTML = `<p>In my neighborhood, <span class="text-emerald-400 font-bold">there is ${p.prefix} ${p.name.toLowerCase()}</span>.</p>`;
+      } else {
+        const firstTwo = selectedObjects.slice(0, 2).map(p => `${p.prefix} ${p.name.toLowerCase()}`).join(" and ");
+        const restCount = selectedObjects.length - 2;
+        let restString = "";
+        if (restCount > 0) {
+          restString = ` There are also other places near my home!`;
+        }
+        placesSentencesHTML = `<p>In my neighborhood, <span class="text-emerald-400 font-bold">there is ${firstTwo}</span>.${restString}</p>`;
+      }
+
+      // Negative sentence
+      let negativeSentence = "";
+      if (unselectedObjects.length > 0) {
+        const missing = unselectedObjects[0];
+        negativeSentence = `<p>However, <span class="text-sky-300 font-bold">there isn't ${missing.prefix} ${missing.name.toLowerCase()}</span> near my house.</p>`;
+      }
+
+      container.innerHTML = `
+        <p><span class="text-amber-300 font-bold">"Hello!</span> I live in ${housingWord}. My neighborhood is <span class="text-emerald-300 font-bold">${traitsStr}</span>.</p>
+        ${placesSentencesHTML}
+        ${negativeSentence}
+        <p class="pt-1 font-bold text-emerald-200">I love my neighborhood because it is very convenient!"</p>
+      `;
+
+      document.getElementById('stat-places-count').innerText = selectedObjects.length;
+      document.getElementById('stat-traits-count').innerText = builderState.selectedTraits.length;
+    }
+
+    function speakLiveDescription() {
+      const container = document.getElementById('live-description-text');
+      speakText(container.innerText);
+    }
+
+    const vocabPlaces = [
+      { name: "Park", prefix: "a", icon: "fa-tree", example: "There is a green park near my house.", color: "border-emerald-200 bg-emerald-50/50" },
+      { name: "Supermarket", prefix: "a", icon: "fa-cart-shopping", example: "I buy food at the supermarket.", color: "border-blue-200 bg-blue-50/50" },
+      { name: "Bakery", prefix: "a", icon: "fa-bread-slice", example: "There is fresh bread at the bakery.", color: "border-amber-200 bg-amber-50/50" },
+      { name: "Bus Stop", prefix: "a", icon: "fa-bus", example: "The bus stop is in front of the school.", color: "border-red-200 bg-red-50/50" },
+      { name: "Café", prefix: "a", icon: "fa-mug-hot", example: "I drink coffee at the quiet café.", color: "border-orange-200 bg-orange-50/50" },
+      { name: "Pharmacy", prefix: "a", icon: "fa-capsules", example: "There is a pharmacy next to the hospital.", color: "border-teal-200 bg-teal-50/50" }
+    ];
+
+    const vocabOpposites = [
+      { pair1: "Quiet", pair2: "Noisy", ex1: "The park is quiet.", ex2: "The street is noisy." },
+      { pair1: "Green", pair2: "Busy", ex1: "My area is green.", ex2: "The center is busy." },
+      { pair1: "Clean", pair2: "Dirty", ex1: "The street is clean.", ex2: "The park is dirty." },
+      { pair1: "Safe", pair2: "Dangerous", ex1: "Our town is safe.", ex2: "The road is dangerous." }
+    ];
+
+    function renderVocabTab() {
+      const placesContainer = document.getElementById('vocab-places-grid');
+      placesContainer.innerHTML = '';
+
+      vocabPlaces.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border ${p.color} flex flex-col justify-between space-y-3`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <i class="fa-solid ${p.icon} text-lg text-slate-800"></i>
+              <h4 class="font-black text-slate-800 text-sm">${p.name}</h4>
+            </div>
+            <button onclick="speakText('${p.name}. ${p.example}')" class="text-emerald-700 hover:text-emerald-900 text-xs font-bold bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+              🔊 Read
+            </button>
+          </div>
+          <p class="text-xs text-slate-600 font-medium">"${p.example}"</p>
+        `;
+        placesContainer.appendChild(card);
+      });
+
+      const oppositesContainer = document.getElementById('vocab-opposites-grid');
+      oppositesContainer.innerHTML = '';
+
+      vocabOpposites.forEach(op => {
+        const card = document.createElement('div');
+        card.className = "flip-card cursor-pointer";
+        card.onclick = () => card.classList.toggle('flipped');
+        card.innerHTML = `
+          <div class="flip-card-inner">
+            <div class="flip-card-front bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md">
+              <i class="fa-solid fa-right-left text-2xl mb-2 text-amber-300"></i>
+              <h4 class="text-lg font-black">${op.pair1} ↔ ${op.pair2}</h4>
+              <span class="text-[10px] font-bold mt-2 bg-white/20 px-2.5 py-1 rounded-full uppercase">Tap to Flip</span>
+            </div>
+            <div class="flip-card-back bg-slate-900 text-white shadow-md border border-slate-700">
+              <p class="text-[10px] font-black text-emerald-400 uppercase">Examples:</p>
+              <p class="text-xs font-semibold text-slate-200 mt-1">"${op.ex1}"</p>
+              <p class="text-xs font-semibold text-slate-200 mt-0.5">"${op.ex2}"</p>
+              <button onclick="event.stopPropagation(); speakText('${op.ex1} ${op.ex2}');" class="mt-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black px-3 py-1 rounded-lg">
+                🔊 Pronounce
+              </button>
+            </div>
+          </div>
+        `;
+        oppositesContainer.appendChild(card);
+      });
+    }
+
+    const sentencePuzzles = [
+      {
+        prompt: "Describe existence: 'There is a bakery near my house.'",
+        tokens: ["There", "is", "a", "bakery", "near", "my", "house."],
+        correct: "There is a bakery near my house."
+      },
+      {
+        prompt: "Describe plural places: 'There are two parks in my neighborhood.'",
+        tokens: ["There", "are", "two", "parks", "in", "my", "neighborhood."],
+        correct: "There are two parks in my neighborhood."
+      },
+      {
+        prompt: "Describe negative: 'There isn't a train station.'",
+        tokens: ["There", "isn't", "a", "train", "station."],
+        correct: "There isn't a train station."
+      },
+      {
+        prompt: "Describe qualities: 'My neighborhood is quiet and green.'",
+        tokens: ["My", "neighborhood", "is", "quiet", "and", "green."],
+        correct: "My neighborhood is quiet and green."
+      },
+      {
+        prompt: "Preposition: 'The café is next to the supermarket.'",
+        tokens: ["The", "café", "is", "next", "to", "the", "supermarket."],
+        correct: "The café is next to the supermarket."
+      }
+    ];
+
+    let currentPuzzleIndex = 0;
+    let builtPuzzleTokens = [];
+
+    function renderBuilderPuzzle() {
+      const puzzle = sentencePuzzles[currentPuzzleIndex];
+      document.getElementById('builder-puzzle-progress').innerText = `${currentPuzzleIndex + 1} / ${sentencePuzzles.length}`;
+      document.getElementById('builder-prompt-display').innerText = `Prompt: "${puzzle.prompt}"`;
+
+      builtPuzzleTokens = [];
+      renderBuiltTokensZone();
+
+      // Shuffle tokens
+      const shuffled = [...puzzle.tokens].sort(() => Math.random() - 0.5);
+      const bank = document.getElementById('tokens-bank-container');
+      bank.innerHTML = '';
+
+      shuffled.forEach(token => {
+        const btn = document.createElement('button');
+        btn.className = "token-btn bg-white hover:bg-emerald-50 text-slate-800 font-bold border border-slate-300 rounded-xl px-3.5 py-2 text-xs sm:text-sm shadow-2xs";
+        btn.innerText = token;
+        btn.onclick = () => addTokenToSentence(token, btn);
+        bank.appendChild(btn);
+      });
+
+      document.getElementById('builder-feedback-box').className = "hidden p-4 rounded-xl text-xs sm:text-sm font-bold text-center";
+      document.getElementById('next-builder-btn').classList.add('hidden');
+    }
+
+    function addTokenToSentence(token, btn) {
+      builtPuzzleTokens.push(token);
+      btn.classList.add('opacity-30', 'pointer-events-none');
+      renderBuiltTokensZone();
+    }
+
+    function renderBuiltTokensZone() {
+      const zone = document.getElementById('built-sentence-dropzone');
+      zone.innerHTML = '';
+
+      if (builtPuzzleTokens.length === 0) {
+        zone.innerHTML = `<span class="text-slate-400 text-xs sm:text-sm italic font-medium">Click word tokens below to construct your sentence...</span>`;
+        return;
+      }
+
+      builtPuzzleTokens.forEach((token, idx) => {
+        const chip = document.createElement('span');
+        chip.className = "bg-emerald-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs sm:text-sm shadow-2xs flex items-center gap-1.5";
+        chip.innerHTML = `${token} <i class="fa-solid fa-xmark opacity-70 hover:opacity-100 cursor-pointer" onclick="removeBuiltToken(${idx})"></i>`;
+        zone.appendChild(chip);
+      });
+    }
+
+    function removeBuiltToken(index) {
+      builtPuzzleTokens.splice(index, 1);
+      renderBuiltTokensZone();
+
+      // Re-enable in token bank
+      const buttons = document.querySelectorAll('#tokens-bank-container button');
+      buttons.forEach(btn => {
+        btn.classList.remove('opacity-30', 'pointer-events-none');
+      });
+    }
+
+    function resetBuilderPuzzle() {
+      renderBuilderPuzzle();
+    }
+
+    function validateBuilderSentence() {
+      const puzzle = sentencePuzzles[currentPuzzleIndex];
+      const constructed = builtPuzzleTokens.join(' ');
+      const fb = document.getElementById('builder-feedback-box');
+      fb.classList.remove('hidden');
+
+      if (constructed === puzzle.correct) {
+        fb.className = "p-4 rounded-xl text-xs sm:text-sm font-black text-center bg-emerald-100 text-emerald-900 border border-emerald-300";
+        fb.innerHTML = `🎉 Correct! "${constructed}"`;
+        speakText(`Excellent! ${constructed}`);
+
+        if (currentPuzzleIndex < sentencePuzzles.length - 1) {
+          document.getElementById('next-builder-btn').classList.remove('hidden');
+        }
+      } else {
+        fb.className = "p-4 rounded-xl text-xs sm:text-sm font-black text-center bg-rose-100 text-rose-900 border border-rose-300";
+        fb.innerHTML = `❌ Try again! Reorder the word tokens carefully.`;
+        speakText("Try again!");
+      }
+    }
+
+    function nextBuilderPuzzle() {
+      if (currentPuzzleIndex < sentencePuzzles.length - 1) {
+        currentPuzzleIndex++;
+        renderBuilderPuzzle();
+      }
+    }
+
+    function speakBuilderPrompt() {
+      speakText(sentencePuzzles[currentPuzzleIndex].correct);
+    }
+
+    const interviewScript = [
+      {
+        speaker: "Student A (Reporter)",
+        role: "reporter",
+        text: "Hi! Where do you live, and what is your neighborhood like?",
+        color: "bg-sky-50 border-sky-200 text-sky-950"
+      },
+      {
+        speaker: "Student B (Resident)",
+        role: "resident",
+        text: "Hello! I live in a house. My neighborhood is quiet, clean, and green.",
+        color: "bg-emerald-50 border-emerald-200 text-emerald-950"
+      },
+      {
+        speaker: "Student A (Reporter)",
+        role: "reporter",
+        text: "Is there a park or a café near your house?",
+        color: "bg-sky-50 border-sky-200 text-sky-950"
+      },
+      {
+        speaker: "Student B (Resident)",
+        role: "resident",
+        text: "Yes, there is a big park and a nice café next to the bakery!",
+        color: "bg-emerald-50 border-emerald-200 text-emerald-950"
+      },
+      {
+        speaker: "Student A (Reporter)",
+        role: "reporter",
+        text: "Is there a train station nearby?",
+        color: "bg-sky-50 border-sky-200 text-sky-950"
+      },
+      {
+        speaker: "Student B (Resident)",
+        role: "resident",
+        text: "No, there isn't a train station, but there is a bus stop in front of the school.",
+        color: "bg-emerald-50 border-emerald-200 text-emerald-950"
+      }
+    ];
+
+    function renderInterviewSimulator() {
+      const container = document.getElementById('interview-chat-container');
+      container.innerHTML = '';
+
+      interviewScript.forEach(turn => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border ${turn.color} space-y-1.5 shadow-2xs`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider ${turn.role === 'reporter' ? 'text-sky-700' : 'text-emerald-700'}">
+              ${turn.speaker}
+            </span>
+            <button onclick="speakText('${turn.text}')" class="text-xs font-bold px-2.5 py-1 bg-white rounded-lg border border-slate-200 shadow-2xs hover:bg-slate-50">
+              🔊 Play
+            </button>
+          </div>
+          <p class="font-bold text-sm sm:text-base leading-snug">"${turn.text}"</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function speakFullInterviewDialogue() {
+      const fullDialogue = interviewScript.map(t => `${t.speaker}: ${t.text}`).join(' ');
+      speakText(fullDialogue);
+    }
+
+    const quizQuestions = [
+      {
+        q: "1. Complete the sentence: 'In my neighborhood, __________ a big park.'",
+        options: ["there is", "there are", "there be"],
+        correct: 0,
+        explanation: "Use 'there is' for singular items (a big park)."
+      },
+      {
+        q: "2. Complete the plural sentence: '__________ two supermarkets near my house.'",
+        options: ["There is", "There are", "There isn't"],
+        correct: 1,
+        explanation: "Use 'there are' for plural nouns (two supermarkets)."
+      },
+      {
+        q: "3. Choose the correct article: 'I live in __________ apartment building.'",
+        options: ["a", "an", "two"],
+        correct: 1,
+        explanation: "Use 'an' before vowel sounds ('apartment')."
+      },
+      {
+        q: "4. What is the opposite of 'quiet'?",
+        options: ["clean", "noisy", "green"],
+        correct: 1,
+        explanation: "'Noisy' is the opposite of 'quiet'."
+      },
+      {
+        q: "5. 'The bakery is __________ the supermarket.' (Directly beside)",
+        options: ["next to", "under", "between"],
+        correct: 0,
+        explanation: "'Next to' indicates directly beside a place."
+      },
+      {
+        q: "6. Negative singular structure: '__________ a train station in my area.'",
+        options: ["There aren't", "There isn't", "There not"],
+        correct: 1,
+        explanation: "Use 'There isn't a' for negative singular places."
+      }
+    ];
+
+    let userQuizAnswers = {};
+
+    function renderQuizQuestions() {
+      const container = document.getElementById('quiz-questions-list');
+      container.innerHTML = '';
+
+      quizQuestions.forEach((item, qIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3";
+
+        const optionsHTML = item.options.map((opt, optIdx) => `
+          <button onclick="handleAnswerQuiz(${qIdx}, ${optIdx})" class="quiz-opt-btn w-full text-left font-bold text-slate-800 bg-white border border-slate-300 hover:border-emerald-500 hover:bg-emerald-50 p-3 rounded-xl transition text-xs sm:text-sm">
+            ${opt}
+          </button>
+        `).join('');
+
+        card.innerHTML = `
+          <p class="font-black text-slate-900 text-sm sm:text-base">${item.q}</p>
+          <div class="space-y-2" id="quiz-opts-${qIdx}">
+            ${optionsHTML}
+          </div>
+          <div id="quiz-exp-${qIdx}" class="hidden text-xs font-bold p-3 rounded-xl"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function handleAnswerQuiz(qIdx, optIdx) {
+      if (userQuizAnswers[qIdx] !== undefined) return; // Prevent re-answering
+
+      userQuizAnswers[qIdx] = optIdx;
+      const question = quizQuestions[qIdx];
+      const optsContainer = document.getElementById(`quiz-opts-${qIdx}`);
+      const expBox = document.getElementById(`quiz-exp-${qIdx}`);
+
+      const buttons = optsContainer.querySelectorAll('button');
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === question.correct) {
+          btn.className = "w-full text-left font-black text-white bg-emerald-600 border border-emerald-600 p-3 rounded-xl text-xs sm:text-sm";
+        } else if (idx === optIdx) {
+          btn.className = "w-full text-left font-black text-white bg-rose-600 border border-rose-600 p-3 rounded-xl text-xs sm:text-sm";
+        }
+      });
+
+      expBox.classList.remove('hidden');
+      if (optIdx === question.correct) {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300";
+        expBox.innerHTML = `✔️ Correct! ${question.explanation}`;
+        speakText("Correct!");
+      } else {
+        expBox.className = "text-xs font-bold p-3 rounded-xl bg-rose-100 text-rose-900 border border-rose-300";
+        expBox.innerHTML = `❌ Incorrect. ${question.explanation}`;
+        speakText("Incorrect.");
+      }
+
+      updateQuizScoreTracker();
+    }
+
+    function updateQuizScoreTracker() {
+      let score = 0;
+      Object.keys(userQuizAnswers).forEach(qIdx => {
+        if (userQuizAnswers[qIdx] === quizQuestions[qIdx].correct) {
+          score++;
+        }
+      });
+
+      document.getElementById('quiz-score-badge').innerText = `${score} / ${quizQuestions.length}`;
+
+      if (Object.keys(userQuizAnswers).length === quizQuestions.length) {
+        document.getElementById('quiz-completion-banner').classList.remove('hidden');
+        document.getElementById('quiz-score-summary').innerText = `You scored ${score} out of ${quizQuestions.length}!`;
+      }
+    }
+
+    function resetGrammarQuiz() {
+      userQuizAnswers = {};
+      document.getElementById('quiz-score-badge').innerText = `0 / ${quizQuestions.length}`;
+      document.getElementById('quiz-completion-banner').classList.add('hidden');
+      renderQuizQuestions();
+    }
+
+    window.onload = function() {
+      renderPlacesGrid();
+      renderTraitsChips();
+      updateLiveDescription();
+      renderVocabTab();
+      renderBuilderPuzzle();
+      renderInterviewSimulator();
+      renderQuizQuestions();
+    };
+  </script>
+</body>
+</html>
