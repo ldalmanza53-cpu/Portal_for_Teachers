@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan & Message Master Studio: Validation & Review</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes phoneRinging {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      10%, 30%, 50%, 70% { transform: rotate(-8deg) scale(1.03); }
+      20%, 40%, 60%, 80% { transform: rotate(8deg) scale(1.03); }
+    }
+
+    .ring-active {
+      animation: phoneRinging 0.8s infinite ease-in-out;
+    }
+
+    /* Waveform Pulse for Voicemail Playback */
+    .wave-bar {
+      animation: wavePulse 1.1s infinite ease-in-out;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.35s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+    @keyframes wavePulse {
+      0%, 100% { height: 6px; }
+      50% { height: 26px; }
+    }
+
+    /* Print Styles */
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+      #printable-certificate {
+        border: 8px double #0d9488 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Header Navigation -->
+  <header class="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 via-sky-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md">
+          📅
+        </div>
+        <div>
+          <h1 class="text-lg font-black bg-gradient-to-r from-teal-600 via-sky-600 to-indigo-600 dark:from-teal-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            Plan & Message Master
+          </h1>
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400">A1 Validation & Review Studio</p>
+        </div>
+      </div>
+
+      <!-- Gamification & Utility Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-extrabold" title="Current Streak">
+          <span>🔥</span>
+          <span id="streak-counter">1 Day</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-extrabold" title="XP Points">
+          <span>⚡</span>
+          <span id="xp-counter">0 XP</span>
+        </div>
+
+        <button id="speed-btn" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-extrabold transition-all" title="TTS Speed">
+          🗣️ <span id="speed-label">1.0x</span>
+        </button>
+
+        <button id="sfx-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle SFX">
+          <span id="sfx-icon">🔊</span>
+        </button>
+
+        <button id="theme-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+        <button id="badges-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Achievements">
+          <span>🏆</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-6xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
+      <button class="nav-btn active px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all bg-teal-600 text-white shadow-sm flex items-center gap-2" onclick="switchTab('categorizer', this)">
+        <span>📂</span> 1. Phrase Categorizer
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('prepositions', this)">
+        <span>⏳</span> 2. Time Prepositions
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('repair', this)">
+        <span>🛠️</span> 3. Message Repair
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('rescheduler', this)">
+        <span>📲</span> 4. Phone Rescheduler
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('passport', this)">
+        <span>📜</span> 5. Passport & Cert
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6">
+
+    <!-- Module 1: Phrase Categorizer -->
+    <section id="module-categorizer" class="tab-content active space-y-6">
+      <div class="bg-gradient-to-r from-teal-500 via-sky-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 1</span>
+          <h2 class="text-2xl font-black">Phrase Categorizer (Plans vs. Messages)</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Classify each functional expression into <strong>"Making Plans"</strong> or <strong>"Sending Messages"</strong>. Listen with 🔊!
+          </p>
+        </div>
+        <button onclick="resetCategorizer()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 font-extrabold text-xs transition-all backdrop-blur-sm flex items-center gap-2">
+          🔄 Reset Module
+        </button>
+      </div>
+
+      <!-- Category Filter Grid -->
+      <div id="categorizer-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Module 2: Time Preposition Wizard -->
+    <section id="module-prepositions" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-sky-500 via-teal-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 2</span>
+          <h2 class="text-2xl font-black">Time Preposition Wizard (at, on, in)</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Select the correct preposition of time for each social situation. Click 💡 Grammar Guide for quick rules!
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="togglePrepRules()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 font-extrabold text-xs transition-all backdrop-blur-sm flex items-center gap-2">
+            💡 Grammar Guide
+          </button>
+          <button onclick="checkPrepositions()" class="px-5 py-2 rounded-xl bg-white text-teal-800 hover:bg-teal-50 font-black text-xs transition-all shadow-md">
+            ✅ Check Answers
+          </button>
+        </div>
+      </div>
+
+      <!-- Preposition Rules Modal Box -->
+      <div id="prep-rules-box" class="hidden bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-800 rounded-2xl p-5 text-xs text-amber-900 dark:text-amber-200 space-y-2">
+        <h3 class="font-black text-sm flex items-center gap-2">📌 Prepositions of Time Quick Guide:</h3>
+        <ul class="list-disc list-inside space-y-1 font-semibold">
+          <li><strong>AT:</strong> Specific times (<em>at 8:15 PM</em>), night (<em>at night</em>), exact moments.</li>
+          <li><strong>ON:</strong> Days of the week (<em>on Friday</em>), specific dates, day parts (<em>on Sunday afternoon</em>).</li>
+          <li><strong>IN:</strong> Parts of day (<em>in the morning/afternoon</em>), future durations (<em>in 10 minutes</em>), months/years.</li>
+        </ul>
+      </div>
+
+      <!-- Questions List -->
+      <div id="prep-questions-list" class="space-y-4">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Module 3: Text & Voicemail Repair Studio -->
+    <section id="module-repair" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-indigo-500 via-teal-600 to-sky-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 3</span>
+          <h2 class="text-2xl font-black">Text & Voicemail Repair Studio</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Fix the draft messages by selecting or dragging word bank chips into the empty gaps.
+          </p>
+        </div>
+        <button onclick="checkRepairStudio()" class="px-5 py-2.5 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs transition-all shadow-md flex items-center gap-2">
+          ✅ Check & Complete
+        </button>
+      </div>
+
+      <!-- Word Bank Chips Box -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Word Bank Chips</h3>
+        <div id="repair-chips-container" class="flex flex-wrap gap-2.5 items-center">
+          <!-- Rendered via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Draft Messages List -->
+      <div id="repair-drafts-container" class="space-y-4">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Module 4: Integrated Phone Simulator -->
+    <section id="module-rescheduler" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-teal-600 via-indigo-600 to-sky-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 4</span>
+          <h2 class="text-2xl font-black">Integrated Phone Rescheduler</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Simulate missed calls, play voicemails, and use an interactive calendar to reschedule a canceled Friday event to Saturday!
+          </p>
+        </div>
+        <button onclick="triggerPhoneRingtone()" id="ring-btn" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-xs transition-all shadow-md flex items-center gap-2">
+          🔔 Ring Phone!
+        </button>
+      </div>
+
+      <!-- Smartphone Layout Frame -->
+      <div class="max-w-md mx-auto bg-slate-900 rounded-[44px] p-4 p-md-5 border-4 border-slate-700 shadow-2xl text-slate-100">
+        
+        <!-- Phone Top Notch -->
+        <div class="flex justify-between items-center text-[11px] font-bold px-4 pt-1 pb-3 text-slate-400">
+          <span>10:15 AM</span>
+          <div class="w-20 h-4 bg-slate-800 rounded-full flex items-center justify-center">
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>📶</span> <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- Phone Display Screen -->
+        <div id="phone-screen-display" class="bg-slate-800 rounded-[28px] p-4 min-h-[480px] flex flex-col justify-between border border-slate-700/60 space-y-4">
+          
+          <!-- Incoming Call / Voicemail Banner -->
+          <div id="phone-call-card" class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-full bg-teal-500 text-white flex items-center justify-center font-black text-sm">
+                  👨‍💼
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-xs">Alex (Friend)</h4>
+                  <p id="phone-status-text" class="text-[10px] text-teal-400 font-bold">📼 1 New Voicemail (0:12)</p>
+                </div>
+              </div>
+              <button onclick="playVoicemail()" class="w-10 h-10 rounded-full bg-teal-500 hover:bg-teal-400 text-white flex items-center justify-center transition-all shadow-md">
+                ▶️
+              </button>
+            </div>
+
+            <!-- Waveform Box -->
+            <div id="phone-wave-box" class="hidden bg-slate-950 p-2 rounded-xl flex items-center justify-center gap-1.5 h-8">
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+            </div>
+
+            <p id="voicemail-text" class="text-[11px] text-slate-300 italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+              "Hi Sam! This is Alex. Are you free for dinner on Friday at 6:00 PM? Call me back or send a text!"
+            </p>
+          </div>
+
+          <!-- SMS Thread View -->
+          <div id="phone-sms-thread" class="flex-1 overflow-y-auto space-y-2 p-1 max-h-[170px] text-xs">
+            <div class="bg-slate-700/60 p-2.5 rounded-2xl rounded-tl-none max-w-[85%] text-slate-200 text-[11px]">
+              [Missed Call from Alex at 10:12 AM]
+            </div>
+          </div>
+
+          <!-- Rescheduling Interactive Controls -->
+          <div class="space-y-2.5 pt-2 border-t border-slate-700/80">
+            <h5 class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Step 1: Explain Busy Status & Reject Friday</h5>
+            <button id="step1-btn" onclick="executeSimStep1()" class="w-full p-2 rounded-xl bg-slate-700/70 hover:bg-slate-700 text-teal-300 font-extrabold text-[11px] text-left border border-slate-600/60">
+              💬 "Sorry I missed your call! I'm busy on Friday because I'm working late."
+            </button>
+
+            <!-- Calendar & Time Slot Selection (Step 2) -->
+            <div id="calendar-step-box" class="hidden space-y-2 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+              <h5 class="text-[10px] font-black uppercase text-amber-400 tracking-wider">Step 2: Pick Saturday Slot to Reschedule</h5>
+              
+              <!-- Mini Calendar Grid -->
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2 rounded-xl bg-rose-950/50 border border-rose-800/60 text-rose-300 opacity-60">
+                  <span class="block text-[9px] font-bold">FRIDAY</span>
+                  <span class="font-black text-sm">Busy ❌</span>
+                </div>
+                <div id="sat-cal-card" onclick="selectSaturdayDate()" class="p-2 rounded-xl bg-teal-950 border-2 border-teal-500 text-teal-200 cursor-pointer font-bold transition-all hover:bg-teal-900">
+                  <span class="block text-[9px] uppercase">SATURDAY</span>
+                  <span class="font-black text-sm">Free ✅</span>
+                </div>
+              </div>
+
+              <!-- Time Slot selector -->
+              <div class="flex gap-2">
+                <button onclick="selectTimeSlot('3:00 PM')" class="slot-btn flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-teal-600 text-[11px] font-bold text-white border border-slate-700">
+                  🕒 3:00 PM
+                </button>
+                <button onclick="selectTimeSlot('7:00 PM')" class="slot-btn flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-teal-600 text-[11px] font-bold text-white border border-slate-700">
+                  🕖 7:00 PM
+                </button>
+              </div>
+
+              <button id="step2-send-btn" disabled onclick="executeSimStep2()" class="w-full py-2 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white font-extrabold text-xs transition-all shadow-md">
+                Send Reschedule Proposal 📤
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Module 5: Learner Passport & Certificate -->
+    <section id="module-passport" class="tab-content space-y-6">
+      <div class="no-print bg-gradient-to-r from-teal-500 via-sky-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 5</span>
+          <h2 class="text-2xl font-black">Learner Passport & Certificate</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Type your full name, review your review stats, and print your official A1 Plan & Message Master Certificate!
+          </p>
+        </div>
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-white text-teal-800 hover:bg-teal-50 font-black text-xs transition-all shadow-md flex items-center gap-2">
+          🖨️ Print Certificate
+        </button>
+      </div>
+
+      <!-- Student Name Form -->
+      <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learner Full Name</label>
+        <input type="text" id="cert-student-input" value="A1 English Learner" oninput="updateCertName()" class="w-full max-w-md px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+
+      <!-- Printable Certificate Layout -->
+      <div id="printable-certificate" class="bg-white text-slate-900 border-8 double border-teal-600 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden space-y-6">
+        <div class="space-y-1">
+          <span class="text-xs font-black tracking-widest uppercase text-teal-600">Official A1 Validation Competency</span>
+          <h2 class="text-3xl md:text-4xl font-black uppercase text-slate-900 tracking-tight">Certificate of Achievement</h2>
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Plan & Message Master Studio</p>
+        </div>
+
+        <div class="py-4 space-y-2">
+          <p class="text-xs text-slate-500 italic font-semibold">This certificate validates that:</p>
+          <div id="cert-display-name" class="text-3xl md:text-4xl font-black text-teal-700 border-b-2 border-teal-500 inline-block px-8 py-1">
+            A1 English Learner
+          </div>
+        </div>
+
+        <p class="max-w-xl mx-auto text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
+          Has successfully demonstrated complete mastery in making social arrangements, asking availability, using time prepositions (<em>at, on, in</em>), repairing voicemail drafts, and coordinating event rescheduling on phone simulators.
+        </p>
+
+        <!-- Unlocked Badges Showcase -->
+        <div id="cert-badges-grid" class="flex flex-wrap justify-center gap-3 py-2">
+          <!-- Rendered via JavaScript -->
+        </div>
+
+        <div class="flex justify-between items-end pt-8 border-t border-slate-200 text-xs font-bold text-slate-500">
+          <div class="text-left">
+            <p class="text-teal-600 font-black">Plan & Message Master Studio</p>
+            <p id="cert-date-display">Date: Sep 2026</p>
+          </div>
+          <div class="text-right">
+            <p>Validated Score: <span id="cert-xp-display" class="text-emerald-600 font-black">0 XP</span></p>
+            <p>Level: Certified A1 Communicator</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Achievements Drawer / Modal -->
+  <div id="badges-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-black text-lg">Unlocked Achievements</h3>
+        <button onclick="toggleBadgesModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-sm">✕</button>
+      </div>
+      <div id="modal-badges-list" class="space-y-3">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSynthSound(type) {
+      if (!state.sfxEnabled) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'pop') {
+          osc.frequency.setValueAtTime(450, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(freq, now + idx * 0.1);
+            g.gain.setValueAtTime(0.08, now + idx * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+            o.start(now + idx * 0.1);
+            o.stop(now + idx * 0.1 + 0.25);
+          });
+        }
+      } catch (e) {
+        console.error("Audio Synthesis Error:", e);
+      }
+    }
+
+    function playTelephoneRingtone() {
+      if (!state.sfxEnabled) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        // Dual Tone Multi-Frequency ring simulation
+        [0, 0.8].forEach(startTime => {
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc1.frequency.setValueAtTime(440, now + startTime);
+          osc2.frequency.setValueAtTime(480, now + startTime);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          gain.gain.setValueAtTime(0.06, now + startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + startTime + 0.6);
+
+          osc1.start(now + startTime);
+          osc2.start(now + startTime);
+          osc1.stop(now + startTime + 0.6);
+          osc2.stop(now + startTime + 0.6);
+        });
+      } catch (e) {
+        console.error("Ringtone Error:", e);
+      }
+    }
+
+    function speakText(text, pitch = 1.0, callback = null) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = state.ttsSpeed;
+      utterance.pitch = pitch;
+      utterance.lang = 'en-US';
+      if (callback) utterance.onend = callback;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    const state = {
+      xp: 0,
+      streak: 1,
+      sfxEnabled: true,
+      ttsSpeed: 1.0,
+      studentName: 'A1 English Learner',
+
+      // Module 1 Data
+      categorizerItems: [
+        { id: 1, text: "Are you free this Saturday evening?", cat: "P", labelP: "Making Plans", labelM: "Sending Messages" },
+        { id: 2, text: "Sorry I missed your call! I was driving.", cat: "M" },
+        { id: 3, text: "Let me know when you get this message.", cat: "M" },
+        { id: 4, text: "Do you want to grab a coffee tomorrow?", cat: "P" },
+        { id: 5, text: "I'm calling about our weekend trip.", cat: "M" },
+        { id: 6, text: "How about meeting at 7:00 PM instead?", cat: "P" }
+      ],
+      categorizerAnswers: {},
+
+      // Module 2 Data
+      prepQuestions: [
+        { id: 1, text: "Let me call you back _____ 10 minutes.", ans: "in", options: ["at", "on", "in"], hint: "Use 'in' for future time intervals." },
+        { id: 2, text: "Are you free to meet _____ Sunday afternoon?", ans: "on", options: ["at", "on", "in"], hint: "Use 'on' for days and specific day parts." },
+        { id: 3, text: "The movie starts _____ 8:15 PM.", ans: "at", options: ["at", "on", "in"], hint: "Use 'at' for specific times." },
+        { id: 4, text: "I usually go to the gym _____ the morning.", ans: "in", options: ["at", "on", "in"], hint: "Use 'in' for parts of the day." },
+        { id: 5, text: "Can we talk _____ Friday?", ans: "on", options: ["at", "on", "in"], hint: "Use 'on' for days of the week." },
+        { id: 6, text: "I'll leave a voicemail _____ night if you don't answer.", ans: "at", options: ["at", "on", "in"], hint: "Use 'at' for 'night'." }
+      ],
+      prepAnswers: {},
+
+      // Module 3 Data
+      repairChips: ["missed your call", "call me back", "busy right now", "How about", "free on"],
+      repairDrafts: [
+        {
+          id: 1,
+          type: "Text Message",
+          textParts: ["Hi Alex! Sorry I ", ". I was in class. Is everything okay?"],
+          slots: ["missed your call"]
+        },
+        {
+          id: 2,
+          type: "Voicemail Draft",
+          textParts: ["Hello Maria, this is Tom. I want to talk about tomorrow's dinner. Please ", " when you can!"],
+          slots: ["call me back"]
+        },
+        {
+          id: 3,
+          type: "Rescheduling Text",
+          textParts: ["I'm ", " because I have to work late. ", " meeting ", " Saturday instead?"],
+          slots: ["busy right now", "How about", "free on"]
+        }
+      ],
+      repairUserSlotVals: {},
+
+      // Module 4 Data
+      selectedTimeSlot: null,
+      rescheduleSatSelected: false,
+
+      // Badges System
+      badges: [
+        { id: 'cat_master', name: 'Categorizer Master', desc: 'Classified all planning and messaging phrases', icon: '📂', unlocked: false },
+        { id: 'prep_wizard', name: 'Preposition Wizard', desc: 'Solved all prepositions of time correctly', icon: '⏳', unlocked: false },
+        { id: 'repair_pro', name: 'Draft Repair Pro', desc: 'Fixed all broken voicemails and texts', icon: '🛠️', unlocked: false },
+        { id: 'phone_rescheduler', name: 'Phone Rescheduler', desc: 'Rescheduled Friday dinner event to Saturday on phone', icon: '📲', unlocked: false }
+      ]
+    };
+
+    function addRewards(xpGained) {
+      state.xp += xpGained;
+      document.getElementById('xp-counter').innerText = `${state.xp} XP`;
+      document.getElementById('cert-xp-display').innerText = `${state.xp} XP`;
+      playSynthSound('pop');
+    }
+
+    function unlockBadge(badgeId) {
+      const b = state.badges.find(x => x.id === badgeId);
+      if (b && !b.unlocked) {
+        b.unlocked = true;
+        playSynthSound('fanfare');
+        triggerConfetti();
+        renderBadges();
+      }
+    }
+
+    function renderBadges() {
+      const modalList = document.getElementById('modal-badges-list');
+      const certGrid = document.getElementById('cert-badges-grid');
+      modalList.innerHTML = '';
+      certGrid.innerHTML = '';
+
+      state.badges.forEach(b => {
+        // Modal badge item
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl border flex items-center justify-between gap-3 ${b.unlocked ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-800' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-60'}`;
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${b.icon}</span>
+            <div>
+              <h4 class="text-xs font-black">${b.name}</h4>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">${b.desc}</p>
+            </div>
+          </div>
+          <span class="text-xs font-black">${b.unlocked ? '✅' : '🔒'}</span>
+        `;
+        modalList.appendChild(div);
+
+        // Certificate badge item
+        if (b.unlocked) {
+          const cBadge = document.createElement('div');
+          cBadge.className = 'px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-300 text-teal-800 text-xs font-black flex items-center gap-1.5';
+          cBadge.innerHTML = `<span>${b.icon}</span> <span>${b.name}</span>`;
+          certGrid.appendChild(cBadge);
+        }
+      });
+    }
+
+    function renderCategorizer() {
+      const container = document.getElementById('categorizer-grid');
+      container.innerHTML = '';
+
+      state.categorizerItems.forEach(item => {
+        const userChoice = state.categorizerAnswers[item.id];
+        const isAnswered = !!userChoice;
+        const isCorrect = userChoice === item.cat;
+
+        const card = document.createElement('div');
+        card.className = `bg-white dark:bg-slate-800 rounded-2xl p-4 border transition-all shadow-sm space-y-3 ${
+          isAnswered
+            ? (isCorrect ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20' : 'border-rose-500 bg-rose-50/30 dark:bg-rose-950/20')
+            : 'border-slate-200 dark:border-slate-700'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <p class="text-xs font-extrabold leading-relaxed">"${item.text}"</p>
+            <button onclick="speakText('${item.text.replace(/'/g, "\\'")}')" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300 transition-all text-xs">🔊</button>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button onclick="answerCategorizer(${item.id}, 'P')" class="flex-1 py-2 rounded-xl border text-xs font-black transition-all ${
+              userChoice === 'P'
+                ? (item.cat === 'P' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-rose-500 text-white border-rose-600')
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+            }">
+              📅 Making Plans
+            </button>
+            <button onclick="answerCategorizer(${item.id}, 'M')" class="flex-1 py-2 rounded-xl border text-xs font-black transition-all ${
+              userChoice === 'M'
+                ? (item.cat === 'M' ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-rose-500 text-white border-rose-600')
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+            }">
+              💬 Sending Messages
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function answerCategorizer(id, choice) {
+      state.categorizerAnswers[id] = choice;
+      const item = state.categorizerItems.find(x => x.id === id);
+
+      if (choice === item.cat) {
+        playSynthSound('correct');
+        addRewards(10);
+      } else {
+        playSynthSound('wrong');
+      }
+
+      renderCategorizer();
+
+      const totalCorrect = state.categorizerItems.filter(i => state.categorizerAnswers[i.id] === i.cat).length;
+      if (totalCorrect === state.categorizerItems.length) {
+        unlockBadge('cat_master');
+      }
+    }
+
+    function resetCategorizer() {
+      state.categorizerAnswers = {};
+      renderCategorizer();
+    }
+
+    function renderPrepositions() {
+      const container = document.getElementById('prep-questions-list');
+      container.innerHTML = '';
+
+      state.prepQuestions.forEach(q => {
+        const userVal = state.prepAnswers[q.id];
+        const parts = q.text.split('_____');
+
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3';
+
+        let optionsHTML = '';
+        q.options.forEach(opt => {
+          const isSelected = userVal === opt;
+          optionsHTML += `
+            <button onclick="selectPrepOption(${q.id}, '${opt}')" class="px-4 py-1.5 rounded-xl border text-xs font-black transition-all ${
+              isSelected ? 'bg-teal-600 text-white border-teal-700 shadow-sm' : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:border-teal-400'
+            }">
+              ${opt}
+            </button>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="text-xs font-extrabold flex flex-wrap items-center gap-2">
+            <span>${parts[0]}</span>
+            <span class="px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-300 dark:border-teal-800 text-teal-700 dark:text-teal-300 font-black">
+              ${userVal || '_____'}
+            </span>
+            <span>${parts[1]}</span>
+            <button onclick="speakText('${q.text.replace('_____', userVal || 'blank').replace(/'/g, "\\'")}')" class="p-1 rounded-lg text-slate-400 hover:text-slate-600">🔊</button>
+          </div>
+          <div class="flex items-center gap-2 pt-1">${optionsHTML}</div>
+          <p class="text-[10px] font-bold text-slate-400">💡 Hint: ${q.hint}</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectPrepOption(qId, val) {
+      state.prepAnswers[qId] = val;
+      playSynthSound('pop');
+      renderPrepositions();
+    }
+
+    function togglePrepRules() {
+      const box = document.getElementById('prep-rules-box');
+      box.classList.toggle('hidden');
+      playSynthSound('pop');
+    }
+
+    function checkPrepositions() {
+      let correctCount = 0;
+      state.prepQuestions.forEach(q => {
+        if (state.prepAnswers[q.id] === q.ans) correctCount++;
+      });
+
+      if (correctCount === state.prepQuestions.length) {
+        playSynthSound('correct');
+        addRewards(25);
+        unlockBadge('prep_wizard');
+      } else {
+        playSynthSound('wrong');
+      }
+    }
+
+    function renderRepairStudio() {
+      const chipsContainer = document.getElementById('repair-chips-container');
+      const draftsContainer = document.getElementById('repair-drafts-container');
+      chipsContainer.innerHTML = '';
+      draftsContainer.innerHTML = '';
+
+      state.repairChips.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-teal-500 hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-extrabold transition-all';
+        btn.innerText = chip;
+        btn.onclick = () => speakText(chip);
+        chipsContainer.appendChild(btn);
+      });
+
+      state.repairDrafts.forEach(d => {
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3';
+
+        let draftTextHTML = '';
+        d.textParts.forEach((part, idx) => {
+          draftTextHTML += `<span>${part}</span>`;
+          if (idx < d.slots.length) {
+            const slotKey = `${d.id}_${idx}`;
+            const filledVal = state.repairUserSlotVals[slotKey] || '';
+            draftTextHTML += `
+              <select onchange="handleRepairSelect('${slotKey}', this.value)" class="px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-black text-indigo-600 dark:text-indigo-400 focus:outline-none">
+                <option value="">-- select chip --</option>
+                ${state.repairChips.map(c => `<option value="${c}" ${filledVal === c ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>
+            `;
+          }
+        });
+
+        card.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-500">${d.type}</span>
+            <button onclick="speakDraftText(${d.id})" class="text-xs text-slate-400 hover:text-slate-600 font-bold flex items-center gap-1">
+              🔊 Listen Draft
+            </button>
+          </div>
+          <div class="text-xs font-extrabold leading-relaxed flex flex-wrap items-center gap-1.5">
+            ${draftTextHTML}
+          </div>
+        `;
+        draftsContainer.appendChild(card);
+      });
+    }
+
+    function handleRepairSelect(key, val) {
+      state.repairUserSlotVals[key] = val;
+      playSynthSound('pop');
+    }
+
+    function speakDraftText(draftId) {
+      const d = state.repairDrafts.find(x => x.id === draftId);
+      let fullText = '';
+      d.textParts.forEach((part, idx) => {
+        fullText += part;
+        if (idx < d.slots.length) {
+          const key = `${d.id}_${idx}`;
+          fullText += state.repairUserSlotVals[key] || 'blank';
+        }
+      });
+      speakText(fullText);
+    }
+
+    function checkRepairStudio() {
+      let allCorrect = true;
+      state.repairDrafts.forEach(d => {
+        d.slots.forEach((correctVal, idx) => {
+          const key = `${d.id}_${idx}`;
+          if (state.repairUserSlotVals[key] !== correctVal) {
+            allCorrect = false;
+          }
+        });
+      });
+
+      if (allCorrect) {
+        playSynthSound('correct');
+        addRewards(25);
+        unlockBadge('repair_pro');
+      } else {
+        playSynthSound('wrong');
+      }
+    }
+
+    function triggerPhoneRingtone() {
+      const btn = document.getElementById('ring-btn');
+      btn.classList.add('ring-active');
+      playTelephoneRingtone();
+      setTimeout(() => btn.classList.remove('ring-active'), 1800);
+    }
+
+    function playVoicemail() {
+      const wave = document.getElementById('phone-wave-box');
+      wave.classList.remove('hidden');
+
+      const txt = document.getElementById('voicemail-text').innerText;
+      speakText(txt, 0.95, () => {
+        wave.classList.add('hidden');
+      });
+    }
+
+    function executeSimStep1() {
+      playSynthSound('pop');
+      const thread = document.getElementById('phone-sms-thread');
+      
+      const userMsg = document.createElement('div');
+      userMsg.className = 'bg-teal-600 text-white p-2.5 rounded-2xl rounded-tr-none max-w-[85%] ml-auto font-bold text-[11px] shadow-sm';
+      userMsg.innerText = "Sorry I missed your call! I'm busy on Friday because I'm working late.";
+      thread.appendChild(userMsg);
+
+      setTimeout(() => {
+        const alexReply = document.createElement('div');
+        alexReply.className = 'bg-slate-700 text-slate-100 p-2.5 rounded-2xl rounded-tl-none max-w-[85%] font-bold text-[11px] shadow-sm';
+        alexReply.innerText = "No problem! Are you free on Saturday instead?";
+        thread.appendChild(alexReply);
+        thread.scrollTop = thread.scrollHeight;
+        speakText("No problem! Are you free on Saturday instead?", 1.05);
+
+        document.getElementById('calendar-step-box').classList.remove('hidden');
+      }, 800);
+    }
+
+    function selectSaturdayDate() {
+      state.rescheduleSatSelected = true;
+      playSynthSound('pop');
+      checkSimStep2Ready();
+    }
+
+    function selectTimeSlot(slot) {
+      state.selectedTimeSlot = slot;
+      playSynthSound('pop');
+      document.querySelectorAll('.slot-btn').forEach(btn => {
+        btn.classList.remove('bg-teal-600');
+        if (btn.innerText.includes(slot)) btn.classList.add('bg-teal-600');
+      });
+      checkSimStep2Ready();
+    }
+
+    function checkSimStep2Ready() {
+      const btn = document.getElementById('step2-send-btn');
+      if (state.rescheduleSatSelected && state.selectedTimeSlot) {
+        btn.disabled = false;
+      }
+    }
+
+    function executeSimStep2() {
+      playSynthSound('pop');
+      const thread = document.getElementById('phone-sms-thread');
+      
+      const userMsg = document.createElement('div');
+      userMsg.className = 'bg-teal-600 text-white p-2.5 rounded-2xl rounded-tr-none max-w-[85%] ml-auto font-bold text-[11px] shadow-sm';
+      userMsg.innerText = `How about meeting on Saturday at ${state.selectedTimeSlot} instead?`;
+      thread.appendChild(userMsg);
+
+      setTimeout(() => {
+        const alexReply = document.createElement('div');
+        alexReply.className = 'bg-emerald-600 text-white p-2.5 rounded-2xl rounded-tl-none max-w-[85%] font-bold text-[11px] shadow-sm';
+        alexReply.innerText = `Saturday at ${state.selectedTimeSlot} sounds great! See you then! 🎉`;
+        thread.appendChild(alexReply);
+        thread.scrollTop = thread.scrollHeight;
+
+        speakText(`Saturday at ${state.selectedTimeSlot} sounds great! See you then!`, 1.05);
+        addRewards(30);
+        unlockBadge('phone_rescheduler');
+      }, 900);
+    }
+
+    function updateCertName() {
+      const val = document.getElementById('cert-student-input').value;
+      state.studentName = val || 'A1 English Learner';
+      document.getElementById('cert-display-name').innerText = state.studentName;
+    }
+
+    function switchTab(tabId, btnEl) {
+      playSynthSound('pop');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+        el.classList.add('text-slate-500', 'dark:text-slate-400');
+      });
+
+      document.getElementById(`module-${tabId}`).classList.add('active');
+      btnEl.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+      btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+    }
+
+    function toggleBadgesModal() {
+      playSynthSound('pop');
+      const modal = document.getElementById('badges-modal');
+      modal.classList.toggle('opacity-0');
+      modal.classList.toggle('pointer-events-none');
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0d9488', '#0284c7', '#f59e0b', '#6366f1', '#ec4899'];
+
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 4,
+          size: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 80
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.life > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.15;
+            p.life -= 1.5;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+        if (active) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    window.onload = function() {
+      // Speed Control Button
+      document.getElementById('speed-btn').addEventListener('click', () => {
+        if (state.ttsSpeed === 1.0) state.ttsSpeed = 0.8;
+        else if (state.ttsSpeed === 0.8) state.ttsSpeed = 1.2;
+        else state.ttsSpeed = 1.0;
+        document.getElementById('speed-label').innerText = `${state.ttsSpeed}x`;
+        playSynthSound('pop');
+      });
+
+      // SFX Toggle Button
+      document.getElementById('sfx-btn').addEventListener('click', () => {
+        state.sfxEnabled = !state.sfxEnabled;
+        document.getElementById('sfx-icon').innerText = state.sfxEnabled ? '🔊' : '🔇';
+      });
+
+      // Theme Toggle Button
+      document.getElementById('theme-btn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+      });
+
+      // Badges Modal Toggle
+      document.getElementById('badges-btn').addEventListener('click', toggleBadgesModal);
+
+      // Set Date
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      document.getElementById('cert-date-display').innerText = `Date: ${dateStr}`;
+
+      // Initial Renders
+      renderCategorizer();
+      renderPrepositions();
+      renderRepairStudio();
+      renderBadges();
+    };
+  </script>
+</body>
+</html>
