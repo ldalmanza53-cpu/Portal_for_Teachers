@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoQuest: Geography Questions & Explorer Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome CDN for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+            accent: {
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              indigo: '#6366f1',
+              rose: '#f43f5e'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+    }
+    .pulse-glow { animation: pulseGlow 2s infinite; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+
+    .card-transition {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Certificate Print Styling */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-certificate, #printable-certificate * { visibility: visible; }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none !important;
+        border: 10px solid #0284c7 !important;
+      }
+      .no-print { display: none !important; }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(14, 165, 233, 0.4); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.7); }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300 select-none">
+  
+  <!-- Canvas for Confetti -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 animate-float">
+          <i class="fa-solid font-bold fa-earth-americas text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="font-display font-bold text-xl sm:text-2xl bg-gradient-to-r from-brand-600 via-indigo-600 to-emerald-500 bg-clip-text text-transparent">
+            GeoQuest Studio
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">A1 Geography Questions & Explorer</p>
+        </div>
+      </div>
+
+      <!-- Controls & Progress Badges -->
+      <div class="flex items-center space-x-3 sm:space-x-4 flex-wrap">
+        
+        <!-- Stars Counter -->
+        <div class="flex items-center space-x-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-1.5 rounded-full text-amber-600 dark:text-amber-400 font-bold text-sm shadow-sm" title="Earned Stars">
+          <i class="fa-solid fa-star text-amber-500 text-base"></i>
+          <span id="global-star-count">0</span>
+        </div>
+
+        <!-- TTS Voice Speed Controller -->
+        <div class="hidden md:flex items-center space-x-2 bg-slate-100 dark:bg-slate-700/60 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 dark:text-slate-300">
+          <i class="fa-solid fa-gauge-high text-brand-500"></i>
+          <span>Voice:</span>
+          <input type="range" id="tts-speed" min="0.7" max="1.2" step="0.1" value="0.9" class="w-16 accent-brand-600 cursor-pointer" title="Adjust Read-Aloud Speed">
+          <span id="tts-speed-val" class="font-bold w-7">0.9x</span>
+        </div>
+
+        <!-- Mute Audio Button -->
+        <button id="sfx-toggle-btn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Sound Effects">
+          <i id="sfx-icon" class="fa-solid fa-volume-high text-sm"></i>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="theme-toggle-btn" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Theme">
+          <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+        </button>
+
+        <!-- Explorer Badges Modal Trigger -->
+        <button onclick="toggleModal('badges-modal')" class="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 transition relative" title="View Badges">
+          <i class="fa-solid fa-award text-base"></i>
+          <span id="badge-indicator" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping"></span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 dark:border-slate-700/50 flex space-x-1 sm:space-x-2 overflow-x-auto py-2 no-scrollbar">
+      <button onclick="switchTab('matcher')" id="tab-btn-matcher" class="tab-btn active-tab flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <i class="fa-solid fa-puzzle-piece"></i>
+        <span>1. Question Matcher</span>
+      </button>
+
+      <button onclick="switchTab('builder')" id="tab-btn-builder" class="tab-btn flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <i class="fa-solid fa-pen-ruler"></i>
+        <span>2. Question Builder</span>
+      </button>
+
+      <button onclick="switchTab('studio')" id="tab-btn-studio" class="tab-btn flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <i class="fa-solid fa-globe"></i>
+        <span>3. Country Studio</span>
+      </button>
+
+      <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="tab-btn flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <i class="fa-solid fa-microphone-lines"></i>
+        <span>4. Virtual Quiz Show</span>
+      </button>
+
+      <button onclick="switchTab('passport')" id="tab-btn-passport" class="tab-btn flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <i class="fa-solid fa-passport"></i>
+        <span>5. Passport & Certificate</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 no-print">
+
+    <!-- ================= MODULE 1: QUESTION MATCHER ================= -->
+    <section id="module-matcher" class="tab-content block space-y-6">
+      
+      <!-- Intro Card -->
+      <div class="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Module 1</span>
+          <h2 class="text-2xl sm:text-3xl font-display font-extrabold">Geography Question Matcher</h2>
+          <p class="text-brand-100 text-sm max-w-xl">
+            Tap a <strong>Geography Question</strong> on the left, then tap its matching <strong>Answer</strong> on the right! Click the audio icons to listen.
+          </p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="resetMatcherModule()" class="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-4 py-2.5 rounded-2xl font-semibold text-sm transition flex items-center space-x-2">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Shuffle & Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Matcher Container Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Questions Column -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="font-display font-bold text-lg text-brand-600 dark:text-brand-400 flex items-center space-x-2">
+              <i class="fa-solid fa-circle-question"></i>
+              <span>Questions</span>
+            </h3>
+            <span class="text-xs text-slate-400 font-medium">Select a question first</span>
+          </div>
+
+          <div id="matcher-questions-list" class="space-y-3">
+            <!-- Questions rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Answers Column -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="font-display font-bold text-lg text-emerald-600 dark:text-emerald-400 flex items-center space-x-2">
+              <i class="fa-solid fa-comment-dots"></i>
+              <span>Answers</span>
+            </h3>
+            <span class="text-xs text-slate-400 font-medium">Select matching answer</span>
+          </div>
+
+          <div id="matcher-answers-list" class="space-y-3">
+            <!-- Answers rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Matcher Progress Bar -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4">
+        <div class="flex items-center space-x-3 flex-1">
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Matcher Progress:</span>
+          <div class="flex-1 bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div id="matcher-progress-fill" class="bg-gradient-to-r from-brand-500 to-emerald-500 h-full w-0 transition-all duration-500"></div>
+          </div>
+        </div>
+        <span id="matcher-progress-text" class="text-sm font-bold text-brand-600 dark:text-brand-400">0 / 5 Matched</span>
+      </div>
+
+    </section>
+
+
+    <!-- ================= MODULE 2: QUESTION FORM BUILDER ================= -->
+    <section id="module-builder" class="tab-content hidden space-y-6">
+      
+      <!-- Module Header -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-6 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Module 2</span>
+          <h2 class="text-2xl sm:text-3xl font-display font-extrabold">Question Form Grammar Builder</h2>
+          <p class="text-purple-100 text-sm max-w-xl">
+            Choose the correct question word: <strong>Where</strong>, <strong>What</strong>, <strong>Which</strong>, or <strong>Is</strong> to complete the geography question.
+          </p>
+        </div>
+        <div class="bg-white/10 px-4 py-3 rounded-2xl text-center border border-white/20">
+          <p class="text-xs text-purple-200 uppercase font-semibold">Builder Score</p>
+          <p id="builder-score-display" class="text-2xl font-bold">0 / 8</p>
+        </div>
+      </div>
+
+      <!-- Grammar Helper Legend -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 p-3 rounded-2xl">
+          <span class="font-bold text-blue-700 dark:text-blue-300 text-sm">WHERE</span>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Places & locations</p>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-3 rounded-2xl">
+          <span class="font-bold text-amber-700 dark:text-amber-300 text-sm">WHAT</span>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Names, facts & details</p>
+        </div>
+        <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 p-3 rounded-2xl">
+          <span class="font-bold text-emerald-700 dark:text-emerald-300 text-sm">WHICH</span>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Choices & groups</p>
+        </div>
+        <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-3 rounded-2xl">
+          <span class="font-bold text-rose-700 dark:text-rose-300 text-sm">IS</span>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Yes / No questions</p>
+        </div>
+      </div>
+
+      <!-- Builder Interactive Cards List -->
+      <div id="builder-cards-container" class="space-y-4">
+        <!-- Rendered dynamically via JS -->
+      </div>
+
+    </section>
+
+
+    <!-- ================= MODULE 3: COUNTRY STUDIO ================= -->
+    <section id="module-studio" class="tab-content hidden space-y-6">
+      
+      <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-6 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Module 3</span>
+          <h2 class="text-2xl sm:text-3xl font-display font-extrabold">Country Fact File & Question Studio</h2>
+          <p class="text-emerald-100 text-sm max-w-xl">
+            Explore country facts, then solve the <strong>Reverse Question Challenge</strong>: see the answer and craft the matching question!
+          </p>
+        </div>
+      </div>
+
+      <!-- Country Selector Pills -->
+      <div class="flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar" id="country-selector-pills">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Country Fact Card & Reverse Challenge Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Fact Card -->
+        <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-6">
+          <div id="country-fact-card-body" class="space-y-5">
+            <!-- JS dynamic content -->
+          </div>
+          <button id="speak-country-summary-btn" class="w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold py-3 px-4 rounded-2xl transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-volume-high text-brand-500"></i>
+            <span>Listen to Country Summary</span>
+          </button>
+        </div>
+
+        <!-- Right: Question Challenge Studio -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+            <h3 class="font-display font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+              <i class="fa-solid fa-lightbulb text-amber-500"></i>
+              <span>Reverse Question Challenge</span>
+            </h3>
+            <span class="text-xs bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold px-2.5 py-1 rounded-full">
+              Target Practice
+            </span>
+          </div>
+
+          <div class="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2">
+            <span class="text-xs font-bold uppercase text-slate-400">Given Answer:</span>
+            <p id="challenge-target-answer" class="text-lg font-bold text-brand-600 dark:text-brand-400">
+              "The capital of Colombia is Bogotá."
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Select the correct question for this answer:
+            </label>
+            <div id="challenge-options-container" class="space-y-2.5">
+              <!-- Options rendered via JS -->
+            </div>
+          </div>
+
+          <div id="challenge-feedback" class="hidden p-4 rounded-2xl text-sm font-semibold transition"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= MODULE 4: VIRTUAL QUIZ SHOW ================= -->
+    <section id="module-quiz" class="tab-content hidden space-y-6">
+      
+      <!-- Stage Banner -->
+      <div class="bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 rounded-3xl p-6 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Module 4</span>
+          <h2 class="text-2xl sm:text-3xl font-display font-extrabold">Virtual Geography Quiz Show</h2>
+          <p class="text-amber-100 text-sm max-w-xl">
+            Test your speed and listening skills with Host Captain Atlas! Earn double stars on correct answers!
+          </p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button onclick="startQuizShow()" class="bg-white text-slate-900 hover:bg-amber-50 px-5 py-3 rounded-2xl font-extrabold text-sm shadow-lg transition flex items-center space-x-2">
+            <i class="fa-solid fa-play text-amber-500"></i>
+            <span>New Quiz Game</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Quiz Arena -->
+      <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-md space-y-6">
+        
+        <!-- Host Avatar & Stage Box -->
+        <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 p-5 bg-slate-900 text-white rounded-2xl relative overflow-hidden">
+          
+          <!-- Background Stage Glow -->
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-brand-500/30 rounded-full blur-3xl"></div>
+
+          <!-- Avatar -->
+          <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 flex items-center justify-center text-3xl shadow-inner border-2 border-white/40 shrink-0">
+            🤠
+          </div>
+
+          <!-- Host Speech Bubble -->
+          <div class="flex-1 space-y-2 text-center sm:text-left">
+            <div class="flex items-center justify-center sm:justify-start space-x-2">
+              <span class="font-display font-bold text-amber-400 text-base">Captain Atlas (Quiz Host)</span>
+              <button onclick="speakQuizQuestion()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full transition flex items-center space-x-1">
+                <i class="fa-solid fa-volume-high"></i>
+                <span>Repeat Question</span>
+              </button>
+            </div>
+            <p id="quiz-host-bubble" class="text-lg sm:text-xl font-semibold text-slate-100 leading-snug">
+              "Welcome Explorers! Are you ready for your first geography question?"
+            </p>
+          </div>
+
+          <!-- Score Counter -->
+          <div class="shrink-0 bg-white/10 px-4 py-3 rounded-2xl text-center border border-white/20">
+            <span class="text-xs text-amber-300 font-bold uppercase">Quiz Score</span>
+            <p id="quiz-score-val" class="text-2xl font-extrabold text-white">0 PTS</p>
+          </div>
+        </div>
+
+        <!-- Multiple Choice Options -->
+        <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Options rendered dynamically -->
+        </div>
+
+        <!-- Quiz Status Footer -->
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <span id="quiz-question-counter">Question 1 of 6</span>
+          <span id="quiz-streak-counter" class="text-amber-500 font-bold"><i class="fa-solid fa-fire mr-1"></i>Streak: 0</span>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= MODULE 5: EXPLORER PASSPORT & CERTIFICATE ================= -->
+    <section id="module-passport" class="tab-content hidden space-y-6">
+      
+      <!-- Student Info Panel -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <h2 class="font-display font-bold text-2xl text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+          <i class="fa-solid fa-id-card text-brand-600"></i>
+          <span>Explorer Passport Setup</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div class="sm:col-span-2 space-y-1">
+            <label for="student-name-input" class="text-sm font-semibold text-slate-600 dark:text-slate-300">Enter Your Full Name for Official Certificate:</label>
+            <input type="text" id="student-name-input" placeholder="e.g. Maria Colombia Explorer" value="A1 Geography Student" oninput="updateCertificate()" class="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-brand-500 outline-none font-semibold text-slate-800 dark:text-slate-100">
+          </div>
+          <button onclick="triggerCertificatePrint()" class="w-full bg-gradient-to-r from-brand-600 to-emerald-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg hover:opacity-95 transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-print"></i>
+            <span>Print Certificate</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PRINTABLE CERTIFICATE & PASSPORT CARD -->
+      <div id="printable-certificate" class="bg-white text-slate-900 rounded-3xl p-8 sm:p-12 border-8 border-brand-600 shadow-2xl relative overflow-hidden space-y-8">
+        
+        <!-- Watermark Globe -->
+        <div class="absolute -right-16 -bottom-16 text-slate-100 dark:text-slate-100/10 pointer-events-none">
+          <i class="fa-solid fa-earth-americas text-[280px]"></i>
+        </div>
+
+        <!-- Certificate Header -->
+        <div class="text-center space-y-3 border-b-2 border-slate-200 pb-6 relative z-10">
+          <div class="flex justify-center items-center space-x-3">
+            <i class="fa-solid fa-award text-amber-500 text-4xl"></i>
+            <h3 class="font-display font-black text-3xl sm:text-4xl uppercase tracking-wider text-slate-800">
+              Certificate of Achievement
+            </h3>
+            <i class="fa-solid fa-award text-amber-500 text-4xl"></i>
+          </div>
+          <p class="text-brand-600 font-bold uppercase tracking-widest text-sm">GeoQuest Global Geography Master</p>
+        </div>
+
+        <!-- Certificate Body -->
+        <div class="text-center space-y-4 max-w-2xl mx-auto relative z-10">
+          <p class="text-slate-500 font-medium text-base">This is officially presented to:</p>
+          <h4 id="cert-student-name" class="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 underline decoration-brand-500 decoration-4 underline-offset-8">
+            A1 Geography Student
+          </h4>
+          <p class="text-slate-600 text-sm leading-relaxed pt-2">
+            For successfully mastering A1 English geography questions, country fact files, continents, capital cities, and virtual quiz show challenges!
+          </p>
+        </div>
+
+        <!-- Passport Stamps Grid -->
+        <div class="relative z-10 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+          <h5 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Verified Passport Stamps & Badges</h5>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center" id="cert-badges-grid">
+            <!-- Badges dynamically mirrored -->
+          </div>
+        </div>
+
+        <!-- Certificate Footer -->
+        <div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 pt-6 text-xs text-slate-500 relative z-10 gap-4">
+          <div>
+            <p class="font-bold text-slate-800" id="cert-date-display">Date: September 25, 2026</p>
+            <p>GeoQuest Educational Studio</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-shield-halved text-emerald-500 text-2xl"></i>
+            <span class="font-semibold text-slate-700">Official A1 Standard Certification</span>
+          </div>
+          <div class="text-right">
+            <p class="font-bold text-brand-600">Total Stars: <span id="cert-stars-display">0</span> ⭐</p>
+            <p>Status: Master Explorer</p>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= BADGES MODAL ================= -->
+  <div id="badges-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-slate-200 dark:border-slate-700">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-display font-bold text-xl text-slate-800 dark:text-slate-100 flex items-center space-x-2">
+          <i class="fa-solid fa-trophy text-amber-500"></i>
+          <span>Explorer Badges</span>
+        </h3>
+        <button onclick="toggleModal('badges-modal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div id="badges-list" class="space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <button onclick="toggleModal('badges-modal')" class="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 font-bold py-2.5 rounded-xl text-sm transition">
+        Close
+      </button>
+    </div>
+  </div>
+
+
+  <script>
+    /* ================= APP STATE ================= */
+    const state = {
+      stars: 0,
+      soundEnabled: true,
+      ttsSpeed: 0.9,
+      studentName: 'A1 Geography Student',
+      
+      // Module 1: Matcher State
+      matcherSets: [
+        { id: 1, q: "What is the capital of France?", a: "The capital is Paris." },
+        { id: 2, q: "Which continent is Egypt in?", a: "It is in Africa." },
+        { id: 3, q: "Where is Japan located?", a: "It is in East Asia." },
+        { id: 4, q: "Is Brazil in South America?", a: "Yes, it is in South America." },
+        { id: 5, q: "What is the largest country in the world?", a: "Russia is the largest country." }
+      ],
+      selectedMatcherQ: null,
+      matchedPairs: [],
+
+      // Module 2: Builder State
+      builderData: [
+        { id: 1, sentence: "is the capital of Italy?", options: ["What", "Where", "Which", "Is"], answer: "What", tip: "Use 'What' to ask about names or specific facts (What is...)." },
+        { id: 2, sentence: "continent is Canada in?", options: ["Which", "Where", "What", "Is"], answer: "Which", tip: "Use 'Which' when choosing from a group of choices (Which continent...)." },
+        { id: 3, sentence: "Australia an island and a continent?", options: ["Is", "Where", "What", "Which"], answer: "Is", tip: "Use 'Is' for Yes/No questions starting with singular subjects." },
+        { id: 4, sentence: "is Madrid located?", options: ["Where", "What", "Which", "Is"], answer: "Where", tip: "Use 'Where' to ask about location or place." },
+        { id: 5, sentence: "is the capital of Japan?", options: ["What", "Where", "Which", "Is"], answer: "What", tip: "Use 'What' to ask for specific information like capitals." },
+        { id: 6, sentence: "London in Germany?", options: ["Is", "Where", "What", "Which"], answer: "Is", tip: "Use 'Is' for direct Yes/No location verification." },
+        { id: 7, sentence: "ocean is between America and Europe?", options: ["Which", "What", "Where", "Is"], answer: "Which", tip: "Use 'Which' to pick between oceans." },
+        { id: 8, sentence: "are the Andes Mountains located?", options: ["Where", "What", "Which", "Is"], answer: "Where", tip: "Use 'Where' when asking for physical mountain locations." }
+      ],
+      builderCompleted: {},
+
+      // Module 3: Countries State
+      countries: [
+        {
+          id: 'colombia', name: 'Colombia', flag: '🇨🇴',
+          location: 'South America', capital: 'Bogotá', language: 'Spanish', landmark: 'Andes Mountains & Amazon',
+          challenges: [
+            {
+              targetAnswer: "The capital of Colombia is Bogotá.",
+              options: [
+                "What is the capital of Colombia?",
+                "Where is Colombia located?",
+                "Which continent is Bogotá in?"
+              ],
+              correct: 0
+            },
+            {
+              targetAnswer: "Colombia is in South America.",
+              options: [
+                "Is Colombia in Europe?",
+                "Which continent is Colombia in?",
+                "What language do they speak in Colombia?"
+              ],
+              correct: 1
+            }
+          ]
+        },
+        {
+          id: 'japan', name: 'Japan', flag: '🇯🇵',
+          location: 'East Asia', capital: 'Tokyo', language: 'Japanese', landmark: 'Mount Fuji',
+          challenges: [
+            {
+              targetAnswer: "The capital of Japan is Tokyo.",
+              options: [
+                "Is Tokyo in China?",
+                "What is the capital of Japan?",
+                "Where is Mount Fuji?"
+              ],
+              correct: 1
+            }
+          ]
+        },
+        {
+          id: 'kenya', name: 'Kenya', flag: '🇰🇪',
+          location: 'East Africa', capital: 'Nairobi', language: 'Swahili & English', landmark: 'Savanna & Mount Kenya',
+          challenges: [
+            {
+              targetAnswer: "Kenya is located in Africa.",
+              options: [
+                "Which continent is Kenya in?",
+                "What is the capital of Kenya?",
+                "Is Kenya an island?"
+              ],
+              correct: 0
+            }
+          ]
+        },
+        {
+          id: 'italy', name: 'Italy', flag: '🇮🇹',
+          location: 'Southern Europe', capital: 'Rome', language: 'Italian', landmark: 'The Colosseum',
+          challenges: [
+            {
+              targetAnswer: "The capital of Italy is Rome.",
+              options: [
+                "Where is Madrid?",
+                "Is Rome in France?",
+                "What is the capital of Italy?"
+              ],
+              correct: 2
+            }
+          ]
+        }
+      ],
+      currentCountryIdx: 0,
+
+      // Module 4: Quiz Show State
+      quizQuestions: [
+        {
+          hostLine: "First question: What is the capital of France?",
+          options: ["Paris", "Rome", "Berlin", "Madrid"],
+          correct: 0
+        },
+        {
+          hostLine: "Which continent is Egypt located in?",
+          options: ["Asia", "Africa", "Europe", "South America"],
+          correct: 1
+        },
+        {
+          hostLine: "Is Australia both an island and a continent?",
+          options: ["Yes, it is!", "No, it isn't.", "Only an island.", "Neither!"],
+          correct: 0
+        },
+        {
+          hostLine: "Where are the Andes Mountains located?",
+          options: ["North America", "South America", "Asia", "Africa"],
+          correct: 1
+        },
+        {
+          hostLine: "What language do most people speak in Colombia?",
+          options: ["English", "French", "Spanish", "Italian"],
+          correct: 2
+        }
+      ],
+      currentQuizIdx: 0,
+      quizScore: 0,
+      quizStreak: 0,
+
+      // Badges Tracking
+      badges: [
+        { id: 'matcher_master', title: 'Matcher Master', desc: 'Matched all geography questions!', icon: 'fa-puzzle-piece', color: 'text-brand-500', unlocked: false },
+        { id: 'grammar_guru', title: 'Grammar Genius', desc: 'Completed all Question Form Builders!', icon: 'fa-pen-ruler', color: 'text-indigo-500', unlocked: false },
+        { id: 'world_explorer', title: 'World Explorer', desc: 'Completed Country Reverse Challenges!', icon: 'fa-earth-americas', color: 'text-emerald-500', unlocked: false },
+        { id: 'quiz_champion', title: 'Quiz Champion', desc: 'Scored 100+ points in Quiz Show!', icon: 'fa-trophy', color: 'text-amber-500', unlocked: false }
+      ]
+    };
+
+    // Web Audio Synthesizer
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, type, duration, gainVal = 0.1) {
+      if (!state.soundEnabled) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
+    function playSfx(type) {
+      if (type === 'correct') {
+        playTone(523.25, 'sine', 0.15, 0.12); // C5
+        setTimeout(() => playTone(659.25, 'sine', 0.2, 0.12), 100); // E5
+        setTimeout(() => playTone(783.99, 'sine', 0.3, 0.12), 200); // G5
+      } else if (type === 'incorrect') {
+        playTone(180, 'sawtooth', 0.25, 0.15);
+      } else if (type === 'pop') {
+        playTone(400, 'sine', 0.05, 0.08);
+      } else if (type === 'fanfare') {
+        [440, 554.37, 659.25, 880].forEach((f, i) => {
+          setTimeout(() => playTone(f, 'triangle', 0.4, 0.15), i * 120);
+        });
+      }
+    }
+
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = parseFloat(state.ttsSpeed);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function addStars(amount) {
+      state.stars += amount;
+      document.getElementById('global-star-count').innerText = state.stars;
+      document.getElementById('cert-stars-display').innerText = state.stars;
+      playSfx('pop');
+      checkBadges();
+    }
+
+    function unlockBadge(badgeId) {
+      const badge = state.badges.find(b => b.id === badgeId);
+      if (badge && !badge.unlocked) {
+        badge.unlocked = true;
+        document.getElementById('badge-indicator').classList.remove('hidden');
+        playSfx('fanfare');
+        triggerConfetti();
+        renderBadges();
+      }
+    }
+
+    function checkBadges() {
+      if (state.matchedPairs.length === state.matcherSets.length) unlockBadge('matcher_master');
+      if (Object.keys(state.builderCompleted).length === state.builderData.length) unlockBadge('grammar_guru');
+      if (state.quizScore >= 100) unlockBadge('quiz_champion');
+    }
+
+    function renderBadges() {
+      const list = document.getElementById('badges-list');
+      const certGrid = document.getElementById('cert-badges-grid');
+      list.innerHTML = '';
+      certGrid.innerHTML = '';
+
+      state.badges.forEach(b => {
+        // Modal item
+        const div = document.createElement('div');
+        div.className = `p-3.5 rounded-2xl border flex items-center space-x-3 ${b.unlocked ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-60'}`;
+        div.innerHTML = `
+          <div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center ${b.color} text-lg shadow-sm">
+            <i class="fa-solid ${b.icon}"></i>
+          </div>
+          <div class="flex-1">
+            <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100">${b.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400">${b.desc}</p>
+          </div>
+          ${b.unlocked ? '<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>' : '<i class="fa-solid fa-lock text-slate-400 text-sm"></i>'}
+        `;
+        list.appendChild(div);
+
+        // Cert item
+        const certItem = document.createElement('div');
+        certItem.className = `p-2.5 rounded-xl border ${b.unlocked ? 'bg-white border-brand-200 text-brand-700' : 'bg-slate-100 border-slate-200 text-slate-400 opacity-50'}`;
+        certItem.innerHTML = `
+          <i class="fa-solid ${b.icon} text-lg mb-1 block"></i>
+          <span class="text-[10px] font-extrabold uppercase block leading-tight">${b.title}</span>
+        `;
+        certGrid.appendChild(certItem);
+      });
+    }
+
+    function initMatcherModule() {
+      state.selectedMatcherQ = null;
+      state.matchedPairs = [];
+      renderMatcher();
+    }
+
+    function resetMatcherModule() {
+      initMatcherModule();
+      playSfx('pop');
+    }
+
+    function renderMatcher() {
+      const qList = document.getElementById('matcher-questions-list');
+      const aList = document.getElementById('matcher-answers-list');
+      qList.innerHTML = '';
+      aList.innerHTML = '';
+
+      // Shuffled answers
+      const shuffledAnswers = [...state.matcherSets].sort((a, b) => (a.id * 7 % 5) - (b.id * 7 % 5));
+
+      state.matcherSets.forEach(item => {
+        const isMatched = state.matchedPairs.includes(item.id);
+        const isSelected = state.selectedMatcherQ === item.id;
+
+        // Question Card
+        const qCard = document.createElement('div');
+        qCard.className = `p-4 rounded-2xl border transition card-transition cursor-pointer flex items-center justify-between ${
+          isMatched ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 opacity-70 cursor-default' :
+          isSelected ? 'bg-brand-50 dark:bg-brand-950/50 border-brand-500 ring-2 ring-brand-500/30 shadow-md' :
+          'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-slate-600'
+        }`;
+        qCard.onclick = () => {
+          if (isMatched) return;
+          state.selectedMatcherQ = item.id;
+          playSfx('pop');
+          renderMatcher();
+        };
+        qCard.innerHTML = `
+          <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">${item.q}</span>
+          <button onclick="event.stopPropagation(); speakText('${item.q}')" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-500">
+            <i class="fa-solid fa-volume-high text-xs"></i>
+          </button>
+        `;
+        qList.appendChild(qCard);
+      });
+
+      shuffledAnswers.forEach(item => {
+        const isMatched = state.matchedPairs.includes(item.id);
+
+        // Answer Card
+        const aCard = document.createElement('div');
+        aCard.className = `p-4 rounded-2xl border transition card-transition cursor-pointer flex items-center justify-between ${
+          isMatched ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 opacity-70 cursor-default' :
+          'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-slate-600'
+        }`;
+        aCard.onclick = () => {
+          if (isMatched) return;
+          if (!state.selectedMatcherQ) {
+            speakText("Please select a question on the left first!");
+            return;
+          }
+          if (state.selectedMatcherQ === item.id) {
+            // Correct match
+            state.matchedPairs.push(item.id);
+            state.selectedMatcherQ = null;
+            playSfx('correct');
+            addStars(2);
+            speakText("Correct match!");
+          } else {
+            // Wrong match
+            playSfx('incorrect');
+            speakText("Try again!");
+          }
+          renderMatcher();
+        };
+        aCard.innerHTML = `
+          <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">${item.a}</span>
+          <button onclick="event.stopPropagation(); speakText('${item.a}')" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500">
+            <i class="fa-solid fa-volume-high text-xs"></i>
+          </button>
+        `;
+        aList.appendChild(aCard);
+      });
+
+      // Update progress
+      const count = state.matchedPairs.length;
+      const total = state.matcherSets.length;
+      document.getElementById('matcher-progress-fill').style.width = `${(count / total) * 100}%`;
+      document.getElementById('matcher-progress-text').innerText = `${count} / ${total} Matched`;
+    }
+
+    function renderBuilderModule() {
+      const container = document.getElementById('builder-cards-container');
+      container.innerHTML = '';
+
+      state.builderData.forEach(item => {
+        const isDone = state.builderCompleted[item.id];
+        const card = document.createElement('div');
+        card.className = `p-5 rounded-3xl bg-white dark:bg-slate-800 border transition ${
+          isDone ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/30' : 'border-slate-200 dark:border-slate-700'
+        }`;
+
+        let optionsHTML = '';
+        item.options.forEach(opt => {
+          optionsHTML += `
+            <button onclick="checkBuilderChoice(${item.id}, '${opt}')" class="px-4 py-2 rounded-xl border text-sm font-bold transition ${
+              isDone && isDone.chosen === opt
+                ? (isDone.correct ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-rose-500 text-white border-rose-500')
+                : 'bg-slate-100 hover:bg-brand-500 hover:text-white dark:bg-slate-700 border-slate-200 dark:border-slate-600'
+            }">
+              ${opt}
+            </button>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-2 flex-1">
+              <div class="flex items-center space-x-2 text-lg font-bold text-slate-800 dark:text-slate-100">
+                <span class="px-3 py-1 rounded-xl bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 text-base font-extrabold">
+                  ${isDone ? isDone.chosen : '___'}
+                </span>
+                <span>${item.sentence}</span>
+                <button onclick="speakText('${isDone ? isDone.chosen : ''} ${item.sentence}')" class="text-slate-400 hover:text-brand-500 ml-2">
+                  <i class="fa-solid fa-volume-high text-sm"></i>
+                </button>
+              </div>
+              <p class="text-xs text-slate-500 dark:text-slate-400"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>${item.tip}</p>
+            </div>
+            <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+              ${optionsHTML}
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      const score = Object.values(state.builderCompleted).filter(x => x.correct).length;
+      document.getElementById('builder-score-display').innerText = `${score} / ${state.builderData.length}`;
+    }
+
+    function checkBuilderChoice(id, choice) {
+      const item = state.builderData.find(x => x.id === id);
+      const isCorrect = choice === item.answer;
+
+      if (isCorrect) {
+        playSfx('correct');
+        if (!state.builderCompleted[id]) addStars(2);
+        speakText(`${choice} ${item.sentence}`);
+      } else {
+        playSfx('incorrect');
+        speakText("Try again!");
+      }
+
+      state.builderCompleted[id] = { chosen: choice, correct: isCorrect };
+      renderBuilderModule();
+      checkBadges();
+    }
+
+    function renderCountryStudio() {
+      const country = state.countries[state.currentCountryIdx];
+      const pillsContainer = document.getElementById('country-selector-pills');
+      pillsContainer.innerHTML = '';
+
+      state.countries.forEach((c, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 rounded-2xl font-bold text-sm whitespace-nowrap transition flex items-center space-x-2 ${
+          idx === state.currentCountryIdx
+            ? 'bg-emerald-600 text-white shadow-md'
+            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+        }`;
+        btn.onclick = () => {
+          state.currentCountryIdx = idx;
+          playSfx('pop');
+          renderCountryStudio();
+        };
+        btn.innerHTML = `<span>${c.flag}</span><span>${c.name}</span>`;
+        pillsContainer.appendChild(btn);
+      });
+
+      // Render Country Fact Card
+      const factCard = document.getElementById('country-fact-card-body');
+      factCard.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span class="text-4xl">${country.flag}</span>
+            <div>
+              <h3 class="font-display font-black text-2xl text-slate-800 dark:text-slate-100">${country.name}</h3>
+              <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">${country.location}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+            <span class="text-xs text-slate-400 font-bold block">Capital City</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">${country.capital}</span>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+            <span class="text-xs text-slate-400 font-bold block">Language</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">${country.language}</span>
+          </div>
+          <div class="col-span-2 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+            <span class="text-xs text-slate-400 font-bold block">Famous Landmark</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">${country.landmark}</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('speak-country-summary-btn').onclick = () => {
+        speakText(`${country.name} is in ${country.location}. The capital city is ${country.capital}. They speak ${country.language}.`);
+      };
+
+      // Challenge Setup
+      const challenge = country.challenges[0];
+      document.getElementById('challenge-target-answer').innerText = `"${challenge.targetAnswer}"`;
+      const optionsContainer = document.getElementById('challenge-options-container');
+      optionsContainer.innerHTML = '';
+
+      challenge.options.forEach((opt, oIdx) => {
+        const optBtn = document.createElement('button');
+        optBtn.className = 'w-full text-left p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-emerald-500 font-semibold text-sm transition flex items-center justify-between';
+        optBtn.onclick = () => checkChallengeAnswer(oIdx, challenge.correct, opt);
+        optBtn.innerHTML = `
+          <span>${opt}</span>
+          <i class="fa-solid fa-circle-question text-slate-400 text-xs"></i>
+        `;
+        optionsContainer.appendChild(optBtn);
+      });
+
+      document.getElementById('challenge-feedback').className = 'hidden p-4 rounded-2xl text-sm font-semibold transition';
+    }
+
+    function checkChallengeAnswer(selected, correct, text) {
+      const feedback = document.getElementById('challenge-feedback');
+      feedback.classList.remove('hidden');
+
+      if (selected === correct) {
+        playSfx('correct');
+        addStars(3);
+        feedback.className = 'p-4 rounded-2xl text-sm font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300';
+        feedback.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>Excellent! "${text}" matches the target answer!`;
+        speakText(`Excellent! ${text}`);
+        unlockBadge('world_explorer');
+      } else {
+        playSfx('incorrect');
+        feedback.className = 'p-4 rounded-2xl text-sm font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200 border border-rose-300';
+        feedback.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i>Not quite. Try reading the answer carefully again.`;
+        speakText("Not quite, try again!");
+      }
+    }
+
+    function startQuizShow() {
+      state.currentQuizIdx = 0;
+      state.quizScore = 0;
+      state.quizStreak = 0;
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      const q = state.quizQuestions[state.currentQuizIdx];
+      document.getElementById('quiz-host-bubble').innerText = `"${q.hostLine}"`;
+      document.getElementById('quiz-score-val').innerText = `${state.quizScore} PTS`;
+      document.getElementById('quiz-streak-counter').innerText = `Streak: ${state.quizStreak}`;
+      document.getElementById('quiz-question-counter').innerText = `Question ${state.currentQuizIdx + 1} of ${state.quizQuestions.length}`;
+
+      speakQuizQuestion();
+
+      const optionsGrid = document.getElementById('quiz-options-grid');
+      optionsGrid.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:border-amber-400 dark:hover:border-amber-500 font-bold text-base transition text-left flex items-center justify-between shadow-sm';
+        btn.onclick = () => checkQuizAnswer(idx);
+        btn.innerHTML = `
+          <span>${opt}</span>
+          <span class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500">${String.fromCharCode(65 + idx)}</span>
+        `;
+        optionsGrid.appendChild(btn);
+      });
+    }
+
+    function speakQuizQuestion() {
+      const q = state.quizQuestions[state.currentQuizIdx];
+      speakText(q.hostLine);
+    }
+
+    function checkQuizAnswer(selectedIdx) {
+      const q = state.quizQuestions[state.currentQuizIdx];
+      if (selectedIdx === q.correct) {
+        playSfx('correct');
+        state.quizScore += 25;
+        state.quizStreak += 1;
+        addStars(5);
+        speakText("Correct answer! Great job!");
+      } else {
+        playSfx('incorrect');
+        state.quizStreak = 0;
+        speakText("Oh, that's not right!");
+      }
+
+      state.currentQuizIdx++;
+      if (state.currentQuizIdx < state.quizQuestions.length) {
+        setTimeout(renderQuizQuestion, 1200);
+      } else {
+        setTimeout(finishQuizShow, 1200);
+      }
+    }
+
+    function finishQuizShow() {
+      playSfx('fanfare');
+      triggerConfetti();
+      document.getElementById('quiz-host-bubble').innerText = `"Fantastic job! You completed the Quiz Show with ${state.quizScore} points!"`;
+      speakText(`Fantastic job! You completed the quiz show with ${state.quizScore} points!`);
+      checkBadges();
+    }
+
+    function updateCertificate() {
+      const inputVal = document.getElementById('student-name-input').value;
+      state.studentName = inputVal.trim() || 'A1 Geography Student';
+      document.getElementById('cert-student-name').innerText = state.studentName;
+    }
+
+    function triggerCertificatePrint() {
+      triggerConfetti();
+      window.print();
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0284c7', '#10b981', '#f59e0b', '#6366f1', '#f43f5e'];
+
+      for (let i = 0; i < 80; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 4,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 100
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+
+        particles.forEach(p => {
+          if (p.life > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // gravity
+            p.life -= 1.5;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        if (active) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    function switchTab(tabId) {
+      playSfx('pop');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
+        el.classList.add('text-slate-600', 'dark:text-slate-300');
+      });
+
+      document.getElementById(`module-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
+
+      if (tabId === 'quiz') startQuizShow();
+    }
+
+    function toggleModal(modalId) {
+      playSfx('pop');
+      const modal = document.getElementById(modalId);
+      modal.classList.toggle('hidden');
+      document.getElementById('badge-indicator').classList.add('hidden');
+    }
+
+    // Window Onload Initialization
+    window.onload = function () {
+      
+      // Speed Slider Listener
+      document.getElementById('tts-speed').addEventListener('input', (e) => {
+        state.ttsSpeed = e.target.value;
+        document.getElementById('tts-speed-val').innerText = `${e.target.value}x`;
+      });
+
+      // Mute Toggle Listener
+      document.getElementById('sfx-toggle-btn').addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        const icon = document.getElementById('sfx-icon');
+        icon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-rose-500';
+      });
+
+      // Dark Mode Toggle Listener
+      document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const icon = document.getElementById('theme-icon');
+        icon.className = document.documentElement.classList.contains('dark') ? 'fa-solid fa-sun text-sm' : 'fa-solid fa-moon text-sm';
+      });
+
+      // Set Date for Cert
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      document.getElementById('cert-date-display').innerText = `Date: ${dateStr}`;
+
+      // Initialize Modules
+      initMatcherModule();
+      renderBuilderModule();
+      renderCountryStudio();
+      renderBadges();
+      switchTab('matcher');
+    };
+  </script>
+</body>
+</html>
