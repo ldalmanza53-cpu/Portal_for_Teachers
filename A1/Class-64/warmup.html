@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan It Right! - Plans & Arrangements Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bin-dropzone {
+      transition: all 0.2s ease;
+    }
+    .bin-dropzone.drag-over {
+      transform: scale(1.02);
+      border-color: #0284c7 !important;
+      background-color: rgba(2, 132, 199, 0.08) !important;
+    }
+
+    .selected-chip {
+      ring: 3px;
+      ring-color: #0284c7;
+      transform: scale(1.03);
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      #printable-certificate {
+        border: 8px double #0284c7 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <header class="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md">
+          📅
+        </div>
+        <div>
+          <h1 class="text-lg font-black bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            Plan It Right!
+          </h1>
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400">Plans & Arrangements Studio</p>
+        </div>
+      </div>
+
+      <!-- Controls & Stats -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-extrabold" title="Earned Stars">
+          <span>⭐</span>
+          <span id="star-counter">0</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-extrabold" title="Experience Points">
+          <span>⚡</span>
+          <span id="xp-counter">0 XP</span>
+        </div>
+
+        <button id="speed-btn" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-extrabold transition-all" title="Audio Speed">
+          🗣️ <span id="speed-label">1.0x</span>
+        </button>
+
+        <button id="sfx-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle Sound">
+          <span id="sfx-icon">🔊</span>
+        </button>
+
+        <button id="theme-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+        <button id="badges-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Achievements">
+          <span>🏆</span>
+        </button>
+      </div>
+    </div>
+
+    <nav class="max-w-6xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
+      <button class="nav-btn active px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all bg-sky-600 text-white shadow-sm flex items-center gap-2" onclick="switchTab('prepositions', this)">
+        <span>⏰</span> 1. Prepositions (at, on, in)
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('phrases', this)">
+        <span>💬</span> 2. Invitations Builder
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('schedule', this)">
+        <span>📅</span> 3. Schedule Overlap Finder
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('roleplay', this)">
+        <span>🎭</span> 4. Weekend Roleplay
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('certificate', this)">
+        <span>📜</span> 5. Planner & Certificate
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main App View -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6">
+
+    <section id="module-prepositions" class="tab-content active space-y-6">
+      <div class="bg-gradient-to-r from-sky-500 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 1</span>
+          <h2 class="text-2xl font-black">Prepositions of Time Sorter</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Tap or drag time expressions into the correct preposition bin: <strong>AT</strong> (specific times), <strong>ON</strong> (days/dates), or <strong>IN</strong> (parts of day/months).
+          </p>
+        </div>
+        <button onclick="resetPrepositions()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 font-extrabold text-xs transition-all backdrop-blur-sm flex items-center gap-2">
+          🔄 Reset Practice
+        </button>
+      </div>
+
+      <!-- Item Deck -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Unsorted Time Expressions (Tap to Select or Listen)</h3>
+        <div id="item-deck" class="flex flex-wrap gap-2.5 min-h-[60px] items-center">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Preposition Bins -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- AT Bin -->
+        <div id="bin-at" onclick="handleBinClick('at')" class="bin-dropzone bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-dashed border-sky-300 dark:border-sky-800 space-y-3 min-h-[220px] flex flex-col justify-between cursor-pointer">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xl font-black text-sky-600 dark:text-sky-400">AT</span>
+              <span class="text-xs font-bold text-slate-400">Specific Times</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">e.g., at 6:30 PM, at night</p>
+            <div id="bin-items-at" class="mt-4 flex flex-col gap-2">
+              <!-- Sorted items -->
+            </div>
+          </div>
+          <div class="text-center text-xs font-bold text-sky-500 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 py-2 rounded-xl">
+            Tap here to place selected item
+          </div>
+        </div>
+
+        <!-- ON Bin -->
+        <div id="bin-on" onclick="handleBinClick('on')" class="bin-dropzone bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-dashed border-indigo-300 dark:border-indigo-800 space-y-3 min-h-[220px] flex flex-col justify-between cursor-pointer">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xl font-black text-indigo-600 dark:text-indigo-400">ON</span>
+              <span class="text-xs font-bold text-slate-400">Days & Dates</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">e.g., on Saturday, on Friday evening</p>
+            <div id="bin-items-on" class="mt-4 flex flex-col gap-2">
+              <!-- Sorted items -->
+            </div>
+          </div>
+          <div class="text-center text-xs font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 py-2 rounded-xl">
+            Tap here to place selected item
+          </div>
+        </div>
+
+        <!-- IN Bin -->
+        <div id="bin-in" onclick="handleBinClick('in')" class="bin-dropzone bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-dashed border-emerald-300 dark:border-emerald-800 space-y-3 min-h-[220px] flex flex-col justify-between cursor-pointer">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">IN</span>
+              <span class="text-xs font-bold text-slate-400">Parts of Day / Months</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">e.g., in the afternoon, in July</p>
+            <div id="bin-items-in" class="mt-4 flex flex-col gap-2">
+              <!-- Sorted items -->
+            </div>
+          </div>
+          <div class="text-center text-xs font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 py-2 rounded-xl">
+            Tap here to place selected item
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="module-phrases" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 2</span>
+          <h2 class="text-2xl font-black">Invitation & Response Phrase Builder</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Complete the dialogue snippets by dragging or tapping the correct phrase chips into the missing gaps.
+          </p>
+        </div>
+        <button onclick="checkPhrases()" class="px-5 py-2.5 rounded-xl bg-white text-emerald-700 hover:bg-emerald-50 font-extrabold text-xs transition-all shadow-md flex items-center gap-2">
+          ✅ Check Answers
+        </button>
+      </div>
+
+      <!-- Available Chips -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Word Bank Chips</h3>
+        <div id="phrase-bank" class="flex flex-wrap gap-2.5 min-h-[50px] items-center">
+          <!-- Chips via JS -->
+        </div>
+      </div>
+
+      <!-- Gap Fill Questions -->
+      <div id="phrases-container" class="space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="module-schedule" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 3</span>
+          <h2 class="text-2xl font-black">Schedule Overlap Finder</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Compare Sam's and Taylor's weekend schedules to find when both friends are free to meet!
+          </p>
+        </div>
+      </div>
+
+      <!-- Schedule Matrix -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Sam's Schedule -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 flex items-center justify-center font-black text-base">
+              🧑🏼‍💼
+            </div>
+            <div>
+              <h3 class="font-black text-base">Sam's Weekend Schedule</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Student A</p>
+            </div>
+          </div>
+
+          <div class="divide-y divide-slate-100 dark:divide-slate-700 text-xs font-semibold">
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Friday Night</span>
+              <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">🍝 Dinner with family</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Saturday Morning</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Saturday Afternoon</span>
+              <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">🏋️ Gym Workout</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Sunday Morning</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Sunday Afternoon</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Taylor's Schedule -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-300 flex items-center justify-center font-black text-base">
+              👩🏽‍💼
+            </div>
+            <div>
+              <h3 class="font-black text-base">Taylor's Weekend Schedule</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Student B</p>
+            </div>
+          </div>
+
+          <div class="divide-y divide-slate-100 dark:divide-slate-700 text-xs font-semibold">
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Friday Night</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Saturday Morning</span>
+              <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">💻 Shift Work</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Saturday Afternoon</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Sunday Morning</span>
+              <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-bold">🏃 Outdoor Running</span>
+            </div>
+            <div class="py-2.5 flex justify-between items-center">
+              <span>Sunday Afternoon</span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold">✨ Free</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guided Questions -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Schedule Alignment Questions</h3>
+        
+        <div id="schedule-questions" class="space-y-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <section id="module-roleplay" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 4</span>
+          <h2 class="text-2xl font-black">Weekend Planning Dual Roleplay</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Simulate a real-time conversation with Sam! Practice inviting, responding, proposing times, and agreeing on plans.
+          </p>
+        </div>
+        <button onclick="initRoleplay()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 font-extrabold text-xs transition-all backdrop-blur-sm flex items-center gap-2">
+          🔄 Restart Dialogue
+        </button>
+      </div>
+
+      <!-- Chat Feed -->
+      <div id="chat-feed" class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm min-h-[320px] max-h-[460px] overflow-y-auto space-y-4 flex flex-col">
+        <!-- Chat items via JS -->
+      </div>
+
+      <!-- Action Options -->
+      <div id="chat-options" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Interactive options via JS -->
+      </div>
+    </section>
+
+    <section id="module-certificate" class="tab-content space-y-6">
+      <div class="no-print bg-gradient-to-r from-amber-500 to-rose-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 5</span>
+          <h2 class="text-2xl font-black">Personal Social Planner & Certificate</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Build your custom weekend plan, enter your name, and print your official A1 Master Certificate!
+          </p>
+        </div>
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-white text-amber-800 hover:bg-amber-50 font-black text-xs transition-all shadow-md flex items-center gap-2">
+          🖨️ Print Planner & Certificate
+        </button>
+      </div>
+
+      <!-- Learner Name Card -->
+      <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learner Full Name</label>
+        <input type="text" id="student-name-input" value="A1 Language Explorer" oninput="updateStudentName()" class="w-full max-w-md px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+      </div>
+
+      <!-- Personal Social Planner Matrix -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+          <h3 class="text-base font-black text-sky-600 dark:text-sky-400 uppercase tracking-wider">📋 My Weekend Social Planner</h3>
+          <span class="text-xs font-bold text-slate-400">Editable Plan</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-500">Activity</label>
+            <input type="text" value="Coffee & Chat" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-500">Day (on ...)</label>
+            <input type="text" value="on Sunday" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-500">Time (at ...)</label>
+            <input type="text" value="at 3:00 PM" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold">
+          </div>
+          <div class="space-y-1">
+            <label class="font-bold text-slate-500">Location</label>
+            <input type="text" value="Central Cafe" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold">
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable Certificate Card -->
+      <div id="printable-certificate" class="bg-white text-slate-900 border-8 double border-sky-600 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden space-y-6">
+        <div class="space-y-1">
+          <span class="text-xs font-black tracking-widest uppercase text-sky-600">Official Award</span>
+          <h2 class="text-3xl md:text-4xl font-black uppercase text-slate-900 tracking-tight">Certificate of Achievement</h2>
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">A1 English Competency: Plans & Arrangements</p>
+        </div>
+
+        <div class="py-4 space-y-2">
+          <p class="text-xs text-slate-500 italic font-semibold">This certificate is proudly presented to:</p>
+          <div id="cert-name-display" class="text-3xl md:text-4xl font-black text-sky-700 border-b-2 border-sky-500 inline-block px-8 py-1">
+            A1 Language Explorer
+          </div>
+        </div>
+
+        <p class="max-w-xl mx-auto text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
+          For demonstrating proficiency in using prepositions of time (<em>at, on, in</em>), making and responding to social invitations, identifying schedule overlaps, and completing interactive arrangement roleplays.
+        </p>
+
+        <!-- Unlocked Badges Summary -->
+        <div id="cert-badges-grid" class="flex flex-wrap justify-center gap-3 py-2">
+          <!-- Cert badges via JS -->
+        </div>
+
+        <div class="flex justify-between items-end pt-8 border-t border-slate-200 text-xs font-bold text-slate-500">
+          <div class="text-left">
+            <p class="text-sky-600 font-black">Plan It Right! Studio</p>
+            <p id="cert-date-display">Date: Sep 2026</p>
+          </div>
+          <div class="text-right">
+            <p>Stars: <span id="cert-stars-display" class="text-amber-600 font-black">0 ⭐</span></p>
+            <p>Status: Qualified A1 Planner</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Badges Modal -->
+  <div id="badges-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-black text-lg">Achievement Badges</h3>
+        <button onclick="toggleBadgesModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-sm">✕</button>
+      </div>
+      <div id="modal-badges-list" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Implementation -->
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSynthSound(type) {
+      if (!state.sfxEnabled) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'pop') {
+          osc.frequency.setValueAtTime(450, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(freq, now + idx * 0.1);
+            g.gain.setValueAtTime(0.08, now + idx * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+            o.start(now + idx * 0.1);
+            o.stop(now + idx * 0.1 + 0.25);
+          });
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
+    const state = {
+      stars: 0,
+      xp: 0,
+      sfxEnabled: true,
+      ttsSpeed: 1.0,
+      studentName: 'A1 Language Explorer',
+      selectedPrepositionItem: null,
+
+      // Module 1 Data
+      prepItems: [
+        { id: 1, text: "6:30 PM", prep: "at" },
+        { id: 2, text: "Saturday", prep: "on" },
+        { id: 3, text: "the afternoon", prep: "in" },
+        { id: 4, text: "night", prep: "at" },
+        { id: 5, text: "Friday evening", prep: "on" },
+        { id: 6, text: "8:00 AM", prep: "at" },
+        { id: 7, text: "Sunday morning", prep: "on" },
+        { id: 8, text: "the evening", prep: "in" }
+      ],
+      prepSorted: {},
+
+      // Module 2 Data
+      phrasesData: [
+        { id: 1, prompt: "A: ________________ on Sunday afternoon? <br>B: Yes! I don't have any plans.", answer: "Are you free", hint: "Asking about availability" },
+        { id: 2, prompt: "A: Do you want to see a movie tonight? <br>B: ________________. I have to work late.", answer: "I'm sorry, I'm busy", hint: "Polite refusal" },
+        { id: 3, prompt: "A: Let's grab a coffee at Central Cafe. <br>B: ________________! I love that place.", answer: "Sounds great!", hint: "Enthusiastic agreement" },
+        { id: 4, prompt: "A: Great! ________________ shall we meet? <br>B: How about 4:00 PM?", answer: "What time", hint: "Asking for time" },
+        { id: 5, prompt: "A: Perfect. ________________? <br>B: In front of the train station.", answer: "Where should we meet", hint: "Asking for location" }
+      ],
+      phraseBank: ["Are you free", "I'm sorry, I'm busy", "Sounds great!", "What time", "Where should we meet"],
+      phraseSelections: {},
+
+      // Module 3 Data
+      scheduleQuestions: [
+        { id: 1, text: "Is Sam free on Friday night?", options: ["Yes, Sam is free.", "No, Sam has family dinner."], correct: 1 },
+        { id: 2, text: "Is Taylor free on Saturday morning?", options: ["Yes, Taylor is free.", "No, Taylor has shift work."], correct: 1 },
+        { id: 3, text: "Are both Sam and Taylor free on Saturday afternoon?", options: ["Yes, both are free.", "No, Sam has gym workout."], correct: 1 },
+        { id: 4, text: "When are BOTH Sam and Taylor free to meet?", options: ["Sunday Morning", "Sunday Afternoon"], correct: 1 }
+      ],
+      scheduleAnswers: {},
+
+      // Module 4 Roleplay Data
+      roleplayStep: 0,
+      chatFeed: [],
+
+      // Badges
+      badges: [
+        { id: 'time_master', name: 'Time Master', desc: 'Sorted all time prepositions correctly', icon: '⏰', unlocked: false },
+        { id: 'polite_planner', name: 'Polite Planner', desc: 'Completed all invitation phrases', icon: '💬', unlocked: false },
+        { id: 'scheduling_star', name: 'Scheduling Star', desc: 'Aligned overlapping schedules', icon: '📅', unlocked: false },
+        { id: 'arrangement_ace', name: 'Arrangement Ace', desc: 'Completed weekend planning roleplay', icon: '🎭', unlocked: false }
+      ]
+    };
+
+    function speakText(text, pitch = 1.0) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = state.ttsSpeed;
+      utterance.pitch = pitch;
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function addRewards(stars, xp) {
+      state.stars += stars;
+      state.xp += xp;
+      document.getElementById('star-counter').innerText = state.stars;
+      document.getElementById('xp-counter').innerText = `${state.xp} XP`;
+      document.getElementById('cert-stars-display').innerText = `${state.stars} ⭐`;
+      playSynthSound('pop');
+    }
+
+    function unlockBadge(badgeId) {
+      const b = state.badges.find(x => x.id === badgeId);
+      if (b && !b.unlocked) {
+        b.unlocked = true;
+        playSynthSound('fanfare');
+        triggerConfetti();
+        renderBadges();
+      }
+    }
+
+    function renderBadges() {
+      const modalList = document.getElementById('modal-badges-list');
+      const certGrid = document.getElementById('cert-badges-grid');
+      modalList.innerHTML = '';
+      certGrid.innerHTML = '';
+
+      state.badges.forEach(b => {
+        // Modal
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl border flex items-center justify-between gap-3 ${b.unlocked ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-60'}`;
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${b.icon}</span>
+            <div>
+              <h4 class="text-xs font-black">${b.name}</h4>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">${b.desc}</p>
+            </div>
+          </div>
+          <span class="text-xs font-black">${b.unlocked ? '✅' : '🔒'}</span>
+        `;
+        modalList.appendChild(div);
+
+        // Cert
+        if (b.unlocked) {
+          const cBadge = document.createElement('div');
+          cBadge.className = 'px-3 py-1.5 rounded-xl bg-sky-50 border border-sky-300 text-sky-800 text-xs font-black flex items-center gap-1.5';
+          cBadge.innerHTML = `<span>${b.icon}</span> <span>${b.name}</span>`;
+          certGrid.appendChild(cBadge);
+        }
+      });
+    }
+
+    function renderPrepositionsModule() {
+      const deck = document.getElementById('item-deck');
+      const binAt = document.getElementById('bin-items-at');
+      const binOn = document.getElementById('bin-items-on');
+      const binIn = document.getElementById('bin-items-in');
+
+      deck.innerHTML = '';
+      binAt.innerHTML = '';
+      binOn.innerHTML = '';
+      binIn.innerHTML = '';
+
+      state.prepItems.forEach(item => {
+        const sortedBin = state.prepSorted[item.id];
+        const chip = document.createElement('div');
+        chip.className = `px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center gap-2 ${
+          state.selectedPrepositionItem === item.id 
+            ? 'bg-sky-500 text-white border-sky-600 shadow-md ring-2 ring-sky-300' 
+            : 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-600 hover:border-sky-400'
+        }`;
+        chip.onclick = (e) => {
+          e.stopPropagation();
+          state.selectedPrepositionItem = item.id;
+          speakText(item.text);
+          renderPrepositionsModule();
+        };
+
+        chip.innerHTML = `<span>${item.text}</span> <button class="opacity-60 hover:opacity-100 text-xs">🔊</button>`;
+
+        if (!sortedBin) {
+          deck.appendChild(chip);
+        } else {
+          const placedChip = document.createElement('div');
+          placedChip.className = `p-2 rounded-xl text-xs font-bold flex items-center justify-between ${
+            sortedBin.correct ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
+          }`;
+          placedChip.innerHTML = `<span>${item.text}</span> <span>${sortedBin.correct ? '✅' : '❌'}</span>`;
+          
+          if (sortedBin.bin === 'at') binAt.appendChild(placedChip);
+          if (sortedBin.bin === 'on') binOn.appendChild(placedChip);
+          if (sortedBin.bin === 'in') binIn.appendChild(placedChip);
+        }
+      });
+    }
+
+    function handleBinClick(binName) {
+      if (!state.selectedPrepositionItem) return;
+      const item = state.prepItems.find(x => x.id === state.selectedPrepositionItem);
+      const isCorrect = item.prep === binName;
+
+      state.prepSorted[item.id] = { bin: binName, correct: isCorrect };
+      state.selectedPrepositionItem = null;
+
+      if (isCorrect) {
+        playSynthSound('correct');
+        addRewards(2, 10);
+      } else {
+        playSynthSound('wrong');
+      }
+
+      renderPrepositionsModule();
+
+      if (Object.keys(state.prepSorted).length === state.prepItems.length) {
+        unlockBadge('time_master');
+      }
+    }
+
+    function resetPrepositions() {
+      state.prepSorted = {};
+      state.selectedPrepositionItem = null;
+      renderPrepositionsModule();
+    }
+
+    function renderPhrasesModule() {
+      const bankContainer = document.getElementById('phrase-bank');
+      const phrasesContainer = document.getElementById('phrases-container');
+      bankContainer.innerHTML = '';
+      phrasesContainer.innerHTML = '';
+
+      state.phraseBank.forEach(phrase => {
+        const chip = document.createElement('button');
+        chip.className = 'px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-emerald-500 hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-bold transition-all';
+        chip.innerText = phrase;
+        chip.onclick = () => speakText(phrase);
+        bankContainer.appendChild(chip);
+      });
+
+      state.phrasesData.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3';
+
+        const filledVal = state.phraseSelections[item.id] || '';
+        const promptParts = item.prompt.split('________________');
+
+        div.innerHTML = `
+          <div class="text-xs font-bold leading-relaxed space-y-2">
+            <div>${promptParts[0]}</div>
+            <div class="flex items-center gap-2">
+              <select onchange="handlePhraseSelect(${item.id}, this.value)" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-extrabold text-xs text-sky-600 dark:text-sky-400 focus:outline-none">
+                <option value="">-- Select Phrase --</option>
+                ${state.phraseBank.map(p => `<option value="${p}" ${filledVal === p ? 'selected' : ''}>${p}</option>`).join('')}
+              </select>
+              <span>${promptParts[1] || ''}</span>
+              <button onclick="speakText('${item.prompt.replace(/<br>/g, ' ').replace(/________________/g, filledVal || 'blank').replace(/'/g, "\\'")}')" class="px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-slate-700">🔊 Listen</button>
+            </div>
+          </div>
+          <p class="text-[10px] font-bold text-slate-400">💡 Hint: ${item.hint}</p>
+        `;
+        phrasesContainer.appendChild(div);
+      });
+    }
+
+    function handlePhraseSelect(id, value) {
+      state.phraseSelections[id] = value;
+      playSynthSound('pop');
+    }
+
+    function checkPhrases() {
+      let correctCount = 0;
+      state.phrasesData.forEach(item => {
+        if (state.phraseSelections[item.id] === item.answer) {
+          correctCount++;
+        }
+      });
+
+      if (correctCount === state.phrasesData.length) {
+        playSynthSound('correct');
+        addRewards(5, 25);
+        unlockBadge('polite_planner');
+      } else {
+        playSynthSound('wrong');
+      }
+    }
+
+    function renderScheduleModule() {
+      const container = document.getElementById('schedule-questions');
+      container.innerHTML = '';
+
+      state.scheduleQuestions.forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 space-y-2';
+
+        const selected = state.scheduleAnswers[q.id];
+
+        let optionsHTML = '';
+        q.options.forEach((opt, idx) => {
+          const isChosen = selected === idx;
+          const isRight = isChosen && idx === q.correct;
+          const isWrong = isChosen && idx !== q.correct;
+
+          optionsHTML += `
+            <button onclick="handleScheduleChoice(${q.id}, ${idx})" class="px-3 py-2 rounded-xl border text-xs font-bold transition-all text-left flex items-center justify-between ${
+              isChosen 
+                ? (isRight ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-rose-500 text-white border-rose-600') 
+                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 hover:border-amber-400'
+            }">
+              <span>${opt}</span>
+              ${isChosen ? (isRight ? '<span>✅</span>' : '<span>❌</span>') : ''}
+            </button>
+          `;
+        });
+
+        div.innerHTML = `
+          <p class="text-xs font-black">${q.id}. ${q.text}</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${optionsHTML}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function handleScheduleChoice(qid, optionIdx) {
+      const q = state.scheduleQuestions.find(x => x.id === qid);
+      state.scheduleAnswers[qid] = optionIdx;
+
+      if (optionIdx === q.correct) {
+        playSynthSound('correct');
+        addRewards(2, 10);
+      } else {
+        playSynthSound('wrong');
+      }
+
+      renderScheduleModule();
+
+      const totalCorrect = state.scheduleQuestions.filter(x => state.scheduleAnswers[x.id] === x.correct).length;
+      if (totalCorrect === state.scheduleQuestions.length) {
+        unlockBadge('scheduling_star');
+      }
+    }
+
+    const roleplayTree = [
+      {
+        speaker: "Sam",
+        text: "Hi! Are you free on Saturday afternoon?",
+        pitch: 0.9,
+        options: [
+          { text: "I'm sorry, I'm busy on Saturday. How about Sunday afternoon?", next: 1 },
+          { text: "Yes, I'm free! What do you want to do?", next: 2 }
+        ]
+      },
+      {
+        speaker: "Sam",
+        text: "Sunday afternoon sounds great! Do you want to get coffee at Central Cafe?",
+        pitch: 0.9,
+        options: [
+          { text: "Sounds great! What time shall we meet?", next: 3 },
+          { text: "I don't like coffee. Let's go to the cinema instead!", next: 3 }
+        ]
+      },
+      {
+        speaker: "Sam",
+        text: "Awesome! Let's meet at 3:00 PM on Sunday. Is that okay for you?",
+        pitch: 0.9,
+        options: [
+          { text: "Perfect! See you at 3:00 PM on Sunday.", next: 4 }
+        ]
+      },
+      {
+        speaker: "Sam",
+        text: "Great! It's a plan! See you then!",
+        pitch: 0.9,
+        options: []
+      }
+    ];
+
+    function initRoleplay() {
+      state.roleplayStep = 0;
+      state.chatFeed = [{ speaker: 'Sam', text: roleplayTree[0].text, isBot: true }];
+      renderRoleplay();
+      speakText(roleplayTree[0].text, 0.9);
+    }
+
+    function renderRoleplay() {
+      const feed = document.getElementById('chat-feed');
+      const optionsBox = document.getElementById('chat-options');
+      feed.innerHTML = '';
+      optionsBox.innerHTML = '';
+
+      state.chatFeed.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl max-w-[85%] text-xs font-bold leading-relaxed space-y-1 ${
+          msg.isBot 
+            ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-900 dark:text-sky-200 self-start rounded-tl-none' 
+            : 'bg-indigo-600 text-white self-end rounded-tr-none'
+        }`;
+        div.innerHTML = `
+          <div class="text-[10px] opacity-70 uppercase tracking-wider">${msg.speaker}</div>
+          <div>${msg.text}</div>
+        `;
+        feed.appendChild(div);
+      });
+      feed.scrollTop = feed.scrollHeight;
+
+      const current = roleplayTree[state.roleplayStep];
+      if (current && current.options.length > 0) {
+        current.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-purple-500 font-bold text-xs text-left transition-all flex items-center justify-between gap-2 shadow-sm';
+          btn.innerHTML = `<span>💬 "${opt.text}"</span> <span>➔</span>`;
+          btn.onclick = () => handleRoleplayOption(opt);
+          optionsBox.appendChild(btn);
+        });
+      } else {
+        optionsBox.innerHTML = `<button onclick="initRoleplay()" class="col-span-full py-2.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs">🔄 Start New Roleplay</button>`;
+      }
+    }
+
+    function handleRoleplayOption(opt) {
+      playSynthSound('pop');
+      state.chatFeed.push({ speaker: 'You', text: opt.text, isBot: false });
+      speakText(opt.text, 1.2);
+
+      state.roleplayStep = opt.next;
+      const nextStep = roleplayTree[state.roleplayStep];
+
+      setTimeout(() => {
+        state.chatFeed.push({ speaker: 'Sam', text: nextStep.text, isBot: true });
+        renderRoleplay();
+        speakText(nextStep.text, 0.9);
+
+        if (nextStep.options.length === 0) {
+          addRewards(5, 30);
+          unlockBadge('arrangement_ace');
+        }
+      }, 1000);
+
+      renderRoleplay();
+    }
+
+    function switchTab(tabId, btnEl) {
+      playSynthSound('pop');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+        el.classList.add('text-slate-500', 'dark:text-slate-400');
+      });
+
+      document.getElementById(`module-${tabId}`).classList.add('active');
+      btnEl.classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+      btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+
+      if (tabId === 'roleplay' && state.chatFeed.length === 0) initRoleplay();
+    }
+
+    function updateStudentName() {
+      const val = document.getElementById('student-name-input').value;
+      state.studentName = val || 'A1 Language Explorer';
+      document.getElementById('cert-name-display').innerText = state.studentName;
+    }
+
+    function toggleBadgesModal() {
+      playSynthSound('pop');
+      const modal = document.getElementById('badges-modal');
+      modal.classList.toggle('opacity-0');
+      modal.classList.toggle('pointer-events-none');
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0284c7', '#10b981', '#f59e0b', '#6366f1', '#f43f5e'];
+
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 4,
+          size: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 80
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.life > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.15;
+            p.life -= 1.5;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+        if (active) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    window.onload = function() {
+      // Speed Toggle
+      document.getElementById('speed-btn').addEventListener('click', () => {
+        if (state.ttsSpeed === 1.0) state.ttsSpeed = 0.75;
+        else if (state.ttsSpeed === 0.75) state.ttsSpeed = 1.25;
+        else state.ttsSpeed = 1.0;
+        document.getElementById('speed-label').innerText = `${state.ttsSpeed}x`;
+        playSynthSound('pop');
+      });
+
+      // Mute Toggle
+      document.getElementById('sfx-btn').addEventListener('click', () => {
+        state.sfxEnabled = !state.sfxEnabled;
+        document.getElementById('sfx-icon').innerText = state.sfxEnabled ? '🔊' : '🔇';
+      });
+
+      // Theme Toggle
+      document.getElementById('theme-btn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+      });
+
+      // Badges modal button
+      document.getElementById('badges-btn').addEventListener('click', toggleBadgesModal);
+
+      // Certificate Date
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      document.getElementById('cert-date-display').innerText = `Date: ${dateStr}`;
+
+      // Render Modules
+      renderPrepositionsModule();
+      renderPhrasesModule();
+      renderScheduleModule();
+      renderBadges();
+    };
+  </script>
+</body>
+</html>
