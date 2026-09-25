@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taste & Order: Food Preferences & Restaurant Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Playfair Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bistro: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#d97706',
+                            600: '#b45309',
+                            700: '#92400e',
+                            800: '#78350f',
+                            900: '#451a03',
+                        },
+                        terracotta: {
+                            500: '#e05a47',
+                            600: '#c84331',
+                            700: '#a63223',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
+        .card-flip-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flipped .card-flip-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s infinite ease-in-out;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(180, 83, 9, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(180, 83, 9, 0.6);
+        }
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReceiptModal, #printableReceiptModal * {
+                visibility: visible;
+            }
+            #printableReceiptModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-amber-50/40 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-amber-200/60 dark:border-slate-700 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- App Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-terracotta-500 flex items-center justify-center text-white shadow-md shadow-amber-600/20">
+                    <i class="fa-solid font-bold text-xl fa-utensils"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg sm:text-xl tracking-tight serif-font text-amber-900 dark:text-amber-400">Taste & Order</h1>
+                    <p class="text-xs text-amber-700/80 dark:text-slate-400 font-medium hidden sm:block">A1 Food & Restaurant Studio</p>
+                </div>
+            </div>
+
+            <!-- Stats & Settings Quick Bar -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Stars Counter -->
+                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 dark:bg-slate-700/80 rounded-full border border-amber-300 dark:border-slate-600 text-amber-800 dark:text-amber-300 font-bold text-sm">
+                    <i class="fa-solid fa-star text-amber-500 animate-pulse"></i>
+                    <span id="starCounter">0</span>
+                </div>
+
+                <!-- Badges Count -->
+                <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-full border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
+                    <i class="fa-solid fa-award text-emerald-600 dark:text-emerald-400"></i>
+                    <span id="badgeCounter">0/4 Badges</span>
+                </div>
+
+                <!-- Speed Toggle Button -->
+                <button id="speedToggleBtn" onclick="toggleAudioSpeed()" title="Toggle Speech Rate" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition text-sm flex items-center gap-1">
+                    <i class="fa-solid fa-gauge-high text-xs"></i>
+                    <span id="speedLabel" class="text-xs font-semibold">1.0x</span>
+                </button>
+
+                <!-- Audio SFX Toggle Button -->
+                <button id="sfxToggleBtn" onclick="toggleSFX()" title="Toggle Sound FX" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-amber-700 dark:text-amber-400 transition text-sm">
+                    <i id="sfxIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+
+                <!-- Dark Mode Toggle -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition text-sm">
+                    <i id="themeIcon" class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <nav class="bg-amber-100/50 dark:bg-slate-800/50 border-t border-amber-200/40 dark:border-slate-700/50 overflow-x-auto no-scrollbar">
+            <div class="max-w-7xl mx-auto px-2 sm:px-6 flex space-x-1 sm:space-x-2 py-1.5 min-w-max">
+                <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 bg-amber-600 text-white shadow-sm">
+                    <i class="fa-solid fa-tags"></i>
+                    <span>1. Classifier & Audio</span>
+                </button>
+                <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-amber-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-pen-ruler"></i>
+                    <span>2. Word Gap-Fill</span>
+                </button>
+                <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-amber-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>3. Dialogue Order</span>
+                </button>
+                <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-amber-200/60 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span>4. Bistro Roleplay</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- MODULE 1: Agreeing & Disagreeing Classifier -->
+        <section id="mod1" class="tab-content space-y-6">
+            <!-- Header banner -->
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-amber-800 dark:to-slate-800 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-amber-500/30 border border-amber-300/30 rounded-full text-xs font-medium uppercase tracking-wider mb-2">Module 1</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold serif-font">Agree or Disagree Flashcards</h2>
+                        <p class="text-amber-100 text-sm mt-1">Listen to Person A and Person B. Does Person B agree 👍 or disagree 👎 with Person A?</p>
+                    </div>
+                    <!-- Audio Hint Box -->
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 text-xs flex items-center gap-3">
+                        <i class="fa-solid fa-circle-info text-amber-300 text-lg"></i>
+                        <span>Target Words: <strong>"Me too", "So do I", "I don't", "Really?", "I prefer"</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flashcard Display Area -->
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-100 dark:border-slate-700 transition-all">
+                    
+                    <!-- Progress bar inside Module 1 -->
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-4">
+                        <span>Card <span id="m1-card-index">1</span> of <span id="m1-card-total">5</span></span>
+                        <span id="m1-score-display" class="text-amber-600 dark:text-amber-400 font-bold">Score: 0</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full mb-6 overflow-hidden">
+                        <div id="m1-progress-bar" class="bg-amber-500 h-full transition-all duration-300" style="width: 20%"></div>
+                    </div>
+
+                    <!-- Flashcard Box -->
+                    <div class="space-y-6">
+                        <!-- Person A Statement -->
+                        <div class="bg-amber-50/80 dark:bg-slate-700/60 p-4 rounded-2xl border border-amber-200 dark:border-slate-600 flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                A
+                            </div>
+                            <div class="flex-grow">
+                                <p class="text-xs text-amber-800 dark:text-amber-300 font-bold uppercase tracking-wide">Person A says:</p>
+                                <p id="m1-person-a" class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-1">"I love Italian pasta!"</p>
+                            </div>
+                            <button onclick="speakCurrentCard('A')" title="Listen to Person A" class="p-3 bg-amber-100 hover:bg-amber-200 dark:bg-slate-600 dark:hover:bg-slate-500 text-amber-800 dark:text-amber-200 rounded-xl transition">
+                                <i class="fa-solid fa-volume-high text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Person B Statement -->
+                        <div class="bg-emerald-50/80 dark:bg-slate-700/60 p-4 rounded-2xl border border-emerald-200 dark:border-slate-600 flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                B
+                            </div>
+                            <div class="flex-grow">
+                                <p class="text-xs text-emerald-800 dark:text-emerald-300 font-bold uppercase tracking-wide">Person B responds:</p>
+                                <p id="m1-person-b" class="text-lg font-semibold text-slate-800 dark:text-slate-100 mt-1">"Me too! It's delicious."</p>
+                            </div>
+                            <button onclick="speakCurrentCard('B')" title="Listen to Person B" class="p-3 bg-emerald-100 hover:bg-emerald-200 dark:bg-slate-600 dark:hover:bg-slate-500 text-emerald-800 dark:text-emerald-200 rounded-xl transition">
+                                <i class="fa-solid fa-volume-high text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Full Dialogue Audio Button -->
+                    <div class="mt-6 flex justify-center">
+                        <button onclick="speakCurrentCard('both')" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 transition">
+                            <i class="fa-solid fa-play text-amber-600"></i>
+                            <span>Listen to Full Exchange</span>
+                        </button>
+                    </div>
+
+                    <!-- Answer Options -->
+                    <div class="mt-8 grid grid-cols-2 gap-4">
+                        <button onclick="answerCard('agrees')" id="btn-agree" class="py-4 px-6 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-500 hover:text-white transition flex flex-col items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-thumbs-up text-2xl"></i>
+                            <span class="text-base">AGREES 👍</span>
+                            <span class="text-xs font-normal opacity-80">(Same opinion)</span>
+                        </button>
+                        <button onclick="answerCard('disagrees')" id="btn-disagree" class="py-4 px-6 rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 font-bold hover:bg-rose-500 hover:text-white transition flex flex-col items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-thumbs-down text-2xl"></i>
+                            <span class="text-base">DISAGREES 👎</span>
+                            <span class="text-xs font-normal opacity-80">(Different opinion)</span>
+                        </button>
+                    </div>
+
+                    <!-- Explanation Feedback Box -->
+                    <div id="m1-feedback" class="hidden mt-6 p-4 rounded-2xl text-center text-sm font-semibold transition-all"></div>
+
+                    <!-- Navigation Next/Prev -->
+                    <div class="mt-6 flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <button onclick="prevCard()" id="m1-prev-btn" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition disabled:opacity-30">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Previous
+                        </button>
+                        <button onclick="nextCard()" id="m1-next-btn" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                            Next Card <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: Word Gap-Fill -->
+        <section id="mod2" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-amber-800 dark:to-slate-800 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-amber-500/30 border border-amber-300/30 rounded-full text-xs font-medium uppercase tracking-wider mb-2">Module 2</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold serif-font">Complete the Sentences</h2>
+                        <p class="text-amber-100 text-sm mt-1">Tap or drag the correct target word from the word bank into each blank line.</p>
+                    </div>
+                    <button onclick="showGapFillHint()" class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-xs font-bold flex items-center gap-2 border border-white/30">
+                        <i class="fa-solid fa-lightbulb text-amber-300"></i>
+                        <span>Get Grammar Hint</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-w-3xl mx-auto space-y-6">
+                <!-- Word Bank Box -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-amber-200 dark:border-slate-700 shadow-md">
+                    <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 text-center">Word Bank (Tap a word, then tap a blank field):</p>
+                    <div id="wordBankChips" class="flex flex-wrap justify-center gap-3">
+                        <!-- Word Chips populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Exercise List -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-100 dark:border-slate-700 space-y-6">
+                    <div id="gapFillContainer" class="space-y-6">
+                        <!-- Sentences injected here -->
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <button onclick="resetGapFill()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Reset Answers
+                        </button>
+                        <button onclick="checkGapFill()" class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Check All Answers</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: Dialogue Order Game -->
+        <section id="mod3" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-amber-800 dark:to-slate-800 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-amber-500/30 border border-amber-300/30 rounded-full text-xs font-medium uppercase tracking-wider mb-2">Module 3</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold serif-font">Restaurant Dialogue Sequence</h2>
+                        <p class="text-amber-100 text-sm mt-1">Re-order the conversation lines from 1 to 6 in the logical restaurant order.</p>
+                    </div>
+                    <button onclick="playFullOrderedDialogue()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-circle-play"></i>
+                        <span>Listen to Conversation</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-100 dark:border-slate-700 space-y-6">
+                
+                <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold text-center">Use the ▲ and ▼ arrows to move dialogue lines into the correct numerical sequence.</p>
+
+                <!-- Dialogue Reordering Cards Container -->
+                <div id="dialogueCardsContainer" class="space-y-3">
+                    <!-- Dialogue item cards rendered by JS -->
+                </div>
+
+                <!-- Control actions -->
+                <div class="pt-6 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <button onclick="shuffleDialogue()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-shuffle mr-1"></i> Shuffle Lines
+                    </button>
+                    <button onclick="checkDialogueOrder()" class="w-full sm:w-auto px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold transition shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-spell-check"></i>
+                        <span>Verify Order (Check Answers)</span>
+                    </button>
+                </div>
+
+                <!-- Sequence Feedback Banner -->
+                <div id="seqFeedback" class="hidden p-4 rounded-2xl text-center text-sm font-bold"></div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: Bistro Roleplay & Ordering Simulator -->
+        <section id="mod4" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-700 to-terracotta-600 dark:from-slate-800 dark:to-amber-900 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-amber-500/30 border border-amber-300/30 rounded-full text-xs font-medium uppercase tracking-wider mb-2">Module 4</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold serif-font">Bistro Bella Roleplay Studio</h2>
+                        <p class="text-amber-100 text-sm mt-1">Practice food opinions with a partner bot and order a full 3-course meal!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Roleplay Stage Switcher -->
+            <div class="flex justify-center">
+                <div class="inline-flex p-1 bg-amber-100 dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-slate-700">
+                    <button onclick="setRoleplayStep(1)" id="rp-step1-btn" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-white dark:bg-slate-700 text-amber-900 dark:text-amber-300 shadow-sm">
+                        Step 1: Express Tastes
+                    </button>
+                    <button onclick="setRoleplayStep(2)" id="rp-step2-btn" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 dark:text-slate-400 hover:text-amber-900">
+                        Step 2: Restaurant Menu Ordering
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 1: Express Food Preferences -->
+            <div id="roleplay-step-1" class="max-w-4xl mx-auto space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-100 dark:border-slate-700">
+                    <h3 class="text-xl font-bold serif-font text-amber-900 dark:text-amber-400 mb-2">1. Choose a Food & Express Your Opinion</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Select a food item and state your opinion. Your Bistro Partner will agree or disagree!</p>
+
+                    <!-- Food Selection Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                        <button onclick="selectFoodItem('Italian Pizza', '🍕')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🍕</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Pizza</span>
+                        </button>
+                        <button onclick="selectFoodItem('Tomato Pasta', '🍝')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🍝</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Pasta</span>
+                        </button>
+                        <button onclick="selectFoodItem('Fresh Sushi', '🍣')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🍣</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Sushi</span>
+                        </button>
+                        <button onclick="selectFoodItem('Cheeseburger', '🍔')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🍔</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Burger</span>
+                        </button>
+                        <button onclick="selectFoodItem('Green Salad', '🥗')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🥗</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Salad</span>
+                        </button>
+                        <button onclick="selectFoodItem('Chocolate Cake', '🍰')" class="food-chip p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-700/50 flex flex-col items-center gap-1 transition">
+                            <span class="text-3xl">🍰</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Dessert</span>
+                        </button>
+                    </div>
+
+                    <!-- Selected Food Focus -->
+                    <div id="tasteFocusArea" class="bg-amber-50/70 dark:bg-slate-700/50 p-6 rounded-2xl border border-amber-200 dark:border-slate-600 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <span id="selectedFoodIcon" class="text-4xl">🍕</span>
+                            <div>
+                                <p class="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase">Selected Food:</p>
+                                <p id="selectedFoodName" class="text-lg font-bold text-slate-800 dark:text-slate-100">Italian Pizza</p>
+                            </div>
+                        </div>
+
+                        <!-- Speech Action Options -->
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="expressOpinion('love')" class="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                                "I love this!" ❤️
+                            </button>
+                            <button onclick="expressOpinion('like')" class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                                "I like this!" 👍
+                            </button>
+                            <button onclick="expressOpinion('dislike')" class="px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                                "I don't like this!" 👎
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Partner Reaction Output -->
+                    <div id="partnerResponseBox" class="hidden mt-6 p-5 bg-gradient-to-r from-amber-100 to-amber-50 dark:from-slate-700 dark:to-slate-800 rounded-2xl border border-amber-300 dark:border-slate-600 flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xl shrink-0">
+                            🤖
+                        </div>
+                        <div class="flex-grow">
+                            <p class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase">Partner Bot Responds:</p>
+                            <p id="partnerSpeechText" class="text-base font-semibold text-slate-800 dark:text-slate-100 mt-1">"Me too! Pizza is delicious!"</p>
+                        </div>
+                        <button onclick="speakPartnerText()" class="p-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 1 Complete Button -->
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="setRoleplayStep(2)" class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-sm shadow-md flex items-center gap-2">
+                            <span>Proceed to Bistro Ordering Simulation</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Restaurant Menu Ordering Simulator -->
+            <div id="roleplay-step-2" class="hidden max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Column: Menu Display -->
+                <div class="lg:col-span-5 bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-200 dark:border-slate-700 space-y-6">
+                    <div class="text-center border-b border-amber-200 dark:border-slate-700 pb-4">
+                        <span class="text-xs font-bold text-amber-700 dark:text-amber-400 tracking-widest uppercase">Official Menu</span>
+                        <h3 class="text-2xl font-bold serif-font text-amber-900 dark:text-amber-300">Bistro Bella</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 italic">Authentic Cuisine & Fine Dining</p>
+                    </div>
+
+                    <!-- Menu Section: Main Dishes -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-amber-800 dark:text-amber-400 tracking-wider mb-2 border-b border-amber-100 dark:border-slate-700 pb-1">Main Courses</h4>
+                        <div class="space-y-2 text-xs">
+                            <div onclick="selectMenuCourse('main', 'Tomato Pasta', 9)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">🍝 Tomato Pasta</p>
+                                    <p class="text-slate-500 dark:text-slate-400">Fresh Italian tomatoes & basil</p>
+                                </div>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$9.00</span>
+                            </div>
+                            <div onclick="selectMenuCourse('main', 'Cheeseburger', 10)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">🍔 Cheeseburger & Fries</p>
+                                    <p class="text-slate-500 dark:text-slate-400">Juicy beef patty & cheddar</p>
+                                </div>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$10.00</span>
+                            </div>
+                            <div onclick="selectMenuCourse('main', 'Green Salad', 7)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">🥗 Garden Green Salad</p>
+                                    <p class="text-slate-500 dark:text-slate-400">Crispy lettuce, cucumbers & olives</p>
+                                </div>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$7.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Section: Drinks -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-amber-800 dark:text-amber-400 tracking-wider mb-2 border-b border-amber-100 dark:border-slate-700 pb-1">Beverages</h4>
+                        <div class="space-y-2 text-xs">
+                            <div onclick="selectMenuCourse('drink', 'Fresh Orange Juice', 3)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <p class="font-bold text-slate-800 dark:text-slate-100">🍊 Fresh Orange Juice</p>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$3.00</span>
+                            </div>
+                            <div onclick="selectMenuCourse('drink', 'Sparkling Water', 2)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <p class="font-bold text-slate-800 dark:text-slate-100">💧 Sparkling Water</p>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$2.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Section: Desserts -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-amber-800 dark:text-amber-400 tracking-wider mb-2 border-b border-amber-100 dark:border-slate-700 pb-1">Desserts</h4>
+                        <div class="space-y-2 text-xs">
+                            <div onclick="selectMenuCourse('dessert', 'Chocolate Fudge Cake', 5)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <p class="font-bold text-slate-800 dark:text-slate-100">🍰 Chocolate Fudge Cake</p>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$5.00</span>
+                            </div>
+                            <div onclick="selectMenuCourse('dessert', 'Fresh Fruit Bowl', 4)" class="menu-item p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center transition border border-transparent hover:border-amber-300">
+                                <p class="font-bold text-slate-800 dark:text-slate-100">🍓 Fresh Fruit Bowl</p>
+                                <span class="font-bold text-amber-700 dark:text-amber-300">$4.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Name Input -->
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <label for="studentNameInput" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Student / Guest Name:</label>
+                        <input type="text" id="studentNameInput" placeholder="Enter your name..." value="Alex Smith" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Waiter Chat & Order Simulator -->
+                <div class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-200 dark:border-slate-700 flex flex-col justify-between">
+                    
+                    <div>
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-amber-800 text-white flex items-center justify-center font-bold text-xl">
+                                    🤵
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Chef Marco (Your Waiter)</h4>
+                                    <p class="text-xs text-emerald-600 font-semibold">● Ready to take your order</p>
+                                </div>
+                            </div>
+                            <button onclick="resetBistroOrder()" class="text-xs text-slate-400 hover:text-rose-500 font-semibold transition">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> Restart
+                            </button>
+                        </div>
+
+                        <!-- Live Conversation Window -->
+                        <div id="waiterChatLog" class="space-y-3 max-h-80 overflow-y-auto p-3 rounded-2xl bg-amber-50/40 dark:bg-slate-900/50 border border-amber-100 dark:border-slate-700/60 text-xs">
+                            <!-- Dialogue turns appended dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Active Prompt Action Controls -->
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 space-y-4">
+                        <p id="waiterPromptGuide" class="text-xs font-bold text-amber-800 dark:text-amber-400">Step 1: Greet the waiter and place your order</p>
+                        
+                        <div id="waiterOptionsContainer" class="grid grid-cols-1 gap-2">
+                            <!-- Action buttons dynamically inserted -->
+                        </div>
+
+                        <!-- Full Dual-Voice Playback Action -->
+                        <div class="pt-2 flex flex-wrap gap-2 justify-between items-center">
+                            <button onclick="playRoleplayAudioTranscript()" id="playTranscriptBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-2">
+                                <i class="fa-solid fa-headset"></i>
+                                <span>Listen to Full Roleplay Audio</span>
+                            </button>
+
+                            <button onclick="finishRoleplayAndShowReceipt()" id="finishReceiptBtn" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-receipt"></i>
+                                <span>Print Dining Receipt & Certificate</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Receipt & Certificate Modal -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="printableReceiptModal" class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-amber-600 text-slate-800 relative space-y-6 max-h-[90vh] overflow-y-auto">
+            
+            <!-- Close Modal Button -->
+            <button onclick="closeReceiptModal()" class="no-print absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
+                ✕
+            </button>
+
+            <!-- Certificate / Receipt Header -->
+            <div class="text-center border-b-2 border-dashed border-amber-300 pb-4">
+                <p class="text-xs font-bold tracking-widest text-amber-700 uppercase">A1 English Speaking Studio</p>
+                <h2 class="text-3xl font-bold serif-font text-amber-900 mt-1">Bistro Bella</h2>
+                <p class="text-xs text-slate-500 italic mt-0.5">Dining Certificate & Official Guest Receipt</p>
+            </div>
+
+            <!-- Student Award Certificate Details -->
+            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 text-center space-y-2">
+                <p class="text-xs text-amber-800 uppercase font-bold tracking-wide">Certificate of Completion</p>
+                <p class="text-sm">This certifies that <strong id="rcpt-student-name" class="text-amber-900 underline">Alex Smith</strong> has successfully ordered a meal and expressed food preferences in English!</p>
+                <div class="flex justify-center items-center gap-1 text-amber-500 text-lg pt-1">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                </div>
+            </div>
+
+            <!-- Itemized Receipt -->
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Itemized Order Summary:</p>
+                <div id="rcpt-items-list" class="space-y-2 text-xs font-mono">
+                    <!-- Items inserted dynamically -->
+                </div>
+                <div class="border-t border-slate-300 mt-3 pt-2 flex justify-between font-bold text-sm">
+                    <span>TOTAL AMOUNT PAID:</span>
+                    <span id="rcpt-total-price" class="text-amber-800">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Total Stars & Badges Achieved -->
+            <div class="flex items-center justify-between bg-slate-100 p-3 rounded-xl text-xs font-semibold">
+                <span>Stars Earned Today: <strong id="rcpt-stars" class="text-amber-600">0 ⭐</strong></span>
+                <span>Roleplay Status: <strong class="text-emerald-600">Completed 🍽️</strong></span>
+            </div>
+
+            <!-- Footer & Print Actions -->
+            <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 no-print">
+                <button onclick="window.print()" class="w-full sm:w-auto px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Receipt & Certificate</span>
+                </button>
+                <button onclick="closeReceiptModal()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-xs">
+                    Close Window
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- App Badges Progress Bar Footer -->
+    <footer class="bg-white/80 dark:bg-slate-800/80 border-t border-amber-200/50 dark:border-slate-700 py-3 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-700 dark:text-slate-300">Badges Unlocked:</span>
+                <div id="badgesContainer" class="flex gap-2">
+                    <span id="badge-1" class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 opacity-40 text-slate-600 dark:text-slate-300" title="Complete Module 1">🎴 Flashcards</span>
+                    <span id="badge-2" class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 opacity-40 text-slate-600 dark:text-slate-300" title="Complete Module 2">✏️ Word Fill</span>
+                    <span id="badge-3" class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 opacity-40 text-slate-600 dark:text-slate-300" title="Complete Module 3">🧩 Sequence</span>
+                    <span id="badge-4" class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 opacity-40 text-slate-600 dark:text-slate-300" title="Complete Bistro Roleplay">👑 Bistro Master</span>
+                </div>
+            </div>
+            <div class="text-center sm:text-right">
+                <p>Taste & Order • Interactive ESL Learning Studio</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           1. GLOBAL STATE & SOUND SYNTHESIZER
+           ========================================================================== */
+        let state = {
+            stars: 0,
+            sfxEnabled: true,
+            speechRate: 1.0,
+            unlockedBadges: { mod1: false, mod2: false, mod3: false, mod4: false },
+            m1Index: 0,
+            m1Score: 0,
+            m1Answered: [],
+            selectedGapWord: null,
+            gapFillAnswers: {},
+            gapFillChecked: false,
+            dialogueOrder: [0, 1, 2, 3, 4, 5],
+            dialogueChecked: false,
+            roleplayStep: 1,
+            selectedFood: { name: 'Italian Pizza', icon: '🍕' },
+            bistroOrder: { main: null, mainPrice: 0, drink: null, drinkPrice: 0, dessert: null, dessertPrice: 0 },
+            bistroStage: 0,
+            roleplayTranscript: []
+        };
+
+        // Web Audio API Synthesizer
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSFX(type) {
+            if (!state.sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + (idx * 0.1));
+                        gain.gain.setValueAtTime(0.2, now + (idx * 0.1));
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.1) + 0.3);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + (idx * 0.1));
+                        osc.stop(now + (idx * 0.1) + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log('Audio Context error', e);
+            }
+        }
+
+        /* Speech Synthesis TTS with Pitch Shift */
+        function speakText(text, voiceRole = 'default') {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.speechRate;
+
+            if (voiceRole === 'waiter') {
+                utterance.pitch = 0.85; // Deeper waiter tone
+            } else if (voiceRole === 'customer') {
+                utterance.pitch = 1.20; // Higher customer tone
+            } else if (voiceRole === 'personA') {
+                utterance.pitch = 0.95;
+            } else if (voiceRole === 'personB') {
+                utterance.pitch = 1.15;
+            } else {
+                utterance.pitch = 1.0;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function addStars(num) {
+            state.stars += num;
+            document.getElementById('starCounter').innerText = state.stars;
+            playSFX('correct');
+        }
+
+        function unlockBadge(modKey, badgeId) {
+            if (!state.unlockedBadges[modKey]) {
+                state.unlockedBadges[modKey] = true;
+                const badgeEl = document.getElementById(badgeId);
+                if (badgeEl) {
+                    badgeEl.classList.remove('opacity-40');
+                    badgeEl.classList.add('opacity-100', 'bg-amber-500', 'text-white', 'font-bold');
+                }
+                const count = Object.values(state.unlockedBadges).filter(Boolean).length;
+                document.getElementById('badgeCounter').innerText = `${count}/4 Badges`;
+                triggerConfetti();
+                playSFX('fanfare');
+            }
+        }
+
+        /* ==========================================================================
+           2. MODULE 1: CLASSIFIER FLASHCARDS DATA & LOGIC
+           ========================================================================== */
+        const m1CardsData = [
+            {
+                personA: "I love Italian pasta!",
+                personB: "Me too! It's delicious.",
+                correct: "agrees",
+                explanation: "'Me too' shows agreement with a positive statement."
+            },
+            {
+                personA: "I don't like spicy curry.",
+                personB: "Really? I love spicy food!",
+                correct: "disagrees",
+                explanation: "'Really? I love...' shows a different opinion (disagreement)."
+            },
+            {
+                personA: "I think fresh sushi is great.",
+                personB: "I don't. I prefer cooked fish.",
+                correct: "disagrees",
+                explanation: "'I don't. I prefer...' shows disagreement."
+            },
+            {
+                personA: "I hate cold soup.",
+                personB: "So do I. It tastes strange.",
+                correct: "agrees",
+                explanation: "'So do I' shows agreement with a feeling."
+            },
+            {
+                personA: "I want chocolate cake for dessert.",
+                personB: "Me too! I love sweet food.",
+                correct: "agrees",
+                explanation: "'Me too' indicates agreement with the craving."
+            }
+        ];
+
+        function renderM1Card() {
+            const card = m1CardsData[state.m1Index];
+            document.getElementById('m1-card-index').innerText = state.m1Index + 1;
+            document.getElementById('m1-card-total').innerText = m1CardsData.length;
+            document.getElementById('m1-person-a').innerText = `"${card.personA}"`;
+            document.getElementById('m1-person-b').innerText = `"${card.personB}"`;
+            
+            const progress = ((state.m1Index + 1) / m1CardsData.length) * 100;
+            document.getElementById('m1-progress-bar').style.width = `${progress}%`;
+
+            const feedback = document.getElementById('m1-feedback');
+            feedback.classList.add('hidden');
+            
+            // Disable/Enable prev button
+            document.getElementById('m1-prev-btn').disabled = (state.m1Index === 0);
+        }
+
+        function speakCurrentCard(role) {
+            const card = m1CardsData[state.m1Index];
+            if (role === 'A') {
+                speakText(card.personA, 'personA');
+            } else if (role === 'B') {
+                speakText(card.personB, 'personB');
+            } else {
+                speakText(`Person A says: ${card.personA}. Person B replies: ${card.personB}`);
+            }
+        }
+
+        function answerCard(choice) {
+            const card = m1CardsData[state.m1Index];
+            const feedback = document.getElementById('m1-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (choice === card.correct) {
+                feedback.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i> Correct! ${card.explanation}`;
+                playSFX('correct');
+
+                if (!state.m1Answered[state.m1Index]) {
+                    state.m1Answered[state.m1Index] = true;
+                    state.m1Score += 10;
+                    addStars(2);
+                    document.getElementById('m1-score-display').innerText = `Score: ${state.m1Score}`;
+                }
+            } else {
+                feedback.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-2"></i> Not quite. ${card.explanation}`;
+                playSFX('wrong');
+            }
+
+            if (state.m1Answered.filter(Boolean).length === m1CardsData.length) {
+                unlockBadge('mod1', 'badge-1');
+            }
+        }
+
+        function nextCard() {
+            if (state.m1Index < m1CardsData.length - 1) {
+                state.m1Index++;
+                renderM1Card();
+                playSFX('click');
+            }
+        }
+
+        function prevCard() {
+            if (state.m1Index > 0) {
+                state.m1Index--;
+                renderM1Card();
+                playSFX('click');
+            }
+        }
+
+        /* ==========================================================================
+           3. MODULE 2: GAP-FILL SENTENCES LOGIC
+           ========================================================================== */
+        const gapFillData = [
+            {
+                id: 1,
+                a: "I love cheese burgers.",
+                bBefore: "Me ",
+                bAfter: "! They are my favorite.",
+                correct: "too",
+                hint: "Use 'too' after 'Me' to agree (Me too)."
+            },
+            {
+                id: 2,
+                a: "I don't like seafood.",
+                bBefore: "",
+                bAfter: " do I. It smells bad.",
+                correct: "So",
+                hint: "Use 'So' before 'do I' (So do I)."
+            },
+            {
+                id: 3,
+                a: "I like drinking green tea.",
+                bBefore: "I ",
+                bAfter: ". I like coffee much better.",
+                correct: "don't",
+                hint: "Use 'don't' to disagree with a positive statement."
+            },
+            {
+                id: 4,
+                a: "I hate fast food.",
+                bBefore: "Really? I ",
+                bAfter: " it! It's fast and cheap.",
+                correct: "love",
+                hint: "Use 'love' to state strong positive preference."
+            },
+            {
+                id: 5,
+                a: "I don't want salad today.",
+                bBefore: "I agree. I ",
+                bAfter: " to eat hot pasta.",
+                correct: "prefer",
+                hint: "Use 'prefer' when choosing one option over another."
+            }
+        ];
+
+        const wordBankList = ["too", "So", "don't", "love", "prefer"];
+
+        function initGapFill() {
+            const wordBankEl = document.getElementById('wordBankChips');
+            wordBankEl.innerHTML = '';
+            wordBankList.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = 'word-chip px-4 py-2 bg-amber-100 dark:bg-slate-700 hover:bg-amber-200 dark:hover:bg-slate-600 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-slate-600 rounded-xl font-bold text-sm shadow-sm transition';
+                btn.innerText = word;
+                btn.onclick = () => selectWordBankChip(word, btn);
+                wordBankEl.appendChild(btn);
+            });
+
+            const container = document.getElementById('gapFillContainer');
+            container.innerHTML = '';
+
+            gapFillData.forEach((item) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-4 rounded-2xl bg-amber-50/50 dark:bg-slate-700/40 border border-amber-200/80 dark:border-slate-600 space-y-2';
+                
+                itemDiv.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+                        <span>Dialogue #${item.id}</span>
+                        <button onclick="speakText('${item.a} Person B replies: ${item.bBefore} ${state.gapFillAnswers[item.id] || 'blank'} ${item.bAfter}')" class="text-slate-500 hover:text-amber-600">
+                            <i class="fa-solid fa-volume-high"></i> Listen
+                        </button>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">A: "${item.a}"</p>
+                    <div class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100 flex-wrap">
+                        <span>B: "${item.bBefore}</span>
+                        <div onclick="slotWordIntoBlank(${item.id})" id="blank-${item.id}" class="blank-slot min-w-[80px] px-3 py-1 bg-white dark:bg-slate-800 border-2 border-dashed border-amber-400 rounded-lg text-center font-bold text-amber-800 dark:text-amber-300 cursor-pointer hover:bg-amber-50">
+                            ${state.gapFillAnswers[item.id] || '?'}
+                        </div>
+                        <span>${item.bAfter}"</span>
+                    </div>
+                    <div id="gap-feedback-${item.id}" class="hidden text-xs font-semibold pt-1"></div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function selectWordBankChip(word, btnEl) {
+            playSFX('click');
+            state.selectedGapWord = word;
+            document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-300'));
+            btnEl.classList.add('ring-2', 'ring-amber-500', 'bg-amber-300');
+        }
+
+        function slotWordIntoBlank(id) {
+            if (!state.selectedGapWord) {
+                // If user taps blank without selected word, cycle or alert
+                return;
+            }
+            playSFX('click');
+            state.gapFillAnswers[id] = state.selectedGapWord;
+            const slotEl = document.getElementById(`blank-${id}`);
+            slotEl.innerText = state.selectedGapWord;
+            slotEl.classList.remove('border-dashed');
+            slotEl.classList.add('border-solid', 'bg-amber-100');
+        }
+
+        function checkGapFill() {
+            let correctCount = 0;
+            gapFillData.forEach((item) => {
+                const userAns = state.gapFillAnswers[item.id];
+                const fb = document.getElementById(`gap-feedback-${item.id}`);
+                const slotEl = document.getElementById(`blank-${item.id}`);
+                fb.classList.remove('hidden', 'text-emerald-600', 'text-rose-600');
+
+                if (userAns === item.correct) {
+                    correctCount++;
+                    fb.classList.add('text-emerald-600');
+                    fb.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Correct! (${item.hint})`;
+                    slotEl.classList.add('border-emerald-500', 'bg-emerald-50');
+                } else {
+                    fb.classList.add('text-rose-600');
+                    fb.innerHTML = `<i class="fa-solid fa-xmark mr-1"></i> Correct answer: "${item.correct}". (${item.hint})`;
+                    slotEl.classList.add('border-rose-500', 'bg-rose-50');
+                }
+            });
+
+            if (correctCount === gapFillData.length) {
+                addStars(10);
+                unlockBadge('mod2', 'badge-2');
+                playSFX('fanfare');
+            } else {
+                playSFX('wrong');
+            }
+        }
+
+        function showGapFillHint() {
+            playSFX('click');
+            alert("Grammar Hints:\n• 'too' goes at the end (Me too).\n• 'So' goes before 'do I' (So do I).\n• 'don't' expresses disagreement.\n• 'prefer' expresses choice.");
+        }
+
+        function resetGapFill() {
+            state.gapFillAnswers = {};
+            state.selectedGapWord = null;
+            initGapFill();
+            playSFX('click');
+        }
+
+        /* ==========================================================================
+           4. MODULE 3: DIALOGUE SEQUENCE GAME LOGIC
+           ========================================================================== */
+        const originalDialogue = [
+            { speaker: "Waiter", text: "Good evening! Are you ready to order?", order: 0 },
+            { speaker: "Customer", text: "Yes, please. I would like the tomato pasta.", order: 1 },
+            { speaker: "Waiter", text: "Great! And what would you like to drink?", order: 2 },
+            { speaker: "Customer", text: "I'll have a glass of orange juice, please.", order: 3 },
+            { speaker: "Customer", text: "Excuse me, can I also have some garlic bread?", order: 4 },
+            { speaker: "Waiter", text: "Perfect. I will bring your food shortly.", order: 5 }
+        ];
+
+        function renderDialogueCards() {
+            const container = document.getElementById('dialogueCardsContainer');
+            container.innerHTML = '';
+
+            state.dialogueOrder.forEach((itemIdx, pos) => {
+                const item = originalDialogue[itemIdx];
+                const card = document.createElement('div');
+                card.className = 'p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-700/60 border-2 border-slate-200 dark:border-slate-600 flex items-center justify-between gap-3 transition shadow-sm';
+                
+                const isWaiter = item.speaker === "Waiter";
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                            ${pos + 1}
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold uppercase ${isWaiter ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}">${item.speaker}:</span>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">"${item.text}"</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="speakText('${item.speaker} says: ${item.text}', '${isWaiter ? 'waiter' : 'customer'}')" class="p-2 text-slate-400 hover:text-amber-600 rounded-lg">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <button onclick="moveDialogueLine(${pos}, -1)" ${pos === 0 ? 'disabled' : ''} class="p-2 bg-slate-200 dark:bg-slate-600 hover:bg-amber-500 hover:text-white rounded-lg text-xs font-bold transition disabled:opacity-30">
+                            ▲
+                        </button>
+                        <button onclick="moveDialogueLine(${pos}, 1)" ${pos === state.dialogueOrder.length - 1 ? 'disabled' : ''} class="p-2 bg-slate-200 dark:bg-slate-600 hover:bg-amber-500 hover:text-white rounded-lg text-xs font-bold transition disabled:opacity-30">
+                            ▼
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function moveDialogueLine(fromPos, direction) {
+            playSFX('click');
+            const toPos = fromPos + direction;
+            if (toPos < 0 || toPos >= state.dialogueOrder.length) return;
+
+            const temp = state.dialogueOrder[fromPos];
+            state.dialogueOrder[fromPos] = state.dialogueOrder[toPos];
+            state.dialogueOrder[toPos] = temp;
+
+            renderDialogueCards();
+        }
+
+        function shuffleDialogue() {
+            playSFX('click');
+            state.dialogueOrder = [3, 0, 5, 1, 4, 2];
+            renderDialogueCards();
+            const fb = document.getElementById('seqFeedback');
+            fb.classList.add('hidden');
+        }
+
+        function checkDialogueOrder() {
+            let isCorrect = true;
+            for (let i = 0; i < state.dialogueOrder.length; i++) {
+                if (state.dialogueOrder[i] !== i) {
+                    isCorrect = false;
+                    break;
+                }
+            }
+
+            const fb = document.getElementById('seqFeedback');
+            fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (isCorrect) {
+                fb.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+                fb.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i> Perfect! The restaurant conversation is in exact logical order.`;
+                addStars(10);
+                unlockBadge('mod3', 'badge-3');
+                playSFX('fanfare');
+            } else {
+                fb.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+                fb.innerHTML = `<i class="fa-solid fa-circle-xmark mr-2"></i> Some lines are out of order. Tip: Waiter greets first, then main food, then drinks!`;
+                playSFX('wrong');
+            }
+        }
+
+        function playFullOrderedDialogue() {
+            let fullText = "";
+            state.dialogueOrder.forEach(idx => {
+                const line = originalDialogue[idx];
+                fullText += `${line.speaker}: ${line.text}. `;
+            });
+            speakText(fullText);
+        }
+
+        /* ==========================================================================
+           5. MODULE 4: ROLEPLAY & BISTRO SIMULATOR LOGIC
+           ========================================================================== */
+        function setRoleplayStep(stepNum) {
+            playSFX('click');
+            state.roleplayStep = stepNum;
+            const btn1 = document.getElementById('rp-step1-btn');
+            const btn2 = document.getElementById('rp-step2-btn');
+            const sec1 = document.getElementById('roleplay-step-1');
+            const sec2 = document.getElementById('roleplay-step-2');
+
+            if (stepNum === 1) {
+                btn1.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-white dark:bg-slate-700 text-amber-900 dark:text-amber-300 shadow-sm';
+                btn2.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 dark:text-slate-400 hover:text-amber-900';
+                sec1.classList.remove('hidden');
+                sec2.classList.add('hidden');
+            } else {
+                btn2.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-white dark:bg-slate-700 text-amber-900 dark:text-amber-300 shadow-sm';
+                btn1.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 dark:text-slate-400 hover:text-amber-900';
+                sec2.classList.remove('hidden');
+                sec1.classList.add('hidden');
+                initBistroOrder();
+            }
+        }
+
+        function selectFoodItem(name, icon) {
+            playSFX('click');
+            state.selectedFood = { name, icon };
+            document.getElementById('selectedFoodName').innerText = name;
+            document.getElementById('selectedFoodIcon').innerText = icon;
+        }
+
+        function expressOpinion(type) {
+            playSFX('click');
+            const box = document.getElementById('partnerResponseBox');
+            const textEl = document.getElementById('partnerSpeechText');
+            box.classList.remove('hidden');
+
+            let studentPhrase = "";
+            let botReply = "";
+
+            if (type === 'love') {
+                studentPhrase = `I love ${state.selectedFood.name}!`;
+                botReply = `Me too! ${state.selectedFood.name} is super delicious!`;
+            } else if (type === 'like') {
+                studentPhrase = `I like ${state.selectedFood.name}.`;
+                botReply = `So do I! I order it all the time.`;
+            } else {
+                studentPhrase = `I don't like ${state.selectedFood.name}.`;
+                botReply = `Really? I love it! But everyone has different taste!`;
+            }
+
+            textEl.innerText = botReply;
+            speakText(`You said: ${studentPhrase}. Partner replies: ${botReply}`);
+            addStars(2);
+        }
+
+        function speakPartnerText() {
+            const text = document.getElementById('partnerSpeechText').innerText;
+            speakText(text, 'personB');
+        }
+
+        /* Interactive Waiter Ordering Flow */
+        const bistroSteps = [
+            {
+                guide: "Step 1: Waiter Greets You",
+                waiterText: "Good evening! Welcome to Bistro Bella. Are you ready to order?",
+                options: [
+                    { label: "Yes, please! I'm ready.", nextStage: 1 },
+                    { label: "Yes! Can I see the menu choices?", nextStage: 1 }
+                ]
+            },
+            {
+                guide: "Step 2: Choose Your Main Course",
+                waiterText: "Excellent! What would you like for your main dish?",
+                options: [
+                    { label: "I would like the Tomato Pasta ($9), please.", action: () => selectMenuCourse('main', 'Tomato Pasta', 9), nextStage: 2 },
+                    { label: "I'll have a Cheeseburger ($10), please.", action: () => selectMenuCourse('main', 'Cheeseburger', 10), nextStage: 2 },
+                    { label: "Can I have the Green Salad ($7), please?", action: () => selectMenuCourse('main', 'Green Salad', 7), nextStage: 2 }
+                ]
+            },
+            {
+                guide: "Step 3: Choose Your Beverage",
+                waiterText: "Great choice! And what would you like to drink?",
+                options: [
+                    { label: "I'll have a Fresh Orange Juice ($3), please.", action: () => selectMenuCourse('drink', 'Fresh Orange Juice', 3), nextStage: 3 },
+                    { label: "Can I have Sparkling Water ($2), please?", action: () => selectMenuCourse('drink', 'Sparkling Water', 2), nextStage: 3 }
+                ]
+            },
+            {
+                guide: "Step 4: Dessert Choice",
+                waiterText: "Wonderful! Would you like any dessert tonight?",
+                options: [
+                    { label: "Yes, I'd like Chocolate Cake ($5), please!", action: () => selectMenuCourse('dessert', 'Chocolate Fudge Cake', 5), nextStage: 4 },
+                    { label: "Yes, I'll have a Fruit Bowl ($4), please.", action: () => selectMenuCourse('dessert', 'Fresh Fruit Bowl', 4), nextStage: 4 },
+                    { label: "No thank you, just the bill please!", action: () => selectMenuCourse('dessert', 'None', 0), nextStage: 4 }
+                ]
+            },
+            {
+                guide: "Step 5: Finishing & Bill",
+                waiterText: "Perfect! I will bring your order right away. Enjoy your meal!",
+                options: [
+                    { label: "Thank you very much!", nextStage: 5 }
+                ]
+            }
+        ];
+
+        function initBistroOrder() {
+            state.bistroStage = 0;
+            state.roleplayTranscript = [];
+            state.bistroOrder = { main: null, mainPrice: 0, drink: null, drinkPrice: 0, dessert: null, dessertPrice: 0 };
+            document.getElementById('waiterChatLog').innerHTML = '';
+            advanceBistroStage(0);
+        }
+
+        function advanceBistroStage(stageIdx) {
+            state.bistroStage = stageIdx;
+            const stepData = bistroSteps[stageIdx];
+            if (!stepData) return;
+
+            document.getElementById('waiterPromptGuide').innerText = stepData.guide;
+            
+            // Append Waiter Chat Bubble
+            appendChatMessage('Waiter', stepData.waiterText);
+            speakText(stepData.waiterText, 'waiter');
+
+            // Render option buttons
+            const container = document.getElementById('waiterOptionsContainer');
+            container.innerHTML = '';
+
+            stepData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3 rounded-xl bg-amber-50 dark:bg-slate-700 hover:bg-amber-100 dark:hover:bg-slate-600 border border-amber-200 dark:border-slate-600 text-xs font-bold text-amber-900 dark:text-amber-200 transition';
+                btn.innerText = opt.label;
+                btn.onclick = () => {
+                    playSFX('click');
+                    if (opt.action) opt.action();
+                    appendChatMessage('Customer', opt.label);
+                    speakText(opt.label, 'customer');
+
+                    if (opt.nextStage < bistroSteps.length) {
+                        setTimeout(() => advanceBistroStage(opt.nextStage), 1200);
+                    } else {
+                        unlockBadge('mod4', 'badge-4');
+                        addStars(15);
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function selectMenuCourse(type, name, price) {
+            state.bistroOrder[type] = name;
+            state.bistroOrder[`${type}Price`] = price;
+        }
+
+        function appendChatMessage(speaker, text) {
+            const chatLog = document.getElementById('waiterChatLog');
+            const bubble = document.createElement('div');
+            const isWaiter = speaker === 'Waiter';
+
+            state.roleplayTranscript.push({ speaker, text });
+
+            bubble.className = `p-2.5 rounded-xl max-w-[85%] ${isWaiter ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-950 dark:text-amber-200 self-start border border-amber-200' : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-950 dark:text-emerald-200 ml-auto border border-emerald-200'}`;
+            bubble.innerHTML = `
+                <p class="font-bold text-[10px] uppercase opacity-75">${speaker}:</p>
+                <p class="font-medium">${text}</p>
+            `;
+            chatLog.appendChild(bubble);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        function playRoleplayAudioTranscript() {
+            if (state.roleplayTranscript.length === 0) return;
+            let fullText = "";
+            state.roleplayTranscript.forEach(t => {
+                fullText += `${t.speaker} says: ${t.text}. `;
+            });
+            speakText(fullText);
+        }
+
+        function finishRoleplayAndShowReceipt() {
+            playSFX('fanfare');
+            const sName = document.getElementById('studentNameInput').value || 'Alex Smith';
+            document.getElementById('rcpt-student-name').innerText = sName;
+            document.getElementById('rcpt-stars').innerText = `${state.stars} ⭐`;
+
+            const itemsList = document.getElementById('rcpt-items-list');
+            itemsList.innerHTML = '';
+
+            let total = 0;
+
+            if (state.bistroOrder.main) {
+                total += state.bistroOrder.mainPrice;
+                itemsList.innerHTML += `<div class="flex justify-between"><span>1x ${state.bistroOrder.main}</span><span>$${state.bistroOrder.mainPrice.toFixed(2)}</span></div>`;
+            }
+            if (state.bistroOrder.drink) {
+                total += state.bistroOrder.drinkPrice;
+                itemsList.innerHTML += `<div class="flex justify-between"><span>1x ${state.bistroOrder.drink}</span><span>$${state.bistroOrder.drinkPrice.toFixed(2)}</span></div>`;
+            }
+            if (state.bistroOrder.dessert && state.bistroOrder.dessert !== 'None') {
+                total += state.bistroOrder.dessertPrice;
+                itemsList.innerHTML += `<div class="flex justify-between"><span>1x ${state.bistroOrder.dessert}</span><span>$${state.bistroOrder.dessertPrice.toFixed(2)}</span></div>`;
+            }
+
+            if (total === 0) {
+                itemsList.innerHTML = '<p class="text-slate-400 italic">No menu items ordered yet. Try ordering in Step 2!</p>';
+            }
+
+            document.getElementById('rcpt-total-price').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('receiptModal').classList.remove('hidden');
+            triggerConfetti();
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+        }
+
+        function resetBistroOrder() {
+            initBistroOrder();
+            playSFX('click');
+        }
+
+        /* ==========================================================================
+           6. GLOBAL UTILITIES, CONFETTI & TAB NAVIGATION
+           ========================================================================== */
+        function switchTab(tabId) {
+            playSFX('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-amber-200/60 dark:hover:bg-slate-700';
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = 'tab-btn px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center gap-2 bg-amber-600 text-white shadow-sm';
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon';
+            playSFX('click');
+        }
+
+        function toggleSFX() {
+            state.sfxEnabled = !state.sfxEnabled;
+            document.getElementById('sfxIcon').className = state.sfxEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-rose-400';
+        }
+
+        function toggleAudioSpeed() {
+            if (state.speechRate === 1.0) {
+                state.speechRate = 0.75;
+                document.getElementById('speedLabel').innerText = '0.75x 🐢';
+            } else {
+                state.speechRate = 1.0;
+                document.getElementById('speedLabel').innerText = '1.0x 🐇';
+            }
+            playSFX('click');
+        }
+
+        /* HTML5 Canvas Confetti Engine */
+        function triggerConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#8b5cf6'];
+
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vy: Math.random() * 3 + 2,
+                    vx: Math.random() * 2 - 1
+                });
+            }
+
+            let animationFrame;
+            function render() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+
+                particles.forEach(p => {
+                    p.y += p.vy;
+                    p.x += p.vx;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (p.y < canvas.height) active = true;
+                });
+
+                if (active) {
+                    animationFrame = requestAnimationFrame(render);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            render();
+        }
+
+        /* Window Load Initializer */
+        window.onload = function() {
+            renderM1Card();
+            initGapFill();
+            renderDialogueCards();
+            initBistroOrder();
+        };
+    </script>
+</body>
+</html>
