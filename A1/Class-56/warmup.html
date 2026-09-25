@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bistro Bella: Restaurant Ordering Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bistro: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f',
+                        },
+                        bistroGreen: {
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .bistro-font {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(217, 119, 6, 0.4);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(217, 119, 6, 0.8);
+        }
+
+        @keyframes pulse-highlight {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .highlight-line {
+            animation: pulse-highlight 0.5s ease-in-out;
+            border-left: 4px solid #f59e0b !important;
+            background-color: rgba(245, 158, 11, 0.15) !important;
+        }
+
+        /* Printable Receipt/Certificate view adjustments */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; }
+            .printable-card { border: none !important; shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-amber-50/50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col selection:bg-amber-500 selection:text-white">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Application Header -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-amber-200 dark:border-slate-700 shadow-sm transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-amber-500/30 transform hover:rotate-6 transition-transform">
+                        <i class="fa-solid font-bold fa-utensils text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="bistro-font text-2xl font-bold tracking-tight text-amber-900 dark:text-amber-400">Bistro Bella</h1>
+                        <p class="text-xs font-semibold text-amber-700/80 dark:text-amber-300/80 tracking-wide uppercase">A1 Language Studio</p>
+                    </div>
+                </div>
+
+                <!-- Gamification & Quick Stats -->
+                <div class="hidden md:flex items-center gap-6 bg-amber-100/60 dark:bg-slate-700/60 px-4 py-2 rounded-2xl border border-amber-200/50 dark:border-slate-600">
+                    <!-- Star Counter -->
+                    <div class="flex items-center gap-2" title="Total Stars Earned">
+                        <div class="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center text-amber-500">
+                            <i class="fa-solid fa-star text-lg animate-bounce"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Stars</div>
+                            <div id="star-score" class="text-base font-bold text-slate-800 dark:text-slate-100">0 / 20</div>
+                        </div>
+                    </div>
+
+                    <div class="h-8 w-px bg-amber-200 dark:bg-slate-600"></div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-36">
+                        <div class="flex justify-between text-xs font-medium mb-1">
+                            <span class="text-slate-600 dark:text-slate-300">Overall</span>
+                            <span id="overall-progress-text" class="text-amber-600 dark:text-amber-400 font-bold">0%</span>
+                        </div>
+                        <div class="w-full bg-amber-200/50 dark:bg-slate-600 rounded-full h-2.5 overflow-hidden">
+                            <div id="overall-progress-bar" class="bg-gradient-to-r from-amber-500 to-amber-600 h-2.5 rounded-full transition-all duration-500 w-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Utilities -->
+                <div class="flex items-center gap-2">
+                    <!-- Sound Effects Toggle -->
+                    <button id="btn-audio-toggle" onclick="toggleAudioFX()" class="p-2.5 rounded-xl bg-amber-100/80 dark:bg-slate-700 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-slate-600 transition-colors" title="Toggle Sound FX">
+                        <i id="icon-audio" class="fa-solid fa-volume-high text-lg"></i>
+                    </button>
+
+                    <!-- Speech Speed Controller -->
+                    <div class="relative group">
+                        <button id="btn-tts-speed" class="p-2.5 rounded-xl bg-amber-100/80 dark:bg-slate-700 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-slate-600 transition-colors font-bold text-xs flex items-center gap-1">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span id="lbl-tts-speed">1.0x</span>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-28 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-amber-100 dark:border-slate-700 py-1 hidden group-hover:block z-50">
+                            <button onclick="setTTSSpeed(0.8)" class="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 dark:hover:bg-slate-700 font-medium">0.8x Slow</button>
+                            <button onclick="setTTSSpeed(1.0)" class="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 dark:hover:bg-slate-700 font-medium text-amber-600 font-bold">1.0x Normal</button>
+                            <button onclick="setTTSSpeed(1.2)" class="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 dark:hover:bg-slate-700 font-medium">1.2x Fast</button>
+                        </div>
+                    </div>
+
+                    <!-- Theme Switcher -->
+                    <button id="btn-theme-toggle" onclick="toggleTheme()" class="p-2.5 rounded-xl bg-amber-100/80 dark:bg-slate-700 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-slate-600 transition-colors" title="Toggle Theme">
+                        <i id="icon-theme" class="fa-solid fa-moon text-lg"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-amber-100/40 dark:bg-slate-800/60 border-t border-amber-200/60 dark:border-slate-700/60">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-1 sm:space-x-4 overflow-x-auto custom-scrollbar py-2">
+                    
+                    <button onclick="switchTab('tab-classifier')" id="nav-tab-classifier" class="nav-tab active-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all bg-amber-500 text-white shadow-md shadow-amber-500/20">
+                        <i class="fa-solid fa-users-line"></i>
+                        <span>1. Role Classifier</span>
+                    </button>
+
+                    <button onclick="switchTab('tab-categorizer')" id="nav-tab-categorizer" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700 transition-all">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>2. Menu Categories</span>
+                    </button>
+
+                    <button onclick="switchTab('tab-dialogue')" id="nav-tab-dialogue" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700 transition-all">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>3. Dialogue Builder</span>
+                    </button>
+
+                    <button onclick="switchTab('tab-simulator')" id="nav-tab-simulator" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700 transition-all">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>4. Bistro Simulator</span>
+                    </button>
+
+                    <button onclick="switchTab('tab-certificate')" id="nav-tab-certificate" class="nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700 transition-all">
+                        <i class="fa-solid fa-award"></i>
+                        <span>5. Certificate & Stats</span>
+                    </button>
+
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- MODULE 1: Role Classifier -->
+        <section id="tab-classifier" class="tab-content block space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold uppercase tracking-wider">Module 1</span>
+                        <h2 class="bistro-font text-2xl sm:text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100">Waiter or Customer?</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Classify who usually speaks each restaurant phrase. Tap a phrase or listen to it, then assign it correctly!</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="resetClassifier()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i> Reset Activity
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Sorting Container Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Waiter Category Zone -->
+                    <div id="waiter-zone" class="bg-amber-50/60 dark:bg-slate-900/60 border-2 border-dashed border-amber-300 dark:border-amber-700/60 rounded-2xl p-5 min-h-[300px] flex flex-col transition-colors">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-amber-200 dark:border-slate-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md">
+                                    <i class="fa-solid fa-user-tie text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-amber-900 dark:text-amber-300">Waiter Says</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Staff taking orders or helping</p>
+                                </div>
+                            </div>
+                            <span id="waiter-count" class="px-2.5 py-1 bg-amber-200/70 dark:bg-slate-700 text-amber-900 dark:text-amber-200 rounded-lg text-xs font-bold">0 / 3</span>
+                        </div>
+                        <div id="waiter-items" class="flex-grow space-y-3">
+                            <!-- Classified items drop here -->
+                        </div>
+                    </div>
+
+                    <!-- Customer Category Zone -->
+                    <div id="customer-zone" class="bg-emerald-50/60 dark:bg-slate-900/60 border-2 border-dashed border-emerald-300 dark:border-emerald-700/60 rounded-2xl p-5 min-h-[300px] flex flex-col transition-colors">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-emerald-200 dark:border-slate-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                                    <i class="fa-solid fa-user text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-emerald-900 dark:text-emerald-300">Customer Says</h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Guest ordering food or asking questions</p>
+                                </div>
+                            </div>
+                            <span id="customer-count" class="px-2.5 py-1 bg-emerald-200/70 dark:bg-slate-700 text-emerald-900 dark:text-emerald-200 rounded-lg text-xs font-bold">0 / 5</span>
+                        </div>
+                        <div id="customer-items" class="flex-grow space-y-3">
+                            <!-- Classified items drop here -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Unassigned Phrase Pool -->
+                <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-amber-500"></i> Unassigned Phrases:
+                    </h3>
+                    <div id="unassigned-phrases" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Phrases generated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 2: Menu Categorizer -->
+        <section id="tab-categorizer" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider">Module 2</span>
+                        <h2 class="bistro-font text-2xl sm:text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100">Sort the Menu Items</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Assign each menu item to the correct course category: Starters, Mains, Drinks, or Desserts.</p>
+                    </div>
+                    <button onclick="resetCategorizer()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Menu
+                    </button>
+                </div>
+
+                <!-- 4 Category Buckets Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    
+                    <!-- Starters Bucket -->
+                    <div id="bucket-starters" onclick="assignActiveFoodToCategory('starters')" class="menu-bucket bg-amber-50/50 dark:bg-slate-900/50 border-2 border-dashed border-amber-300 dark:border-slate-700 rounded-2xl p-4 min-h-[220px] flex flex-col hover:border-amber-500 transition-colors cursor-pointer">
+                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-amber-200 dark:border-slate-700">
+                            <i class="fa-solid fa-bowl-food text-amber-600 dark:text-amber-400 text-lg"></i>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Starters</h3>
+                            <span id="badge-starters" class="ml-auto text-xs px-2 py-0.5 bg-amber-200 dark:bg-slate-700 rounded-md font-bold">0/2</span>
+                        </div>
+                        <div id="items-starters" class="space-y-2 flex-grow"></div>
+                    </div>
+
+                    <!-- Mains Bucket -->
+                    <div id="bucket-mains" onclick="assignActiveFoodToCategory('mains')" class="menu-bucket bg-red-50/50 dark:bg-slate-900/50 border-2 border-dashed border-red-300 dark:border-slate-700 rounded-2xl p-4 min-h-[220px] flex flex-col hover:border-red-500 transition-colors cursor-pointer">
+                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-red-200 dark:border-slate-700">
+                            <i class="fa-solid fa-drumstick-bite text-red-600 dark:text-red-400 text-lg"></i>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Main Courses</h3>
+                            <span id="badge-mains" class="ml-auto text-xs px-2 py-0.5 bg-red-200 dark:bg-slate-700 rounded-md font-bold">0/2</span>
+                        </div>
+                        <div id="items-mains" class="space-y-2 flex-grow"></div>
+                    </div>
+
+                    <!-- Drinks Bucket -->
+                    <div id="bucket-drinks" onclick="assignActiveFoodToCategory('drinks')" class="menu-bucket bg-blue-50/50 dark:bg-slate-900/50 border-2 border-dashed border-blue-300 dark:border-slate-700 rounded-2xl p-4 min-h-[220px] flex flex-col hover:border-blue-500 transition-colors cursor-pointer">
+                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-blue-200 dark:border-slate-700">
+                            <i class="fa-solid fa-glass-water text-blue-600 dark:text-blue-400 text-lg"></i>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Drinks</h3>
+                            <span id="badge-drinks" class="ml-auto text-xs px-2 py-0.5 bg-blue-200 dark:bg-slate-700 rounded-md font-bold">0/2</span>
+                        </div>
+                        <div id="items-drinks" class="space-y-2 flex-grow"></div>
+                    </div>
+
+                    <!-- Desserts Bucket -->
+                    <div id="bucket-desserts" onclick="assignActiveFoodToCategory('desserts')" class="menu-bucket bg-purple-50/50 dark:bg-slate-900/50 border-2 border-dashed border-purple-300 dark:border-slate-700 rounded-2xl p-4 min-h-[220px] flex flex-col hover:border-purple-500 transition-colors cursor-pointer">
+                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-purple-200 dark:border-slate-700">
+                            <i class="fa-solid fa-ice-cream text-purple-600 dark:text-purple-400 text-lg"></i>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Desserts</h3>
+                            <span id="badge-desserts" class="ml-auto text-xs px-2 py-0.5 bg-purple-200 dark:bg-slate-700 rounded-md font-bold">0/2</span>
+                        </div>
+                        <div id="items-desserts" class="space-y-2 flex-grow"></div>
+                    </div>
+
+                </div>
+
+                <!-- Food Pills Selector -->
+                <div class="bg-slate-50 dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                        Tap an item below, then tap a category box above:
+                    </p>
+                    <div id="food-pills-pool" class="flex flex-wrap gap-2.5">
+                        <!-- Food chips injected dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: Dialogue Builder -->
+        <section id="tab-dialogue" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded-full text-xs font-bold uppercase tracking-wider">Module 3</span>
+                        <h2 class="bistro-font text-2xl sm:text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100">Restaurant Dialogue Builder</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Complete the conversation by filling in the blanks. Then practice listening!</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-play-full-dialogue" onclick="playFullDialogue()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl text-sm shadow-md shadow-amber-500/20 transition-all flex items-center gap-2">
+                            <i id="icon-full-play" class="fa-solid fa-play"></i> Listen to Dialogue
+                        </button>
+                        <button onclick="resetDialogue()" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold transition-colors">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Word Bank Container -->
+                <div class="bg-amber-50/70 dark:bg-slate-900/70 p-4 rounded-2xl border border-amber-200 dark:border-slate-700 mb-6">
+                    <p class="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300 mb-3">Word Bank (Tap or Drag into blanks):</p>
+                    <div id="word-bank" class="flex flex-wrap gap-3">
+                        <!-- Words injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Interactive Conversation Box -->
+                <div class="space-y-4 max-w-3xl mx-auto bg-slate-50/80 dark:bg-slate-900/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-200" id="dialogue-container">
+                    
+                    <!-- Line 1 (Waiter) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-0">
+                        <span class="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Waiter</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Good evening! Welcome to Bistro Bella. Are you ready to 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="0" onclick="handleSlotClick(0)">___</span>?
+                        </div>
+                        <button onclick="speakLine(0)" class="text-slate-400 hover:text-amber-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 2 (Customer) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-1">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Customer</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Yes, please. I 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="1" onclick="handleSlotClick(1)">___</span> 
+                            like the tomato soup to start.
+                        </div>
+                        <button onclick="speakLine(1)" class="text-slate-400 hover:text-emerald-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 3 (Waiter) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-2">
+                        <span class="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Waiter</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Great. And for your main course?
+                        </div>
+                        <button onclick="speakLine(2)" class="text-slate-400 hover:text-amber-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 4 (Customer) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-3">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Customer</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Can I 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="2" onclick="handleSlotClick(2)">___</span> 
+                            the grilled fish with vegetables?
+                        </div>
+                        <button onclick="speakLine(3)" class="text-slate-400 hover:text-emerald-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 5 (Waiter) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-4">
+                        <span class="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Waiter</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Perfect. What would you 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="3" onclick="handleSlotClick(3)">___</span> 
+                            to drink?
+                        </div>
+                        <button onclick="speakLine(4)" class="text-slate-400 hover:text-amber-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 6 (Customer) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-5">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Customer</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            I’ll have a bottle of sparkling water, please.
+                        </div>
+                        <button onclick="speakLine(5)" class="text-slate-400 hover:text-emerald-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 7 (Waiter) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-6">
+                        <span class="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Waiter</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Is that 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="4" onclick="handleSlotClick(4)">___</span> 
+                            else for now?
+                        </div>
+                        <button onclick="speakLine(6)" class="text-slate-400 hover:text-amber-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 8 (Customer) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-7">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Customer</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            No, that's all, thank you.
+                        </div>
+                        <button onclick="speakLine(7)" class="text-slate-400 hover:text-emerald-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 9 (Customer) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-8">
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Customer</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Excuse me, could we have the 
+                            <span class="gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded" data-index="5" onclick="handleSlotClick(5)">___</span>, 
+                            please?
+                        </div>
+                        <button onclick="speakLine(8)" class="text-slate-400 hover:text-emerald-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                    <!-- Line 10 (Waiter) -->
+                    <div class="dialogue-line flex items-start gap-3 p-3 rounded-xl transition-all" id="line-9">
+                        <span class="px-2.5 py-1 bg-amber-500 text-white text-xs font-bold rounded-lg uppercase tracking-wide shrink-0 mt-0.5">Waiter</span>
+                        <div class="flex-grow text-sm sm:text-base leading-relaxed">
+                            Of course! Here you go.
+                        </div>
+                        <button onclick="speakLine(9)" class="text-slate-400 hover:text-amber-500 p-1"><i class="fa-solid fa-volume-high"></i></button>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 4: Bistro Simulator & Dynamic Roleplay -->
+        <section id="tab-simulator" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left: Bistro Menu Selector (7 Cols) -->
+                <div class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+                    <div class="mb-6">
+                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 rounded-full text-xs font-bold uppercase tracking-wider">Module 4</span>
+                        <h2 class="bistro-font text-2xl sm:text-3xl font-bold mt-1 text-slate-800 dark:text-slate-100">Quick Bistro Menu</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Select food items from the menu to build your custom restaurant order.</p>
+                    </div>
+
+                    <!-- Menu Grid Categories -->
+                    <div class="space-y-5">
+                        
+                        <!-- Starters -->
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-bowl-food"></i> Starters
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="sim-starters"></div>
+                        </div>
+
+                        <!-- Mains -->
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-drumstick-bite"></i> Mains
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="sim-mains"></div>
+                        </div>
+
+                        <!-- Drinks -->
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-glass-water"></i> Drinks
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="sim-drinks"></div>
+                        </div>
+
+                        <!-- Desserts -->
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-ice-cream"></i> Desserts
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="sim-desserts"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right: Custom Receipt & Roleplay Rehearsal (5 Cols) -->
+                <div class="lg:col-span-5 space-y-6">
+                    
+                    <!-- Itemized Order Receipt -->
+                    <div class="bg-amber-50/80 dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-200 dark:border-slate-700 font-mono text-xs">
+                        <div class="text-center pb-4 mb-4 border-b border-dashed border-amber-300 dark:border-slate-600">
+                            <h3 class="bistro-font text-xl font-bold font-serif text-amber-900 dark:text-amber-300">BISTRO BELLA</h3>
+                            <p class="text-slate-500 dark:text-slate-400">Order Summary & Receipt</p>
+                        </div>
+
+                        <!-- Selected Items List -->
+                        <div id="sim-receipt-items" class="space-y-2 mb-4 text-slate-700 dark:text-slate-300">
+                            <!-- Items inserted dynamically -->
+                        </div>
+
+                        <div class="pt-3 border-t border-dashed border-amber-300 dark:border-slate-600 flex justify-between items-center text-sm font-bold text-slate-900 dark:text-white">
+                            <span>TOTAL:</span>
+                            <span id="sim-total-price" class="text-amber-600 dark:text-amber-400 text-lg">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Generated Dynamic Dialogue Box -->
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-comments text-amber-500"></i> Roleplay Script
+                            </h3>
+                            <button id="btn-play-sim-roleplay" onclick="playSimulatedRoleplay()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-play"></i> Practice Voice
+                            </button>
+                        </div>
+
+                        <div id="sim-generated-script" class="space-y-3 text-xs leading-relaxed max-h-[300px] overflow-y-auto custom-scrollbar p-1">
+                            <p class="text-slate-400 italic text-center py-4">Select items from the menu to generate your personalized roleplay script!</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 5: Certificate & Stats -->
+        <section id="tab-certificate" class="tab-content hidden space-y-6">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- Personalized Input Banner -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-amber-100 dark:border-slate-700 mb-6 no-print">
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-2">Claim Your Official Bistro Bella Certificate</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Enter your full name to personalize your completion certificate and print or download your achievement.</p>
+                    <div class="flex gap-3">
+                        <input type="text" id="student-name-input" oninput="updateCertificateName()" placeholder="Enter Student Full Name" class="flex-grow px-4 py-2.5 rounded-xl border border-amber-200 dark:border-slate-600 bg-amber-50/30 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <button onclick="triggerConfettiFanfare()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-amber-500/20">
+                            Celebrate 🎉
+                        </button>
+                        <button onclick="window.print()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-print"></i> Print
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Printable Certificate Graphic Card -->
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl border-8 border-double border-amber-300 dark:border-amber-700/60 relative overflow-hidden text-center printable-card">
+                    <!-- Subtle Background Decoration -->
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+
+                    <h4 class="text-xs uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 mb-1">Certificate of Achievement</h4>
+                    <h2 class="bistro-font text-3xl sm:text-4xl font-bold text-amber-950 dark:text-amber-100 mb-4">Bistro Bella Ordering Studio</h2>
+
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                        This document certifies that the student below has successfully mastered basic English A1 restaurant phrases, menu categorization, and table ordering dialogues.
+                    </p>
+
+                    <div class="my-6 py-4 border-y border-amber-200 dark:border-slate-700 max-w-lg mx-auto">
+                        <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Awarded To</div>
+                        <div id="cert-student-name" class="bistro-font text-2xl sm:text-3xl font-bold text-slate-800 dark:text-amber-300">
+                            [ Student Name ]
+                        </div>
+                    </div>
+
+                    <!-- Badges & Stats Summary inside Certificate -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl mx-auto my-8">
+                        <div class="p-3 bg-amber-50 dark:bg-slate-900/60 rounded-2xl border border-amber-100 dark:border-slate-700">
+                            <div class="text-amber-500 font-bold text-lg" id="cert-stars">0 / 20</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Stars Earned</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-slate-900/60 rounded-2xl border border-amber-100 dark:border-slate-700">
+                            <div class="text-emerald-500 font-bold text-lg" id="cert-progress">0%</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Studio Mastery</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-slate-900/60 rounded-2xl border border-amber-100 dark:border-slate-700">
+                            <div class="text-blue-500 font-bold text-lg" id="cert-date">2026</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Date</div>
+                        </div>
+                        <div class="p-3 bg-amber-50 dark:bg-slate-900/60 rounded-2xl border border-amber-100 dark:border-slate-700">
+                            <div class="text-purple-500 font-bold text-lg">A1 Standard</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase">CEFR Level</div>
+                        </div>
+                    </div>
+
+                    <!-- Signature Line -->
+                    <div class="flex justify-between items-end max-w-md mx-auto pt-6 text-xs text-slate-400 border-t border-slate-100 dark:border-slate-800">
+                        <div class="text-left">
+                            <div class="bistro-font text-amber-800 dark:text-amber-400 font-bold text-base">Bistro Bella Studio</div>
+                            <div>Language Faculty</div>
+                        </div>
+                        <div class="text-right">
+                            <i class="fa-solid fa-stamp text-2xl text-amber-500/80 mb-1"></i>
+                            <div class="font-bold text-slate-600 dark:text-slate-300">Verified A1 Pass</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white/80 dark:bg-slate-800/80 border-t border-amber-200/50 dark:border-slate-700 py-4 no-print mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            <p>Bistro Bella: Restaurant Ordering Studio &bull; A1 English Learning Interactive Web App</p>
+        </div>
+    </footer>
+
+    <script>
+        let state = {
+            stars: 0,
+            audioEnabled: true,
+            ttsSpeed: 1.0,
+            theme: 'light',
+            
+            // Module 1 State
+            classifier: {
+                phrases: [
+                    { id: 1, text: "Are you ready to order?", category: "waiter", assigned: null },
+                    { id: 2, text: "Can I have a glass of water, please?", category: "customer", assigned: null },
+                    { id: 3, text: "I would like the grilled chicken with salad.", category: "customer", assigned: null },
+                    { id: 4, text: "What would you like for dessert?", category: "waiter", assigned: null },
+                    { id: 5, text: "I'll have a cup of black coffee.", category: "customer", assigned: null },
+                    { id: 6, text: "Could we get the bill, please?", category: "customer", assigned: null },
+                    { id: 7, text: "Enjoy your meal!", category: "waiter", assigned: null },
+                    { id: 8, text: "Does this dish contain nuts?", category: "customer", assigned: null }
+                ]
+            },
+
+            // Module 2 State
+            categorizer: {
+                activeFoodId: null,
+                foods: [
+                    { id: 'f1', name: 'Chocolate Cake', category: 'desserts', assigned: null, icon: 'fa-cake-candles' },
+                    { id: 'f2', name: 'Orange Juice', category: 'drinks', assigned: null, icon: 'fa-glass-water' },
+                    { id: 'f3', name: 'Tomato Soup', category: 'starters', assigned: null, icon: 'fa-bowl-food' },
+                    { id: 'f4', name: 'Cheeseburger', category: 'mains', assigned: null, icon: 'fa-burger' },
+                    { id: 'f5', name: 'Ice Cream', category: 'desserts', assigned: null, icon: 'fa-ice-cream' },
+                    { id: 'f6', name: 'Green Salad', category: 'starters', assigned: null, icon: 'fa-carrot' },
+                    { id: 'f7', name: 'Mineral Water', category: 'drinks', assigned: null, icon: 'fa-bottle-water' },
+                    { id: 'f8', name: 'Spaghetti Bolognaise', category: 'mains', assigned: null, icon: 'fa-plate-wheat' }
+                ]
+            },
+
+            // Module 3 State
+            dialogue: {
+                answers: { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null },
+                correctAnswers: { 0: 'order', 1: 'would', 2: 'have', 3: 'like', 4: 'anything', 5: 'bill' },
+                activeSlot: null,
+                script: [
+                    { speaker: 'Waiter', text: 'Good evening! Welcome to Bistro Bella. Are you ready to order?' },
+                    { speaker: 'Customer', text: 'Yes, please. I would like the tomato soup to start.' },
+                    { speaker: 'Waiter', text: 'Great. And for your main course?' },
+                    { speaker: 'Customer', text: 'Can I have the grilled fish with vegetables?' },
+                    { speaker: 'Waiter', text: 'Perfect. What would you like to drink?' },
+                    { speaker: 'Customer', text: 'I’ll have a bottle of sparkling water, please.' },
+                    { speaker: 'Waiter', text: 'Is that anything else for now?' },
+                    { speaker: 'Customer', text: 'No, that\'s all, thank you.' },
+                    { speaker: 'Customer', text: 'Excuse me, could we have the bill, please?' },
+                    { speaker: 'Waiter', text: 'Of course! Here you go.' }
+                ]
+            },
+
+            // Module 4 State
+            simulator: {
+                menu: {
+                    starters: [
+                        { name: "Vegetable Soup", price: 5.00 },
+                        { name: "Garlic Bread", price: 4.00 },
+                        { name: "Tomato Soup", price: 5.00 }
+                    ],
+                    mains: [
+                        { name: "Cheeseburger & Fries", price: 10.00 },
+                        { name: "Tomato Pasta", price: 9.00 },
+                        { name: "Chicken Salad", price: 11.00 },
+                        { name: "Grilled Fish", price: 12.00 }
+                    ],
+                    drinks: [
+                        { name: "Apple Juice", price: 3.00 },
+                        { name: "Mineral Water", price: 2.00 },
+                        { name: "Sparkling Water", price: 3.00 },
+                        { name: "Black Coffee", price: 3.00 }
+                    ],
+                    desserts: [
+                        { name: "Chocolate Cake", price: 5.00 },
+                        { name: "Vanilla Ice Cream", price: 4.00 }
+                    ]
+                },
+                selected: { starter: null, main: null, drink: null, dessert: null }
+            }
+        };
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!state.audioEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.2); // A2
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        noteGain.gain.setValueAtTime(0.2, now + idx * 0.1);
+                        noteGain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                        
+                        noteOsc.start(now + idx * 0.1);
+                        noteOsc.stop(now + idx * 0.1 + 0.25);
+                    });
+                }
+            } catch (e) {
+                console.error("Audio synth error:", e);
+            }
+        }
+
+        function speakText(text, pitch = 1.0, callback) {
+            if (!('speechSynthesis' in window)) {
+                showToast("Text-To-Speech is not supported in this browser.", "warning");
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.ttsSpeed;
+            utterance.pitch = pitch;
+            utterance.lang = 'en-US';
+
+            utterance.onend = () => { if (callback) callback(); };
+            utterance.onerror = () => { if (callback) callback(); };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-600' :
+                            type === 'error' ? 'bg-rose-600' :
+                            type === 'warning' ? 'bg-amber-600' : 'bg-slate-800';
+            
+            toast.className = `pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-2xl text-white text-xs sm:text-sm font-semibold shadow-xl transition-all transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = "nav-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap text-slate-600 dark:text-slate-300 hover:bg-amber-200/50 dark:hover:bg-slate-700 transition-all";
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "nav-tab active-tab flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all bg-amber-500 text-white shadow-md shadow-amber-500/20";
+            }
+        }
+
+        function updateProgress() {
+            // Calculate Stars based on modules
+            let stars = 0;
+
+            // Module 1: 8 phrases = max 8 stars
+            const correctClassifier = state.classifier.phrases.filter(p => p.assigned === p.category).length;
+            stars += correctClassifier;
+
+            // Module 2: 8 food items = max 8 stars
+            const correctCategorizer = state.categorizer.foods.filter(f => f.assigned === f.category).length;
+            stars += correctCategorizer;
+
+            // Module 3: 6 dialogue gaps = max 4 stars
+            let correctDialogueGaps = 0;
+            Object.keys(state.dialogue.correctAnswers).forEach(idx => {
+                if (state.dialogue.answers[idx] === state.dialogue.correctAnswers[idx]) {
+                    correctDialogueGaps++;
+                }
+            });
+            if (correctDialogueGaps === 6) stars += 4;
+
+            state.stars = stars;
+            const progressPercent = Math.round((stars / 20) * 100);
+
+            document.getElementById('star-score').textContent = `${stars} / 20`;
+            document.getElementById('overall-progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('overall-progress-text').textContent = `${progressPercent}%`;
+
+            // Update Certificate view
+            document.getElementById('cert-stars').textContent = `${stars} / 20`;
+            document.getElementById('cert-progress').textContent = `${progressPercent}%`;
+
+            if (progressPercent === 100) {
+                triggerConfettiFanfare();
+            }
+        }
+
+        function renderClassifier() {
+            const waiterContainer = document.getElementById('waiter-items');
+            const customerContainer = document.getElementById('customer-items');
+            const unassignedContainer = document.getElementById('unassigned-phrases');
+
+            waiterContainer.innerHTML = '';
+            customerContainer.innerHTML = '';
+            unassignedContainer.innerHTML = '';
+
+            let waiterCount = 0;
+            let customerCount = 0;
+
+            state.classifier.phrases.forEach(item => {
+                if (item.assigned === 'waiter') {
+                    waiterCount++;
+                    waiterContainer.appendChild(createClassifierCard(item, true));
+                } else if (item.assigned === 'customer') {
+                    customerCount++;
+                    customerContainer.appendChild(createClassifierCard(item, true));
+                } else {
+                    unassignedContainer.appendChild(createClassifierCard(item, false));
+                }
+            });
+
+            document.getElementById('waiter-count').textContent = `${waiterCount} / 3`;
+            document.getElementById('customer-count').textContent = `${customerCount} / 5`;
+            
+            updateProgress();
+        }
+
+        function createClassifierCard(item, isAssigned) {
+            const card = document.createElement('div');
+            const isCorrect = item.assigned === item.category;
+
+            card.className = `p-3 sm:p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                !isAssigned ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md' :
+                isCorrect ? 'bg-emerald-100/70 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200' :
+                'bg-rose-100/70 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200'
+            }`;
+
+            card.innerHTML = `
+                <div class="flex items-center gap-2.5 flex-grow">
+                    <button onclick="speakText('${item.text.replace(/'/g, "\\'")}')" class="p-2 bg-amber-100 dark:bg-slate-700 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-200 transition-colors shrink-0" title="Listen to pronunciation">
+                        <i class="fa-solid fa-volume-high text-sm"></i>
+                    </button>
+                    <span class="text-xs sm:text-sm font-medium leading-snug">"${item.text}"</span>
+                </div>
+                ${!isAssigned ? `
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="assignClassifier(${item.id}, 'waiter')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-colors">
+                            Waiter
+                        </button>
+                        <button onclick="assignClassifier(${item.id}, 'customer')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors">
+                            Customer
+                        </button>
+                    </div>
+                ` : `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase">${isCorrect ? '✓ Correct' : '✕ Try Again'}</span>
+                        <button onclick="unassignClassifier(${item.id})" class="text-xs text-slate-400 hover:text-slate-600 p-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `}
+            `;
+            return card;
+        }
+
+        function assignClassifier(id, category) {
+            const item = state.classifier.phrases.find(p => p.id === id);
+            if (item) {
+                item.assigned = category;
+                if (item.category === category) {
+                    playSound('correct');
+                    showToast("Correct role assignment!", "success");
+                } else {
+                    playSound('wrong');
+                    showToast("Not quite! Try assigning to the other role.", "error");
+                }
+                renderClassifier();
+            }
+        }
+
+        function unassignClassifier(id) {
+            const item = state.classifier.phrases.find(p => p.id === id);
+            if (item) {
+                item.assigned = null;
+                renderClassifier();
+            }
+        }
+
+        function resetClassifier() {
+            playSound('click');
+            state.classifier.phrases.forEach(p => p.assigned = null);
+            renderClassifier();
+            showToast("Module 1 reset.", "info");
+        }
+
+        function renderCategorizer() {
+            ['starters', 'mains', 'drinks', 'desserts'].forEach(cat => {
+                const bucketEl = document.getElementById(`items-${cat}`);
+                bucketEl.innerHTML = '';
+            });
+
+            const poolEl = document.getElementById('food-pills-pool');
+            poolEl.innerHTML = '';
+
+            let counts = { starters: 0, mains: 0, drinks: 0, desserts: 0 };
+
+            state.categorizer.foods.forEach(food => {
+                if (food.assigned) {
+                    counts[food.assigned]++;
+                    const bucketContainer = document.getElementById(`items-${food.assigned}`);
+                    const isCorrect = food.assigned === food.category;
+
+                    const chip = document.createElement('div');
+                    chip.className = `p-2 rounded-xl text-xs font-bold flex items-center justify-between border ${
+                        isCorrect ? 'bg-emerald-100 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200' :
+                        'bg-rose-100 dark:bg-rose-950/60 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200'
+                    }`;
+                    chip.innerHTML = `
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid ${food.icon}"></i>
+                            <span>${food.name}</span>
+                        </div>
+                        <button onclick="unassignCategorizer('${food.id}')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                    `;
+                    bucketContainer.appendChild(chip);
+                } else {
+                    const isSelected = state.categorizer.activeFoodId === food.id;
+                    const pill = document.createElement('button');
+                    pill.onclick = () => selectCategorizerFood(food.id);
+                    pill.className = `px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                        isSelected ? 'bg-amber-500 text-white border-amber-600 shadow-md ring-2 ring-amber-300' :
+                        'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-amber-50'
+                    }`;
+                    pill.innerHTML = `<i class="fa-solid ${food.icon}"></i> ${food.name}`;
+                    poolEl.appendChild(pill);
+                }
+            });
+
+            document.getElementById('badge-starters').textContent = `${counts.starters}/2`;
+            document.getElementById('badge-mains').textContent = `${counts.mains}/2`;
+            document.getElementById('badge-drinks').textContent = `${counts.drinks}/2`;
+            document.getElementById('badge-desserts').textContent = `${counts.desserts}/2`;
+
+            updateProgress();
+        }
+
+        function selectCategorizerFood(id) {
+            playSound('click');
+            const food = state.categorizer.foods.find(f => f.id === id);
+            speakText(food.name);
+            state.categorizer.activeFoodId = state.categorizer.activeFoodId === id ? null : id;
+            renderCategorizer();
+        }
+
+        function assignActiveFoodToCategory(category) {
+            if (!state.categorizer.activeFoodId) {
+                showToast("Tap a food item below first!", "warning");
+                return;
+            }
+
+            const food = state.categorizer.foods.find(f => f.id === state.categorizer.activeFoodId);
+            if (food) {
+                food.assigned = category;
+                if (food.category === category) {
+                    playSound('correct');
+                    showToast(`Correct! ${food.name} belongs to ${category}.`, "success");
+                } else {
+                    playSound('wrong');
+                    showToast(`Oops! ${food.name} doesn't belong in ${category}.`, "error");
+                }
+                state.categorizer.activeFoodId = null;
+                renderCategorizer();
+            }
+        }
+
+        function unassignCategorizer(id) {
+            const food = state.categorizer.foods.find(f => f.id === id);
+            if (food) {
+                food.assigned = null;
+                renderCategorizer();
+            }
+        }
+
+        function resetCategorizer() {
+            playSound('click');
+            state.categorizer.foods.forEach(f => f.assigned = null);
+            state.categorizer.activeFoodId = null;
+            renderCategorizer();
+            showToast("Menu categorizer reset.", "info");
+        }
+
+        function renderDialogueWordBank() {
+            const bankEl = document.getElementById('word-bank');
+            bankEl.innerHTML = '';
+
+            const availableWords = ['order', 'would', 'have', 'like', 'anything', 'bill'];
+
+            availableWords.forEach(word => {
+                const usedInSlot = Object.values(state.dialogue.answers).includes(word);
+                const chip = document.createElement('button');
+                chip.onclick = () => selectWordBankItem(word);
+                chip.disabled = usedInSlot;
+                chip.className = `px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                    usedInSlot ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 border-transparent cursor-not-allowed' :
+                    'bg-white dark:bg-slate-800 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-slate-600 hover:bg-amber-100 shadow-sm'
+                }`;
+                chip.textContent = word;
+                bankEl.appendChild(chip);
+            });
+        }
+
+        function handleSlotClick(index) {
+            playSound('click');
+            if (state.dialogue.answers[index]) {
+                state.dialogue.answers[index] = null;
+                updateSlotDisplay(index);
+                renderDialogueWordBank();
+                updateProgress();
+            }
+        }
+
+        function selectWordBankItem(word) {
+            playSound('click');
+            // Find first empty slot
+            for (let i = 0; i < 6; i++) {
+                if (!state.dialogue.answers[i]) {
+                    state.dialogue.answers[i] = word;
+                    if (word === state.dialogue.correctAnswers[i]) {
+                        playSound('correct');
+                    } else {
+                        playSound('wrong');
+                    }
+                    updateSlotDisplay(i);
+                    renderDialogueWordBank();
+                    updateProgress();
+                    return;
+                }
+            }
+            showToast("All slots filled! Tap a slot to remove its word.", "warning");
+        }
+
+        function updateSlotDisplay(index) {
+            const slotEl = document.querySelector(`.gap-slot[data-index="${index}"]`);
+            if (slotEl) {
+                const val = state.dialogue.answers[index];
+                slotEl.textContent = val ? val : '___';
+                if (val) {
+                    const isCorrect = val === state.dialogue.correctAnswers[index];
+                    slotEl.className = `gap-slot inline-block min-w-[80px] border-b-2 font-bold text-center px-2 cursor-pointer rounded ${
+                        isCorrect ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50' : 'border-rose-500 text-rose-600 bg-rose-50'
+                    }`;
+                } else {
+                    slotEl.className = 'gap-slot inline-block min-w-[80px] border-b-2 border-dashed border-amber-500 font-bold text-amber-600 dark:text-amber-400 text-center px-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-slate-700 rounded';
+                }
+            }
+        }
+
+        function resetDialogue() {
+            playSound('click');
+            state.dialogue.answers = { 0: null, 1: null, 2: null, 3: null, 4: null, 5: null };
+            for (let i = 0; i < 6; i++) updateSlotDisplay(i);
+            renderDialogueWordBank();
+            updateProgress();
+            showToast("Dialogue builder reset.", "info");
+        }
+
+        function speakLine(lineIdx) {
+            const lineObj = state.dialogue.script[lineIdx];
+            if (lineObj) {
+                const pitch = lineObj.speaker === 'Waiter' ? 0.9 : 1.2;
+                highlightDialogueLine(lineIdx);
+                speakText(lineObj.text, pitch, () => removeDialogueHighlight(lineIdx));
+            }
+        }
+
+        function highlightDialogueLine(idx) {
+            document.querySelectorAll('.dialogue-line').forEach(l => l.classList.remove('highlight-line'));
+            const el = document.getElementById(`line-${idx}`);
+            if (el) el.classList.add('highlight-line');
+        }
+
+        function removeDialogueHighlight(idx) {
+            const el = document.getElementById(`line-${idx}`);
+            if (el) el.classList.remove('highlight-line');
+        }
+
+        function playFullDialogue(index = 0) {
+            if (index >= state.dialogue.script.length) {
+                document.getElementById('icon-full-play').className = 'fa-solid fa-play';
+                return;
+            }
+
+            document.getElementById('icon-full-play').className = 'fa-solid fa-pause';
+            const lineObj = state.dialogue.script[index];
+            const pitch = lineObj.speaker === 'Waiter' ? 0.9 : 1.2;
+
+            highlightDialogueLine(index);
+            speakText(lineObj.text, pitch, () => {
+                removeDialogueHighlight(index);
+                setTimeout(() => playFullDialogue(index + 1), 400);
+            });
+        }
+
+        function renderSimulatorMenu() {
+            const categories = ['starters', 'mains', 'drinks', 'desserts'];
+            
+            categories.forEach(cat => {
+                const container = document.getElementById(`sim-${cat}`);
+                container.innerHTML = '';
+
+                state.simulator.menu[cat].forEach(item => {
+                    const isSelected = state.simulator.selected[cat.slice(0, -1)]?.name === item.name;
+                    const card = document.createElement('button');
+                    card.onclick = () => selectSimItem(cat.slice(0, -1), item);
+                    card.className = `p-3 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                        isSelected ? 'bg-amber-500 text-white border-amber-600 shadow-md ring-2 ring-amber-300' :
+                        'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-slate-700/50'
+                    }`;
+                    card.innerHTML = `
+                        <div>
+                            <div class="font-bold text-xs sm:text-sm">${item.name}</div>
+                            <div class="${isSelected ? 'text-amber-100' : 'text-slate-400'} text-xs">$${item.price.toFixed(2)}</div>
+                        </div>
+                        <i class="fa-solid ${isSelected ? 'fa-circle-check text-white' : 'fa-plus text-slate-400'} text-base"></i>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+
+            updateSimReceiptAndScript();
+        }
+
+        function selectSimItem(category, item) {
+            playSound('click');
+            if (state.simulator.selected[category]?.name === item.name) {
+                state.simulator.selected[category] = null;
+            } else {
+                state.simulator.selected[category] = item;
+                speakText(item.name);
+            }
+            renderSimulatorMenu();
+        }
+
+        function updateSimReceiptAndScript() {
+            const receiptContainer = document.getElementById('sim-receipt-items');
+            const scriptContainer = document.getElementById('sim-generated-script');
+            receiptContainer.innerHTML = '';
+            scriptContainer.innerHTML = '';
+
+            let total = 0;
+            const sel = state.simulator.selected;
+
+            const itemsArr = [
+                { cat: 'Starter', val: sel.starter },
+                { cat: 'Main', val: sel.main },
+                { cat: 'Drink', val: sel.drink },
+                { cat: 'Dessert', val: sel.dessert }
+            ];
+
+            let hasItems = false;
+
+            itemsArr.forEach(entry => {
+                if (entry.val) {
+                    hasItems = true;
+                    total += entry.val.price;
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center";
+                    row.innerHTML = `
+                        <span>1x ${entry.val.name}</span>
+                        <span>$${entry.val.price.toFixed(2)}</span>
+                    `;
+                    receiptContainer.appendChild(row);
+                }
+            });
+
+            document.getElementById('sim-total-price').textContent = `$${total.toFixed(2)}`;
+
+            if (!hasItems) {
+                scriptContainer.innerHTML = `<p class="text-slate-400 italic text-center py-4">Select items from the menu to generate your personalized roleplay script!</p>`;
+                return;
+            }
+
+            // Generate Roleplay script
+            let scriptLines = [];
+            scriptLines.push({ speaker: 'Waiter', text: "Hello! Welcome to Bistro Bella. What would you like to order today?" });
+            
+            if (sel.starter) {
+                scriptLines.push({ speaker: 'Customer', text: `First, I would like the ${sel.starter.name} to start.` });
+            }
+            if (sel.main) {
+                scriptLines.push({ speaker: 'Customer', text: `For my main course, can I have the ${sel.main.name}?` });
+            }
+            if (sel.drink) {
+                scriptLines.push({ speaker: 'Waiter', text: "Excellent. And what would you like to drink?" });
+                scriptLines.push({ speaker: 'Customer', text: `I'll have the ${sel.drink.name}, please.` });
+            }
+            if (sel.dessert) {
+                scriptLines.push({ speaker: 'Waiter', text: "Would you like any dessert today?" });
+                scriptLines.push({ speaker: 'Customer', text: `Yes, I would like the ${sel.dessert.name}.` });
+            }
+
+            scriptLines.push({ speaker: 'Customer', text: "Could I get the bill, please?" });
+            scriptLines.push({ speaker: 'Waiter', text: `That comes to $${total.toFixed(2)}. Enjoy your meal!` });
+
+            state.simulator.generatedScript = scriptLines;
+
+            scriptLines.forEach((line, idx) => {
+                const lineDiv = document.createElement('div');
+                const isWaiter = line.speaker === 'Waiter';
+                lineDiv.id = `sim-script-line-${idx}`;
+                lineDiv.className = `p-2.5 rounded-xl border flex items-start gap-2 ${
+                    isWaiter ? 'bg-amber-50 dark:bg-slate-900 border-amber-200 dark:border-slate-700' : 'bg-emerald-50 dark:bg-slate-900 border-emerald-200 dark:border-slate-700'
+                }`;
+                lineDiv.innerHTML = `
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${isWaiter ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'}">${line.speaker}</span>
+                    <span class="flex-grow font-sans text-slate-800 dark:text-slate-200">${line.text}</span>
+                    <button onclick="speakText('${line.text.replace(/'/g, "\\'")}', ${isWaiter ? 0.9 : 1.2})" class="text-slate-400 hover:text-amber-500"><i class="fa-solid fa-volume-high text-xs"></i></button>
+                `;
+                scriptContainer.appendChild(lineDiv);
+            });
+        }
+
+        function playSimulatedRoleplay(index = 0) {
+            const script = state.simulator.generatedScript;
+            if (!script || script.length === 0) {
+                showToast("Build an order on the menu first!", "warning");
+                return;
+            }
+
+            if (index >= script.length) return;
+
+            const line = script[index];
+            const pitch = line.speaker === 'Waiter' ? 0.9 : 1.2;
+
+            document.querySelectorAll('[id^="sim-script-line-"]').forEach(el => el.classList.remove('ring-2', 'ring-amber-500'));
+            const activeEl = document.getElementById(`sim-script-line-${index}`);
+            if (activeEl) activeEl.classList.add('ring-2', 'ring-amber-500');
+
+            speakText(line.text, pitch, () => {
+                setTimeout(() => playSimulatedRoleplay(index + 1), 400);
+            });
+        }
+
+        function updateCertificateName() {
+            const val = document.getElementById('student-name-input').value.trim();
+            document.getElementById('cert-student-name').textContent = val ? val : '[ Student Name ]';
+        }
+
+        function triggerConfettiFanfare() {
+            playSound('fanfare');
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function toggleAudioFX() {
+            state.audioEnabled = !state.audioEnabled;
+            const icon = document.getElementById('icon-audio');
+            icon.className = state.audioEnabled ? "fa-solid fa-volume-high text-lg" : "fa-solid fa-volume-xmark text-lg text-rose-500";
+            showToast(state.audioEnabled ? "Sound effects enabled" : "Sound effects muted", "info");
+        }
+
+        function setTTSSpeed(speed) {
+            playSound('click');
+            state.ttsSpeed = speed;
+            document.getElementById('lbl-tts-speed').textContent = `${speed.toFixed(1)}x`;
+            showToast(`Speech speed set to ${speed}x`, "info");
+        }
+
+        function toggleTheme() {
+            playSound('click');
+            const html = document.documentElement;
+            const icon = document.getElementById('icon-theme');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = "fa-solid fa-moon text-lg";
+                state.theme = 'light';
+            } else {
+                html.classList.add('dark');
+                icon.className = "fa-solid fa-sun text-lg text-amber-400";
+                state.theme = 'dark';
+            }
+        }
+
+        window.onload = function() {
+            document.getElementById('cert-date').textContent = new Date().toLocaleDateString();
+            
+            // Render initial states
+            renderClassifier();
+            renderCategorizer();
+            renderDialogueWordBank();
+            renderSimulatorMenu();
+            
+            // Set initial focus date
+            updateProgress();
+        };
+    </script>
+</body>
+</html>
