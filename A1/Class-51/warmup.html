@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy Advisor: Health Products & Advice Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Config for Dark Mode and Custom Colors -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            pharmacy: {
+              teal: '#0d9488',
+              blue: '#0284c7',
+              accent: '#f59e0b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom Styles & Glassmorphism */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+    }
+
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+    }
+
+    /* Pulse active avatar speak indicator */
+    @keyframes speakingPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(34, 197, 94, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .speaking-active {
+      animation: speakingPulse 1.5s infinite;
+      border-color: #22c55e !important;
+    }
+
+    /* Certificate Print View Rules */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-modal, #certificate-modal * {
+        visibility: visible;
+      }
+      #certificate-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: white !important;
+        box-shadow: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300 select-none">
+
+  <!-- Top App Navigation -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+          <i class="fa-solid fa-notes-medical text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-slate-900 dark:text-white flex items-center gap-2">
+            Pharmacy Advisor
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">A1 English</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Health Products & Advice Studio</p>
+        </div>
+      </div>
+
+      <!-- Score & Utility Actions -->
+      <div class="flex items-center gap-3">
+        
+        <!-- Score Star Counter -->
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-bold text-sm">
+          <i class="fa-solid fa-star text-amber-500 text-base"></i>
+          <span id="score-display">0</span>
+          <span class="text-xs text-amber-600/70 dark:text-amber-400/70">/ 100 pts</span>
+        </div>
+
+        <!-- Sound FX Toggle -->
+        <button id="sound-toggle-btn" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition" title="Toggle Sound Effects">
+          <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+        </button>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button id="theme-toggle-btn" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition" title="Toggle Dark/Light Mode">
+          <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+    <!-- Progress & Module Tabs -->
+    <div class="flex flex-col gap-4">
+      
+      <!-- Global Progress Bar -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center gap-3 justify-between">
+        <div class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 w-full sm:w-auto">
+          <i class="fa-solid fa-trophy text-emerald-500"></i>
+          <span>Overall Studio Completion:</span>
+        </div>
+        <div class="flex-1 w-full flex items-center gap-3">
+          <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+            <div id="overall-progress-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-500 w-0"></div>
+          </div>
+          <span id="overall-progress-percent" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 min-w-[3rem] text-right">0%</span>
+        </div>
+      </div>
+
+      <!-- Module Navigation Buttons -->
+      <nav class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <button data-target="mod-matcher" class="nav-tab active-tab flex items-center justify-center gap-2 p-3 rounded-xl font-semibold text-sm transition shadow-sm border text-left">
+          <span class="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300">
+            <i class="fa-solid fa-boxes-packing"></i>
+          </span>
+          <div class="truncate">
+            <p class="leading-none text-xs text-slate-500 dark:text-slate-400">Module 1</p>
+            <p class="truncate font-bold">Product Matcher</p>
+          </div>
+        </button>
+
+        <button data-target="mod-classifier" class="nav-tab flex items-center justify-center gap-2 p-3 rounded-xl font-semibold text-sm transition shadow-sm border text-left">
+          <span class="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300">
+            <i class="fa-solid fa-comments"></i>
+          </span>
+          <div class="truncate">
+            <p class="leading-none text-xs text-slate-500 dark:text-slate-400">Module 2</p>
+            <p class="truncate font-bold">Phrase Classifier</p>
+          </div>
+        </button>
+
+        <button data-target="mod-builder" class="nav-tab flex items-center justify-center gap-2 p-3 rounded-xl font-semibold text-sm transition shadow-sm border text-left">
+          <span class="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300">
+            <i class="fa-solid fa-align-left"></i>
+          </span>
+          <div class="truncate">
+            <p class="leading-none text-xs text-slate-500 dark:text-slate-400">Module 3</p>
+            <p class="truncate font-bold">Dialogue Builder</p>
+          </div>
+        </button>
+
+        <button data-target="mod-roleplay" class="nav-tab flex items-center justify-center gap-2 p-3 rounded-xl font-semibold text-sm transition shadow-sm border text-left">
+          <span class="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300">
+            <i class="fa-solid fa-user-doctor"></i>
+          </span>
+          <div class="truncate">
+            <p class="leading-none text-xs text-slate-500 dark:text-slate-400">Module 4</p>
+            <p class="truncate font-bold">Roleplay Studio</p>
+          </div>
+        </button>
+      </nav>
+    </div>
+
+    <!-- MODULE 1: PRODUCT & PROBLEM MATCHER -->
+    <section id="mod-matcher" class="module-section flex-1 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-md">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <i class="fa-solid fa-boxes-packing text-emerald-500"></i>
+            Module 1: Health Products & Symptom Matcher
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Match each health problem on the left with the correct over-the-counter health product on the right!
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="matcher-score-tag" class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+            Matched: 0 / 7
+          </span>
+          <button id="reset-matcher-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Matcher Interactive Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Symptoms Column -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+            <span>1. Select Symptom / Health Problem</span>
+            <span class="text-emerald-500 font-normal">Step 1</span>
+          </h3>
+          <div id="matcher-problems-list" class="space-y-2.5">
+            <!-- Dynamic Problem Cards populated via JS -->
+          </div>
+        </div>
+
+        <!-- Products Column -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center justify-between">
+            <span>2. Select Matching Health Product</span>
+            <span class="text-emerald-500 font-normal">Step 2</span>
+          </h3>
+          <div id="matcher-products-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
+            <!-- Dynamic Product Cards populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Feedback Banner -->
+      <div id="matcher-feedback" class="mt-6 p-4 rounded-xl hidden bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-sm">Excellent Job!</h4>
+            <p id="matcher-feedback-text" class="text-xs">You have matched all 7 health products correctly!</p>
+          </div>
+        </div>
+        <button onclick="switchTab('mod-classifier')" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition">
+          Next Module <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- MODULE 2: ASKING VS SUGGESTING PHRASE CLASSIFIER -->
+    <section id="mod-classifier" class="module-section hidden flex-1 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-md">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <i class="fa-solid fa-comments text-blue-500"></i>
+            Module 2: Phrase Classifier Studio
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Is the speaker <span class="font-bold text-blue-600 dark:text-blue-400">Asking for Advice</span> or <span class="font-bold text-amber-600 dark:text-amber-400">Giving a Suggestion</span>? Classify each phrase!
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="classifier-progress-tag" class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+            Card 1 / 10
+          </span>
+          <button id="reset-classifier-btn" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Card Classifier Engine Area -->
+      <div id="classifier-game-area" class="max-w-2xl mx-auto flex flex-col items-center gap-6 my-4">
+        
+        <!-- Active Flashcard -->
+        <div id="classifier-card" class="w-full bg-gradient-to-br from-slate-50 to-blue-50/50 dark:from-slate-800 dark:to-slate-900 p-8 rounded-2xl border-2 border-blue-200 dark:border-blue-900/60 shadow-lg text-center flex flex-col items-center gap-4 relative transition-all duration-300">
+          <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+            Listen & Classify
+          </span>
+          
+          <h3 id="classifier-phrase-text" class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 leading-snug my-2">
+            "What should I buy for a sore throat?"
+          </h3>
+
+          <!-- TTS Speech Button -->
+          <button id="classifier-speak-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md transition transform active:scale-95">
+            <i class="fa-solid fa-volume-high"></i>
+            <span>Listen Pronunciation</span>
+          </button>
+        </div>
+
+        <!-- Classification Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+          <button id="btn-classify-asking" class="group flex items-center justify-between p-5 rounded-2xl border-2 border-blue-200 dark:border-blue-900/80 bg-blue-50/50 dark:bg-blue-950/30 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition text-left shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center text-lg font-bold group-hover:bg-white group-hover:text-blue-600 transition">
+                <i class="fa-solid fa-circle-question"></i>
+              </div>
+              <div>
+                <p class="font-bold text-base leading-tight">Asking for Advice</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-blue-100 transition">Customer asking questions</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 group-hover:text-white transition"></i>
+          </button>
+
+          <button id="btn-classify-suggesting" class="group flex items-center justify-between p-5 rounded-2xl border-2 border-amber-200 dark:border-amber-900/80 bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition text-left shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg font-bold group-hover:bg-white group-hover:text-amber-600 transition">
+                <i class="fa-solid fa-lightbulb"></i>
+              </div>
+              <div>
+                <p class="font-bold text-base leading-tight">Giving a Suggestion</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 group-hover:text-amber-100 transition">Pharmacist giving advice</p>
+              </div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 group-hover:text-white transition"></i>
+          </button>
+        </div>
+
+        <!-- Explanatory Grammar Tip -->
+        <div class="bg-slate-100 dark:bg-slate-700/50 p-4 rounded-xl text-xs text-slate-600 dark:text-slate-300 w-full flex items-start gap-3">
+          <i class="fa-solid fa-circle-info text-blue-500 text-base mt-0.5"></i>
+          <div>
+            <span class="font-bold">Grammar Tip:</span>
+            <span> Asking phrases often use <i>"What should I...?", "What do you recommend...?"</i>. Suggesting phrases often use <i>"You should...", "Why don't you...?"</i>.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Classifier Completion Screen -->
+      <div id="classifier-complete-screen" class="hidden text-center py-8 max-w-lg mx-auto flex flex-col items-center gap-4">
+        <div class="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center text-3xl font-bold">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white">Classifier Master!</h3>
+        <p class="text-slate-600 dark:text-slate-300 text-sm">
+          You answered all classification cards correctly! You now understand the difference between asking for advice and giving suggestions.
+        </p>
+        <button onclick="switchTab('mod-builder')" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition mt-2">
+          Proceed to Dialogue Builder <i class="fa-solid fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- MODULE 3: PHARMACY DIALOGUE BUILDER -->
+    <section id="mod-builder" class="module-section hidden flex-1 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-md">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <i class="fa-solid fa-align-left text-indigo-500"></i>
+            Module 3: Pharmacy Dialogue Builder
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Complete the conversation between the customer and the pharmacist by choosing verbs from the Word Bank!
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="check-dialogue-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow transition">
+            <i class="fa-solid fa-check mr-1"></i> Check Answers
+          </button>
+          <button id="reset-dialogue-btn" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Word Bank Header -->
+      <div class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl p-4 mb-6">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 mb-2">
+          <i class="fa-solid fa-layer-group"></i> Word Bank: Target Verbs & Modal Words
+        </div>
+        <div id="word-bank-container" class="flex flex-wrap gap-2">
+          <!-- Word Chips populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Dialogue Conversation Stream -->
+      <div class="space-y-4 max-w-3xl mx-auto">
+
+        <!-- Line 1: Customer -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="customer">
+          <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-600 dark:text-blue-400">Customer</span>
+              <button onclick="speakLine('Good morning! I have a bad cough and a dry throat.', 1.2)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "Good morning! I
+              <select class="dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500" data-answer="have">
+                <option value="">[ select ]</option>
+              </select>
+              a bad cough and a dry throat."
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 2: Pharmacist -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="pharmacist">
+          <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Pharmacist</span>
+              <button onclick="speakLine('Hello! How long have you had it?', 0.9)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "Hello! How long have you had it?"
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 3: Customer -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="customer">
+          <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-600 dark:text-blue-400">Customer</span>
+              <button onclick="speakLine('For two days. What should I buy?', 1.2)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "For two days. What
+              <select class="dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500" data-answer="should">
+                <option value="">[ select ]</option>
+              </select>
+              I buy?"
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 4: Pharmacist -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="pharmacist">
+          <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Pharmacist</span>
+              <button onclick="speakLine('You should buy this herbal cough syrup. It works very fast.', 0.9)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "You should
+              <select class="dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500" data-answer="buy">
+                <option value="">[ select ]</option>
+              </select>
+              this herbal cough syrup. It works very fast."
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 5: Customer -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="customer">
+          <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-600 dark:text-blue-400">Customer</span>
+              <button onclick="speakLine('Okay. What do you recommend for my dry throat?', 1.2)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "Okay. What do you
+              <select class="dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500" data-answer="recommend">
+                <option value="">[ select ]</option>
+              </select>
+              for my dry throat?"
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 6: Pharmacist -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="pharmacist">
+          <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user-doctor"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Pharmacist</span>
+              <button onclick="speakLine('Why dont you try these mint throat lozenges? They are very good.', 0.9)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "Why don't you
+              <select class="dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500" data-answer="try">
+                <option value="">[ select ]</option>
+              </select>
+              these mint throat lozenges? They are very good."
+            </p>
+          </div>
+        </div>
+
+        <!-- Line 7: Customer -->
+        <div class="dialogue-line-card p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start gap-4" data-speaker="customer">
+          <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold shrink-0">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-blue-600 dark:text-blue-400">Customer</span>
+              <button onclick="speakLine('Great, thank you! I will take both.', 1.2)" class="text-xs text-slate-400 hover:text-indigo-500 transition" title="Listen">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+            </div>
+            <p class="text-sm font-medium leading-relaxed">
+              "Great, thank you! I will take both."
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Footer for Full Audio Playback -->
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-slate-100 dark:bg-slate-700/40">
+        <div class="flex items-center gap-3">
+          <button id="play-full-dialogue-btn" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow transition">
+            <i class="fa-solid fa-circle-play text-lg"></i>
+            <span>Play Full Dialogue (Dual Voice)</span>
+          </button>
+        </div>
+        <button onclick="switchTab('mod-roleplay')" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition">
+          Next: Roleplay Studio <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- MODULE 4: VIRTUAL PHARMACY ROLEPLAY STUDIO & AWARD CERTIFICATE -->
+    <section id="mod-roleplay" class="module-section hidden flex-1 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-md">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+          <h2 class="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <i class="fa-solid fa-user-doctor text-amber-500"></i>
+            Module 4: Virtual Pharmacy Roleplay Studio
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Choose a customer scenario, construct the dialogue choices, and play the customized roleplay with dual TTS voices!
+          </p>
+        </div>
+        <button id="open-cert-btn" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-certificate"></i>
+          <span>Advisor Certificate</span>
+        </button>
+      </div>
+
+      <!-- Scenario Chooser Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        
+        <button data-scenario="0" class="scenario-card active-scenario text-left p-4 rounded-xl border-2 border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 transition flex flex-col justify-between">
+          <div>
+            <span class="text-2xl mb-2 block">🏖️</span>
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Card 1: Beach Day</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Going to the beach in hot sunny weather.</p>
+          </div>
+          <span class="text-xs font-bold text-amber-600 dark:text-amber-400 mt-3 block">Selected Scenario</span>
+        </button>
+
+        <button data-scenario="1" class="scenario-card text-left p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-400 transition flex flex-col justify-between">
+          <div>
+            <span class="text-2xl mb-2 block">💻</span>
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Card 2: Computer Worker</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Dry, tired eyes from computer screens.</p>
+          </div>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mt-3 block">Click to Select</span>
+        </button>
+
+        <button data-scenario="2" class="scenario-card text-left p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-amber-400 transition flex flex-col justify-between">
+          <div>
+            <span class="text-2xl mb-2 block">🍊</span>
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Card 3: Cold & Flu Season</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Feeling weak, tired, and having a cold.</p>
+          </div>
+          <span class="text-xs font-bold text-slate-400 dark:text-slate-500 mt-3 block">Click to Select</span>
+        </button>
+
+      </div>
+
+      <!-- Roleplay Dialogue Construction Workspace -->
+      <div class="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col gap-6">
+        
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 id="roleplay-scenario-title" class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+            <span>🏖️ Beach Day Roleplay</span>
+          </h3>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+            Interactive Roleplay
+          </span>
+        </div>
+
+        <!-- Step 1: Customer Prompt Selection -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-2">
+            <i class="fa-solid fa-user"></i> 1. Customer Asking for Advice:
+          </label>
+          <div id="roleplay-customer-options" class="grid grid-cols-1 gap-2">
+            <!-- Dynamic customer prompt options -->
+          </div>
+        </div>
+
+        <!-- Step 2: Pharmacist Suggestion Selection -->
+        <div class="space-y-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+            <i class="fa-solid fa-user-doctor"></i> 2. Pharmacist Suggestion Response:
+          </label>
+          <div id="roleplay-pharmacist-options" class="grid grid-cols-1 gap-2">
+            <!-- Dynamic pharmacist advice options -->
+          </div>
+        </div>
+
+        <!-- Roleplay Audio Studio Trigger -->
+        <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            <i class="fa-solid fa-headset mr-1"></i> Listen to native pitch-adapted dialogue playback.
+          </div>
+          <button id="play-roleplay-btn" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i>
+            <span>Perform & Play Dual Dialogue</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CERTIFICATE MODAL VIEW -->
+  <div id="certificate-modal" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border-4 border-amber-400 rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative flex flex-col items-center text-center">
+      
+      <!-- Close Button (No Print) -->
+      <button id="close-cert-btn" class="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl p-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Certificate Header -->
+      <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center text-3xl mb-3 border-2 border-amber-400">
+        <i class="fa-solid fa-award"></i>
+      </div>
+
+      <p class="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Official Certificate of Achievement</p>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">Certified Pharmacy Advisor</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">A1 Health Products & Advice Studio</p>
+
+      <hr class="w-32 border-amber-300 dark:border-amber-700 my-4">
+
+      <p class="text-xs text-slate-600 dark:text-slate-300">This certifies that English Language Learner:</p>
+      
+      <!-- Interactive Name Field -->
+      <div class="my-3 w-full max-w-md">
+        <input id="student-name-input" type="text" placeholder="Enter Your Full Name" class="w-full text-center text-xl font-bold text-emerald-700 dark:text-emerald-300 border-b-2 border-emerald-500 bg-transparent py-1 focus:outline-none placeholder:font-normal placeholder:text-slate-300">
+      </div>
+
+      <p class="text-xs text-slate-600 dark:text-slate-300 max-w-md leading-relaxed">
+        has successfully completed all modules in asking for health advice, identifying over-the-counter health products, and suggesting treatments in English at Level A1.
+      </p>
+
+      <!-- Certificate Stamp & Date -->
+      <div class="grid grid-cols-2 gap-8 w-full max-w-xs my-6 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
+        <div>
+          <p id="cert-date-stamp" class="font-bold text-slate-800 dark:text-slate-200">2026-09-24</p>
+          <p class="text-slate-400">Date Awarded</p>
+        </div>
+        <div>
+          <p class="font-bold text-slate-800 dark:text-slate-200">Level A1 Complete</p>
+          <p class="text-slate-400">ESL Mastery</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons (No Print) -->
+      <div class="no-print flex items-center gap-3 mt-2">
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-print"></i>
+          <span>Print / Save PDF</span>
+        </button>
+        <button id="close-cert-btn-2" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          Back to Studio
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- APP GLOBAL STATE ---
+    const appState = {
+      score: 0,
+      soundEnabled: true,
+      matcher: {
+        selectedProblem: null,
+        selectedProduct: null,
+        matchedCount: 0,
+        matches: {}
+      },
+      classifier: {
+        currentIndex: 0,
+        completed: false
+      },
+      dialogue: {
+        checked: false
+      },
+      roleplay: {
+        currentScenarioIndex: 0,
+        selectedCustomerPromptIndex: 0,
+        selectedPharmacistAdviceIndex: 0
+      }
+    };
+
+    // --- DATA DEFINITIONS ---
+
+    // Module 1 Data: Symptoms & Products
+    const MATCHER_DATA = [
+      { id: 'throat', problem: 'A sore throat', icon: '🍬', product: 'Throat lozenges', prodIcon: '💊', phrase: 'What do you recommend for a sore throat?' },
+      { id: 'headache', problem: 'A bad headache', icon: '🤕', product: 'Painkillers', prodIcon: '💊', phrase: 'Which product is good for a headache?' },
+      { id: 'cough', problem: 'A bad cough', icon: '🗣️', product: 'Cough syrup', prodIcon: '🧴', phrase: 'What should I buy for a dry cough?' },
+      { id: 'beach', problem: 'A hot sunny day at the beach', icon: '☀️', product: 'Sunscreen', prodIcon: '🧴', phrase: 'What should I get for sunny weather?' },
+      { id: 'cut', problem: 'A small cut on your finger', icon: '🩹', product: 'Band-aids', prodIcon: '🩹', phrase: 'What do you recommend for a small cut?' },
+      { id: 'eyes', problem: 'Dry or red eyes', icon: '👁️', product: 'Eye drops', prodIcon: '💧', phrase: 'Which product is best for dry eyes?' },
+      { id: 'tired', problem: 'Feeling weak, tired & cold', icon: '🍊', product: 'Vitamin C', prodIcon: '🍊', phrase: 'What can I take when I feel tired?' }
+    ];
+
+    // Module 2 Data: Asking vs. Suggesting Phrases
+    const CLASSIFIER_DATA = [
+      { id: 1, phrase: "What should I buy for a sore throat?", type: "asking" },
+      { id: 2, phrase: "You should try these throat lozenges.", type: "suggesting" },
+      { id: 3, phrase: "Which product is best for dry eyes?", type: "asking" },
+      { id: 4, phrase: "Why don't you buy some Vitamin C?", type: "suggesting" },
+      { id: 5, phrase: "What do you recommend for a small cut?", type: "asking" },
+      { id: 6, phrase: "You can get a pack of band-aids over there.", type: "suggesting" },
+      { id: 7, phrase: "What can I take for a bad cough?", type: "asking" },
+      { id: 8, phrase: "I suggest you take this herbal cough syrup.", type: "suggesting" },
+      { id: 9, phrase: "Do you have anything for sunny beach weather?", type: "asking" },
+      { id: 10, phrase: "You ought to rest and use eye drops.", type: "suggesting" }
+    ];
+
+    // Module 3 Data: Dialogue Answers
+    const WORD_BANK = ['have', 'should', 'buy', 'recommend', 'try'];
+
+    // Module 4 Data: Scenarios
+    const SCENARIOS = [
+      {
+        title: "🏖️ The Beach Day",
+        customerPrompts: [
+          "What should I buy for a hot sunny day at the beach?",
+          "What do you recommend for sunny weather?",
+          "Which product is best to protect my skin at the beach?"
+        ],
+        pharmacistAdvices: [
+          "You should buy some high protection sunscreen and sunglasses.",
+          "Why don't you get this waterproof sunscreen?",
+          "You can try this bottle of sunscreen and drink plenty of water."
+        ]
+      },
+      {
+        title: "💻 The Tired Computer Worker",
+        customerPrompts: [
+          "My eyes are dry and tired from looking at my computer screen.",
+          "What do you recommend for dry, tired eyes?",
+          "Which product should I take for computer eye strain?"
+        ],
+        pharmacistAdvices: [
+          "You should try these soothing eye drops and take a break.",
+          "Why don't you buy these hydrating eye drops?",
+          "You can get eye drops over there and rest your eyes every hour."
+        ]
+      },
+      {
+        title: "🍊 Cold & Flu Season",
+        customerPrompts: [
+          "I feel weak, tired, and I have a cold. What should I buy?",
+          "What do you recommend when I feel weak and tired?",
+          "Which products are best for cold and flu symptoms?"
+        ],
+        pharmacistAdvices: [
+          "You should buy Vitamin C tablets and drink hot herbal tea.",
+          "Why don't you try taking Vitamin C and painkillers for your body?",
+          "You can get Vitamin C and rest at home for two days."
+        ]
+      }
+    ];
+
+    // --- WEB AUDIO API SYNTHESIZER ---
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!appState.soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'correct') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(180, now + 0.1);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'fanfare') {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            gain.gain.setValueAtTime(0.25, now + idx * 0.1);
+            gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.1);
+            osc.stop(now + idx * 0.1 + 0.3);
+          });
+        }
+      } catch (e) {
+        console.warn("Web Audio error:", e);
+      }
+    }
+
+    // --- WEB SPEECH API TTS MANAGER ---
+    function speakText(text, pitch = 1.0, rate = 0.9, onEndCallback = null) {
+      if (!('speechSynthesis' in window)) {
+        console.warn("Web Speech API not supported.");
+        if (onEndCallback) onEndCallback();
+        return;
+      }
+
+      window.speechSynthesis.cancel(); // Cancel any existing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.pitch = pitch;
+      utterance.lang = 'en-US';
+
+      // Pick suitable voice if available
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const englishVoices = voices.filter(v => v.lang.includes('en'));
+        if (englishVoices.length > 0) {
+          // If pitch > 1, prefer female/higher voice if index exists
+          if (pitch > 1.0 && englishVoices.length > 1) {
+            utterance.voice = englishVoices[1];
+          } else {
+            utterance.voice = englishVoices[0];
+          }
+        }
+      }
+
+      if (onEndCallback) {
+        utterance.onend = onEndCallback;
+        utterance.onerror = onEndCallback;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakLine(text, pitch) {
+      playSound('click');
+      speakText(text, pitch, 0.95);
+    }
+
+    // --- MODULE 1: MATCHER ENGINE ---
+    function initMatcherModule() {
+      const problemsContainer = document.getElementById('matcher-problems-list');
+      const productsContainer = document.getElementById('matcher-products-list');
+      
+      problemsContainer.innerHTML = '';
+      productsContainer.innerHTML = '';
+
+      // Shuffle products for matching challenge
+      const shuffledProducts = [...MATCHER_DATA].sort(() => 0.5 - Math.random());
+
+      MATCHER_DATA.forEach(item => {
+        // Render Problem Item
+        const probCard = document.createElement('div');
+        probCard.className = `matcher-prob-card p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-400 cursor-pointer transition flex items-center justify-between shadow-sm`;
+        probCard.dataset.id = item.id;
+        probCard.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${item.icon}</span>
+            <div>
+              <p class="font-bold text-sm text-slate-800 dark:text-slate-100">${item.problem}</p>
+              <p class="text-xs text-slate-400">Problem</p>
+            </div>
+          </div>
+          <button class="tts-prob-btn p-2 text-slate-400 hover:text-emerald-500 transition" title="Listen sentence">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+        `;
+
+        probCard.addEventListener('click', (e) => {
+          if (e.target.closest('.tts-prob-btn')) {
+            e.stopPropagation();
+            speakLine(item.phrase, 1.1);
+            return;
+          }
+          selectProblemCard(item.id);
+        });
+
+        problemsContainer.appendChild(probCard);
+      });
+
+      shuffledProducts.forEach(item => {
+        // Render Product Item
+        const prodCard = document.createElement('div');
+        prodCard.className = `matcher-prod-card p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-400 cursor-pointer transition flex items-center justify-between shadow-sm`;
+        prodCard.dataset.id = item.id;
+        prodCard.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${item.prodIcon}</span>
+            <div>
+              <p class="font-bold text-sm text-slate-800 dark:text-slate-100">${item.product}</p>
+              <p class="text-xs text-slate-400">Health Product</p>
+            </div>
+          </div>
+          <button class="tts-prod-btn p-2 text-slate-400 hover:text-emerald-500 transition" title="Listen product">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+        `;
+
+        prodCard.addEventListener('click', (e) => {
+          if (e.target.closest('.tts-prod-btn')) {
+            e.stopPropagation();
+            speakLine(item.product, 0.9);
+            return;
+          }
+          selectProductCard(item.id);
+        });
+
+        productsContainer.appendChild(prodCard);
+      });
+    }
+
+    function selectProblemCard(id) {
+      if (appState.matcher.matches[id]) return; // Already matched
+      playSound('click');
+      appState.matcher.selectedProblem = id;
+
+      document.querySelectorAll('.matcher-prob-card').forEach(card => {
+        if (card.dataset.id === id) {
+          card.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+        } else if (!appState.matcher.matches[card.dataset.id]) {
+          card.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+        }
+      });
+
+      checkMatchAttempt();
+    }
+
+    function selectProductCard(id) {
+      if (Object.values(appState.matcher.matches).includes(id)) return; // Already matched
+      playSound('click');
+      appState.matcher.selectedProduct = id;
+
+      document.querySelectorAll('.matcher-prod-card').forEach(card => {
+        if (card.dataset.id === id) {
+          card.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+        } else if (!Object.values(appState.matcher.matches).includes(card.dataset.id)) {
+          card.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+        }
+      });
+
+      checkMatchAttempt();
+    }
+
+    function checkMatchAttempt() {
+      const { selectedProblem, selectedProduct } = appState.matcher;
+      if (!selectedProblem || !selectedProduct) return;
+
+      if (selectedProblem === selectedProduct) {
+        // Success Match!
+        playSound('correct');
+        appState.matcher.matches[selectedProblem] = selectedProduct;
+        appState.matcher.matchedCount++;
+        addScore(5);
+
+        // Permanently style matched pair
+        const probCard = document.querySelector(`.matcher-prob-card[data-id="${selectedProblem}"]`);
+        const prodCard = document.querySelector(`.matcher-prod-card[data-id="${selectedProduct}"]`);
+
+        [probCard, prodCard].forEach(card => {
+          card.classList.remove('hover:border-emerald-400', 'cursor-pointer');
+          card.classList.add('border-emerald-500', 'bg-emerald-100/60', 'dark:bg-emerald-900/40', 'opacity-80');
+          card.querySelector('.text-xs').innerHTML = '<span class="text-emerald-600 font-bold">✓ Matched</span>';
+        });
+
+        // Speak full sentence recommendation
+        const matchInfo = MATCHER_DATA.find(m => m.id === selectedProblem);
+        speakText(`For ${matchInfo.problem}, use ${matchInfo.product}.`);
+
+      } else {
+        // Incorrect match
+        playSound('wrong');
+        const probCard = document.querySelector(`.matcher-prob-card[data-id="${selectedProblem}"]`);
+        const prodCard = document.querySelector(`.matcher-prod-card[data-id="${selectedProduct}"]`);
+
+        [probCard, prodCard].forEach(card => {
+          card.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-950/40');
+          setTimeout(() => {
+            card.classList.remove('border-red-500', 'bg-red-50', 'dark:bg-red-950/40', 'border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+          }, 800);
+        });
+      }
+
+      // Reset selection state
+      appState.matcher.selectedProblem = null;
+      appState.matcher.selectedProduct = null;
+
+      // Update Tag
+      document.getElementById('matcher-score-tag').textContent = `Matched: ${appState.matcher.matchedCount} / 7`;
+
+      // Check module complete
+      if (appState.matcher.matchedCount === 7) {
+        document.getElementById('matcher-feedback').classList.remove('hidden');
+        triggerConfetti();
+        playSound('fanfare');
+      }
+    }
+
+    function resetMatcherModule() {
+      appState.matcher.selectedProblem = null;
+      appState.matcher.selectedProduct = null;
+      appState.matcher.matchedCount = 0;
+      appState.matcher.matches = {};
+      document.getElementById('matcher-feedback').classList.add('hidden');
+      document.getElementById('matcher-score-tag').textContent = `Matched: 0 / 7`;
+      initMatcherModule();
+    }
+
+    // --- MODULE 2: CLASSIFIER ENGINE ---
+    function updateClassifierCard() {
+      const current = CLASSIFIER_DATA[appState.classifier.currentIndex];
+      if (!current) {
+        // Complete state
+        document.getElementById('classifier-game-area').classList.add('hidden');
+        document.getElementById('classifier-complete-screen').classList.remove('hidden');
+        triggerConfetti();
+        playSound('fanfare');
+        return;
+      }
+
+      document.getElementById('classifier-phrase-text').textContent = `"${current.phrase}"`;
+      document.getElementById('classifier-progress-tag').textContent = `Card ${appState.classifier.currentIndex + 1} / ${CLASSIFIER_DATA.length}`;
+      
+      // Automatic speak prompt on card load
+      speakText(current.phrase, 1.0, 0.95);
+    }
+
+    function handleClassificationChoice(chosenType) {
+      const current = CLASSIFIER_DATA[appState.classifier.currentIndex];
+      if (!current) return;
+
+      const cardElem = document.getElementById('classifier-card');
+
+      if (chosenType === current.type) {
+        playSound('correct');
+        addScore(5);
+        cardElem.classList.add('border-emerald-500', 'bg-emerald-50');
+
+        setTimeout(() => {
+          cardElem.classList.remove('border-emerald-500', 'bg-emerald-50');
+          appState.classifier.currentIndex++;
+          updateClassifierCard();
+        }, 600);
+
+      } else {
+        playSound('wrong');
+        cardElem.classList.add('border-red-500', 'bg-red-50');
+
+        setTimeout(() => {
+          cardElem.classList.remove('border-red-500', 'bg-red-50');
+        }, 800);
+      }
+    }
+
+    function resetClassifierModule() {
+      appState.classifier.currentIndex = 0;
+      document.getElementById('classifier-game-area').classList.remove('hidden');
+      document.getElementById('classifier-complete-screen').classList.add('hidden');
+      updateClassifierCard();
+    }
+
+    // --- MODULE 3: DIALOGUE BUILDER ENGINE ---
+    function initDialogueModule() {
+      const container = document.getElementById('word-bank-container');
+      container.innerHTML = '';
+
+      // Populate word bank chips
+      WORD_BANK.forEach(word => {
+        const chip = document.createElement('span');
+        chip.className = 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold text-xs shadow-sm';
+        chip.textContent = word;
+        container.appendChild(chip);
+      });
+
+      // Populate blank dropdowns options
+      const selects = document.querySelectorAll('.dialogue-blank');
+      selects.forEach(select => {
+        select.innerHTML = '<option value="">[ select ]</option>';
+        WORD_BANK.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w;
+          opt.textContent = w;
+          select.appendChild(opt);
+        });
+      });
+    }
+
+    function checkDialogueAnswers() {
+      const selects = document.querySelectorAll('.dialogue-blank');
+      let allCorrect = true;
+
+      selects.forEach(select => {
+        const correctVal = select.dataset.answer;
+        if (select.value === correctVal) {
+          select.classList.remove('border-red-500', 'border-indigo-200');
+          select.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        } else {
+          select.classList.remove('border-emerald-500', 'border-indigo-200');
+          select.classList.add('border-red-500', 'bg-red-50', 'text-red-700');
+          allCorrect = false;
+        }
+      });
+
+      if (allCorrect) {
+        playSound('correct');
+        addScore(15);
+        triggerConfetti();
+      } else {
+        playSound('wrong');
+      }
+    }
+
+    function playFullDialogueDualVoices() {
+      playSound('click');
+      const lines = [
+        { text: "Good morning! I have a bad cough and a dry throat.", pitch: 1.2 },
+        { text: "Hello! How long have you had it?", pitch: 0.9 },
+        { text: "For two days. What should I buy?", pitch: 1.2 },
+        { text: "You should buy this herbal cough syrup. It works very fast.", pitch: 0.9 },
+        { text: "Okay. What do you recommend for my dry throat?", pitch: 1.2 },
+        { text: "Why don't you try these mint throat lozenges? They are very good.", pitch: 0.9 },
+        { text: "Great, thank you! I will take both.", pitch: 1.2 }
+      ];
+
+      let idx = 0;
+      const cards = document.querySelectorAll('.dialogue-line-card');
+
+      function speakNextLine() {
+        if (idx >= lines.length) {
+          cards.forEach(c => c.classList.remove('speaking-active'));
+          return;
+        }
+
+        cards.forEach((c, i) => {
+          if (i === idx) c.classList.add('speaking-active');
+          else c.classList.remove('speaking-active');
+        });
+
+        const line = lines[idx];
+        idx++;
+        speakText(line.text, line.pitch, 0.9, speakNextLine);
+      }
+
+      speakNextLine();
+    }
+
+    function resetDialogueModule() {
+      const selects = document.querySelectorAll('.dialogue-blank');
+      selects.forEach(select => {
+        select.value = "";
+        select.className = "dialogue-blank border-2 border-indigo-200 dark:border-indigo-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-300 font-bold mx-1 text-sm focus:outline-none focus:border-indigo-500";
+      });
+    }
+
+    // --- MODULE 4: ROLEPLAY STUDIO ENGINE ---
+    function initRoleplayModule() {
+      const currentScenario = SCENARIOS[appState.roleplay.currentScenarioIndex];
+      document.getElementById('roleplay-scenario-title').innerHTML = `<span>${currentScenario.title}</span>`;
+
+      // Customer Options
+      const custContainer = document.getElementById('roleplay-customer-options');
+      custContainer.innerHTML = '';
+      currentScenario.customerPrompts.forEach((prompt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `p-3 rounded-xl border-2 text-left font-medium text-xs sm:text-sm transition flex items-center justify-between ${idx === appState.roleplay.selectedCustomerPromptIndex ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 font-bold' : 'border-slate-200 dark:border-slate-700 hover:border-blue-300'}`;
+        btn.innerHTML = `
+          <span>"${prompt}"</span>
+          <i class="fa-solid fa-volume-high text-blue-400"></i>
+        `;
+        btn.addEventListener('click', () => {
+          playSound('click');
+          appState.roleplay.selectedCustomerPromptIndex = idx;
+          initRoleplayModule();
+          speakLine(prompt, 1.2);
+        });
+        custContainer.appendChild(btn);
+      });
+
+      // Pharmacist Options
+      const pharmContainer = document.getElementById('roleplay-pharmacist-options');
+      pharmContainer.innerHTML = '';
+      currentScenario.pharmacistAdvices.forEach((advice, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `p-3 rounded-xl border-2 text-left font-medium text-xs sm:text-sm transition flex items-center justify-between ${idx === appState.roleplay.selectedPharmacistAdviceIndex ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-bold' : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'}`;
+        btn.innerHTML = `
+          <span>"${advice}"</span>
+          <i class="fa-solid fa-volume-high text-emerald-400"></i>
+        `;
+        btn.addEventListener('click', () => {
+          playSound('click');
+          appState.roleplay.selectedPharmacistAdviceIndex = idx;
+          initRoleplayModule();
+          speakLine(advice, 0.9);
+        });
+        pharmContainer.appendChild(btn);
+      });
+    }
+
+    function playRoleplayDualDialogue() {
+      const scenario = SCENARIOS[appState.roleplay.currentScenarioIndex];
+      const customerText = scenario.customerPrompts[appState.roleplay.selectedCustomerPromptIndex];
+      const pharmacistText = scenario.pharmacistAdvices[appState.roleplay.selectedPharmacistAdviceIndex];
+
+      playSound('click');
+      // Step 1: Customer speaks
+      speakText(customerText, 1.2, 0.9, () => {
+        // Step 2: Pharmacist responds
+        setTimeout(() => {
+          speakText(pharmacistText, 0.9, 0.9, () => {
+            addScore(10);
+            triggerConfetti();
+          });
+        }, 400);
+      });
+    }
+
+    // --- GAMIFICATION & UTILITIES ENGINE ---
+
+    function addScore(pts) {
+      appState.score = Math.min(100, appState.score + pts);
+      document.getElementById('score-display').textContent = appState.score;
+      
+      const percent = appState.score;
+      document.getElementById('overall-progress-bar').style.width = `${percent}%`;
+      document.getElementById('overall-progress-percent').textContent = `${percent}%`;
+    }
+
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    // Tab Switcher
+    function switchTab(targetId) {
+      playSound('click');
+      document.querySelectorAll('.module-section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById(targetId).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        if (tab.dataset.target === targetId) {
+          tab.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-slate-800', 'text-emerald-700', 'dark:text-emerald-300');
+        } else {
+          tab.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-slate-800', 'text-emerald-700', 'dark:text-emerald-300');
+        }
+      });
+    }
+
+    // --- EVENT LISTENERS INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // Initialize Modules
+      initMatcherModule();
+      updateClassifierCard();
+      initDialogueModule();
+      initRoleplayModule();
+
+      // Tab Navigation Listeners
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchTab(tab.dataset.target));
+      });
+
+      // Sound Toggle Listener
+      document.getElementById('sound-toggle-btn').addEventListener('click', () => {
+        appState.soundEnabled = !appState.soundEnabled;
+        const icon = document.getElementById('sound-icon');
+        if (appState.soundEnabled) {
+          icon.className = 'fa-solid fa-volume-high';
+          playSound('click');
+        } else {
+          icon.className = 'fa-solid fa-volume-xmark';
+        }
+      });
+
+      // Theme Dark/Light Toggle
+      document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+        playSound('click');
+        document.documentElement.classList.toggle('dark');
+        const icon = document.getElementById('theme-icon');
+        if (document.documentElement.classList.contains('dark')) {
+          icon.className = 'fa-solid fa-sun';
+        } else {
+          icon.className = 'fa-solid fa-moon';
+        }
+      });
+
+      // Module 1 Listeners
+      document.getElementById('reset-matcher-btn').addEventListener('click', () => {
+        playSound('click');
+        resetMatcherModule();
+      });
+
+      // Module 2 Listeners
+      document.getElementById('classifier-speak-btn').addEventListener('click', () => {
+        const current = CLASSIFIER_DATA[appState.classifier.currentIndex];
+        if (current) speakLine(current.phrase, 1.0);
+      });
+
+      document.getElementById('btn-classify-asking').addEventListener('click', () => {
+        handleClassificationChoice('asking');
+      });
+
+      document.getElementById('btn-classify-suggesting').addEventListener('click', () => {
+        handleClassificationChoice('suggesting');
+      });
+
+      document.getElementById('reset-classifier-btn').addEventListener('click', () => {
+        playSound('click');
+        resetClassifierModule();
+      });
+
+      // Module 3 Listeners
+      document.getElementById('check-dialogue-btn').addEventListener('click', checkDialogueAnswers);
+      document.getElementById('reset-dialogue-btn').addEventListener('click', () => {
+        playSound('click');
+        resetDialogueModule();
+      });
+      document.getElementById('play-full-dialogue-btn').addEventListener('click', playFullDialogueDualVoices);
+
+      // Module 4 Listeners
+      document.querySelectorAll('.scenario-card').forEach(card => {
+        card.addEventListener('click', () => {
+          playSound('click');
+          document.querySelectorAll('.scenario-card').forEach(c => {
+            c.classList.remove('border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/20');
+            c.classList.add('border-slate-200', 'dark:border-slate-700');
+          });
+          card.classList.add('border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/20');
+          appState.roleplay.currentScenarioIndex = parseInt(card.dataset.scenario);
+          appState.roleplay.selectedCustomerPromptIndex = 0;
+          appState.roleplay.selectedPharmacistAdviceIndex = 0;
+          initRoleplayModule();
+        });
+      });
+
+      document.getElementById('play-roleplay-btn').addEventListener('click', playRoleplayDualDialogue);
+
+      // Certificate Modal Handlers
+      const certModal = document.getElementById('certificate-modal');
+      document.getElementById('open-cert-btn').addEventListener('click', () => {
+        playSound('fanfare');
+        triggerConfetti();
+        document.getElementById('cert-date-stamp').textContent = new Date().toISOString().split('T')[0];
+        certModal.classList.remove('hidden');
+      });
+
+      document.getElementById('close-cert-btn').addEventListener('click', () => certModal.classList.add('hidden'));
+      document.getElementById('close-cert-btn-2').addEventListener('click', () => certModal.classList.add('hidden'));
+    });
+  </script>
+</body>
+</html>
