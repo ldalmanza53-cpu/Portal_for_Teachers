@@ -1,0 +1,623 @@
+#!/usr/bin/env python3
+"""
+===============================================================================
+POLYGLOT TELEPHONY & MESSAGING STUDIO - A1 ENGLISH LEARNING DESKTOP APP
+===============================================================================
+Language: Python 3 (Tkinter GUI Framework)
+Features:
+ - 1. Phrase Matrix & Functional Classifier Drill
+ - 2. DTMF Keypad & Number Dictation Audio Challenge
+ - 3. Receptionist Digital Message Pad & Voicemail Simulator
+ - 4. Interactive Call Console & Switchboard Dialogue Tree
+ - 5. Learner Passport & Automated HTML Certificate Generator
+ - Cross-platform Text-To-Speech (TTS) & Audio Feedback
+===============================================================================
+"""
+
+import os
+import sys
+import math
+import wave
+import struct
+import tempfile
+import subprocess
+import webbrowser
+from datetime import datetime
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# =============================================================================
+# CROSS-PLATFORM TEXT-TO-SPEECH (TTS) ENGINE
+# =============================================================================
+class TTSEngine:
+    """Provides native Text-To-Speech narration without required external PIP packages."""
+    def __init__(self):
+        self.platform = sys.platform
+
+    def speak(self, text):
+        if not text:
+            return
+        
+        # Clean text for command-line execution
+        clean_text = text.replace('"', '').replace("'", "")
+        
+        try:
+            if self.platform == "darwin":  # macOS
+                subprocess.Popen(["say", "-r", "160", clean_text])
+            elif self.platform.startswith("win"):  # Windows PowerShell SAPI
+                ps_script = f'Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = 0; $synth.Speak("{clean_text}");'
+                subprocess.Popen(["powershell", "-Command", ps_script], creationflags=subprocess.CREATE_NO_WINDOW)
+            else:  # Linux (espeak or spd-say fallback)
+                if subprocess.call(["which", "espeak"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+                    subprocess.Popen(["espeak", "-s", "150", clean_text])
+                elif subprocess.call(["which", "spd-say"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
+                    subprocess.Popen(["spd-say", clean_text])
+        except Exception as e:
+            print(f"[TTS Error] Could not synthesize speech: {e}")
+
+# =============================================================================
+# AUDIO SYNTHESIZER (DTMF & TONES)
+# =============================================================================
+class ToneGenerator:
+    """Generates synthetic DTMF keypad tones using wave synthesis."""
+    dtmf_freqs = {
+        '1': (697, 1209), '2': (697, 1336), '3': (697, 1477),
+        '4': (770, 1209), '5': (770, 1336), '6': (770, 1477),
+        '7': (852, 1209), '8': (852, 1336), '9': (852, 1477),
+        '*': (941, 1209), '0': (941, 1336), '#': (941, 1477)
+    }
+
+    @staticmethod
+    def play_dtmf(key):
+        freqs = ToneGenerator.dtmf_freqs.get(key, (440, 480))
+        duration = 0.12  # seconds
+        sample_rate = 22050
+        n_samples = int(sample_rate * duration)
+        
+        # Generate dual sine waves
+        audio_data = bytearray()
+        for i in range(n_samples):
+            t = i / sample_rate
+            val1 = math.sin(2 * math.pi * freqs[0] * t)
+            val2 = math.sin(2 * math.pi * freqs[1] * t)
+            sample = int(((val1 + val2) / 2.0) * 16383)
+            audio_data.extend(struct.pack('<h', sample))
+
+        # Save to temporary WAV file and play
+        try:
+            temp_wav = os.path.join(tempfile.gettempdir(), f"dtmf_{key}.wav")
+            with wave.open(temp_wav, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(sample_rate)
+                wf.writeframes(audio_data)
+
+            if sys.platform == "darwin":
+                subprocess.Popen(["afplay", temp_wav])
+            elif sys.platform.startswith("win"):
+                import winsound
+                winsound.PlaySound(temp_wav, winsound.SND_FILENAME | winsound.SND_ASYNC)
+            else:
+                subprocess.Popen(["aplay", "-q", temp_wav])
+        except Exception:
+            pass  # Fallback gracefully if system audio is restricted
+
+# =============================================================================
+# CURRICULUM DATA MODEL
+# =============================================================================
+PHRASEBOOK = [
+    {"target": "Hello, this is David. Can I speak to Sarah, please?", "translation": "Starting a call & requesting a person", "purpose": "starting"},
+    {"target": "Just a moment, please. I'll check if she is free.", "translation": "Putting the caller on hold", "purpose": "hold"},
+    {"target": "I'm sorry, Mr. Lee is in a meeting right now.", "translation": "Explaining someone is unavailable", "purpose": "unavailable"},
+    {"target": "Would you like to leave a message?", "translation": "Offering to take a voicemail/message", "purpose": "message"},
+    {"target": "Please tell her to call me back at 555-0192.", "translation": "Leaving callback instructions", "purpose": "message"},
+    {"target": "Thank you for calling. Have a great day! Goodbye.", "translation": "Closing a phone call etiquette", "purpose": "closing"}
+]
+
+DICTATION_NUMBERS = ["555-0192", "555-8833", "555-4321", "555-9000"]
+
+VOICEMAIL_DATA = {
+    "caller": "Carlos",
+    "number": "555-8833",
+    "purpose": "car_repair",
+    "transcript": "Hi, this is Carlos from Auto Repair calling for Anna. Your car is ready to pick up! Please call me back at 555-8833."
+}
+
+SIMULATION_TREE = [
+    {
+        "speaker": "Receptionist",
+        "text": "Good morning, Apex Office Solutions. How can I help you?",
+        "options": [
+            {"label": "Request Mr. Lee", "text": "Hello, this is Alex. Can I speak to Mr. Lee, please?", "next": 1},
+            {"label": "Wrong Number", "text": "Oh, I'm sorry. I dialed the wrong number. Goodbye!", "next": -1}
+        ]
+    },
+    {
+        "speaker": "Receptionist",
+        "text": "I'm sorry, Mr. Lee is in a meeting right now. Would you like to leave a message?",
+        "options": [
+            {"label": "Leave callback message", "text": "Yes, please ask him to call me back at 555-3412.", "next": 2},
+            {"label": "Decline message", "text": "No thank you, I will call back later today.", "next": -1}
+        ]
+    },
+    {
+        "speaker": "Receptionist",
+        "text": "Certainly! I will give Mr. Lee your message right away. Have a wonderful day!",
+        "options": []
+    }
+]
+
+# =============================================================================
+# MAIN APPLICATION GUI CLASS
+# =============================================================================
+class TelephonyStudioApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("A1 Telephony & Messaging Studio (Python Edition)")
+        self.geometry("980x700")
+        self.minsize(850, 600)
+        
+        # State tracking
+        self.tts = TTSEngine()
+        self.xp_score = 0
+        self.dialed_digits = ""
+        self.dictation_idx = 0
+        self.quiz_idx = 0
+        self.sim_step = 0
+
+        # Colors & Styling
+        self.bg_main = "#0f172a"      # Dark slate background
+        self.card_bg = "#1e293b"      # Card slate
+        self.accent_indigo = "#6366f1"
+        self.accent_green = "#10b981"
+        self.accent_amber = "#f59e0b"
+        self.text_light = "#f8fafc"
+        
+        self.configure(bg=self.bg_main)
+        self.setup_styles()
+        self.build_header()
+        self.build_notebook()
+
+    def setup_styles(self):
+        """Configure TTK widget themes."""
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
+
+        # Notebook Tab Style
+        self.style.configure("TNotebook", background=self.bg_main, borderwidth=0)
+        self.style.configure("TNotebook.Tab", background="#334155", foreground="#94a3b8",
+                             font=("Helvetica", 10, "bold"), padding=[14, 8])
+        self.style.map("TNotebook.Tab", background=[("selected", self.accent_indigo)],
+                       foreground=[("selected", "#ffffff")])
+
+    def build_header(self):
+        """Top bar displaying title and XP score counter."""
+        header_frame = tk.Frame(self, bg="#1e293b", height=60, borderwidth=1, relief="solid")
+        header_frame.pack(fill="x", side="top")
+
+        # Logo / Title
+        title_label = tk.Label(header_frame, text="📞 PolyGlot Telephony Studio",
+                               font=("Helvetica", 16, "bold"), fg=self.text_light, bg="#1e293b")
+        title_label.pack(side="left", padx=20, pady=12)
+
+        subtitle = tk.Label(header_frame, text="A1 English Phone & Message Master",
+                            font=("Helvetica", 9, "bold"), fg="#94a3b8", bg="#1e293b")
+        subtitle.pack(side="left", padx=0, pady=12)
+
+        # XP Counter Display
+        self.xp_label = tk.Label(header_frame, text="⚡ XP: 0",
+                                 font=("Consolas", 12, "bold"), fg=self.accent_amber, bg="#0f172a",
+                                 padx=12, pady=4)
+        self.xp_label.pack(side="right", padx=20)
+
+    def build_notebook(self):
+        """Tabs for the 5 curriculum modules."""
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True, padx=15, pady=15)
+
+        # Module Tabs
+        self.tab_phrases = tk.Frame(self.notebook, bg=self.card_bg)
+        self.tab_keypad = tk.Frame(self.notebook, bg=self.card_bg)
+        self.tab_message = tk.Frame(self.notebook, bg=self.card_bg)
+        self.tab_sim = tk.Frame(self.notebook, bg=self.card_bg)
+        self.tab_cert = tk.Frame(self.notebook, bg=self.card_bg)
+
+        self.notebook.add(self.tab_phrases, text=" 1. Phrase Matrix ")
+        self.notebook.add(self.tab_keypad, text=" 2. Keypad & Dictation ")
+        self.notebook.add(self.tab_message, text=" 3. Message Pad ")
+        self.notebook.add(self.tab_sim, text=" 4. Call Console ")
+        self.notebook.add(self.tab_cert, text=" 5. Certificate ")
+
+        # Build each tab view
+        self.init_tab_phrases()
+        self.init_tab_keypad()
+        self.init_tab_message()
+        self.init_tab_sim()
+        self.init_tab_cert()
+
+    def add_xp(self, amount):
+        """Update learner experience points."""
+        self.xp_score += amount
+        self.xp_label.config(text=f"⚡ XP: {self.xp_score}")
+
+    # =========================================================================
+    # MODULE 1: PHRASE MATRIX & DRILL
+    # =========================================================================
+    def init_tab_phrases(self):
+        left_frame = tk.Frame(self.tab_phrases, bg="#0f172a", width=500)
+        left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+        right_frame = tk.Frame(self.tab_phrases, bg="#0f172a", width=380)
+        right_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+        # Title Left
+        tk.Label(left_frame, text="📖 Telephony Phrasebook", font=("Helvetica", 13, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(5, 10))
+
+        # Phrase List Box
+        for phrase in PHRASEBOOK:
+            item_frame = tk.Frame(left_frame, bg="#1e293b", relief="groove", borderwidth=1)
+            item_frame.pack(fill="x", pady=4, padx=5)
+
+            text_sub = tk.Frame(item_frame, bg="#1e293b")
+            text_sub.pack(side="left", fill="both", expand=True, padx=8, pady=6)
+
+            tk.Label(text_sub, text=f'"{phrase["target"]}"', font=("Helvetica", 10, "bold"),
+                     fg="#6366f1", bg="#1e293b", anchor="w", wraplength=380, justify="left").pack(anchor="w")
+            tk.Label(text_sub, text=phrase["translation"], font=("Helvetica", 8, "italic"),
+                     fg="#94a3b8", bg="#1e293b", anchor="w").pack(anchor="w")
+
+            btn_speak = tk.Button(item_frame, text="🔊 Play", font=("Helvetica", 8, "bold"),
+                                  bg="#334155", fg="white", activebackground=self.accent_indigo,
+                                  command=lambda t=phrase["target"]: self.tts.speak(t))
+            btn_speak.pack(side="right", padx=8)
+
+        # Right Classifier Drill
+        tk.Label(right_frame, text="🎯 Classifier Drill", font=("Helvetica", 13, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(5, 10))
+
+        quiz_box = tk.Frame(right_frame, bg="#1e293b", padding=15)
+        quiz_box.pack(fill="both", expand=True)
+
+        self.quiz_phrase_lbl = tk.Label(quiz_box, text="", font=("Helvetica", 11, "bold"),
+                                        fg=self.accent_amber, bg="#1e293b", wraplength=300, justify="center")
+        self.quiz_phrase_lbl.pack(pady=10)
+
+        btn_listen = tk.Button(quiz_box, text="🔊 Listen Audio", font=("Helvetica", 9, "bold"),
+                               bg="#334155", fg="white", command=self.speak_quiz_phrase)
+        btn_listen.pack(pady=5)
+
+        tk.Label(quiz_box, text="Select Purpose:", font=("Helvetica", 9, "bold"),
+                 fg="#94a3b8", bg="#1e293b").pack(anchor="w", pady=(10, 5))
+
+        options = [
+            ("Starting Call", "starting"),
+            ("Putting on Hold", "hold"),
+            ("Unavailability", "unavailable"),
+            ("Leaving Message", "message"),
+            ("Closing Call", "closing")
+        ]
+
+        for text, code in options:
+            btn = tk.Button(quiz_box, text=text, font=("Helvetica", 9, "bold"), bg="#0f172a", fg="white",
+                            activebackground=self.accent_indigo, anchor="w", padx=10,
+                            command=lambda c=code: self.check_quiz(c))
+            btn.pack(fill="x", pady=3)
+
+        self.quiz_feedback = tk.Label(quiz_box, text="", font=("Helvetica", 10, "bold"), bg="#1e293b")
+        self.quiz_feedback.pack(pady=10)
+
+        self.load_quiz_item()
+
+    def load_quiz_item(self):
+        item = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]
+        self.quiz_phrase_lbl.config(text=f'"{item["target"]}"')
+        self.quiz_feedback.config(text="")
+
+    def speak_quiz_phrase(self):
+        item = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]
+        self.tts.speak(item["target"])
+
+    def check_quiz(self, selected):
+        correct = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]["purpose"]
+        if selected == correct:
+            self.quiz_feedback.config(text="✅ Correct Purpose! (+15 XP)", fg=self.accent_green)
+            self.add_xp(15)
+            self.quiz_idx += 1
+            self.after(1200, self.load_quiz_item)
+        else:
+            self.quiz_feedback.config(text="❌ Incorrect. Try again!", fg="#ef4444")
+
+    # =========================================================================
+    # MODULE 2: DTMF KEYPAD & DICTATION
+    # =========================================================================
+    def init_tab_keypad(self):
+        keypad_frame = tk.Frame(self.tab_keypad, bg="#0f172a", padding=15)
+        keypad_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+        task_frame = tk.Frame(self.tab_keypad, bg="#0f172a", padding=15)
+        task_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+        # Dial display
+        self.dial_display = tk.Label(keypad_frame, text="---", font=("Consolas", 20, "bold"),
+                                     fg=self.accent_green, bg="#000000", width=14, height=2, relief="sunken")
+        self.dial_display.pack(pady=(0, 15))
+
+        # Keypad Grid
+        grid_frame = tk.Frame(keypad_frame, bg="#0f172a")
+        grid_frame.pack()
+
+        keys = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['*', '0', '#']
+        ]
+
+        for r, row in enumerate(keys):
+            for c, key in enumerate(row):
+                btn = tk.Button(grid_frame, text=key, font=("Helvetica", 14, "bold"),
+                                width=4, height=1, bg="#1e293b", fg="white",
+                                activebackground=self.accent_indigo,
+                                command=lambda k=key: self.press_keypad(k))
+                btn.grid(row=r, column=c, padx=5, pady=5)
+
+        # Clear & Submit controls
+        ctrl_box = tk.Frame(keypad_frame, bg="#0f172a")
+        ctrl_box.pack(fill="x", pady=15)
+
+        tk.Button(ctrl_box, text="Clear", font=("Helvetica", 9, "bold"), bg="#ef4444", fg="white",
+                  command=self.clear_keypad).pack(side="left", expand=True, fill="x", padx=4)
+        tk.Button(ctrl_box, text="Submit Dial", font=("Helvetica", 9, "bold"), bg=self.accent_green, fg="white",
+                  command=self.verify_dictation).pack(side="right", expand=True, fill="x", padx=4)
+
+        # Task Frame Right
+        tk.Label(task_frame, text="🎧 Phone Number Dictation Challenge", font=("Helvetica", 12, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(0, 10))
+
+        tk.Label(task_frame, text="Listen to the audio phone number and dial it on the DTMF keypad.",
+                 font=("Helvetica", 9), fg="#94a3b8", bg="#0f172a", wraplength=300, justify="left").pack(anchor="w", pady=(0, 15))
+
+        tk.Button(task_frame, text="▶ Play Phone Number Audio", font=("Helvetica", 11, "bold"),
+                  bg=self.accent_indigo, fg="white", padding=10,
+                  command=self.play_dictation_audio).pack(fill="x", pady=10)
+
+        self.dictation_feedback = tk.Label(task_frame, text="", font=("Helvetica", 10, "bold"), bg="#0f172a")
+        self.dictation_feedback.pack(pady=15)
+
+        tk.Button(task_frame, text="Next Number Challenge ➔", font=("Helvetica", 9, "bold"),
+                  bg="#334155", fg="white", command=self.next_dictation_challenge).pack(anchor="e", pady=20)
+
+    def press_keypad(self, key):
+        ToneGenerator.play_dtmf(key)
+        if len(self.dialed_digits) < 12:
+            self.dialed_digits += key
+            self.dial_display.config(text=self.dialed_digits)
+
+    def clear_keypad(self):
+        self.dialed_digits = ""
+        self.dial_display.config(text="---")
+
+    def play_dictation_audio(self):
+        target = DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)]
+        # Read digits clearly
+        spoken = " ".join([c if c != '-' else " " for c in target])
+        self.tts.speak(f"The number is {spoken}")
+
+    def verify_dictation(self):
+        target = DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)].replace("-", "")
+        clean_dialed = self.dialed_digits.replace("-", "")
+
+        if clean_dialed == target:
+            self.dictation_feedback.config(text="🎉 Perfect Match! (+25 XP)", fg=self.accent_green)
+            self.add_xp(25)
+        else:
+            self.dictation_feedback.config(
+                text=f"❌ Incorrect. Target was {DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)]}",
+                fg="#ef4444"
+            )
+
+    def next_dictation_challenge(self):
+        self.dictation_idx += 1
+        self.clear_keypad()
+        self.dictation_feedback.config(text="")
+        self.play_dictation_audio()
+
+    # =========================================================================
+    # MODULE 3: MESSAGE PAD & RECEPTIONIST LOG
+    # =========================================================================
+    def init_tab_message(self):
+        audio_frame = tk.Frame(self.tab_message, bg="#0f172a", padding=15)
+        audio_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+        form_frame = tk.Frame(self.tab_message, bg="#1e293b", padding=15, relief="groove", borderwidth=1)
+        form_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+
+        # Left Audio Box
+        tk.Label(audio_frame, text="📼 Voicemail Inbox", font=("Helvetica", 13, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(0, 10))
+
+        tk.Button(audio_frame, text="▶ Play Voicemail Recording", font=("Helvetica", 10, "bold"),
+                  bg=self.accent_indigo, fg="white", padding=8,
+                  command=lambda: self.tts.speak(VOICEMAIL_DATA["transcript"])).pack(fill="x", pady=10)
+
+        tk.Label(audio_frame, text="Instructions:", font=("Helvetica", 9, "bold"),
+                 fg="#94a3b8", bg="#0f172a").pack(anchor="w", pady=(15, 2))
+        tk.Label(audio_frame, text="Listen to the voicemail recording and complete the receptionist log on the right.",
+                 font=("Helvetica", 9), fg="#94a3b8", bg="#0f172a", wraplength=250, justify="left").pack(anchor="w")
+
+        # Form Right
+        tk.Label(form_frame, text="📋 RECEPTIONIST MESSAGE LOG", font=("Helvetica", 11, "bold"),
+                 fg=self.accent_amber, bg="#1e293b").pack(anchor="w", pady=(0, 15))
+
+        tk.Label(form_frame, text="Caller Name:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
+        self.entry_caller = tk.Entry(form_frame, font=("Helvetica", 10), bg="#0f172a", fg="white", insertbackground="white")
+        self.entry_caller.pack(fill="x", pady=(2, 10))
+
+        tk.Label(form_frame, text="Callback Number:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
+        self.entry_callback = tk.Entry(form_frame, font=("Helvetica", 10), bg="#0f172a", fg="white", insertbackground="white")
+        self.entry_callback.pack(fill="x", pady=(2, 10))
+
+        tk.Label(form_frame, text="Call Purpose:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
+        self.purpose_var = tk.StringVar(value="")
+        p_combo = ttk.Combobox(form_frame, textvariable=self.purpose_var, state="readonly",
+                               values=["Select Purpose...", "Car ready for pickup", "Doctor Appointment", "Job Interview"])
+        p_combo.current(0)
+        p_combo.pack(fill="x", pady=(2, 15))
+
+        tk.Button(form_frame, text="Verify & Submit Message", font=("Helvetica", 10, "bold"),
+                  bg=self.accent_green, fg="white", padding=6,
+                  command=self.verify_message_pad).pack(fill="x", pady=10)
+
+        self.pad_feedback = tk.Label(form_frame, text="", font=("Helvetica", 10, "bold"), bg="#1e293b")
+        self.pad_feedback.pack(pady=5)
+
+    def verify_message_pad(self):
+        caller = self.entry_caller.get().strip().lower()
+        callback = self.entry_callback.get().strip()
+        purpose = self.purpose_var.get()
+
+        if caller == VOICEMAIL_DATA["caller"].lower() and callback == VOICEMAIL_DATA["number"] and purpose == "Car ready for pickup":
+            self.pad_feedback.config(text="✅ Log Form Verified! (+30 XP)", fg=self.accent_green)
+            self.add_xp(30)
+        else:
+            self.pad_feedback.config(text="❌ Details mismatch. Listen to audio again!", fg="#ef4444")
+
+    # =========================================================================
+    # MODULE 4: CALL CONSOLE SIMULATOR
+    # =========================================================================
+    def init_tab_sim(self):
+        box = tk.Frame(self.tab_sim, bg="#0f172a", padding=20)
+        box.pack(fill="both", expand=True, padx=20, pady=20)
+
+        tk.Label(box, text="🎛️ Interactive Switchboard Simulator", font=("Helvetica", 14, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(pady=(0, 10))
+
+        # Dialogue Screen
+        self.sim_screen = tk.Label(box, text='Press "Start Call Simulation" to establish connection...',
+                                   font=("Consolas", 11, "bold"), fg=self.accent_amber, bg="#000000",
+                                   height=4, wraplength=700, relief="sunken", padding=10)
+        self.sim_screen.pack(fill="x", pady=10)
+
+        # Action Buttons
+        ctrl_box = tk.Frame(box, bg="#0f172a")
+        ctrl_box.pack(fill="x", pady=10)
+
+        self.btn_start_call = tk.Button(ctrl_box, text="📞 Start Call Simulation", font=("Helvetica", 10, "bold"),
+                                        bg=self.accent_green, fg="white", padding=8,
+                                        command=self.start_sim)
+        self.btn_start_call.pack(side="left", padx=5)
+
+        self.options_frame = tk.Frame(box, bg="#1e293b", padding=10)
+        self.options_frame.pack(fill="both", expand=True, pady=10)
+
+    def start_sim(self):
+        ToneGenerator.play_dtmf('2')
+        self.sim_step = 0
+        self.render_sim_step()
+
+    def render_sim_step(self):
+        # Clear previous options
+        for widget in self.options_frame.winfo_children():
+            widget.destroy()
+
+        if self.sim_step < 0 or self.sim_step >= len(SIMULATION_TREE):
+            self.sim_screen.config(text="[Call Ended / Disconnected]")
+            return
+
+        current = SIMULATION_TREE[self.sim_step]
+        self.sim_screen.config(text=f'{current["speaker"]}: "{current["text"]}"')
+        self.tts.speak(current["text"])
+
+        if not current["options"]:
+            tk.Label(self.options_frame, text="🎉 Conversation finished successfully! (+40 XP)",
+                     font=("Helvetica", 11, "bold"), fg=self.accent_green, bg="#1e293b").pack(pady=20)
+            self.add_xp(40)
+            return
+
+        tk.Label(self.options_frame, text="Choose Your Response:", font=("Helvetica", 9, "bold"),
+                 fg="#94a3b8", bg="#1e293b").pack(anchor="w", pady=(0, 5))
+
+        for opt in current["options"]:
+            btn = tk.Button(self.options_frame, text=f'"{opt["text"]}"', font=("Helvetica", 9, "bold"),
+                            bg="#0f172a", fg="white", activebackground=self.accent_indigo,
+                            anchor="w", padding=8, command=lambda o=opt: self.select_sim_opt(o))
+            btn.pack(fill="x", pady=3)
+
+    def select_sim_opt(self, opt):
+        self.tts.speak(opt["text"])
+        self.sim_step = opt["next"]
+        self.after(1400, self.render_sim_step)
+
+    # =========================================================================
+    # MODULE 5: CERTIFICATE GENERATOR
+    # =========================================================================
+    def init_tab_cert(self):
+        box = tk.Frame(self.tab_cert, bg="#0f172a", padding=20)
+        box.pack(fill="both", expand=True, padx=20, pady=20)
+
+        tk.Label(box, text="🎓 Learner Passport & Completion Certificate", font=("Helvetica", 14, "bold"),
+                 fg=self.text_light, bg="#0f172a").pack(pady=(0, 10))
+
+        tk.Label(box, text="Student Name:", font=("Helvetica", 10, "bold"), fg="white", bg="#0f172a").pack()
+        self.entry_student_name = tk.Entry(box, font=("Helvetica", 12, "bold"), bg="#1e293b", fg="white",
+                                           insertbackground="white", justify="center", width=25)
+        self.entry_student_name.insert(0, "Alex Johnson")
+        self.entry_student_name.pack(pady=5)
+
+        tk.Button(box, text="📄 Export Printable Certificate (HTML)", font=("Helvetica", 11, "bold"),
+                  bg=self.accent_indigo, fg="white", padding=10,
+                  command=self.export_certificate).pack(pady=20)
+
+    def export_certificate(self):
+        name = self.entry_student_name.get().strip() or "Student"
+        date_str = datetime.now().strftime("%B %d, %Y")
+
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>A1 Telephony Certificate - {name}</title>
+    <style>
+        body {{ font-family: 'Helvetica Neue', Arial, sans-serif; background: #0f172a; color: #fff; padding: 40px; text-align: center; }}
+        .cert {{ border: 10px solid #6366f1; border-radius: 20px; padding: 50px; background: #1e293b; max-width: 700px; margin: 0 auto; }}
+        h1 {{ color: #f59e0b; font-size: 36px; margin-bottom: 10px; }}
+        h2 {{ font-size: 28px; color: #6366f1; border-bottom: 2px solid #334155; display: inline-block; padding-bottom: 5px; }}
+        p {{ font-size: 16px; color: #94a3b8; line-height: 1.6; }}
+        .footer {{ margin-top: 40px; font-size: 12px; color: #64748b; font-family: monospace; }}
+    </style>
+</head>
+<body>
+    <div class="cert">
+        <p style="text-transform: uppercase; tracking: 2px; color: #10b981; font-weight: bold;">Official Certificate of Mastery</p>
+        <h1>A1 Telephony & Messaging Master</h1>
+        <p>This certifies that</p>
+        <h2>{name}</h2>
+        <p>has successfully completed all practical A1 English communication modules including Phone Etiquette, Number Dictation, Voicemail Logs, and Interactive Switchboard Roleplays.</p>
+        <p><strong>Total XP Earned: {self.xp_score} XP</strong></p>
+        <div class="footer">
+            DATE: {date_str} | VERIFICATION CODE: PY-TELEPHONY-A1-{self.xp_score}
+        </div>
+    </div>
+    <script>window.print();</script>
+</body>
+</html>"""
+
+        try:
+            filepath = os.path.join(tempfile.gettempdir(), f"A1_Telephony_Certificate_{name.replace(' ', '_')}.html")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(html_content)
+
+            webbrowser.open(f"file://{filepath}")
+            messagebox.showinfo("Certificate Generated", f"Certificate exported successfully!\nOpening in default web browser.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to export certificate: {e}")
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
+if __name__ == "__main__":
+    app = TelephonyStudioApp()
+    app.mainloop()
