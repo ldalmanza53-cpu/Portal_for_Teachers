@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Measure World: Distances, Temperatures & Measurements Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        measure: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d'
+                        },
+                        indigoBrand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #0f766e 0%, #1d4ed8 50%, #4338ca 100%);
+        }
+
+        .tts-highlight {
+            background-color: #fef08a;
+            color: #854d0e;
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+        }
+        .dark .tts-highlight {
+            background-color: #854d0e;
+            color: #fef08a;
+        }
+
+        /* Certificate Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-modal, #certificate-modal * {
+                visibility: visible;
+            }
+            #certificate-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Hide scrollbars while keeping scroll functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Canvas for Confetti particle explosion -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="gradient-header text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- App Title Branding -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fa-solid fa-ruler-combined text-2xl text-yellow-300 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-xl sm:text-2xl tracking-tight leading-none">Measure World</h1>
+                        <p class="text-xs text-teal-100 font-medium">Distances, Temperatures & Measurements Studio (A1)</p>
+                    </div>
+                </div>
+
+                <!-- Top Score Controls & Toolbar -->
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                    <!-- Score Counter -->
+                    <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 flex items-center space-x-2">
+                        <i class="fa-solid fa-star text-yellow-300 text-base"></i>
+                        <span id="score-display" class="font-bold text-white text-base">0 / 120</span>
+                        <span class="text-xs text-teal-200">PTS</span>
+                    </div>
+
+                    <!-- Audio Speed Slider -->
+                    <div class="hidden md:flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20">
+                        <i class="fa-solid fa-gauge-high text-teal-200"></i>
+                        <label for="speed-slider" class="text-xs font-medium">TTS:</label>
+                        <input id="speed-slider" type="range" min="0.6" max="1.3" step="0.1" value="0.9" class="w-16 h-1.5 bg-teal-200 rounded-lg appearance-none cursor-pointer accent-yellow-400">
+                        <span id="speed-label" class="text-xs font-semibold w-8">0.9x</span>
+                    </div>
+
+                    <!-- SFX Toggle Button -->
+                    <button id="sfx-toggle" title="Toggle Sound Effects" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all flex items-center space-x-1">
+                        <i id="sfx-icon" class="fa-solid fa-volume-high text-yellow-300"></i>
+                    </button>
+
+                    <!-- Dark/Light Theme Toggle -->
+                    <button id="theme-toggle" title="Toggle Theme" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all">
+                        <i id="theme-icon" class="fa-solid fa-moon text-yellow-300"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Overall Progress Indicator -->
+            <div class="mt-3 pt-2 border-t border-white/20 flex items-center space-x-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-teal-100">Overall Progress</span>
+                <div class="flex-1 bg-black/20 rounded-full h-2.5 overflow-hidden">
+                    <div id="overall-progress-bar" class="bg-yellow-400 h-full rounded-full transition-all duration-500 w-0"></div>
+                </div>
+                <span id="overall-progress-text" class="text-xs font-bold text-yellow-300">0%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-[73px] sm:top-[77px] z-30">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 flex overflow-x-auto no-scrollbar py-2 gap-2">
+            <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn active-tab flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 transition-all">
+                <i class="fa-solid fa-ruler-horizontal text-teal-500"></i>
+                <span>1. Unit Matcher</span>
+            </button>
+            <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-circle-question text-indigo-500"></i>
+                <span>2. Question Builder</span>
+            </button>
+            <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-earth-americas text-blue-500"></i>
+                <span>3. World Fact Explorer</span>
+            </button>
+            <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-passport text-amber-500"></i>
+                <span>4. Info Desk & Passport</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+
+        <!-- MODULE 1: Measurement Unit Matcher -->
+        <section id="mod1" class="tab-content space-y-6">
+            <div class="bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-teal-600 dark:text-teal-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-link"></i>
+                        <span>Interactive Matching</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 1: Measurement Unit Matcher</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Tap a <strong>Measurement Type</strong> on the left, then select its matching <strong>Unit of Measurement</strong> on the right!
+                    </p>
+                </div>
+                <button onclick="speakText('Connect distance to kilometers, temperature to degrees celsius, height to meters, weight to kilograms, and small length to centimeters!')" class="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 shrink-0">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>Listen Instructions</span>
+                </button>
+            </div>
+
+            <!-- Matching Container -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Column A: Measurement Types -->
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-list text-teal-500"></i>
+                        <span>Column A: Measurement Type</span>
+                    </h3>
+                    <div id="col-a-types" class="space-y-3">
+                        <!-- Dynamic Type Cards -->
+                    </div>
+                </div>
+
+                <!-- Column B: Units -->
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-scale-balanced text-indigo-500"></i>
+                        <span>Column B: Units & Symbols</span>
+                    </h3>
+                    <div id="col-b-units" class="space-y-3">
+                        <!-- Dynamic Unit Cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matching Feedback Status -->
+            <div id="matching-status-bar" class="hidden p-4 rounded-2xl text-center font-bold text-sm transition-all"></div>
+        </section>
+
+        <!-- MODULE 2: Question Builder & Grammar Practice -->
+        <section id="mod2" class="tab-content hidden space-y-6">
+            <div class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-pen-ruler"></i>
+                        <span>Grammar Structure Practice</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 2: Question Builder & Practice</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Select the correct question opening phrase (<span class="font-semibold text-indigo-600 dark:text-indigo-400">How far, What is the temperature, How tall, How heavy, How long</span>) to match each answer.
+                    </p>
+                </div>
+                <button onclick="resetQuestionBuilder()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-xl transition flex items-center space-x-1 shrink-0">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Reset Exercise</span>
+                </button>
+            </div>
+
+            <!-- Questions Grid -->
+            <div id="question-builder-container" class="space-y-4">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- MODULE 3: World Fact Explorer & Comparison Quiz -->
+        <section id="mod3" class="tab-content hidden space-y-6">
+            <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-compass"></i>
+                        <span>Global Fact Base</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 3: World Fact Explorer & Comparison Quiz</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Explore landmark measurements and answer the comparative world trivia questions below!
+                    </p>
+                </div>
+                <div class="text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900 px-3 py-1.5 rounded-xl">
+                    Score +10 PTS per question
+                </div>
+            </div>
+
+            <!-- Landmark Fact Cards Carousel Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl shadow-sm space-y-2">
+                    <div class="text-xs font-bold text-teal-600 uppercase">📍 Distances</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">London ➔ Paris: 340 km</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">Tokyo ➔ Seoul: 1,150 km</div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl shadow-sm space-y-2">
+                    <div class="text-xs font-bold text-amber-600 uppercase">🌡️ Temperatures (July)</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">Madrid: 32°C (Hot)</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">Reykjavik: 11°C (Cool)</div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-2xl shadow-sm space-y-2">
+                    <div class="text-xs font-bold text-indigo-600 uppercase">🏢 Heights</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">Burj Khalifa: 828 m</div>
+                    <div class="font-extrabold text-slate-900 dark:text-white text-sm">Empire State: 381 m</div>
+                </div>
+            </div>
+
+            <!-- Fact Quiz Grid Container -->
+            <div id="fact-quiz-container" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+        <!-- MODULE 4: Virtual Travel Information Desk & Measurement Roleplay -->
+        <section id="mod4" class="tab-content hidden space-y-6">
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-headset"></i>
+                        <span>Live Roleplay Simulator</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 4: Virtual Travel Information Desk</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Interact with the Information Agent to inquire about distances, temperatures, and landmark heights!
+                    </p>
+                </div>
+                <button onclick="openCertificateModal()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition flex items-center space-x-2 shrink-0">
+                    <i class="fa-solid fa-award text-base"></i>
+                    <span>Claim Passport & Cert</span>
+                </button>
+            </div>
+
+            <!-- Roleplay Stage Screen -->
+            <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-700 space-y-6">
+                <!-- Header Live Studio -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+                        <span class="font-extrabold tracking-wider uppercase text-xs text-emerald-400">INTERNATIONAL TRAVEL INFO DESK</span>
+                    </div>
+                    <div id="roleplay-scenario-tag" class="text-xs font-bold text-amber-300 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-500/30">
+                        Scenario 1: New York Desk
+                    </div>
+                </div>
+
+                <!-- Scenario Selector Tabs -->
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                    <button onclick="selectRoleplayScenario(0)" id="scen-btn-0" class="scen-btn active-scen-btn px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 shrink-0">
+                        1. New York City
+                    </button>
+                    <button onclick="selectRoleplayScenario(1)" id="scen-btn-1" class="scen-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 shrink-0 hover:bg-slate-700">
+                        2. Sydney Australia
+                    </button>
+                    <button onclick="selectRoleplayScenario(2)" id="scen-btn-2" class="scen-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 shrink-0 hover:bg-slate-700">
+                        3. Cairo Egypt
+                    </button>
+                </div>
+
+                <!-- Avatars Display -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Traveler Avatar -->
+                    <div class="bg-slate-800/80 p-4 rounded-2xl border border-teal-500/30 flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-teal-600/30 border border-teal-400/50 flex items-center justify-center text-2xl shrink-0">
+                            🧳
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-teal-400 uppercase">Role: Traveler</div>
+                            <div class="font-extrabold text-sm text-white">Student (Asking Questions)</div>
+                            <p class="text-xs text-slate-400">Pitch: Energetic (1.2x)</p>
+                        </div>
+                    </div>
+
+                    <!-- Information Agent Avatar -->
+                    <div class="bg-slate-800/80 p-4 rounded-2xl border border-amber-500/30 flex items-center space-x-4">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-600/30 border border-amber-400/50 flex items-center justify-center text-2xl shrink-0">
+                            💁
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-amber-400 uppercase">Role: Info Agent</div>
+                            <div class="font-extrabold text-sm text-white">Agent Desk (Providing Facts)</div>
+                            <p class="text-xs text-slate-400">Pitch: Professional (0.9x)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue History Box -->
+                <div id="roleplay-chat-box" class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-4 max-h-64 overflow-y-auto">
+                    <!-- Dynamic chat messages -->
+                </div>
+
+                <!-- Interactive Question Prompts for Student -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Choose your question to ask the Information Agent:</label>
+                    <div id="roleplay-prompts-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Dynamic prompt buttons -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CERTIFICATE & PASSPORT MODAL -->
+    <div id="certificate-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl max-w-3xl w-full p-6 sm:p-10 shadow-2xl border-4 border-amber-500/50 relative overflow-hidden my-auto max-h-[90vh] overflow-y-auto">
+            <!-- Close Button -->
+            <button onclick="closeCertificateModal()" class="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Passport / Certificate Decorative Border -->
+            <div class="border-2 border-dashed border-amber-400 p-6 sm:p-8 rounded-2xl text-center space-y-6 relative bg-gradient-to-b from-amber-50/50 to-white dark:from-slate-800/50 dark:to-slate-900">
+                <!-- Badge Emblem -->
+                <div class="mx-auto w-20 h-20 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-full flex items-center justify-center shadow-lg text-white text-3xl border-4 border-white dark:border-slate-800">
+                    <i class="fa-solid fa-passport"></i>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">Global Measurement Master</h2>
+                    <p class="text-xs sm:text-sm font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider mt-1">International Passport & Proficiency Certificate</p>
+                </div>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300">This official document is awarded to:</p>
+
+                <!-- Student Name Input -->
+                <div class="max-w-md mx-auto">
+                    <input id="student-name-input" type="text" value="A1 Measurement Explorer" class="no-print text-center font-extrabold text-2xl text-teal-600 dark:text-teal-400 border-b-2 border-teal-500 bg-transparent focus:outline-none w-full py-1">
+                    <div id="student-name-print" class="hidden print:block font-extrabold text-3xl text-teal-600 dark:text-teal-400 border-b-2 border-teal-500 py-1">
+                        A1 Measurement Explorer
+                    </div>
+                </div>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto">
+                    For mastering units of distance, temperature, and physical dimensions, forming English questions, and completing international information desk simulations!
+                </p>
+
+                <!-- Stats summary -->
+                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto pt-2">
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Total Score</div>
+                        <div id="cert-score" class="text-xl font-bold text-amber-500">120 PTS</div>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Issue Date</div>
+                        <div id="cert-date" class="text-xl font-bold text-teal-500">2026-09-24</div>
+                    </div>
+                </div>
+
+                <!-- Footer Signature -->
+                <div class="pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-between items-end text-left px-4">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase">Program</p>
+                        <p class="font-bold text-xs text-slate-700 dark:text-slate-300">Measure World ESL Studio</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-serif italic font-bold text-amber-600">Measure World</div>
+                        <p class="text-[10px] text-slate-400 uppercase">Authorized Signature</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print Action Buttons -->
+            <div class="no-print mt-6 flex justify-end space-x-3">
+                <button onclick="closeCertificateModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 dark:text-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    Close
+                </button>
+                <button onclick="triggerPrint()" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Passport & Cert</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Web Audio API Sound Generator */
+        let audioCtx = null;
+        let sfxEnabled = true;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!sfxEnabled) return;
+            initAudioContext();
+            
+            try {
+                const now = audioCtx.currentTime;
+                
+                if (type === 'correct') {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = f;
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'tap') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50, 880, 1046.50];
+                    const times = [0, 0.12, 0.24, 0.36, 0.52, 0.68];
+                    notes.forEach((f, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = f;
+                        gain.gain.setValueAtTime(0.2, now + times[i]);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + times[i] + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + times[i]);
+                        osc.stop(now + times[i] + 0.35);
+                    });
+                }
+            } catch (e) {
+                console.warn('Audio playback glitch:', e);
+            }
+        }
+
+        /* Web Speech API TTS Integration */
+        let speechSynth = window.speechSynthesis;
+        let ttsRate = 0.9;
+
+        function speakText(text, pitch = 1.0, callback = null) {
+            if (!speechSynth) {
+                if (callback) callback();
+                return;
+            }
+            speechSynth.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = ttsRate;
+            utterance.pitch = pitch;
+            utterance.lang = 'en-US';
+
+            if (callback) {
+                utterance.onend = callback;
+                utterance.onerror = callback;
+            }
+
+            speechSynth.speak(utterance);
+        }
+
+        /* Application State */
+        let state = {
+            score: 0,
+            mod1Completed: new Set(),
+            mod2Completed: new Set(),
+            mod3Completed: new Set(),
+            selectedType: null,
+            selectedUnit: null,
+            matchedPairs: new Set()
+        };
+
+        // Set Cert Date
+        document.getElementById('cert-date').innerText = new Date().toISOString().split('T')[0];
+
+        // Theme Toggle
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            playSound('tap');
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.className = 'fa-solid fa-moon text-yellow-300';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-yellow-300';
+            }
+        });
+
+        // SFX Toggle
+        document.getElementById('sfx-toggle').addEventListener('click', () => {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfx-icon');
+            if (sfxEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-yellow-300';
+                playSound('tap');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-rose-300';
+            }
+        });
+
+        // Speed Slider
+        const speedSlider = document.getElementById('speed-slider');
+        const speedLabel = document.getElementById('speed-label');
+        speedSlider.addEventListener('input', (e) => {
+            ttsRate = parseFloat(e.target.value);
+            speedLabel.innerText = ttsRate.toFixed(1) + 'x';
+        });
+
+        // Tab Switching
+        function switchTab(tabId) {
+            playSound('tap');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-teal-100', 'dark:bg-teal-900/50', 'text-teal-700', 'dark:text-teal-300', 'border-b-2', 'border-teal-500');
+            });
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.add('bg-teal-100', 'dark:bg-teal-900/50', 'text-teal-700', 'dark:text-teal-300', 'border-b-2', 'border-teal-500');
+        }
+
+        function addScore(points) {
+            state.score = Math.min(120, state.score + points);
+            document.getElementById('score-display').innerText = state.score + ' / 120';
+            document.getElementById('cert-score').innerText = state.score + ' PTS';
+            
+            const pct = Math.round((state.score / 120) * 100);
+            document.getElementById('overall-progress-bar').style.width = pct + '%';
+            document.getElementById('overall-progress-text').innerText = pct + '%';
+
+            if (pct === 100) {
+                triggerConfetti();
+                playSound('fanfare');
+            }
+        }
+
+        /* MODULE 1: Data & Matching Handler */
+        const matcherTypes = [
+            { id: 'distance', label: '1. Distance between cities', icon: 'fa-route', unitId: 'km' },
+            { id: 'temperature', label: '2. Temperature of weather', icon: 'fa-temperature-three-quarters', unitId: 'celsius' },
+            { id: 'height', label: '3. Height of a building', icon: 'fa-building', unitId: 'meters' },
+            { id: 'weight', label: '4. Weight of an animal', icon: 'fa-weight-hanging', unitId: 'kg' },
+            { id: 'small_length', label: '5. Length of a pencil', icon: 'fa-pencil', unitId: 'cm' }
+        ];
+
+        const matcherUnits = [
+            { id: 'celsius', label: 'Degrees Celsius (°C)', audio: 'Degrees Celsius' },
+            { id: 'km', label: 'Kilometers (km)', audio: 'Kilometers' },
+            { id: 'kg', label: 'Kilograms (kg)', audio: 'Kilograms' },
+            { id: 'cm', label: 'Centimeters (cm)', audio: 'Centimeters' },
+            { id: 'meters', label: 'Meters (m)', audio: 'Meters' }
+        ];
+
+        function renderModule1() {
+            const containerA = document.getElementById('col-a-types');
+            const containerB = document.getElementById('col-b-units');
+
+            containerA.innerHTML = '';
+            containerB.innerHTML = '';
+
+            matcherTypes.forEach(item => {
+                const card = document.createElement('button');
+                card.id = `type-btn-${item.id}`;
+                card.onclick = () => selectType(item.id);
+                card.className = 'w-full p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-left flex items-center justify-between font-bold text-xs sm:text-sm transition-all hover:border-teal-500';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid ${item.icon} text-teal-500 text-base"></i>
+                        <span>${item.label}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-300"></i>
+                `;
+                containerA.appendChild(card);
+            });
+
+            matcherUnits.forEach(unit => {
+                const card = document.createElement('button');
+                card.id = `unit-btn-${unit.id}`;
+                card.onclick = () => selectUnit(unit.id);
+                card.className = 'w-full p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-left flex items-center justify-between font-bold text-xs sm:text-sm transition-all hover:border-indigo-500';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-scale-unbalanced text-indigo-500 text-base"></i>
+                        <span>${unit.label}</span>
+                    </div>
+                    <button onclick="event.stopPropagation(); speakText('${unit.audio}')" class="p-1 text-slate-400 hover:text-indigo-500">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                containerB.appendChild(card);
+            });
+        }
+
+        function selectType(id) {
+            playSound('tap');
+            state.selectedType = id;
+
+            matcherTypes.forEach(t => {
+                const btn = document.getElementById(`type-btn-${t.id}`);
+                if (state.matchedPairs.has(t.id)) return;
+                btn.classList.remove('ring-2', 'ring-teal-500', 'bg-teal-50', 'dark:bg-teal-950/50');
+            });
+
+            if (!state.matchedPairs.has(id)) {
+                const activeBtn = document.getElementById(`type-btn-${id}`);
+                activeBtn.classList.add('ring-2', 'ring-teal-500', 'bg-teal-50', 'dark:bg-teal-950/50');
+            }
+            checkPair();
+        }
+
+        function selectUnit(id) {
+            playSound('tap');
+            state.selectedUnit = id;
+
+            matcherUnits.forEach(u => {
+                const btn = document.getElementById(`unit-btn-${u.id}`);
+                // Check if already matched
+                let matched = false;
+                state.matchedPairs.forEach(tId => {
+                    const match = matcherTypes.find(t => t.id === tId);
+                    if (match && match.unitId === u.id) matched = true;
+                });
+                if (matched) return;
+                btn.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-950/50');
+            });
+
+            const activeBtn = document.getElementById(`unit-btn-${id}`);
+            activeBtn.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-950/50');
+            checkPair();
+        }
+
+        function checkPair() {
+            if (!state.selectedType || !state.selectedUnit) return;
+
+            const typeItem = matcherTypes.find(t => t.id === state.selectedType);
+            const statusBar = document.getElementById('matching-status-bar');
+            statusBar.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (typeItem.unitId === state.selectedUnit) {
+                // Correct match
+                playSound('correct');
+                const unitItem = matcherUnits.find(u => u.id === state.selectedUnit);
+                speakText(`Correct! ${typeItem.label.split('.')[1]} matches ${unitItem.audio}`);
+
+                const btnA = document.getElementById(`type-btn-${state.selectedType}`);
+                const btnB = document.getElementById(`unit-btn-${state.selectedUnit}`);
+
+                btnA.className = 'w-full p-4 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold text-xs sm:text-sm flex items-center justify-between cursor-default';
+                btnB.className = 'w-full p-4 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold text-xs sm:text-sm flex items-center justify-between cursor-default';
+
+                state.matchedPairs.add(state.selectedType);
+
+                if (!state.mod1Completed.has(state.selectedType)) {
+                    state.mod1Completed.add(state.selectedType);
+                    addScore(6);
+                }
+
+                state.selectedType = null;
+                state.selectedUnit = null;
+            } else {
+                // Incorrect match
+                playSound('wrong');
+                statusBar.classList.add('bg-rose-100', 'dark:bg-rose-950/60', 'text-rose-800', 'dark:text-rose-200');
+                statusBar.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <span>That unit doesn't match this measurement type. Try again!</span>`;
+                statusBar.classList.remove('hidden');
+
+                setTimeout(() => {
+                    statusBar.classList.add('hidden');
+                }, 2500);
+
+                state.selectedType = null;
+                state.selectedUnit = null;
+            }
+        }
+
+        /* MODULE 2: Question Builder Data & Logic */
+        const questionBuilderData = [
+            { id: 0, answerText: "It is 330 meters.", correctPhrase: "How tall", fullQuestion: "How tall is the Eiffel Tower?", options: ["How tall", "How far", "How heavy"] },
+            { id: 1, answerText: "It is about 340 kilometers.", correctPhrase: "How far", fullQuestion: "How far is Paris from London?", options: ["How far", "How long", "What is the temperature"] },
+            { id: 2, answerText: "It is 24°C and sunny.", correctPhrase: "What is the temperature", fullQuestion: "What is the temperature in Rome today?", options: ["What is the temperature", "How heavy", "How tall"] },
+            { id: 3, answerText: "It weighs around 5,000 kilograms.", correctPhrase: "How heavy", fullQuestion: "How heavy is an adult elephant?", options: ["How heavy", "How long", "How far"] },
+            { id: 4, answerText: "It is about 6,650 kilometers long.", correctPhrase: "How long", fullQuestion: "How long is the Nile River?", options: ["How long", "How tall", "What is the temperature"] }
+        ];
+
+        function renderModule2() {
+            const container = document.getElementById('question-builder-container');
+            container.innerHTML = '';
+
+            questionBuilderData.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4';
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-indigo-500 uppercase">Answer Prompt ${item.id + 1}</span>
+                            <div class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-comment-dots text-indigo-500"></i>
+                                <span>"${item.answerText}"</span>
+                            </div>
+                        </div>
+                        <button onclick="speakText('${item.fullQuestion}')" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-indigo-500 transition" title="Listen Question">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        ${item.options.map(opt => `
+                            <button onclick="checkQuestionPhrase(${item.id}, '${opt}')" class="p-3 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:border-indigo-500 transition">
+                                ${opt} ...?
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div id="qb-feedback-${item.id}" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkQuestionPhrase(id, chosen) {
+            const item = questionBuilderData[id];
+            const feedback = document.getElementById(`qb-feedback-${id}`);
+
+            feedback.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (chosen === item.correctPhrase) {
+                feedback.classList.add('bg-emerald-100', 'dark:bg-emerald-950/60', 'text-emerald-900', 'dark:text-emerald-200');
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>Correct! "${item.fullQuestion}"</span>`;
+                playSound('correct');
+                speakText(item.fullQuestion);
+
+                if (!state.mod2Completed.has(id)) {
+                    state.mod2Completed.add(id);
+                    addScore(6);
+                }
+            } else {
+                feedback.classList.add('bg-rose-100', 'dark:bg-rose-950/60', 'text-rose-900', 'dark:text-rose-200');
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> <span>Try again! Think about what kind of measurement this is.</span>`;
+                playSound('wrong');
+            }
+        }
+
+        function resetQuestionBuilder() {
+            playSound('tap');
+            renderModule2();
+        }
+
+        /* MODULE 3: World Fact Explorer Data & Quiz Logic */
+        const factQuizData = [
+            {
+                id: 0,
+                question: "Is Tokyo farther from Seoul than London is from Paris?",
+                options: ["Yes, Tokyo is farther.", "No, London is farther."],
+                correct: 0,
+                explanation: "Tokyo to Seoul is 1,150 km, whereas London to Paris is only 340 km!"
+            },
+            {
+                id: 1,
+                question: "Which city is colder in July: Madrid or Reykjavik?",
+                options: ["Madrid is colder.", "Reykjavik is colder."],
+                correct: 1,
+                explanation: "Reykjavik is 11°C in July, while Madrid reaches a hot 32°C!"
+            },
+            {
+                id: 2,
+                question: "Is the Burj Khalifa taller than the Empire State Building?",
+                options: ["Yes, Burj Khalifa is taller.", "No, Empire State is taller."],
+                correct: 0,
+                explanation: "Burj Khalifa stands at 828 meters high, compared to the Empire State Building at 381 meters!"
+            },
+            {
+                id: 3,
+                question: "How far is London from Paris?",
+                options: ["340 kilometers", "1,150 kilometers"],
+                correct: 0,
+                explanation: "The distance from London to Paris across the English Channel is 340 km."
+            }
+        ];
+
+        function renderModule3() {
+            const container = document.getElementById('fact-quiz-container');
+            container.innerHTML = '';
+
+            factQuizData.forEach((quiz) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4';
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <h3 class="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
+                            "${quiz.question}"
+                        </h3>
+                        <button onclick="speakText('${quiz.question}')" class="p-1.5 text-slate-400 hover:text-blue-500 shrink-0">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${quiz.options.map((opt, idx) => `
+                            <button onclick="answerFactQuiz(${quiz.id}, ${idx})" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 hover:border-blue-500 transition">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div id="fq-explanation-${quiz.id}" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function answerFactQuiz(id, chosenIndex) {
+            const quiz = factQuizData.find(q => q.id === id);
+            const explanationBox = document.getElementById(`fq-explanation-${id}`);
+
+            explanationBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (chosenIndex === quiz.correct) {
+                explanationBox.classList.add('bg-emerald-100', 'dark:bg-emerald-950/60', 'text-emerald-900', 'dark:text-emerald-200');
+                explanationBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>TRUE! ${quiz.explanation}</span>`;
+                playSound('correct');
+                speakText(quiz.explanation);
+
+                if (!state.mod3Completed.has(id)) {
+                    state.mod3Completed.add(id);
+                    addScore(10);
+                }
+            } else {
+                explanationBox.classList.add('bg-rose-100', 'dark:bg-rose-950/60', 'text-rose-900', 'dark:text-rose-200');
+                explanationBox.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> <span>Incorrect. Check the fact file above!</span>`;
+                playSound('wrong');
+            }
+        }
+
+        /* MODULE 4: Virtual Travel Information Desk Roleplay Data & Logic */
+        const roleplayScenarios = [
+            {
+                name: "Scenario 1: New York Desk",
+                agentName: "Agent Sarah (New York)",
+                prompts: [
+                    { q: "How far is New York from Washington D.C.?", a: "New York is about 360 kilometers from Washington D.C." },
+                    { q: "What is the temperature in New York today?", a: "Today in New York, the temperature is 18 degrees Celsius and pleasant." },
+                    { q: "How tall is the Statue of Liberty?", a: "The Statue of Liberty is 93 meters tall." }
+                ]
+            },
+            {
+                name: "Scenario 2: Sydney Desk",
+                agentName: "Agent Mark (Sydney)",
+                prompts: [
+                    { q: "How far is Sydney from Melbourne?", a: "Sydney is approximately 880 kilometers from Melbourne." },
+                    { q: "What is the temperature in Sydney today?", a: "Today in Sydney, it is warm at 26 degrees Celsius." },
+                    { q: "How tall is the Sydney Harbour Bridge?", a: "The Sydney Harbour Bridge is 134 meters high." }
+                ]
+            },
+            {
+                name: "Scenario 3: Cairo Desk",
+                agentName: "Agent Omar (Cairo)",
+                prompts: [
+                    { q: "How far is Cairo from Alexandria?", a: "Cairo is about 220 kilometers from Alexandria." },
+                    { q: "What is the temperature in Cairo today?", a: "In Cairo today, it is very hot at 35 degrees Celsius." },
+                    { q: "How tall is the Great Pyramid of Giza?", a: "The Great Pyramid is 138 meters tall." }
+                ]
+            }
+        ];
+
+        let currentScenarioIndex = 0;
+
+        function renderRoleplayScenario() {
+            const scen = roleplayScenarios[currentScenarioIndex];
+            document.getElementById('roleplay-scenario-tag').innerText = scen.name;
+
+            const chatBox = document.getElementById('roleplay-chat-box');
+            chatBox.innerHTML = `
+                <div class="text-xs text-slate-400 italic text-center pb-2 border-b border-slate-800">
+                    Welcome to ${scen.agentName}'s Information Desk. Select a question below to speak!
+                </div>
+            `;
+
+            const promptsContainer = document.getElementById('roleplay-prompts-container');
+            promptsContainer.innerHTML = '';
+
+            scen.prompts.forEach((p, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs text-left border border-teal-500/30 transition';
+                btn.innerHTML = `<i class="fa-solid fa-comment-dots text-amber-400 mr-1.5"></i> "${p.q}"`;
+                btn.onclick = () => playRoleplayExchange(p.q, p.a);
+                promptsContainer.appendChild(btn);
+            });
+        }
+
+        function selectRoleplayScenario(idx) {
+            playSound('tap');
+            currentScenarioIndex = idx;
+            document.querySelectorAll('.scen-btn').forEach((btn, i) => {
+                if (i === idx) {
+                    btn.className = 'scen-btn active-scen-btn px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-900 shrink-0';
+                } else {
+                    btn.className = 'scen-btn px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 shrink-0 hover:bg-slate-700';
+                }
+            });
+            renderRoleplayScenario();
+        }
+
+        function playRoleplayExchange(question, answer) {
+            const chatBox = document.getElementById('roleplay-chat-box');
+
+            const travelerMsg = document.createElement('div');
+            travelerMsg.className = 'flex items-start space-x-3 text-xs';
+            travelerMsg.innerHTML = `
+                <span class="p-1.5 bg-teal-600/30 text-teal-300 rounded-lg font-bold shrink-0">🧳 You:</span>
+                <span class="text-slate-200 font-semibold mt-0.5 font-bold text-sm">"${question}"</span>
+            `;
+            chatBox.appendChild(travelerMsg);
+
+            // Play Pitch 1.2 for Traveler
+            speakText(question, 1.2, () => {
+                setTimeout(() => {
+                    const agentMsg = document.createElement('div');
+                    agentMsg.className = 'flex items-start space-x-3 text-xs';
+                    agentMsg.innerHTML = `
+                        <span class="p-1.5 bg-amber-600/30 text-amber-300 rounded-lg font-bold shrink-0">💁 Agent:</span>
+                        <span class="text-amber-200 font-semibold mt-0.5 font-bold text-sm">"${answer}"</span>
+                    `;
+                    chatBox.appendChild(agentMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+
+                    // Play Pitch 0.9 for Agent
+                    speakText(answer, 0.9);
+                    addScore(5);
+                }, 400);
+            });
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        /* Modal & Print Functions */
+        function openCertificateModal() {
+            playSound('tap');
+            document.getElementById('certificate-modal').classList.remove('hidden');
+        }
+
+        function closeCertificateModal() {
+            playSound('tap');
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+
+        function triggerPrint() {
+            const name = document.getElementById('student-name-input').value;
+            document.getElementById('student-name-print').innerText = name;
+            window.print();
+        }
+
+        /* Confetti Effect */
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#22c55e', '#6366f1', '#facc15', '#f43f5e', '#3b82f6'];
+
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 4 + 2,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            let frame = 0;
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                });
+
+                frame++;
+                if (frame < 180) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+        }
+
+        /* Initial Load Initialization */
+        window.onload = function() {
+            renderModule1();
+            renderModule2();
+            renderModule3();
+            renderRoleplayScenario();
+        };
+    </script>
+</body>
+</html>
