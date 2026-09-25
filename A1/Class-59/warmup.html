@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoCompare: World Geography & Comparisons Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ocean: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0284c7', 600: '#0369a1', 700: '#075985' },
+                        emerald: { 500: '#10b981', 600: '#059669' },
+                        gold: { 400: '#facc15', 500: '#eab308' }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .gradient-header {
+            background: linear-gradient(135deg, #0369a1 0%, #059669 50%, #d97706 100%);
+        }
+
+        .gradient-card {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+
+        .dark .gradient-card {
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%);
+        }
+
+        /* Highlight animation for TTS text */
+        .tts-highlight {
+            background-color: #fef08a;
+            color: #854d0e;
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s ease;
+        }
+        .dark .tts-highlight {
+            background-color: #854d0e;
+            color: #fef08a;
+        }
+
+        /* Certificate Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-modal, #certificate-modal * {
+                visibility: visible;
+            }
+            #certificate-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(2, 132, 199, 0.4);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Canvas for Confetti -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="gradient-header text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- App Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-md shadow-inner">
+                        <i class="fa-solid me-1 fa-earth-americas text-2xl text-yellow-300 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-xl sm:text-2xl tracking-tight leading-none">GeoCompare</h1>
+                        <p class="text-xs text-sky-100 font-medium">World Geography & Comparisons Studio (A1 ESL)</p>
+                    </div>
+                </div>
+
+                <!-- Top Controls & Score Bar -->
+                <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                    <!-- Score Counter -->
+                    <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 flex items-center space-x-2">
+                        <i class="fa-solid fa-star text-yellow-300 text-base"></i>
+                        <span id="score-display" class="font-bold text-white text-base">0 / 120</span>
+                        <span class="text-xs text-sky-200">PTS</span>
+                    </div>
+
+                    <!-- Audio Speed Slider -->
+                    <div class="hidden md:flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20">
+                        <i class="fa-solid fa-gauge-high text-sky-200"></i>
+                        <label for="speed-slider" class="text-xs font-medium">Speed:</label>
+                        <input id="speed-slider" type="range" min="0.6" max="1.3" step="0.1" value="0.9" class="w-16 h-1.5 bg-sky-200 rounded-lg appearance-none cursor-pointer accent-yellow-400">
+                        <span id="speed-label" class="text-xs font-semibold w-8">0.9x</span>
+                    </div>
+
+                    <!-- Sound FX Toggle -->
+                    <button id="sfx-toggle" title="Toggle Sound FX" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all flex items-center space-x-1">
+                        <i id="sfx-icon" class="fa-solid fa-volume-high text-yellow-300"></i>
+                    </button>
+
+                    <!-- Dark/Light Theme Switcher -->
+                    <button id="theme-toggle" title="Toggle Dark/Light Mode" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all">
+                        <i id="theme-icon" class="fa-solid fa-moon text-yellow-300"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Overall Progress Bar -->
+            <div class="mt-3 pt-2 border-t border-white/20 flex items-center space-x-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-sky-100">Overall Progress</span>
+                <div class="flex-1 bg-black/20 rounded-full h-2.5 overflow-hidden">
+                    <div id="overall-progress-bar" class="bg-yellow-400 h-full rounded-full transition-all duration-500 w-0"></div>
+                </div>
+                <span id="overall-progress-text" class="text-xs font-bold text-yellow-300">0%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-[73px] sm:top-[77px] z-30">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 flex overflow-x-auto no-scrollbar py-2 gap-2">
+            <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn active-tab flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 transition-all">
+                <i class="fa-solid fa-spell-check text-sky-500"></i>
+                <span>1. Adjectives</span>
+            </button>
+            <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>2. Fact Checker</span>
+            </button>
+            <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-pen-to-square text-amber-500"></i>
+                <span>3. Sentence Studio</span>
+            </button>
+            <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn flex-1 min-w-[140px] px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <i class="fa-solid fa-trophy text-purple-500"></i>
+                <span>4. Quiz Master & Cert</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+
+        <!-- MODULE 1: Comparative Adjective Builder -->
+        <section id="mod1" class="tab-content space-y-6">
+            <!-- Instructions Banner -->
+            <div class="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-sky-600 dark:text-sky-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Grammar Rule Guide</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 1: Comparative Adjective Builder</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Learn how to change short adjectives into comparative forms (<span class="font-semibold text-sky-600 dark:text-sky-400">adjective + -er + than</span>). Pay attention to double consonants!
+                    </p>
+                </div>
+                <button onclick="speakText('Comparative adjectives compare two things. Add -e-r than to short adjectives. For short words with one vowel and one consonant, double the final letter. Example: Big becomes Bigger than.')" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 shrink-0">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>Read Rule Aloud</span>
+                </button>
+            </div>
+
+            <!-- Rules Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-start space-x-3">
+                    <div class="p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400 rounded-xl">
+                        <i class="fa-solid fa-plus text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Standard Rule: + -er than</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Add <strong>-er than</strong> to normal adjectives.</p>
+                        <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">cold → colder than | long → longer than</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-start space-x-3">
+                    <div class="p-3 bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400 rounded-xl">
+                        <i class="fa-solid fa-copy text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Double Consonant Rule</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Double the last letter if standard 1-vowel pattern.</p>
+                        <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1">big → big<strong>ger</strong> than | hot → hot<strong>ter</strong> than</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Adjective Practice Cards Grid -->
+            <div id="adj-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Rendered dynamically by JS -->
+            </div>
+        </section>
+
+        <!-- MODULE 2: True Geography Fact Checker -->
+        <section id="mod2" class="tab-content hidden space-y-6">
+            <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-globe"></i>
+                        <span>World Explorer Challenge</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 2: True Geography Fact Checker</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Read the geography facts below. Choose <span class="font-bold text-emerald-600">TRUE</span> or <span class="font-bold text-rose-600">FALSE</span> to test your world knowledge!
+                    </p>
+                </div>
+                <div class="text-xs font-semibold px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-lg">
+                    Score +10 PTS each
+                </div>
+            </div>
+
+            <!-- Fact Checker Cards Container -->
+            <div id="fact-checker-container" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Rendered dynamically by JS -->
+            </div>
+        </section>
+
+        <!-- MODULE 3: Sentence Completion Studio -->
+        <section id="mod3" class="tab-content hidden space-y-6">
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                        <span>Sentence Builder</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 3: Sentence Completion & Audio Studio</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Complete the comparative sentences using the comparative chips from the Word Bank below.
+                    </p>
+                </div>
+                <button onclick="resetSentenceStudio()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2 rounded-xl transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Reset Exercise</span>
+                </button>
+            </div>
+
+            <!-- Word Bank -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center space-x-2">
+                    <i class="fa-solid fa-shapes text-amber-500"></i>
+                    <span>Word Bank (Click chip to select active slot):</span>
+                </h3>
+                <div id="word-bank-chips" class="flex flex-wrap gap-2 sm:gap-3">
+                    <!-- Dynamic Chips -->
+                </div>
+            </div>
+
+            <!-- Sentences List -->
+            <div id="sentences-list" class="space-y-4">
+                <!-- Dynamic Sentences -->
+            </div>
+        </section>
+
+        <!-- MODULE 4: Quiz Master Simulator & Certificate Generator -->
+        <section id="mod4" class="tab-content hidden space-y-6">
+            <div class="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="inline-flex items-center space-x-2 text-purple-600 dark:text-purple-400 font-bold text-xs uppercase tracking-wide">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                        <span>Roleplay & Final Certificate</span>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Module 4: Geography Quiz Master Simulator</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">
+                        Practice dual-character dialogue with the Quiz Master and earn your printable official certificate!
+                    </p>
+                </div>
+                <button onclick="openCertificateModal()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition flex items-center space-x-2">
+                    <i class="fa-solid fa-award text-base"></i>
+                    <span>View Certificate</span>
+                </button>
+            </div>
+
+            <!-- Quiz Master Show Container -->
+            <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-700">
+                <!-- Stage Header -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                        <span class="font-extrabold tracking-wider uppercase text-xs text-rose-400">LIVE TV QUIZ STUDIO</span>
+                    </div>
+                    <div id="quiz-card-indicator" class="text-xs font-bold text-purple-300 bg-purple-900/60 px-3 py-1 rounded-full border border-purple-500/30">
+                        Question 1 of 6
+                    </div>
+                </div>
+
+                <!-- Characters Visual Area -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Quiz Master Host -->
+                    <div class="bg-slate-800/80 p-4 rounded-2xl border border-purple-500/30 flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-600/30 border border-purple-400/50 flex items-center justify-center text-3xl shrink-0">
+                            🎙️
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-purple-400 uppercase">Host</div>
+                            <div class="font-extrabold text-base text-white">Quiz Master</div>
+                            <p class="text-xs text-slate-400 mt-0.5">Pitch: Lower & Authoritative</p>
+                        </div>
+                    </div>
+
+                    <!-- Contestant -->
+                    <div class="bg-slate-800/80 p-4 rounded-2xl border border-emerald-500/30 flex items-center space-x-4">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-600/30 border border-emerald-400/50 flex items-center justify-center text-3xl shrink-0">
+                            🎓
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-emerald-400 uppercase">Contestant</div>
+                            <div class="font-extrabold text-base text-white">Geography Student</div>
+                            <p class="text-xs text-slate-400 mt-0.5">Pitch: Higher & Energetic</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Dialogue Display Box -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4 mb-6">
+                    <!-- Host Question -->
+                    <div class="space-y-1">
+                        <div class="text-xs font-bold text-purple-400 flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-question"></i>
+                            <span>Quiz Master Asks:</span>
+                        </div>
+                        <p id="qm-question-text" class="text-lg font-bold text-slate-100">
+                            "Which river is longer: the Nile or the Thames?"
+                        </p>
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-3 space-y-1">
+                        <div class="text-xs font-bold text-emerald-400 flex items-center space-x-2">
+                            <i class="fa-solid fa-comment-dots"></i>
+                            <span>Contestant Answers:</span>
+                        </div>
+                        <p id="qm-answer-text" class="text-base font-semibold text-emerald-300 italic">
+                            "The Nile is longer than the Thames."
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <button onclick="playQuizDialogue()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg transition flex items-center space-x-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Listen to Dual Dialogue</span>
+                    </button>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="prevQuizItem()" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <button onclick="nextQuizItem()" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CERTIFICATE MODAL -->
+    <div id="certificate-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl max-w-3xl w-full p-6 sm:p-10 shadow-2xl border-4 border-yellow-500/50 relative overflow-hidden my-auto max-h-[90vh] overflow-y-auto">
+            <!-- Close Button -->
+            <button onclick="closeCertificateModal()" class="no-print absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xl p-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Certificate Frame -->
+            <div class="border-2 border-dashed border-amber-400 p-6 sm:p-8 rounded-2xl text-center space-y-6 relative bg-gradient-to-b from-amber-50/50 to-white dark:from-slate-800/50 dark:to-slate-900">
+                <!-- Badge Emblem -->
+                <div class="mx-auto w-20 h-20 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-full flex items-center justify-center shadow-lg text-white text-3xl border-4 border-white dark:border-slate-800">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold uppercase tracking-widest text-amber-600 dark:text-amber-400">Certificate of Mastery</h2>
+                    <p class="text-xs sm:text-sm font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider mt-1">World Geography & Comparisons Studio (A1)</p>
+                </div>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300">This official certificate is proudly presented to:</p>
+
+                <!-- Student Name Input -->
+                <div class="max-w-md mx-auto">
+                    <input id="student-name-input" type="text" value="A1 Geography Student" class="no-print text-center font-extrabold text-2xl text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 bg-transparent focus:outline-none w-full py-1">
+                    <div id="student-name-print" class="hidden print:block font-extrabold text-3xl text-sky-600 dark:text-sky-400 border-b-2 border-sky-500 py-1">
+                        A1 Geography Student
+                    </div>
+                </div>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto">
+                    For successfully demonstrating excellence in forming English comparative adjectives, analyzing world geography facts, and completing interactive dialogue simulations!
+                </p>
+
+                <!-- Stats summary -->
+                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto pt-2">
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Total Score</div>
+                        <div id="cert-score" class="text-xl font-bold text-amber-500">120 PTS</div>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold">Issue Date</div>
+                        <div id="cert-date" class="text-xl font-bold text-sky-500">2026-09-24</div>
+                    </div>
+                </div>
+
+                <!-- Footer Signature -->
+                <div class="pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-between items-end text-left px-4">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase">Program</p>
+                        <p class="font-bold text-xs text-slate-700 dark:text-slate-300">GeoCompare Studio ESL</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-serif italic font-bold text-amber-600">GeoCompare Studio</div>
+                        <p class="text-[10px] text-slate-400 uppercase">Authorized Signature</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print Action Buttons -->
+            <div class="no-print mt-6 flex justify-end space-x-3">
+                <button onclick="closeCertificateModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 dark:text-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    Close
+                </button>
+                <button onclick="triggerPrint()" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Certificate</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Web Audio API Sound Synthesizer */
+        let audioCtx = null;
+        let sfxEnabled = true;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!sfxEnabled) return;
+            initAudioContext();
+            
+            try {
+                const now = audioCtx.currentTime;
+                
+                if (type === 'correct') {
+                    // Upward Arpeggio C5 -> E5 -> G5 -> C6
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = f;
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    // Descending Sawtooth Buzzer
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'tap') {
+                    // Soft Click
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'fanfare') {
+                    // Victory Fanfare
+                    const notes = [523.25, 659.25, 783.99, 1046.50, 880, 1046.50];
+                    const times = [0, 0.12, 0.24, 0.36, 0.52, 0.68];
+                    notes.forEach((f, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = f;
+                        gain.gain.setValueAtTime(0.2, now + times[i]);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + times[i] + 0.3);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + times[i]);
+                        osc.stop(now + times[i] + 0.35);
+                    });
+                }
+            } catch (e) {
+                console.warn('Audio playback glitch:', e);
+            }
+        }
+
+        /* Web Speech API TTS Integration */
+        let speechSynth = window.speechSynthesis;
+        let ttsRate = 0.9;
+
+        function speakText(text, pitch = 1.0, callback = null) {
+            if (!speechSynth) {
+                if (callback) callback();
+                return;
+            }
+            speechSynth.cancel(); // Stop current speech
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = ttsRate;
+            utterance.pitch = pitch;
+            utterance.lang = 'en-US';
+
+            if (callback) {
+                utterance.onend = callback;
+                utterance.onerror = callback;
+            }
+
+            speechSynth.speak(utterance);
+        }
+
+        /* Application State */
+        let state = {
+            score: 0,
+            mod1Completed: new Set(),
+            mod2Completed: new Set(),
+            mod3Completed: new Set(),
+            mod4Completed: new Set(),
+            selectedChip: null
+        };
+
+        // Date Setup
+        document.getElementById('cert-date').innerText = new Date().toISOString().split('T')[0];
+
+        // Theme Toggle Handler
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            playSound('tap');
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.className = 'fa-solid fa-moon text-yellow-300';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-yellow-300';
+            }
+        });
+
+        // Audio SFX Toggle
+        document.getElementById('sfx-toggle').addEventListener('click', () => {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfx-icon');
+            if (sfxEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-yellow-300';
+                playSound('tap');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-rose-300';
+            }
+        });
+
+        // Speech Rate Slider
+        const speedSlider = document.getElementById('speed-slider');
+        const speedLabel = document.getElementById('speed-label');
+        speedSlider.addEventListener('input', (e) => {
+            ttsRate = parseFloat(e.target.value);
+            speedLabel.innerText = ttsRate.toFixed(1) + 'x';
+        });
+
+        // Navigation Tab Switching
+        function switchTab(tabId) {
+            playSound('tap');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-sky-100', 'dark:bg-sky-900/50', 'text-sky-700', 'dark:text-sky-300', 'border-b-2', 'border-sky-500');
+            });
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.add('bg-sky-100', 'dark:bg-sky-900/50', 'text-sky-700', 'dark:text-sky-300', 'border-b-2', 'border-sky-500');
+        }
+
+        function addScore(points) {
+            state.score = Math.min(120, state.score + points);
+            document.getElementById('score-display').innerText = state.score + ' / 120';
+            document.getElementById('cert-score').innerText = state.score + ' PTS';
+            
+            const pct = Math.round((state.score / 120) * 100);
+            document.getElementById('overall-progress-bar').style.width = pct + '%';
+            document.getElementById('overall-progress-text').innerText = pct + '%';
+
+            if (pct === 100) {
+                triggerConfetti();
+                playSound('fanfare');
+            }
+        }
+
+        /* MODULE 1: Adjectives Data & Logic */
+        const adjectivesData = [
+            { base: 'big', comparative: 'bigger than', type: 'double', icon: 'fa-expand' },
+            { base: 'long', comparative: 'longer than', type: 'standard', icon: 'fa-ruler-horizontal' },
+            { base: 'high', comparative: 'higher than', type: 'standard', icon: 'fa-mountain' },
+            { base: 'cold', comparative: 'colder than', type: 'standard', icon: 'fa-snowflake' },
+            { base: 'hot', comparative: 'hotter than', type: 'double', icon: 'fa-fire' },
+            { base: 'deep', comparative: 'deeper than', type: 'standard', icon: 'fa-water' },
+            { base: 'small', comparative: 'smaller than', type: 'standard', icon: 'fa-compress' },
+            { base: 'warm', comparative: 'warmer than', type: 'standard', icon: 'fa-sun' }
+        ];
+
+        function renderModule1() {
+            const container = document.getElementById('adj-cards-container');
+            container.innerHTML = '';
+
+            adjectivesData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4 hover:shadow-md transition';
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-sky-600 dark:text-sky-400 font-bold">
+                            <i class="fa-solid ${item.icon}"></i>
+                            <span class="text-xs uppercase tracking-wider">Adjective ${index + 1}</span>
+                        </div>
+                        <button onclick="speakText('${item.base}')" class="text-slate-400 hover:text-sky-500 p-1 transition">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <div class="text-center py-2">
+                        <span class="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider">${item.base}</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400">Select Comparative:</label>
+                        <select id="adj-select-${index}" onchange="checkAdjAnswer(${index})" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="">-- Choose form --</option>
+                            <option value="${item.base}er than">${item.base}er than</option>
+                            <option value="${item.comparative}">${item.comparative}</option>
+                            <option value="${item.base}est than">${item.base}est than</option>
+                        </select>
+                    </div>
+
+                    <div id="adj-feedback-${index}" class="text-xs font-bold text-center h-5"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function checkAdjAnswer(index) {
+            const select = document.getElementById(`adj-select-${index}`);
+            const feedback = document.getElementById(`adj-feedback-${index}`);
+            const item = adjectivesData[index];
+
+            if (select.value === item.comparative) {
+                feedback.className = 'text-xs font-bold text-center text-emerald-500 flex items-center justify-center space-x-1';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Correct!</span>`;
+                playSound('correct');
+                speakText(item.comparative);
+
+                if (!state.mod1Completed.has(index)) {
+                    state.mod1Completed.add(index);
+                    addScore(5);
+                }
+            } else if (select.value !== "") {
+                feedback.className = 'text-xs font-bold text-center text-rose-500 flex items-center justify-center space-x-1';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> <span>Try again!</span>`;
+                playSound('wrong');
+            } else {
+                feedback.innerText = '';
+            }
+        }
+
+        /* MODULE 2: Fact Checker Data & Logic */
+        const factCheckerData = [
+            {
+                id: 0,
+                statement: "Asia is bigger than Europe.",
+                answer: true,
+                explanation: "TRUE! Asia is ~44.5 million km², while Europe is ~10.1 million km².",
+                badge: "🌏 Continents"
+            },
+            {
+                id: 1,
+                statement: "The Amazon River is shorter than the Seine River.",
+                answer: false,
+                explanation: "FALSE! The Amazon River (~6,400 km) is much longer than the Seine (~775 km)!",
+                badge: "🌊 Rivers"
+            },
+            {
+                id: 2,
+                statement: "Mount Everest is higher than Mount Kilimanjaro.",
+                answer: true,
+                explanation: "TRUE! Mount Everest is 8,849 meters high, while Kilimanjaro is 5,895 meters.",
+                badge: "🏔️ Mountains"
+            },
+            {
+                id: 3,
+                statement: "Antarctica is colder than Australia.",
+                answer: true,
+                explanation: "TRUE! Antarctica is the coldest continent on Earth, dropping below -80°C!",
+                badge: "❄️ Climate"
+            },
+            {
+                id: 4,
+                statement: "The Pacific Ocean is shallower than the Baltic Sea.",
+                answer: false,
+                explanation: "FALSE! The Pacific Ocean is much deeper (average ~4,000 meters deep) than the Baltic Sea (~55 meters deep).",
+                badge: "🌊 Oceans"
+            },
+            {
+                id: 5,
+                statement: "Canada is bigger than Mexico.",
+                answer: true,
+                explanation: "TRUE! Canada is the second-largest country in the world (~9.98 million km²), compared to Mexico (~1.96 million km²).",
+                badge: "🗺️ Countries"
+            }
+        ];
+
+        function renderModule2() {
+            const container = document.getElementById('fact-checker-container');
+            container.innerHTML = '';
+
+            factCheckerData.forEach((fact) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between';
+                
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                ${fact.badge}
+                            </span>
+                            <button onclick="speakText('${fact.statement}')" class="text-slate-400 hover:text-emerald-500 p-1 transition">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white leading-snug">
+                            "${fact.statement}"
+                        </h3>
+                    </div>
+
+                    <div id="fact-btn-group-${fact.id}" class="grid grid-cols-2 gap-3 pt-2">
+                        <button onclick="answerFact(${fact.id}, true)" class="py-2.5 rounded-xl border border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500 hover:text-white transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-check"></i>
+                            <span>TRUE</span>
+                        </button>
+                        <button onclick="answerFact(${fact.id}, false)" class="py-2.5 rounded-xl border border-rose-500 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-500 hover:text-white transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-xmark"></i>
+                            <span>FALSE</span>
+                        </button>
+                    </div>
+
+                    <div id="fact-explanation-${fact.id}" class="hidden p-3 rounded-xl text-xs font-semibold space-y-1"></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function answerFact(id, userChoice) {
+            const fact = factCheckerData.find(f => f.id === id);
+            const explanationBox = document.getElementById(`fact-explanation-${id}`);
+
+            explanationBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800');
+
+            if (userChoice === fact.answer) {
+                explanationBox.classList.add('bg-emerald-100', 'dark:bg-emerald-900/60', 'text-emerald-900', 'dark:text-emerald-200');
+                explanationBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> <span>${fact.explanation}</span>`;
+                playSound('correct');
+                speakText(fact.explanation);
+
+                if (!state.mod2Completed.has(id)) {
+                    state.mod2Completed.add(id);
+                    addScore(10);
+                }
+            } else {
+                explanationBox.classList.add('bg-rose-100', 'dark:bg-rose-900/60', 'text-rose-900', 'dark:text-rose-200');
+                explanationBox.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> <span>Incorrect. Try listening to the sentence again!</span>`;
+                playSound('wrong');
+            }
+        }
+
+        /* MODULE 3: Sentence Completion Studio Data & Logic */
+        const sentenceStudioData = [
+            { id: 0, textBefore: "Russia is", textAfter: "Brazil.", correct: "bigger than", hint: "Area comparison" },
+            { id: 1, textBefore: "The Nile River is", textAfter: "the Mississippi River.", correct: "longer than", hint: "Length comparison" },
+            { id: 2, textBefore: "Death Valley is", textAfter: "Chicago in July.", correct: "hotter than", hint: "Temperature comparison" },
+            { id: 3, textBefore: "Mount Fuji is", textAfter: "Mount Everest.", correct: "smaller than", hint: "Height/size comparison" },
+            { id: 4, textBefore: "The Atlantic Ocean is", textAfter: "the Caribbean Sea.", correct: "colder than", hint: "Water temperature" },
+            { id: 5, textBefore: "Italy is", textAfter: "Norway in winter.", correct: "warmer than", hint: "Climate comparison" }
+        ];
+
+        const wordBankOptions = ["bigger than", "longer than", "hotter than", "smaller than", "colder than", "warmer than"];
+
+        function renderModule3() {
+            // Render Chips
+            const chipsContainer = document.getElementById('word-bank-chips');
+            chipsContainer.innerHTML = '';
+            wordBankOptions.forEach(word => {
+                const chip = document.createElement('button');
+                chip.className = 'px-3.5 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/50 hover:bg-amber-200 text-amber-800 dark:text-amber-200 font-bold text-xs shadow-sm transition flex items-center space-x-1.5';
+                chip.innerHTML = `<i class="fa-solid fa-tag text-amber-500"></i><span>${word}</span>`;
+                chip.onclick = () => selectWordChip(word, chip);
+                chipsContainer.appendChild(chip);
+            });
+
+            // Render Sentences
+            const sentencesContainer = document.getElementById('sentences-list');
+            sentencesContainer.innerHTML = '';
+
+            sentenceStudioData.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4';
+                
+                card.innerHTML = `
+                    <div class="flex-1 flex flex-wrap items-center gap-2 text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100">
+                        <span class="text-xs font-bold text-slate-400 w-5">${item.id + 1}.</span>
+                        <span>${item.textBefore}</span>
+                        <button id="slot-${item.id}" onclick="fillSlot(${item.id})" class="min-w-[120px] px-3 py-1.5 rounded-xl border-2 border-dashed border-amber-400 bg-amber-50/50 dark:bg-amber-950/30 font-bold text-amber-600 dark:text-amber-400 text-center transition">
+                            [ Select ]
+                        </button>
+                        <span>${item.textAfter}</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button onclick="speakText('${item.textBefore} ${item.correct} ${item.textAfter}')" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-sky-500 transition" title="Listen Sentence">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <button onclick="checkSentence(${item.id})" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition">
+                            Check
+                        </button>
+                    </div>
+                `;
+                sentencesContainer.appendChild(card);
+            });
+        }
+
+        let currentActiveChip = null;
+
+        function selectWordChip(word, element) {
+            playSound('tap');
+            currentActiveChip = word;
+            document.querySelectorAll('#word-bank-chips button').forEach(b => b.classList.remove('ring-2', 'ring-amber-500', 'scale-105'));
+            element.classList.add('ring-2', 'ring-amber-500', 'scale-105');
+        }
+
+        function fillSlot(id) {
+            if (!currentActiveChip) {
+                speakText("Please select a word chip from the Word Bank first!");
+                return;
+            }
+            playSound('tap');
+            const slotBtn = document.getElementById(`slot-${id}`);
+            slotBtn.innerText = currentActiveChip;
+            slotBtn.dataset.value = currentActiveChip;
+        }
+
+        function checkSentence(id) {
+            const item = sentenceStudioData[id];
+            const slotBtn = document.getElementById(`slot-${id}`);
+            const val = slotBtn.dataset.value;
+
+            if (val === item.correct) {
+                slotBtn.className = 'min-w-[120px] px-3 py-1.5 rounded-xl border-2 border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60 font-bold text-emerald-700 dark:text-emerald-300 text-center';
+                playSound('correct');
+                speakText(`${item.textBefore} ${item.correct} ${item.textAfter}`);
+
+                if (!state.mod3Completed.has(id)) {
+                    state.mod3Completed.add(id);
+                    addScore(5);
+                }
+            } else {
+                slotBtn.className = 'min-w-[120px] px-3 py-1.5 rounded-xl border-2 border-rose-500 bg-rose-100 dark:bg-rose-900/60 font-bold text-rose-700 dark:text-rose-300 text-center';
+                playSound('wrong');
+            }
+        }
+
+        function resetSentenceStudio() {
+            playSound('tap');
+            currentActiveChip = null;
+            renderModule3();
+        }
+
+        /* MODULE 4: Quiz Master Data & Logic */
+        const quizMasterItems = [
+            {
+                q: "Which river is longer: the Nile or the Thames?",
+                a: "The Nile is longer than the Thames."
+            },
+            {
+                q: "Which place is colder: Greenland or Spain?",
+                a: "Greenland is colder than Spain."
+            },
+            {
+                q: "Which country is bigger: China or Japan?",
+                a: "China is bigger than Japan."
+            },
+            {
+                q: "Which mountain is higher: Mount Everest or Mount Fuji?",
+                a: "Mount Everest is higher than Mount Fuji."
+            },
+            {
+                q: "Which desert is hotter: the Sahara or the Gobi Desert in winter?",
+                a: "The Sahara is hotter than the Gobi Desert."
+            },
+            {
+                q: "Which ocean is deeper: the Pacific Ocean or the Arctic Ocean?",
+                a: "The Pacific Ocean is deeper than the Arctic Ocean."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+
+        function updateQuizUI() {
+            const item = quizMasterItems[currentQuizIndex];
+            document.getElementById('qm-question-text').innerText = `"${item.q}"`;
+            document.getElementById('qm-answer-text').innerText = `"${item.a}"`;
+            document.getElementById('quiz-card-indicator').innerText = `Question ${currentQuizIndex + 1} of ${quizMasterItems.length}`;
+
+            if (!state.mod4Completed.has(currentQuizIndex)) {
+                state.mod4Completed.add(currentQuizIndex);
+                addScore(5);
+            }
+        }
+
+        function nextQuizItem() {
+            playSound('tap');
+            currentQuizIndex = (currentQuizIndex + 1) % quizMasterItems.length;
+            updateQuizUI();
+        }
+
+        function prevQuizItem() {
+            playSound('tap');
+            currentQuizIndex = (currentQuizIndex - 1 + quizMasterItems.length) % quizMasterItems.length;
+            updateQuizUI();
+        }
+
+        function playQuizDialogue() {
+            const item = quizMasterItems[currentQuizIndex];
+            // Pitch 0.8 for Quiz Master (Lower pitch)
+            speakText(item.q, 0.8, () => {
+                // Pitch 1.3 for Student Contestant (Higher pitch)
+                setTimeout(() => {
+                    speakText(item.a, 1.3);
+                }, 400);
+            });
+        }
+
+        /* Modal & Certificate Functions */
+        function openCertificateModal() {
+            playSound('tap');
+            document.getElementById('certificate-modal').classList.remove('hidden');
+        }
+
+        function closeCertificateModal() {
+            playSound('tap');
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+
+        function triggerPrint() {
+            const name = document.getElementById('student-name-input').value;
+            document.getElementById('student-name-print').innerText = name;
+            window.print();
+        }
+
+        /* Confetti Effect */
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#0284c7', '#10b981', '#facc15', '#f43f5e', '#a855f7'];
+
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 4 + 2,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            let frame = 0;
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                });
+
+                frame++;
+                if (frame < 180) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+        }
+
+        /* Initial Setup */
+        window.onload = function() {
+            renderModule1();
+            renderModule2();
+            renderModule3();
+            updateQuizUI();
+        };
+    </script>
+</body>
+</html>
