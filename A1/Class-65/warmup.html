@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Message Center Studio: Voicemails & Text Auto-Replies</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Phone Screen visual effects */
+    .phone-screen {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Audio waveform animation */
+    .wave-bar {
+      animation: wavePulse 1.2s infinite ease-in-out;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.3s; }
+
+    @keyframes wavePulse {
+      0%, 100% { height: 8px; }
+      50% { height: 28px; }
+    }
+
+    /* Print styles */
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+      #printable-certificate {
+        border: 8px double #0d9488 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <header class="no-print sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 via-sky-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md">
+          📱
+        </div>
+        <div>
+          <h1 class="text-lg font-black bg-gradient-to-r from-teal-600 via-sky-600 to-indigo-600 dark:from-teal-400 dark:to-indigo-400 bg-clip-text text-transparent">
+            Message Center Studio
+          </h1>
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400">Voicemails & Text Auto-Replies (A1)</p>
+        </div>
+      </div>
+
+      <!-- Gamification Stats & Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-extrabold" title="Current Streak">
+          <span>🔥</span>
+          <span id="streak-counter">1 Day</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-xs font-extrabold" title="Experience Points">
+          <span>⚡</span>
+          <span id="xp-counter">0 XP</span>
+        </div>
+
+        <button id="speed-btn" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-extrabold transition-all" title="TTS Voice Speed">
+          🗣️ <span id="speed-label">1.0x</span>
+        </button>
+
+        <button id="sfx-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle Sound Effects">
+          <span id="sfx-icon">🔊</span>
+        </button>
+
+        <button id="theme-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Toggle Dark/Light Mode">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+        <button id="badges-btn" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center text-sm transition-all" title="Achievements">
+          <span>🏆</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="max-w-6xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
+      <button class="nav-btn active px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all bg-teal-600 text-white shadow-sm flex items-center gap-2" onclick="switchTab('matcher', this)">
+        <span>🧩</span> 1. Phrase Matcher
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('builder', this)">
+        <span>✍️</span> 2. Text & Voicemail Builder
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('responder', this)">
+        <span>🎯</span> 3. Situation Responder
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('simulator', this)">
+        <span>📲</span> 4. Phone Simulator
+      </button>
+      <button class="nav-btn px-4 py-2 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 whitespace-nowrap transition-all flex items-center gap-2" onclick="switchTab('certificate', this)">
+        <span>📜</span> 5. Passport & Certificate
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6">
+
+    <section id="module-matcher" class="tab-content active space-y-6">
+      <div class="bg-gradient-to-r from-teal-500 via-sky-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 1</span>
+          <h2 class="text-2xl font-black">Messaging Phrase Matcher</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Match each English messaging phrase with its correct communicative function. Tap 🔊 to listen to native pronunciation!
+          </p>
+        </div>
+        <button onclick="resetMatcher()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 font-extrabold text-xs transition-all backdrop-blur-sm flex items-center gap-2">
+          🔄 Reset Matcher
+        </button>
+      </div>
+
+      <!-- Matcher Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Column 1: Phrases -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Messaging Expressions</h3>
+          <div id="phrases-list" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Column 2: Functions -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Communicative Purpose</h3>
+          <div id="functions-list" class="space-y-2.5">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="module-builder" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-sky-500 to-teal-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 2</span>
+          <h2 class="text-2xl font-black">Voicemail & Quick Text Builder</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Complete the voicemails and text messages by choosing the correct words from the word bank chips.
+          </p>
+        </div>
+        <button onclick="checkBuilder()" class="px-5 py-2.5 rounded-xl bg-white text-teal-700 hover:bg-teal-50 font-black text-xs transition-all shadow-md flex items-center gap-2">
+          ✅ Check Answers
+        </button>
+      </div>
+
+      <!-- Word Bank Chips -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Word Bank Chips</h3>
+        <div id="builder-word-bank" class="flex flex-wrap gap-2.5 min-h-[40px] items-center">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Gap Fill Prompts -->
+      <div id="builder-prompts" class="space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="module-responder" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 3</span>
+          <h2 class="text-2xl font-black">Missed Call Situation Responder</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Read each real-world situation and select the best automatic or quick reply text message to send.
+          </p>
+        </div>
+      </div>
+
+      <div id="scenarios-container" class="space-y-6">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <section id="module-simulator" class="tab-content space-y-6">
+      <div class="bg-gradient-to-r from-teal-600 via-indigo-600 to-sky-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 4</span>
+          <h2 class="text-2xl font-black">Interactive Phone & Voicemail Studio</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Experience realistic missed calls and voicemails. Listen to incoming messages and generate appropriate SMS auto-replies!
+          </p>
+        </div>
+      </div>
+
+      <!-- Smartphone Layout Container -->
+      <div class="max-w-md mx-auto bg-slate-900 rounded-[40px] p-4 p-md-5 border-4 border-slate-700 phone-screen shadow-2xl text-slate-100">
+        
+        <!-- Phone Top Bar Notch -->
+        <div class="flex justify-between items-center text-[11px] font-bold px-4 pt-1 pb-3 text-slate-400">
+          <span>9:41 AM</span>
+          <div class="w-20 h-4 bg-slate-800 rounded-full flex items-center justify-center">
+            <div class="w-3 h-3 rounded-full bg-slate-900"></div>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>📶</span> <span>🔋</span>
+          </div>
+        </div>
+
+        <!-- Phone Screen Content -->
+        <div class="bg-slate-800 rounded-[28px] p-4 min-h-[460px] flex flex-col justify-between border border-slate-700/60 space-y-4">
+          
+          <!-- Incoming Voicemail Player Card -->
+          <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div id="sim-avatar" class="w-10 h-10 rounded-full bg-teal-500 text-white flex items-center justify-center font-black text-sm">
+                  👨‍💼
+                </div>
+                <div>
+                  <h4 id="sim-caller-name" class="font-extrabold text-sm">Mark (Project Partner)</h4>
+                  <p id="sim-call-type" class="text-[10px] text-teal-400 font-semibold">📼 New Voicemail (0:14)</p>
+                </div>
+              </div>
+              <button onclick="playVoicemailAudio()" class="w-10 h-10 rounded-full bg-teal-500 hover:bg-teal-400 text-white flex items-center justify-center transition-all shadow-md">
+                ▶️
+              </button>
+            </div>
+
+            <!-- Waveform Animation Display -->
+            <div id="waveform-box" class="hidden bg-slate-950 p-2.5 rounded-xl flex items-center justify-center gap-1.5 h-10">
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+              <div class="w-1.5 bg-teal-400 rounded-full wave-bar"></div>
+            </div>
+
+            <p id="sim-transcript" class="text-xs text-slate-300 italic bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+              "Hi! This is Mark. I'm calling about our project meeting today. Please call me back when you get this!"
+            </p>
+          </div>
+
+          <!-- SMS Thread Window -->
+          <div id="sms-thread" class="flex-1 overflow-y-auto space-y-2.5 p-1 max-h-[160px] text-xs">
+            <div class="bg-slate-700/60 p-2.5 rounded-2xl rounded-tl-none max-w-[85%] text-slate-200">
+              [Missed Call from Mark at 9:38 AM]
+            </div>
+            <!-- Dynamic SMS messages populate here -->
+          </div>
+
+          <!-- Interactive Reply Panel -->
+          <div class="space-y-2 pt-2 border-t border-slate-700/80">
+            <label class="block text-[11px] font-black text-slate-400 uppercase tracking-wider">Select or Type Quick SMS Auto-Reply:</label>
+            
+            <div class="space-y-1.5">
+              <button onclick="sendSimReply('Sorry I missed your call! I was driving. Can I call you back at 5:00 PM?')" class="w-full text-left p-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-[11px] font-bold text-teal-300 transition-all border border-slate-600/50">
+                💬 "Sorry I missed your call! I was driving..."
+              </button>
+              <button onclick="sendSimReply('Hi Mark! I am in a meeting right now. Will text you later.')" class="w-full text-left p-2 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-[11px] font-bold text-teal-300 transition-all border border-slate-600/50">
+                💬 "Hi Mark! I am in a meeting right now..."
+              </button>
+            </div>
+
+            <!-- Custom Input Field -->
+            <div class="flex gap-1.5 pt-1">
+              <input type="text" id="sim-custom-input" placeholder="Type custom SMS..." class="flex-1 px-3 py-2 rounded-xl bg-slate-950 text-xs text-slate-100 border border-slate-700 focus:outline-none focus:border-teal-400">
+              <button onclick="sendCustomSimReply()" class="px-3 py-2 rounded-xl bg-teal-500 hover:bg-teal-400 text-white text-xs font-extrabold transition-all">
+                Send
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <section id="module-certificate" class="tab-content space-y-6">
+      <div class="no-print bg-gradient-to-r from-teal-500 via-sky-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider mb-2">Module 5</span>
+          <h2 class="text-2xl font-black">Learner Passport & Certificate</h2>
+          <p class="text-sm opacity-90 mt-1 max-w-xl">
+            Review your learning achievements, enter your official name, and print your A1 Message Center Certificate!
+          </p>
+        </div>
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-white text-teal-800 hover:bg-teal-50 font-black text-xs transition-all shadow-md flex items-center gap-2">
+          🖨️ Print Certificate
+        </button>
+      </div>
+
+      <!-- Learner Name Card -->
+      <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learner Full Name</label>
+        <input type="text" id="student-name-input" value="A1 English Learner" oninput="updateStudentName()" class="w-full max-w-md px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+      </div>
+
+      <!-- Printable Certificate Card -->
+      <div id="printable-certificate" class="bg-white text-slate-900 border-8 double border-teal-600 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden space-y-6">
+        <div class="space-y-1">
+          <span class="text-xs font-black tracking-widest uppercase text-teal-600">Official Competency Award</span>
+          <h2 class="text-3xl md:text-4xl font-black uppercase text-slate-900 tracking-tight">Certificate of Completion</h2>
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">A1 English: Voicemails & Text Auto-Replies</p>
+        </div>
+
+        <div class="py-4 space-y-2">
+          <p class="text-xs text-slate-500 italic font-semibold">This certificate is proudly awarded to:</p>
+          <div id="cert-name-display" class="text-3xl md:text-4xl font-black text-teal-700 border-b-2 border-teal-500 inline-block px-8 py-1">
+            A1 English Learner
+          </div>
+        </div>
+
+        <p class="max-w-xl mx-auto text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
+          For successfully mastering functional A1 communication skills for leaving voicemails, handling missed calls, selecting context-appropriate quick text auto-replies, and interacting with phone audio simulators.
+        </p>
+
+        <!-- Badges Grid Display -->
+        <div id="cert-badges-grid" class="flex flex-wrap justify-center gap-3 py-2">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div class="flex justify-between items-end pt-8 border-t border-slate-200 text-xs font-bold text-slate-500">
+          <div class="text-left">
+            <p class="text-teal-600 font-black">Message Center Studio</p>
+            <p id="cert-date-display">Date: Sep 2026</p>
+          </div>
+          <div class="text-right">
+            <p>Earned XP: <span id="cert-xp-display" class="text-emerald-600 font-black">0 XP</span></p>
+            <p>Status: Certified A1 Communicator</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Achievements Modal -->
+  <div id="badges-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="font-black text-lg">Unlocked Achievements</h3>
+        <button onclick="toggleBadgesModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-sm">✕</button>
+      </div>
+      <div id="modal-badges-list" class="space-y-3">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSynthSound(type) {
+      if (!state.sfxEnabled) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'pop') {
+          osc.frequency.setValueAtTime(400, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(freq, now + idx * 0.1);
+            g.gain.setValueAtTime(0.08, now + idx * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+            o.start(now + idx * 0.1);
+            o.stop(now + idx * 0.1 + 0.25);
+          });
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
+    function speakText(text, pitch = 1.0, callback = null) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = state.ttsSpeed;
+      utterance.pitch = pitch;
+      utterance.lang = 'en-US';
+      if (callback) utterance.onend = callback;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    const state = {
+      xp: 0,
+      streak: 1,
+      sfxEnabled: true,
+      ttsSpeed: 1.0,
+      studentName: 'A1 English Learner',
+
+      // Module 1 Data
+      matcherItems: [
+        { id: 1, phrase: "Hi, this is Alex. Please leave a message after the beep.", funcId: 'greeting' },
+        { id: 2, phrase: "Sorry I missed your call! I was driving.", funcId: 'reason_missed' },
+        { id: 3, phrase: "Please call me back when you get this message.", funcId: 'callback_req' },
+        { id: 4, phrase: "I'm calling about our English class homework.", funcId: 'reason_calling' },
+        { id: 5, phrase: "Can we speak at 6:00 PM instead?", funcId: 'new_time' }
+      ],
+      functionsList: [
+        { id: 'greeting', label: "Standard automatic voicemail greeting" },
+        { id: 'reason_missed', label: "Explaining why you didn't answer" },
+        { id: 'callback_req', label: "Asking someone to phone you later" },
+        { id: 'reason_calling', label: "Stating the reason for calling" },
+        { id: 'new_time', label: "Suggesting a new time to talk" }
+      ],
+      selectedPhraseId: null,
+      selectedFuncId: null,
+      matches: {},
+
+      // Module 2 Data
+      builderPrompts: [
+        { id: 1, text: "Hi Sarah! Sorry I _____ your call. I was in a meeting.", ans: "missed", hint: "Verb for not answering a phone call" },
+        { id: 2, text: "Hello Mark, _____ Daniel. I'm calling about our weekend plans.", ans: "this is", hint: "Standard telephone introduction phrase" },
+        { id: 3, text: "I can't answer right now because I'm _____. Can I call you later?", ans: "busy", hint: "Adjective when having no free time" },
+        { id: 4, text: "Hi Mom! I arrived safely. Please _____ when you see this message.", ans: "call me back", hint: "Request to return a phone call" }
+      ],
+      builderBank: ["missed", "this is", "busy", "call me back", "later"],
+      builderAnswers: {},
+
+      // Module 3 Data
+      scenarios: [
+        {
+          id: 1,
+          title: "Situation A: Homework Help",
+          context: "You called your classmate to ask about today's English homework, but they didn't answer.",
+          options: [
+            { text: "Hi! I tried calling you. What is the homework for English class today?", correct: true, explain: "Directly explains why you called." },
+            { text: "Sorry I missed your call! I was in an exam.", correct: false, explain: "Incorrect. You were the caller, not the recipient." }
+          ]
+        },
+        {
+          id: 2,
+          title: "Situation B: Call During Exam",
+          context: "Your coworker called you while you were taking a final exam.",
+          options: [
+            { text: "Hey! I'm on my way, but traffic is heavy.", correct: false, explain: "Irrelevant context." },
+            { text: "Sorry I missed your call! I was in an exam. What's up?", correct: true, explain: "Politely explains why you didn't pick up." }
+          ]
+        },
+        {
+          id: 3,
+          title: "Situation C: Running Late",
+          context: "You are running 15 minutes late to meet your friend at a cafe due to heavy traffic.",
+          options: [
+            { text: "Hey! I'm on my way, but traffic is heavy. I'll be 15 minutes late!", correct: true, explain: "Informs your friend of delay." },
+            { text: "Please leave a message after the beep.", correct: false, explain: "This is a voicemail greeting." }
+          ]
+        }
+      ],
+      scenarioAnswers: {},
+
+      // Badges
+      badges: [
+        { id: 'phrase_pro', name: 'Phrase Pro', desc: 'Matched all messaging expressions correctly', icon: '🧩', unlocked: false },
+        { id: 'quick_builder', name: 'Quick Builder', desc: 'Completed all voicemail gap-fill messages', icon: '✍️', unlocked: false },
+        { id: 'smart_responder', name: 'Smart Responder', desc: 'Selected correct auto-replies for missed call situations', icon: '🎯', unlocked: false },
+        { id: 'phone_master', name: 'Phone Master', desc: 'Interacted with voicemail simulator & sent custom replies', icon: '📲', unlocked: false }
+      ]
+    };
+
+    function addRewards(xpGained) {
+      state.xp += xpGained;
+      document.getElementById('xp-counter').innerText = `${state.xp} XP`;
+      document.getElementById('cert-xp-display').innerText = `${state.xp} XP`;
+      playSynthSound('pop');
+    }
+
+    function unlockBadge(badgeId) {
+      const b = state.badges.find(x => x.id === badgeId);
+      if (b && !b.unlocked) {
+        b.unlocked = true;
+        playSynthSound('fanfare');
+        triggerConfetti();
+        renderBadges();
+      }
+    }
+
+    function renderBadges() {
+      const modalList = document.getElementById('modal-badges-list');
+      const certGrid = document.getElementById('cert-badges-grid');
+      modalList.innerHTML = '';
+      certGrid.innerHTML = '';
+
+      state.badges.forEach(b => {
+        // Modal item
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl border flex items-center justify-between gap-3 ${b.unlocked ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-800' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 opacity-60'}`;
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${b.icon}</span>
+            <div>
+              <h4 class="text-xs font-black">${b.name}</h4>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">${b.desc}</p>
+            </div>
+          </div>
+          <span class="text-xs font-black">${b.unlocked ? '✅' : '🔒'}</span>
+        `;
+        modalList.appendChild(div);
+
+        // Certificate badge item
+        if (b.unlocked) {
+          const cBadge = document.createElement('div');
+          cBadge.className = 'px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-300 text-teal-800 text-xs font-black flex items-center gap-1.5';
+          cBadge.innerHTML = `<span>${b.icon}</span> <span>${b.name}</span>`;
+          certGrid.appendChild(cBadge);
+        }
+      });
+    }
+
+    function renderMatcherModule() {
+      const pList = document.getElementById('phrases-list');
+      const fList = document.getElementById('functions-list');
+      pList.innerHTML = '';
+      fList.innerHTML = '';
+
+      state.matcherItems.forEach(item => {
+        const isMatched = !!state.matches[item.id];
+        const isSelected = state.selectedPhraseId === item.id;
+
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between gap-2 cursor-pointer ${
+          isMatched 
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' 
+            : (isSelected ? 'bg-teal-500 text-white border-teal-600 shadow-md ring-2 ring-teal-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-400')
+        }`;
+        
+        card.innerHTML = `
+          <div class="flex items-center gap-2">
+            <button onclick="event.stopPropagation(); speakText('${item.phrase.replace(/'/g, "\\'")}')" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300">🔊</button>
+            <span>"${item.phrase}"</span>
+          </div>
+          ${isMatched ? '<span>✅</span>' : ''}
+        `;
+        card.onclick = () => {
+          if (isMatched) return;
+          state.selectedPhraseId = item.id;
+          playSynthSound('pop');
+          renderMatcherModule();
+        };
+        pList.appendChild(card);
+      });
+
+      // Render Functions
+      state.functionsList.forEach(f => {
+        const matchedItem = Object.values(state.matches).find(m => m.funcId === f.id);
+        const isMatched = !!matchedItem;
+
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between gap-2 cursor-pointer ${
+          isMatched 
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' 
+            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+        }`;
+
+        card.innerHTML = `
+          <span>${f.label}</span>
+          ${isMatched ? '<span>✅</span>' : ''}
+        `;
+        card.onclick = () => {
+          if (isMatched || !state.selectedPhraseId) return;
+          
+          const pItem = state.matcherItems.find(x => x.id === state.selectedPhraseId);
+          if (pItem.funcId === f.id) {
+            playSynthSound('correct');
+            state.matches[pItem.id] = f;
+            addRewards(10);
+            state.selectedPhraseId = null;
+          } else {
+            playSynthSound('wrong');
+          }
+
+          renderMatcherModule();
+
+          if (Object.keys(state.matches).length === state.matcherItems.length) {
+            unlockBadge('phrase_pro');
+          }
+        };
+        fList.appendChild(card);
+      });
+    }
+
+    function resetMatcher() {
+      state.matches = {};
+      state.selectedPhraseId = null;
+      renderMatcherModule();
+    }
+
+    function renderBuilderModule() {
+      const bankContainer = document.getElementById('builder-word-bank');
+      const promptsContainer = document.getElementById('builder-prompts');
+      bankContainer.innerHTML = '';
+      promptsContainer.innerHTML = '';
+
+      state.builderBank.forEach(word => {
+        const chip = document.createElement('button');
+        chip.className = 'px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-teal-500 hover:text-white border border-slate-200 dark:border-slate-600 text-xs font-extrabold transition-all';
+        chip.innerText = word;
+        chip.onclick = () => speakText(word);
+        bankContainer.appendChild(chip);
+      });
+
+      state.builderPrompts.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3';
+
+        const filledVal = state.builderAnswers[p.id] || '';
+        const promptParts = p.text.split('_____');
+
+        div.innerHTML = `
+          <div class="text-xs font-extrabold leading-relaxed flex flex-wrap items-center gap-2">
+            <span>${promptParts[0]}</span>
+            <select onchange="handleBuilderSelect(${p.id}, this.value)" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-extrabold text-xs text-teal-600 dark:text-teal-400 focus:outline-none">
+              <option value="">-- Choose Word --</option>
+              ${state.builderBank.map(w => `<option value="${w}" ${filledVal === w ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+            <span>${promptParts[1] || ''}</span>
+            <button onclick="speakText('${p.text.replace(/_____/g, filledVal || 'blank').replace(/'/g, "\\'")}')" class="px-2 py-1 text-xs font-extrabold text-slate-400 hover:text-slate-700">🔊 Listen</button>
+          </div>
+          <p class="text-[10px] font-bold text-slate-400">💡 Hint: ${p.hint}</p>
+        `;
+        promptsContainer.appendChild(div);
+      });
+    }
+
+    function handleBuilderSelect(id, value) {
+      state.builderAnswers[id] = value;
+      playSynthSound('pop');
+    }
+
+    function checkBuilder() {
+      let correctCount = 0;
+      state.builderPrompts.forEach(p => {
+        if (state.builderAnswers[p.id] === p.ans) correctCount++;
+      });
+
+      if (correctCount === state.builderPrompts.length) {
+        playSynthSound('correct');
+        addRewards(25);
+        unlockBadge('quick_builder');
+      } else {
+        playSynthSound('wrong');
+      }
+    }
+
+    function renderResponderModule() {
+      const container = document.getElementById('scenarios-container');
+      container.innerHTML = '';
+
+      state.scenarios.forEach(sc => {
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4';
+
+        const chosenIdx = state.scenarioAnswers[sc.id];
+
+        let optionsHTML = '';
+        sc.options.forEach((opt, idx) => {
+          const isChosen = chosenIdx === idx;
+          const isRight = isChosen && opt.correct;
+
+          optionsHTML += `
+            <button onclick="handleScenarioChoice(${sc.id}, ${idx})" class="w-full p-3.5 rounded-xl border text-xs font-bold transition-all text-left space-y-1 ${
+              isChosen 
+                ? (isRight ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-rose-500 text-white border-rose-600') 
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+            }">
+              <div class="flex items-center justify-between">
+                <span>💬 "${opt.text}"</span>
+                ${isChosen ? (isRight ? '<span>✅</span>' : '<span>❌</span>') : ''}
+              </div>
+              ${isChosen ? `<p class="text-[10px] opacity-90 font-semibold">${opt.explain}</p>` : ''}
+            </button>
+          `;
+        });
+
+        card.innerHTML = `
+          <div>
+            <h3 class="font-black text-sm text-teal-600 dark:text-teal-400">${sc.title}</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${sc.context}</p>
+          </div>
+          <div class="space-y-2">${optionsHTML}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function handleScenarioChoice(scId, optIdx) {
+      state.scenarioAnswers[scId] = optIdx;
+      const sc = state.scenarios.find(x => x.id === scId);
+      
+      if (sc.options[optIdx].correct) {
+        playSynthSound('correct');
+        addRewards(15);
+      } else {
+        playSynthSound('wrong');
+      }
+
+      renderResponderModule();
+
+      const totalCorrect = state.scenarios.filter(s => {
+        const cIdx = state.scenarioAnswers[s.id];
+        return cIdx !== undefined && s.options[cIdx].correct;
+      }).length;
+
+      if (totalCorrect === state.scenarios.length) {
+        unlockBadge('smart_responder');
+      }
+    }
+
+    function playVoicemailAudio() {
+      const waveBox = document.getElementById('waveform-box');
+      waveBox.classList.remove('hidden');
+
+      const transcript = document.getElementById('sim-transcript').innerText;
+      speakText(transcript, 0.9, () => {
+        waveBox.classList.add('hidden');
+      });
+    }
+
+    function sendSimReply(text) {
+      playSynthSound('pop');
+      const thread = document.getElementById('sms-thread');
+      
+      const msg = document.createElement('div');
+      msg.className = 'bg-teal-600 text-white p-2.5 rounded-2xl rounded-tr-none max-w-[85%] ml-auto font-extrabold text-[11px] shadow-sm';
+      msg.innerText = text;
+      thread.appendChild(msg);
+      thread.scrollTop = thread.scrollHeight;
+
+      speakText(text, 1.1);
+      addRewards(10);
+      unlockBadge('phone_master');
+    }
+
+    function sendCustomSimReply() {
+      const input = document.getElementById('sim-custom-input');
+      if (!input.value.trim()) return;
+      sendSimReply(input.value.trim());
+      input.value = '';
+    }
+
+    function updateStudentName() {
+      const val = document.getElementById('student-name-input').value;
+      state.studentName = val || 'A1 English Learner';
+      document.getElementById('cert-name-display').innerText = state.studentName;
+    }
+
+    function switchTab(tabId, btnEl) {
+      playSynthSound('pop');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+        el.classList.add('text-slate-500', 'dark:text-slate-400');
+      });
+
+      document.getElementById(`module-${tabId}`).classList.add('active');
+      btnEl.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+      btnEl.classList.remove('text-slate-500', 'dark:text-slate-400');
+    }
+
+    function toggleBadgesModal() {
+      playSynthSound('pop');
+      const modal = document.getElementById('badges-modal');
+      modal.classList.toggle('opacity-0');
+      modal.classList.toggle('pointer-events-none');
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0d9488', '#0284c7', '#f59e0b', '#6366f1', '#ec4899'];
+
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 4,
+          size: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 80
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.life > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.15;
+            p.life -= 1.5;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+        if (active) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    window.onload = function() {
+      // Speed toggle
+      document.getElementById('speed-btn').addEventListener('click', () => {
+        if (state.ttsSpeed === 1.0) state.ttsSpeed = 0.8;
+        else if (state.ttsSpeed === 0.8) state.ttsSpeed = 1.2;
+        else state.ttsSpeed = 1.0;
+        document.getElementById('speed-label').innerText = `${state.ttsSpeed}x`;
+        playSynthSound('pop');
+      });
+
+      // SFX toggle
+      document.getElementById('sfx-btn').addEventListener('click', () => {
+        state.sfxEnabled = !state.sfxEnabled;
+        document.getElementById('sfx-icon').innerText = state.sfxEnabled ? '🔊' : '🔇';
+      });
+
+      // Dark theme toggle
+      document.getElementById('theme-btn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+      });
+
+      // Badges button
+      document.getElementById('badges-btn').addEventListener('click', toggleBadgesModal);
+
+      // Set Date
+      const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      document.getElementById('cert-date-display').innerText = `Date: ${dateStr}`;
+
+      // Initial Renders
+      renderMatcherModule();
+      renderBuilderModule();
+      renderResponderModule();
+      renderBadges();
+    };
+  </script>
+</body>
+</html>
