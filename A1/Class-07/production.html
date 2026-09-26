@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShiftSync - Job & Routine Validator (A1 ESL)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .card-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- TOP BAR & TIMER HUD -->
+  <header class="bg-slate-800/90 border-b border-slate-700 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 text-white p-2.5 rounded-xl font-bold shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-business-time text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg text-white leading-tight">ShiftSync</h1>
+          <p class="text-xs text-indigo-400 font-medium">A1 Work & Routine Verification Activity</p>
+        </div>
+      </div>
+
+      <!-- TIMER HUD -->
+      <div class="flex items-center bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700 space-x-4">
+        <div class="text-right">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold block" id="phase-label">Activity Phase</span>
+          <span class="text-sm font-semibold text-indigo-300" id="phase-name">01. Setup & Job Cards</span>
+        </div>
+        <div class="text-2xl font-black font-mono text-amber-400 bg-slate-950 px-3 py-1 rounded-lg border border-amber-500/30" id="timer-display">10:00</div>
+        <button id="btn-timer-toggle" onclick="toggleTimer()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition">
+          <i class="fa-solid fa-play" id="timer-icon"></i> Start
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full flex flex-col gap-6">
+
+    <!-- STEP NAVIGATION TABS -->
+    <div class="grid grid-cols-3 gap-2 bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700 text-sm font-semibold">
+      <button onclick="switchTab('setup')" id="tab-setup" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md">
+        <i class="fa-solid fa-user-gear"></i> <span>1. Role Setup</span>
+      </button>
+      <button onclick="switchTab('verification')" id="tab-verification" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-clipboard-check"></i> <span>2. Live Verification (20 Prompts)</span>
+      </button>
+      <button onclick="switchTab('report')" id="tab-report" class="py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-file-contract"></i> <span>3. Shift Match Report</span>
+      </button>
+    </div>
+
+    <!-- SECTION 1: SETUP & ROLE SELECTION -->
+    <section id="sec-setup" class="space-y-6">
+      <div class="bg-gradient-to-r from-indigo-900/40 to-slate-800 border border-indigo-500/30 p-6 rounded-2xl">
+        <h2 class="text-xl font-bold text-indigo-300 mb-2"><i class="fa-solid fa-handshake text-indigo-400 mr-2"></i> Activity Scenario</h2>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          You are arranging paired work shifts for your company. You must interview your partner to <strong>validate their job title</strong>, <strong>describe daily schedules</strong>, and <strong>confirm routine time details</strong> using A1 time expressions (<em>at, in, on, by, from... to</em>).
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- ROLE SELECTOR -->
+        <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl space-y-4">
+          <h3 class="font-bold text-indigo-400 flex items-center gap-2">
+            <i class="fa-solid fa-users"></i> Choose Your Starting Role
+          </h3>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="role" value="A" checked onchange="updateRoleUI()" class="peer hidden">
+              <div class="p-4 rounded-xl border border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/50 bg-slate-900 text-center space-y-2 card-transition">
+                <i class="fa-solid fa-user-tie text-2xl text-indigo-400"></i>
+                <div class="font-bold text-sm text-white">Student A</div>
+                <div class="text-[11px] text-slate-400">Shift Coordinator (Asks Prompts 1-10 first)</div>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="role" value="B" onchange="updateRoleUI()" class="peer hidden">
+              <div class="p-4 rounded-xl border border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-950/50 bg-slate-900 text-center space-y-2 card-transition">
+                <i class="fa-solid fa-id-card text-2xl text-emerald-400"></i>
+                <div class="font-bold text-sm text-white">Student B</div>
+                <div class="text-[11px] text-slate-400">Shift Applicant (Answers Prompts 1-10 first)</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- JOB IDENTITY SELECTOR -->
+        <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl space-y-4">
+          <h3 class="font-bold text-indigo-400 flex items-center gap-2">
+            <i class="fa-solid fa-briefcase"></i> Select Your Job Profile Card
+          </h3>
+          <select id="job-select" onchange="updateJobProfileCard()" class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="nurse">Nurse (City Hospital)</option>
+            <option value="chef">Chef (Italian Restaurant)</option>
+            <option value="teacher">Teacher (Language Academy)</option>
+            <option value="office">Office Administrator (Tech Corp)</option>
+            <option value="sales">Sales Assistant (Shopping Mall)</option>
+          </select>
+
+          <!-- ACTIVE PROFILE SUMMARY -->
+          <div id="profile-card" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2">
+            <!-- Dynamic Content via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="switchTab('verification')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/30 transition">
+          Ready to Start Verification <i class="fa-solid fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 2: LIVE VERIFICATION & 20 PROMPTS -->
+    <section id="sec-verification" class="hidden space-y-6">
+      
+      <!-- ROUND & CARD CONTROLLER HEADER -->
+      <div class="flex flex-wrap items-center justify-between bg-slate-800 p-4 rounded-2xl border border-slate-700 gap-4">
+        <div class="flex items-center space-x-3">
+          <span class="bg-indigo-900/60 text-indigo-300 font-bold px-3 py-1 rounded-lg text-xs border border-indigo-500/30" id="round-indicator">Round 1 (Min 02:00 - 05:00)</span>
+          <span class="text-sm font-medium text-slate-300" id="role-turn-indicator">Student A (Coordinator) asks | Student B answers</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="prevPrompt()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+          <span class="text-sm font-bold text-indigo-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700" id="prompt-counter">1 / 20</span>
+          <button onclick="nextPrompt()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">Next <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+
+      <!-- ACTIVE PROMPT CARD DISPLAY -->
+      <div class="grid md:grid-cols-3 gap-6">
+        
+        <!-- PROMPT MAIN CARD -->
+        <div class="md:col-span-2 bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-5 shadow-xl">
+          <div class="flex justify-between items-start">
+            <span class="bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" id="prompt-category">Job Title</span>
+            <span class="text-xs font-mono text-slate-400" id="target-grammar-badge">Grammar: Present Simple / Prepositions</span>
+          </div>
+
+          <div>
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Interviewer Prompt Cue:</span>
+            <h3 class="text-xl font-bold text-white" id="prompt-cue">Ask about job title</h3>
+          </div>
+
+          <!-- TARGET STRUCTURE HELP & DIALOGUE MODEL -->
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-comments mr-1"></i> Target Dialogue Model (A1 Level):</span>
+              <button onclick="speakModelSentence()" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded-md border border-slate-600 transition">
+                <i class="fa-solid fa-volume-high mr-1"></i> Listen Audio
+              </button>
+            </div>
+            <div class="p-3 bg-slate-950 rounded-lg text-sm text-slate-200 font-mono leading-relaxed" id="dialogue-model">
+              <!-- JS Populated Dialogue Model -->
+            </div>
+          </div>
+
+          <!-- INPUT & GRAMMAR PREPOSITION DETECTOR -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-slate-400 block">Practice Speech/Text Verification Entry:</label>
+            <div class="flex gap-2">
+              <input type="text" id="user-response-input" onkeyup="checkGrammarTarget()" placeholder="Type or speak response here (e.g., I start work at 8:00 AM)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <button onclick="recordVerification()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-md transition">
+                <i class="fa-solid fa-check-circle"></i> Verify Fact
+              </button>
+            </div>
+            <div id="grammar-feedback" class="text-xs font-semibold text-slate-400 min-h-[18px]">
+              <!-- Target preposition hint -->
+            </div>
+          </div>
+        </div>
+
+        <!-- VERIFIED SHIFT LOG (SIDEBAR) -->
+        <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl space-y-4 flex flex-col">
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+            <h4 class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-emerald-400"></i> Verified Facts Log
+            </h4>
+            <span id="verified-count" class="text-xs font-mono bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">0 / 20</span>
+          </div>
+
+          <div id="fact-log-list" class="flex-1 overflow-y-auto max-h-[300px] space-y-2 text-xs text-slate-300 pr-1">
+            <div class="text-slate-500 text-center py-8 italic">No details verified yet. Ask questions and click "Verify Fact".</div>
+          </div>
+
+          <button onclick="switchTab('report')" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2.5 rounded-xl font-bold text-xs transition">
+            View Final Match Report <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 20 PROMPT NAV MATRIX -->
+      <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl space-y-3">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick Prompt Grid (1 - 20)</h4>
+        <div class="grid grid-cols-5 sm:grid-cols-10 gap-2" id="prompt-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: SHIFT MATCH REPORT CARD -->
+    <section id="sec-report" class="hidden space-y-6">
+      <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-3xl mx-auto space-y-6 text-center shadow-2xl">
+        <div class="inline-block bg-emerald-500/20 text-emerald-400 p-4 rounded-full border border-emerald-500/30">
+          <i class="fa-solid fa-award text-4xl"></i>
+        </div>
+
+        <div>
+          <h2 class="text-2xl font-black text-white">Shift Compatibility Summary</h2>
+          <p class="text-xs text-slate-400 mt-1">10-Minute Routine Verification Verification Complete</p>
+        </div>
+
+        <!-- SCORE METER -->
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm mx-auto space-y-2">
+          <div class="text-xs uppercase font-bold text-slate-400">Shift Compatibility Score</div>
+          <div class="text-5xl font-black text-indigo-400 font-mono" id="compatibility-score">92%</div>
+          <p class="text-xs text-emerald-400 font-medium" id="match-verdict">"Excellent Fit! Schedules match perfectly."</p>
+        </div>
+
+        <!-- VERIFIED SUMMARY TABLE -->
+        <div class="text-left bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+          <h4 class="font-bold text-sm text-indigo-300 border-b border-slate-800 pb-2">Verified Partner Profile:</h4>
+          <div class="grid grid-cols-2 gap-3 text-xs" id="summary-grid">
+            <div><span class="text-slate-500">Job Title:</span> <strong class="text-white block" id="sum-job">Nurse</strong></div>
+            <div><span class="text-slate-500">Location:</span> <strong class="text-white block" id="sum-loc">City Hospital</strong></div>
+            <div><span class="text-slate-500">Start Time:</span> <strong class="text-white block" id="sum-start">8:00 AM (at)</strong></div>
+            <div><span class="text-slate-500">Commute:</span> <strong class="text-white block" id="sum-commute">Bus (by)</strong></div>
+            <div><span class="text-slate-500">Working Days:</span> <strong class="text-white block" id="sum-days">Mon - Fri (from... to)</strong></div>
+            <div><span class="text-slate-500">Weekends:</span> <strong class="text-white block" id="sum-weekends">Off (on)</strong></div>
+          </div>
+        </div>
+
+        <div class="flex justify-center gap-4 pt-2">
+          <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition">
+            <i class="fa-solid fa-print mr-1.5"></i> Print / Save Report
+          </button>
+          <button onclick="resetActivity()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition">
+            <i class="fa-solid fa-rotate-right mr-1.5"></i> Start New Session
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JAVASCRIPT DATA & APP ENGINE -->
+  <script>
+    // JOB PROFILES DATA
+    const jobProfiles = {
+      nurse: {
+        title: "Nurse",
+        location: "City Hospital",
+        duty: "help patients and assist doctors",
+        start: "8:00 AM",
+        commute: "Bus at 7:15 AM",
+        lunch: "12:30 PM",
+        afternoon: "check medical records from 2:00 PM to 4:00 PM",
+        hours: "8 hours",
+        finish: "5:00 PM",
+        postWork: "cook dinner at 6:30 PM",
+        days: "Monday to Friday",
+        weekends: "No (Free on weekends)"
+      },
+      chef: {
+        title: "Chef",
+        location: "Italian Restaurant",
+        duty: "prepare food and cook dinner recipes",
+        start: "2:00 PM",
+        commute: "Subway at 1:15 PM",
+        lunch: "4:00 PM",
+        afternoon: "cook orders from 5:00 PM to 9:00 PM",
+        hours: "8 hours",
+        finish: "10:00 PM",
+        postWork: "relax at home at 11:00 PM",
+        days: "Tuesday to Sunday",
+        weekends: "Yes (Works on weekends)"
+      },
+      teacher: {
+        title: "Teacher",
+        location: "Language Academy",
+        duty: "teach English classes and grade homework",
+        start: "9:00 AM",
+        commute: "Bicycle at 8:30 AM",
+        lunch: "1:00 PM",
+        afternoon: "prepare lessons from 2:30 PM to 4:30 PM",
+        hours: "7 hours",
+        finish: "4:00 PM",
+        postWork: "exercise at the gym at 5:30 PM",
+        days: "Monday to Friday",
+        weekends: "No (Free on weekends)"
+      },
+      office: {
+        title: "Office Administrator",
+        location: "Tech Corp HQ",
+        duty: "answer emails and write daily reports",
+        start: "8:30 AM",
+        commute: "Train at 7:45 AM",
+        lunch: "12:00 PM",
+        afternoon: "attend team meetings from 1:30 PM to 3:30 PM",
+        hours: "8 hours",
+        finish: "5:00 PM",
+        postWork: "meet friends at 6:00 PM",
+        days: "Monday to Friday",
+        weekends: "No (Free on weekends)"
+      },
+      sales: {
+        title: "Sales Assistant",
+        location: "Shopping Mall",
+        duty: "greet customers and sell clothes",
+        start: "10:00 AM",
+        commute: "Bus at 9:15 AM",
+        lunch: "2:00 PM",
+        afternoon: "organize stock from 3:00 PM to 5:00 PM",
+        hours: "8 hours",
+        finish: "6:00 PM",
+        postWork: "watch TV at 7:30 PM",
+        days: "Wednesday to Sunday",
+        weekends: "Yes (Works on weekends)"
+      }
+    };
+
+    // 20 PROMPT DATA MATRIX
+    const prompts = [
+      { id: 1, round: 1, cat: "Job Title", cue: "Ask about job title", prep: "", target: "I am a [job]", modelA: "A: What is your job?", modelB: "B: I am a nurse." },
+      { id: 2, round: 1, cat: "Validation", cue: "Validate job title", prep: "a / an", target: "are you a", modelA: "A: So, are you a nurse?", modelB: "B: Yes, that's right! I am a nurse." },
+      { id: 3, round: 1, cat: "Location", cue: "Ask about work location", prep: "at / in", target: "at", modelA: "A: Where do you work?", modelB: "B: I work at a city hospital." },
+      { id: 4, round: 1, cat: "Validation", cue: "Validate work location", prep: "in / at", target: "in", modelA: "A: Do you work in an office?", modelB: "B: No, I don't. I work at a hospital." },
+      { id: 5, round: 1, cat: "Duties", cue: "Ask about main job duties", prep: "at", target: "I help", modelA: "A: What do you do at work?", modelB: "B: I help patients and talk to doctors." },
+      { id: 6, round: 1, cat: "Validation", cue: "Validate job equipment / activity", prep: "every day", target: "use", modelA: "A: Do you use a computer every day?", modelB: "B: Yes, I use a computer in the morning." },
+      { id: 7, round: 1, cat: "Schedule", cue: "Ask about work start time", prep: "at", target: "at", modelA: "A: What time do you start work?", modelB: "B: I start work at 8:00 AM." },
+      { id: 8, round: 1, cat: "Validation", cue: "Validate start time", prep: "at", target: "at", modelA: "A: So, do you start work at 8:00 AM?", modelB: "B: Yes, I start exactly at 8:00 AM." },
+      { id: 9, round: 1, cat: "Commute", cue: "Ask about morning commute", prep: "by", target: "by", modelA: "A: How do you go to work?", modelB: "B: I go to work by bus." },
+      { id: 10, round: 1, cat: "Validation", cue: "Validate commute schedule", prep: "by / at", target: "at", modelA: "A: Do you take the bus at 7:15 AM?", modelB: "B: Yes, that's correct." },
+      { id: 11, round: 2, cat: "Schedule", cue: "Ask about lunch break time", prep: "at / in", target: "at", modelA: "A: When do you have lunch?", modelB: "B: I have lunch at 12:30 PM." },
+      { id: 12, round: 2, cat: "Validation", cue: "Validate lunch routine", prep: "at", target: "at", modelA: "A: So, you eat lunch at noon, right?", modelB: "B: No, I eat lunch at 12:30 PM." },
+      { id: 13, round: 2, cat: "Routine", cue: "Ask about afternoon tasks", prep: "from... to", target: "from", modelA: "A: What do you do in the afternoon?", modelB: "B: I write reports from 2:00 PM to 4:00 PM." },
+      { id: 14, round: 2, cat: "Validation", cue: "Validate daily work hours", prep: "a day", target: "hours", modelA: "A: Do you work 8 hours every day?", modelB: "B: Yes, I work 8 hours a day." },
+      { id: 15, round: 2, cat: "Schedule", cue: "Ask about finishing time", prep: "at", target: "at", modelA: "A: What time do you finish work?", modelB: "B: I finish work at 5:00 PM." },
+      { id: 16, round: 2, cat: "Validation", cue: "Validate finish time", prep: "at", target: "at", modelA: "A: Is it correct that you finish at 5:00 PM?", modelB: "B: Yes, that is correct." },
+      { id: 17, round: 2, cat: "Routine", cue: "Ask about post-work schedule", prep: "after / at", target: "after", modelA: "A: What do you do after work?", modelB: "B: I go home and cook dinner at 6:30 PM." },
+      { id: 18, round: 2, cat: "Schedule", cue: "Ask about working days", prep: "from... to", target: "to", modelA: "A: Which days do you work?", modelB: "B: I work from Monday to Friday." },
+      { id: 19, round: 2, cat: "Validation", cue: "Validate weekend schedule", prep: "on", target: "on", modelA: "A: Do you work on weekends?", modelB: "B: No, I don't work on weekends." },
+      { id: 20, round: 2, cat: "Verification", cue: "Validate overall schedule fit", prep: "for", target: "for", modelA: "A: Is your schedule good for this shift?", modelB: "B: Yes, my schedule is perfect for this shift!" }
+    ];
+
+    // APP STATE VARIABLES
+    let currentPromptIndex = 0;
+    let verifiedFacts = [];
+    let timerSeconds = 600; // 10 mins
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    // INITIALIZATION
+    window.onload = function() {
+      updateJobProfileCard();
+      renderPromptGrid();
+      loadPrompt(0);
+    };
+
+    // TAB SWITCHING
+    function switchTab(tab) {
+      document.getElementById('sec-setup').classList.add('hidden');
+      document.getElementById('sec-verification').classList.add('hidden');
+      document.getElementById('sec-report').classList.add('hidden');
+
+      document.getElementById('tab-setup').className = "py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+      document.getElementById('tab-verification').className = "py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+      document.getElementById('tab-report').className = "py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+
+      document.getElementById(`sec-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).className = "py-2.5 rounded-xl transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md";
+    }
+
+    // UPDATE JOB CARD SUMMARY
+    function updateJobProfileCard() {
+      const key = document.getElementById('job-select').value;
+      const j = jobProfiles[key];
+      const card = document.getElementById('profile-card');
+      card.innerHTML = `
+        <div class="text-indigo-400 font-bold text-sm border-b border-slate-800 pb-1 mb-2">${j.title} (${j.location})</div>
+        <div class="grid grid-cols-2 gap-1.5 text-slate-300">
+          <div><strong class="text-slate-400">Start Time:</strong> ${j.start}</div>
+          <div><strong class="text-slate-400">Finish Time:</strong> ${j.finish}</div>
+          <div><strong class="text-slate-400">Commute:</strong> ${j.commute}</div>
+          <div><strong class="text-slate-400">Work Days:</strong> ${j.days}</div>
+        </div>
+      `;
+
+      // Update final report default values
+      document.getElementById('sum-job').innerText = j.title;
+      document.getElementById('sum-loc').innerText = j.location;
+      document.getElementById('sum-start').innerText = `${j.start} (at)`;
+      document.getElementById('sum-commute').innerText = `${j.commute} (by)`;
+      document.getElementById('sum-days').innerText = `${j.days} (from... to)`;
+    }
+
+    // UPDATE ROLE UI TEXT
+    function updateRoleUI() {
+      const role = document.querySelector('input[name="role"]:checked').value;
+      const turnText = document.getElementById('role-turn-indicator');
+      if (currentPromptIndex < 10) {
+        turnText.innerText = role === 'A' ? "Student A (Coordinator) asks | Student B answers" : "Student B asks | Student A answers";
+      } else {
+        turnText.innerText = role === 'A' ? "Student B asks | Student A answers (Role Swapped)" : "Student A asks | Student B answers (Role Swapped)";
+      }
+    }
+
+    // RENDER PROMPT GRID BUTTONS
+    function renderPromptGrid() {
+      const grid = document.getElementById('prompt-grid');
+      grid.innerHTML = '';
+      prompts.forEach((p, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `pgrid-${idx}`;
+        btn.onclick = () => loadPrompt(idx);
+        btn.className = `py-2 rounded-lg text-xs font-mono font-bold transition border ${idx === 0 ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'}`;
+        btn.innerText = p.id;
+        grid.appendChild(btn);
+      });
+    }
+
+    // LOAD ACTIVE PROMPT
+    function loadPrompt(idx) {
+      currentPromptIndex = idx;
+      const p = prompts[idx];
+
+      document.getElementById('prompt-counter').innerText = `${p.id} / 20`;
+      document.getElementById('prompt-category').innerText = p.cat;
+      document.getElementById('prompt-cue').innerText = p.cue;
+      document.getElementById('target-grammar-badge').innerText = p.prep ? `Target Preposition: "${p.prep}"` : "Target: Job Title";
+      document.getElementById('dialogue-model').innerHTML = `<div>${p.modelA}</div><div class="text-emerald-400 mt-1">${p.modelB}</div>`;
+      
+      // Update Round indicator
+      const roundLabel = document.getElementById('round-indicator');
+      if (p.round === 1) {
+        roundLabel.innerText = "Round 1 (Min 02:00 - 05:00)";
+        roundLabel.className = "bg-indigo-900/60 text-indigo-300 font-bold px-3 py-1 rounded-lg text-xs border border-indigo-500/30";
+      } else {
+        roundLabel.innerText = "Round 2 (Role Swap: Min 05:00 - 08:00)";
+        roundLabel.className = "bg-amber-900/60 text-amber-300 font-bold px-3 py-1 rounded-lg text-xs border border-amber-500/30";
+      }
+
+      // Update grid highlights
+      prompts.forEach((_, i) => {
+        const b = document.getElementById(`pgrid-${i}`);
+        if (b) {
+          if (i === idx) {
+            b.className = "py-2 rounded-lg text-xs font-mono font-bold bg-indigo-600 border-indigo-400 text-white";
+          } else if (verifiedFacts.includes(i + 1)) {
+            b.className = "py-2 rounded-lg text-xs font-mono font-bold bg-emerald-950 border-emerald-500/50 text-emerald-400";
+          } else {
+            b.className = "py-2 rounded-lg text-xs font-mono font-bold bg-slate-900 border-slate-700 text-slate-400 hover:text-white";
+          }
+        }
+      });
+
+      document.getElementById('user-response-input').value = "";
+      document.getElementById('grammar-feedback').innerText = p.prep ? `Make sure to include target expression: "${p.prep}"` : "";
+      updateRoleUI();
+    }
+
+    function prevPrompt() {
+      if (currentPromptIndex > 0) loadPrompt(currentPromptIndex - 1);
+    }
+
+    function nextPrompt() {
+      if (currentPromptIndex < prompts.length - 1) loadPrompt(currentPromptIndex + 1);
+    }
+
+    // CHECK GRAMMAR REALTIME
+    function checkGrammarTarget() {
+      const val = document.getElementById('user-response-input').value.toLowerCase();
+      const p = prompts[currentPromptIndex];
+      const feedback = document.getElementById('grammar-feedback');
+
+      if (p.prep && val.includes(p.prep.split(' ')[0])) {
+        feedback.className = "text-xs font-semibold text-emerald-400";
+        feedback.innerText = `✓ Excellent! Detected target expression "${p.prep}".`;
+      } else if (p.prep) {
+        feedback.className = "text-xs font-semibold text-amber-400";
+        feedback.innerText = `Tip: Try to include "${p.prep}" in your answer.`;
+      }
+    }
+
+    // RECORD VERIFIED FACT
+    function recordVerification() {
+      const p = prompts[currentPromptIndex];
+      if (!verifiedFacts.includes(p.id)) {
+        verifiedFacts.push(p.id);
+      }
+
+      // Update Fact Log List
+      const logList = document.getElementById('fact-log-list');
+      if (verifiedFacts.length === 1) logList.innerHTML = '';
+
+      const item = document.createElement('div');
+      item.className = "p-2 bg-slate-900 rounded-lg border border-slate-700 flex justify-between items-center";
+      item.innerHTML = `
+        <span><strong>#${p.id} ${p.cat}:</strong> Verified</span>
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+      `;
+      logList.appendChild(item);
+
+      document.getElementById('verified-count').innerText = `${verifiedFacts.length} / 20`;
+
+      // Next prompt auto advance
+      if (currentPromptIndex < prompts.length - 1) {
+        nextPrompt();
+      } else {
+        switchTab('report');
+      }
+    }
+
+    // AUDIO MODEL SYNTHESIS
+    function speakModelSentence() {
+      const p = prompts[currentPromptIndex];
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const text = `${p.modelA}. ${p.modelB}`;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.85; // slightly slower for A1
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Audio speech synthesis is not supported on this browser.");
+      }
+    }
+
+    // TIMER LOGIC
+    function toggleTimer() {
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        document.getElementById('timer-icon').className = "fa-solid fa-play";
+        document.getElementById('btn-timer-toggle').innerText = " Resume";
+        isTimerRunning = false;
+      } else {
+        timerInterval = setInterval(updateTimer, 1000);
+        document.getElementById('timer-icon').className = "fa-solid fa-pause";
+        document.getElementById('btn-timer-toggle').innerText = " Pause";
+        isTimerRunning = true;
+      }
+    }
+
+    function updateTimer() {
+      if (timerSeconds <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('timer-display').innerText = "00:00";
+        alert("10-Minute Activity Time Completed!");
+        switchTab('report');
+        return;
+      }
+
+      timerSeconds--;
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timer-display').innerText = `${m}:${s}`;
+
+      // Update Phase Header
+      const phaseLabel = document.getElementById('phase-name');
+      if (timerSeconds > 480) {
+        phaseLabel.innerText = "01. Setup & Job Cards (0-2m)";
+      } else if (timerSeconds > 300) {
+        phaseLabel.innerText = "02. Round 1 Verification (2-5m)";
+      } else if (timerSeconds > 120) {
+        phaseLabel.innerText = "03. Round 2 Role Swap (5-8m)";
+      } else {
+        phaseLabel.innerText = "04. Shift Match Report (8-10m)";
+      }
+    }
+
+    function resetActivity() {
+      clearInterval(timerInterval);
+      timerSeconds = 600;
+      isTimerRunning = false;
+      verifiedFacts = [];
+      document.getElementById('timer-display').innerText = "10:00";
+      document.getElementById('btn-timer-toggle').innerText = " Start";
+      document.getElementById('fact-log-list').innerHTML = '<div class="text-slate-500 text-center py-8 italic">No details verified yet. Ask questions and click "Verify Fact".</div>';
+      document.getElementById('verified-count').innerText = "0 / 20";
+      switchTab('setup');
+      loadPrompt(0);
+    }
+  </script>
+</body>
+</html>
