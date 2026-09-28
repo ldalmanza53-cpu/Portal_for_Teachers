@@ -1,0 +1,351 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import random
+
+class FlatmateRoutineApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("The New Flatmate Schedule Swap - A1 ESL Activity")
+        self.geometry("900 x 700")
+        self.minsize(800, 600)
+
+        # Apply a clean theme
+        self.style = ttk.Style(self)
+        self.style.theme_use("clam")
+        
+        # Color Palette Configuration
+        self.configure(bg="#f4f6f9")
+        self.style.configure(".", font=("Helvetica", 10), background="#f4f6f9")
+        self.style.configure("TNotebook", background="#f4f6f9")
+        self.style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"), padding=[10, 5])
+        self.style.configure("Header.TLabel", font=("Helvetica", 16, "bold"), foreground="#2c3e50")
+        self.style.configure("SubHeader.TLabel", font=("Helvetica", 12, "bold"), foreground="#34495e")
+        self.style.configure("Timer.TLabel", font=("Helvetica", 36, "bold"), foreground="#2980b9")
+        self.style.configure("Accent.TButton", font=("Helvetica", 10, "bold"), background="#27ae60", foreground="white")
+        
+        # Timer Variables
+        self.total_seconds = 600  # 10 minutes
+        self.current_seconds = self.total_seconds
+        self.timer_running = False
+        self.timer_job = None
+        self.role_swapped = False
+
+        # Outcome Prompts Data
+        self.prompts = [
+            ("Morning", "State what time you usually wake up on weekdays and what you do first."),
+            ("Morning", "Ask your partner: 'What time do you usually wake up in the morning?'"),
+            ("Morning", "Describe your morning breakfast routine (what you eat, drink, and what time)."),
+            ("Morning", "Ask your partner: 'Do you take a shower in the morning or at night?'"),
+            ("Commute", "Tell your partner what time you leave your house to go to work or school."),
+            ("Commute", "Ask your partner how they get to work or school as part of their commute."),
+            ("Daytime", "Describe your mid-morning routine at work, school, or home."),
+            ("Daytime", "Ask your partner: 'Where and with whom do you usually have lunch?'"),
+            ("Daytime", "State what time you have lunch and how long your break is."),
+            ("Afternoon", "Describe what you do in the afternoon after finishing work or classes."),
+            ("Evening", "Ask your partner what time they usually return home in the evening."),
+            ("Evening", "Describe your evening routine right after arriving home."),
+            ("Evening", "Tell your partner who cooks dinner at your house and what time you eat."),
+            ("Evening", "Ask your partner: 'What do you do to relax after dinner?'"),
+            ("Night", "Describe your nighttime routine right before going to bed."),
+            ("Night", "State what time you usually go to sleep on weeknights."),
+            ("Weekend", "Tell your partner how your weekend morning routine is different."),
+            ("Weekend", "Ask your partner: 'Do you study/work in the evening, or prefer to rest?'"),
+            ("Chores", "Describe a routine task or chore you do every evening."),
+            ("Summary", "Summarize your partner's schedule to check flatmate compatibility.")
+        ]
+        
+        self.prompt_vars = []
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Header Banner
+        header_frame = ttk.Frame(self, padding=15)
+        header_frame.pack(fill=tk.X)
+        
+        ttk.Label(header_frame, text="🏠 The New Flatmate Schedule Swap", style="Header.TLabel").pack(anchor=tk.W)
+        ttk.Label(header_frame, text="A1 Speaking Activity • Focus: Simple Present, Daily Routines & Time Expressions", foreground="#7f8c8d").pack(anchor=tk.W)
+
+        # Tabbed Notebook Layout
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+
+        # Build Tabs
+        self.tab_overview = ttk.Frame(self.notebook, padding=15)
+        self.tab_timer = ttk.Frame(self.notebook, padding=15)
+        self.tab_prompts = ttk.Frame(self.notebook, padding=15)
+        self.tab_builder = ttk.Frame(self.notebook, padding=15)
+        self.tab_cheatsheet = ttk.Frame(self.notebook, padding=15)
+
+        self.notebook.add(self.tab_overview, text="📋 Overview & Roles")
+        self.notebook.add(self.tab_timer, text="⏱️ 10-Min Timer")
+        self.notebook.add(self.tab_prompts, text="🎯 20 Outcome Prompts")
+        self.notebook.add(self.tab_builder, text="💬 Schedule Builder")
+        self.notebook.add(self.tab_cheatsheet, text="📚 Language Cheat Sheet")
+
+        self.build_overview_tab()
+        self.build_timer_tab()
+        self.build_prompts_tab()
+        self.build_builder_tab()
+        self.build_cheatsheet_tab()
+
+    # ------------------------------------------------------------------
+    # TAB 1: OVERVIEW & ROLES
+    # ------------------------------------------------------------------
+    def build_overview_tab(self):
+        canvas = tk.Canvas(self.tab_overview, bg="#f4f6f9", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self.tab_overview, orient="vertical", command=canvas.yview)
+        scroll_frame = ttk.Frame(canvas, padding=10)
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Context Section
+        ttk.Label(scroll_frame, text="Real Context & Scenario", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
+        context_text = (
+            "You are moving into a shared apartment with a new flatmate. To coordinate bathroom schedules, "
+            "kitchen times, quiet hours, and house chores, you need to interview each other about your "
+            "typical daily routines from morning to night."
+        )
+        ttk.Label(scroll_frame, text=context_text, wraplength=700, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 15))
+
+        # Roles Section
+        ttk.Label(scroll_frame, text="Roles & Objectives", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
+        roles_text = (
+            "• Role A (Host Flatmate): Asks structured questions about daily habits, schedules, and times "
+            "using 'What time do you...?', 'When do you usually...?', and 'What do you do after...?'\n\n"
+            "• Role B (New Flatmate): Describes daily routines chronologically using Simple Present verbs, "
+            "time prepositions (at 7:00, in the morning), and sequence connectors (First, Then, After that, Finally)."
+        )
+        ttk.Label(scroll_frame, text=roles_text, wraplength=700, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 15))
+
+        # Instructions Breakdown
+        ttk.Label(scroll_frame, text="10-Minute Instructional Breakdown", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
+        steps = [
+            ("0:00 - 2:00 (2 Min)", "Setup & Board Review: Review Simple Present routine verbs, time prepositions (at/in), and sequence words."),
+            ("2:00 - 5:00 (3 Min)", "Role A Interviews Role B: Student A picks prompt cards and interviews Student B about their daily schedule."),
+            ("5:00 - 8:00 (3 Min)", "Role Swap Alert! Student B interviews Student A using new prompt cards."),
+            ("8:00 - 10:00 (2 Min)", "Wrap-Up & Compatibility Check: Summarize flatmate schedules and confirm key routine times.")
+        ]
+        for time_frame, desc in steps:
+            f = ttk.Frame(scroll_frame, padding=5)
+            f.pack(fill=tk.X, pady=2)
+            ttk.Label(f, text=time_frame, font=("Helvetica", 9, "bold"), foreground="#2980b9", width=20).pack(side=tk.LEFT)
+            ttk.Label(f, text=desc, wraplength=520, justify=tk.LEFT).pack(side=tk.LEFT)
+
+    # ------------------------------------------------------------------
+    # TAB 2: TIMER
+    # ------------------------------------------------------------------
+    def build_timer_tab(self):
+        timer_container = ttk.Frame(self.tab_timer, padding=20)
+        timer_container.pack(expand=True)
+
+        ttk.Label(timer_container, text="Lesson Activity Timer", style="SubHeader.TLabel").pack(pady=5)
+        
+        self.timer_label = ttk.Label(timer_container, text="10:00", style="Timer.TLabel")
+        self.timer_label.pack(pady=15)
+
+        self.status_label = ttk.Label(timer_container, text="Phase: Setup & Warm-up (2 Min)", font=("Helvetica", 12), foreground="#7f8c8d")
+        self.status_label.pack(pady=5)
+
+        btn_frame = ttk.Frame(timer_container, padding=10)
+        btn_frame.pack(pady=15)
+
+        self.start_btn = ttk.Button(btn_frame, text="Start Timer", command=self.start_timer, style="Accent.TButton")
+        self.start_btn.pack(side=tk.LEFT, padx=5)
+
+        self.pause_btn = ttk.Button(btn_frame, text="Pause", command=self.pause_timer, state=tk.DISABLED)
+        self.pause_btn.pack(side=tk.LEFT, padx=5)
+
+        self.reset_btn = ttk.Button(btn_frame, text="Reset", command=self.reset_timer)
+        self.reset_btn.pack(side=tk.LEFT, padx=5)
+
+    def start_timer(self):
+        if not self.timer_running:
+            self.timer_running = True
+            self.start_btn.config(state=tk.DISABLED)
+            self.pause_btn.config(state=tk.NORMAL)
+            self.update_timer()
+
+    def pause_timer(self):
+        if self.timer_running:
+            self.timer_running = False
+            if self.timer_job:
+                self.after_cancel(self.timer_job)
+            self.start_btn.config(state=tk.NORMAL)
+            self.pause_btn.config(state=tk.DISABLED)
+
+    def reset_timer(self):
+        self.pause_timer()
+        self.current_seconds = self.total_seconds
+        self.role_swapped = False
+        self.timer_label.config(text="10:00")
+        self.status_label.config(text="Phase: Setup & Warm-up (2 Min)", foreground="#7f8c8d")
+
+    def update_timer(self):
+        if not self.timer_running:
+            return
+
+        mins, secs = divmod(self.current_seconds, 60)
+        self.timer_label.config(text=f"{mins:02d}:{secs:02d}")
+
+        # Update Phase Status & Role Swap Check
+        if self.current_seconds > 480:
+            self.status_label.config(text="Phase 1: Teacher Setup & Warm-Up", foreground="#27ae60")
+        elif self.current_seconds > 300:
+            self.status_label.config(text="Phase 2: Role A Interviews Role B", foreground="#2980b9")
+        elif self.current_seconds == 300 and not self.role_swapped:
+            self.role_swapped = True
+            messagebox.showinfo("ROLE SWAP ALERT!", "🔔 5 Minutes Remaining!\n\nIt is time to SWAP ROLES! Role B now interviews Role A.")
+            self.status_label.config(text="Phase 3: Role B Interviews Role A (Role Swap)", foreground="#e67e22")
+        elif self.current_seconds > 120:
+            self.status_label.config(text="Phase 3: Role B Interviews Role A", foreground="#e67e22")
+        elif self.current_seconds > 0:
+            self.status_label.config(text="Phase 4: Wrap-Up & Compatibility Check", foreground="#c0392b")
+        else:
+            self.timer_running = False
+            self.status_label.config(text="Time's Up! Activity Complete 🎉", foreground="#27ae60")
+            messagebox.showinfo("Time's Up!", "10-Minute Activity Complete! Great job coordinating your schedules!")
+            self.start_btn.config(state=tk.DISABLED)
+            self.pause_btn.config(state=tk.DISABLED)
+            return
+
+        self.current_seconds -= 1
+        self.timer_job = self.after(1000, self.update_timer)
+
+    # ------------------------------------------------------------------
+    # TAB 3: 20 OUTCOME PROMPTS
+    # ------------------------------------------------------------------
+    def build_prompts_tab(self):
+        top_frame = ttk.Frame(self.tab_prompts)
+        top_frame.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Label(top_frame, text="20 Outcome Speaking Tasks", style="SubHeader.TLabel").pack(side=tk.LEFT)
+        ttk.Button(top_frame, text="🎲 Pick Random Prompt", command=self.pick_random_prompt).pack(side=tk.RIGHT)
+
+        # Scrollable Frame for Prompts
+        canvas = tk.Canvas(self.tab_prompts, bg="#f4f6f9", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self.tab_prompts, orient="vertical", command=canvas.yview)
+        scroll_frame = ttk.Frame(canvas, padding=5)
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        self.prompt_widgets = []
+        for idx, (category, text) in enumerate(self.prompts, 1):
+            frame = ttk.Frame(scroll_frame, padding=8)
+            frame.pack(fill=tk.X, pady=3, anchor=tk.W)
+
+            var = tk.BooleanVar()
+            chk = ttk.Checkbutton(frame, variable=var)
+            chk.pack(side=tk.LEFT, padx=(0, 8))
+
+            badge = ttk.Label(frame, text=f" #{idx:02d} [{category}] ", font=("Helvetica", 8, "bold"), foreground="white", background="#34495e")
+            badge.pack(side=tk.LEFT, padx=(0, 8))
+
+            lbl = ttk.Label(frame, text=text, wraplength=600, justify=tk.LEFT)
+            lbl.pack(side=tk.LEFT)
+
+            self.prompt_vars.append(var)
+            self.prompt_widgets.append((frame, lbl, idx, text))
+
+    def pick_random_prompt(self):
+        idx, (cat, text) = random.choice(list(enumerate(self.prompts, 1)))
+        messagebox.showinfo(f"Random Prompt Selection #{idx}", f"Category: {cat}\n\nTask:\n{text}")
+
+    # ------------------------------------------------------------------
+    # TAB 4: SCHEDULE BUILDER
+    # ------------------------------------------------------------------
+    def build_builder_tab(self):
+        ttk.Label(self.tab_builder, text="Interactive Flatmate Schedule Builder", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 10))
+
+        form_frame = ttk.Frame(self.tab_builder, padding=10)
+        form_frame.pack(fill=tk.X)
+
+        # Form Inputs
+        ttk.Label(form_frame, text="Sequence Word:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.seq_cb = ttk.Combobox(form_frame, values=["First", "Then", "After that", "Finally"], state="readonly", width=15)
+        self.seq_cb.current(0)
+        self.seq_cb.grid(row=0, column=1, sticky=tk.W, pady=5, padx=5)
+
+        ttk.Label(form_frame, text="Routine Action:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.action_cb = ttk.Combobox(form_frame, values=[
+            "wake up", "take a shower", "eat breakfast", "leave home", 
+            "arrive at work/school", "have lunch", "return home", 
+            "cook dinner", "watch TV", "brush teeth", "go to sleep"
+        ], width=25)
+        self.action_cb.current(0)
+        self.action_cb.grid(row=1, column=1, sticky=tk.W, pady=5, padx=5)
+
+        ttk.Label(form_frame, text="Time / Preposition:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.prep_cb = ttk.Combobox(form_frame, values=["at 7:00 AM", "at 8:30 AM", "in the morning", "at 1:00 PM", "in the afternoon", "at 7:00 PM", "in the evening", "at night"], width=25)
+        self.prep_cb.current(0)
+        self.prep_cb.grid(row=2, column=1, sticky=tk.W, pady=5, padx=5)
+
+        ttk.Button(form_frame, text="Generate Routine Sentence", command=self.generate_sentence, style="Accent.TButton").grid(row=3, column=0, columnspan=2, pady=15)
+
+        # Output Card
+        output_frame = ttk.LabelFrame(self.tab_builder, text=" Generated Routine & Flatmate Question ", padding=15)
+        output_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+
+        self.statement_lbl = ttk.Label(output_frame, text="Statement: (Select options and click Generate)", font=("Helvetica", 11, "bold"), foreground="#2980b9", wraplength=700)
+        self.statement_lbl.pack(anchor=tk.W, pady=10)
+
+        self.question_lbl = ttk.Label(output_frame, text="Partner Question: ", font=("Helvetica", 10, "italic"), foreground="#2c3e50", wraplength=700)
+        self.question_lbl.pack(anchor=tk.W, pady=5)
+
+        self.validation_lbl = ttk.Label(output_frame, text="Validation Check: ", font=("Helvetica", 10), foreground="#27ae60", wraplength=700)
+        self.validation_lbl.pack(anchor=tk.W, pady=5)
+
+    def generate_sentence(self):
+        seq = self.seq_cb.get()
+        act = self.action_cb.get()
+        prep = self.prep_cb.get()
+
+        statement = f"{seq}, I {act} {prep}."
+        question = f"Flatmate Question: 'What time do you usually {act}?'"
+        validation = f"Validation: 'So you {act} {prep}, right?'"
+
+        self.statement_lbl.config(text=f"Statement: \"{statement}\"")
+        self.question_lbl.config(text=question)
+        self.validation_lbl.config(text=validation)
+
+    # ------------------------------------------------------------------
+    # TAB 5: CHEAT SHEET
+    # ------------------------------------------------------------------
+    def build_cheatsheet_tab(self):
+        canvas = tk.Canvas(self.tab_cheatsheet, bg="#f4f6f9", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self.tab_cheatsheet, orient="vertical", command=canvas.yview)
+        scroll_frame = ttk.Frame(canvas, padding=10)
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        sections = [
+            ("1. Simple Present Routine Verbs", "• I wake up\n• I take a shower\n• I eat breakfast / lunch / dinner\n• I leave home / return home\n• I go to work / school / bed"),
+            ("2. Time Prepositions (AT vs IN)", "• AT + Specific Time / Night: at 7:00 AM, at 10:30 PM, at night, at noon\n• IN + Part of Day: in the morning, in the afternoon, in the evening"),
+            ("3. Sequence Connectives", "• First (Start of routine)\n• Then / Next (Middle actions)\n• After that (Following action)\n• Finally (End of routine)"),
+            ("4. Schedule Coordination Questions", "• 'What time do you usually wake up?'\n• 'Do you take a shower in the morning or at night?'\n• 'When do you eat dinner?'\n• 'So you go to bed at 11:00 PM, correct?'")
+        ]
+
+        for title, content in sections:
+            lf = ttk.LabelFrame(scroll_frame, text=f" {title} ", padding=10)
+            lf.pack(fill=tk.X, pady=8)
+            ttk.Label(lf, text=content, justify=tk.LEFT, font=("Helvetica", 9)).pack(anchor=tk.W)
+
+if __name__ == "__main__":
+    app = FlatmateRoutineApp()
+    app.mainloop()
