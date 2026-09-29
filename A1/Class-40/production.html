@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casting Studio A1 - Hollywood Edition</title>
+  <style>
+    :root {
+      --primary: #7c3aed;
+      --primary-dark: #5b21b6;
+      --gold: #d97706;
+      --phase1-color: #10b981;
+      --phase2-color: #f59e0b;
+      --phase3-color: #6366f1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 16px; }
+
+    .app-container { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; height: fit-content; }
+    
+    header { background: #0f172a; color: #fff; padding: 16px; text-align: center; border-bottom: 3px solid var(--gold); }
+    header h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #fef08a; }
+    header p { font-size: 0.85rem; color: #cbd5e1; }
+
+    .screen { display: none; padding: 20px; }
+    .screen.active { display: block; }
+
+    /* Setup Screen */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 12px; }
+    .btn:hover { background: var(--primary-dark); }
+    
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    .input-group input, .input-group select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 1rem; }
+
+    /* Timer & Phase Bar */
+    .timer-bar { background: #f1f5f9; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .phase-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: white; background: var(--phase1-color); text-transform: uppercase; }
+    .time-display { font-family: monospace; font-size: 1.25rem; font-weight: 700; color: var(--text); }
+
+    /* Role Indicator */
+    .role-banner { padding: 10px 16px; background: #f3e8ff; border-bottom: 1px solid #e9d5ff; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: var(--primary-dark); }
+
+    /* Prompt Card */
+    .card-wrapper { min-height: 220px; background: #fff; border: 2px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+    .card-meta { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .card-text { font-size: 1.15rem; font-weight: 600; line-height: 1.5; margin: 12px 0; color: var(--text); }
+    
+    .card-actions { display: flex; gap: 8px; }
+    .btn-audio { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-audio:hover { background: #e2e8f0; }
+
+    /* Helper Drawer */
+    details { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; }
+    summary { font-weight: 600; font-size: 0.9rem; cursor: pointer; color: var(--primary); }
+    .helper-content { margin-top: 10px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+    .helper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .helper-item { background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border); }
+
+    /* Progress Tracker */
+    .progress-dots { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
+
+    /* Results Screen */
+    .score-card { text-align: center; padding: 24px 0; }
+    .score-number { font-size: 3rem; font-weight: 800; color: var(--primary); }
+    .badge-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .badge { background: #f3e8ff; color: #5b21b6; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <header>
+    <h1>🎬 Casting Studio A1</h1>
+    <p>Finding the Movie Star • Physical Description Activity</p>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <div class="input-group">
+      <label for="student-a">Student A Name (Role A: Casting Director)</label>
+      <input type="text" id="student-a" value="Student A">
+    </div>
+    <div class="input-group">
+      <label for="student-b">Student B Name (Role B: Talent Agent)</label>
+      <input type="text" id="student-b" value="Student B">
+    </div>
+    <div class="input-group">
+      <label for="practice-mode">Practice Mode</label>
+      <select id="practice-mode">
+        <option value="pair">Pair Mode (2 Live Students)</option>
+        <option value="solo">Solo Mode (Listen to Speech Assist)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="startActivity()">Start Audition Activity 🌟</button>
+  </div>
+
+  <!-- ACTIVITY SCREEN -->
+  <div id="screen-activity" class="screen">
+    <div class="timer-bar">
+      <span id="phase-badge" class="phase-badge">Phase 1: Student A Asks</span>
+      <span id="time-display" class="time-display">10:00</span>
+    </div>
+
+    <div id="role-banner" class="role-banner">
+      <span>Asking: <strong id="active-asker">Student A</strong></span>
+      <span>Describing: <strong id="active-responder">Student B</strong></span>
+    </div>
+
+    <div class="card-wrapper">
+      <div>
+        <div class="card-meta" id="card-category">Height & Hair • Prompt 1 of 20</div>
+        <div class="card-text" id="card-prompt">Loading prompt...</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-audio" onclick="speakPrompt()">🔊 Listen Hint</button>
+      </div>
+    </div>
+
+    <div class="progress-dots">
+      <span>Completed: <strong id="completed-count">0</strong>/20</span>
+      <button class="btn" style="margin: 0; width: auto; padding: 8px 16px;" onclick="nextPrompt()">Next Prompt ➔</button>
+    </div>
+
+    <!-- HELPER DRAWER -->
+    <details>
+      <summary>💡 Appearance & Casting Vocabulary Helper</summary>
+      <div class="helper-content">
+        <strong>Verbs (BE vs. HAVE):</strong>
+        <div class="helper-grid">
+          <div class="helper-item">He/She <b>is</b> tall / short / slim</div>
+          <div class="helper-item">He/She <b>has</b> curly / dark hair</div>
+          <div class="helper-item">He/She <b>wears</b> glasses</div>
+          <div class="helper-item">He/She <b>has</b> blue/brown eyes</div>
+        </div>
+        <strong style="display:block; margin-top:8px;">Hair & Feature Adjectives:</strong>
+        <div class="helper-grid">
+          <div class="helper-item">long / short / medium</div>
+          <div class="helper-item">straight / wavy / curly</div>
+          <div class="helper-item">blonde / brown / black</div>
+          <div class="helper-item">beard / mustache / smile</div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- REVIEW / SUMMARY SCREEN -->
+  <div id="screen-review" class="screen">
+    <div class="score-card">
+      <h2>Casting Call Complete! 🌟</h2>
+      <p style="color: var(--text-muted); margin-top: 4px;">Great job describing candidate actors!</p>
+      
+      <div class="score-number" id="final-score">0/20</div>
+      <p style="font-size: 0.9rem; font-weight: 600;">Prompts Completed</p>
+
+      <div class="badge-container">
+        <span class="badge">✓ Height & Build</span>
+        <span class="badge">✓ Hair & Facial Features</span>
+        <span class="badge">✓ Clothes & Accessories</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="resetActivity()">Start New Session 🔄</button>
+  </div>
+</div>
+
+<script>
+  const PROMPTS = [
+    { id: 1, type: "Height & Build", text: "Ask your partner to describe the height and build of the main hero in the movie (e.g., tall, short, slim, strong)." },
+    { id: 2, type: "Height & Build", text: "Tell your partner about your own hair style, color, and length (e.g., short, black, straight)." },
+    { id: 3, type: "Height & Build", text: "Ask your partner what color eyes the lead actress in the film has." },
+    { id: 4, type: "Height & Build", text: "Describe a famous celebrity's physical appearance without saying their name, and have your partner guess who it is." },
+    { id: 5, type: "Height & Build", text: "Ask your partner if any actor in the candidate list wears glasses or has a beard/mustache." },
+    { id: 6, type: "Height & Build", text: "Tell your partner about the tallest person in your family or friend group." },
+    { id: 7, type: "Height & Build", text: "Ask your partner to describe the hair style and hair color of their favorite singer." },
+    { id: 8, type: "Height & Build", text: "Describe your favorite animated or cartoon character's face (e.g., big eyes, small nose, wide smile)." },
+    { id: 9, type: "Height & Build", text: "Ask your partner if their favorite movie star has dark, blonde, or red hair." },
+    { id: 10, type: "Height & Build", text: "Tell your partner whether the hero in the movie should be short, medium height, or tall." },
+    { id: 11, type: "Features & Clothes", text: "Ask your partner if the villain in the movie is young, middle-aged, or elderly." },
+    { id: 12, type: "Features & Clothes", text: "Describe what your partner is wearing today (e.g., shirt color, pants, shoes)." },
+    { id: 13, type: "Features & Clothes", text: "Tell your partner about someone you saw today who has very long or very short hair." },
+    { id: 14, type: "Features & Clothes", text: "Ask your partner if they prefer actors with straight hair, wavy hair, or curly hair." },
+    { id: 15, type: "Features & Clothes", text: "Describe a famous athlete's physical build (e.g., tall, broad-shouldered, athletic)." },
+    { id: 16, type: "Features & Clothes", text: "Ask your partner if anyone in their family has blue or green eyes." },
+    { id: 17, type: "Features & Clothes", text: "Tell your partner about someone you know who has curly hair and wears glasses." },
+    { id: 18, type: "Features & Clothes", text: "Ask your partner to pick a person in the classroom and describe their physical appearance for you to identify." },
+    { id: 19, type: "Features & Clothes", text: "Tell your partner three main physical features that describe you best (e.g., I am medium height, I have brown eyes, and I have short hair)." },
+    { id: 20, type: "Features & Clothes", text: "Describe your dream physical appearance if you could play any action hero in a movie for one day." }
+  ];
+
+  let currentPromptIdx = 0;
+  let completedCount = 0;
+  let totalSeconds = 600; // 10 minutes
+  let timerInterval = null;
+  let nameA = "Student A";
+  let nameB = "Student B";
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function playChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 659.25; // E5 tone
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+  }
+
+  function updateCardDisplay() {
+    const prompt = PROMPTS[currentPromptIdx];
+    document.getElementById('card-category').innerText = `${prompt.type} • Prompt ${currentPromptIdx + 1} of 20`;
+    document.getElementById('card-prompt').innerText = prompt.text;
+  }
+
+  function speakPrompt() {
+    const text = PROMPTS[currentPromptIdx].text;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.85; // A1 beginner rate
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Text-to-speech is not supported on this browser.");
+    }
+  }
+
+  function nextPrompt() {
+    completedCount++;
+    document.getElementById('completed-count').innerText = completedCount;
+    currentPromptIdx = (currentPromptIdx + 1) % PROMPTS.length;
+    updateCardDisplay();
+  }
+
+  function updateTimerUI() {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    document.getElementById('time-display').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    const badge = document.getElementById('phase-badge');
+    const activeAsker = document.getElementById('active-asker');
+    const activeResponder = document.getElementById('active-responder');
+
+    const elapsed = 600 - totalSeconds;
+
+    if (elapsed < 240) {
+      badge.innerText = `Phase 1: ${nameA} Asks`;
+      badge.style.background = "var(--phase1-color)";
+      activeAsker.innerText = nameA;
+      activeResponder.innerText = nameB;
+    } else if (elapsed < 480) {
+      if (elapsed === 240 && totalSeconds === 360) playChime();
+      badge.innerText = `Phase 2: ${nameB} Asks (Swap!)`;
+      badge.style.background = "var(--phase2-color)";
+      activeAsker.innerText = nameB;
+      activeResponder.innerText = nameA;
+    } else {
+      if (elapsed === 480) playChime();
+      badge.innerText = `Phase 3: Wrap-Up & Review`;
+      badge.style.background = "var(--phase3-color)";
+    }
+  }
+
+  function startActivity() {
+    nameA = document.getElementById('student-a').value.trim() || "Student A";
+    nameB = document.getElementById('student-b').value.trim() || "Student B";
+    
+    currentPromptIdx = 0;
+    completedCount = 0;
+    totalSeconds = 600;
+
+    document.getElementById('completed-count').innerText = "0";
+    updateCardDisplay();
+    updateTimerUI();
+    showScreen('screen-activity');
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      totalSeconds--;
+      updateTimerUI();
+
+      if (totalSeconds <= 0) {
+        clearInterval(timerInterval);
+        endActivity();
+      }
+    }, 1000);
+  }
+
+  function endActivity() {
+    document.getElementById('final-score').innerText = `${completedCount}/20`;
+    showScreen('screen-review');
+  }
+
+  function resetActivity() {
+    clearInterval(timerInterval);
+    showScreen('screen-setup');
+  }
+</script>
+
+</body>
+</html>
