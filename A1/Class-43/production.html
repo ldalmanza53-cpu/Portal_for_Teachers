@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Check-In A1 - General vs. Specific Past</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --accent: #e11d48;
+      --phase1-color: #10b981;
+      --phase2-color: #f59e0b;
+      --phase3-color: #6366f1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 16px; }
+
+    .app-container { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; height: fit-content; }
+    
+    header { background: #0c4a6e; color: #fff; padding: 16px; text-align: center; border-bottom: 3px solid var(--accent); }
+    header h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #38bdf8; }
+    header p { font-size: 0.85rem; color: #bae6fd; }
+
+    .screen { display: none; padding: 20px; }
+    .screen.active { display: block; }
+
+    /* Setup Screen */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 12px; }
+    .btn:hover { background: var(--primary-dark); }
+    
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+    .input-group input, .input-group select { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 1rem; }
+
+    /* Timer & Phase Bar */
+    .timer-bar { background: #f1f5f9; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .phase-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: white; background: var(--phase1-color); text-transform: uppercase; }
+    .time-display { font-family: monospace; font-size: 1.25rem; font-weight: 700; color: var(--text); }
+
+    /* Role Indicator */
+    .role-banner { padding: 10px 16px; background: #e0f2fe; border-bottom: 1px solid #bae6fd; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: var(--primary-dark); }
+
+    /* Prompt Card */
+    .card-wrapper { min-height: 220px; background: #fff; border: 2px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+    .card-meta { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+    .card-text { font-size: 1.15rem; font-weight: 600; line-height: 1.5; margin: 12px 0; color: var(--text); }
+    
+    .card-actions { display: flex; gap: 8px; }
+    .btn-audio { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-audio:hover { background: #e2e8f0; }
+
+    /* Helper Drawer */
+    details { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; }
+    summary { font-weight: 600; font-size: 0.9rem; cursor: pointer; color: var(--primary); }
+    .helper-content { margin-top: 10px; font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+    .helper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .helper-item { background: white; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border); }
+
+    /* Progress Tracker */
+    .progress-dots { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
+
+    /* Results Screen */
+    .score-card { text-align: center; padding: 24px 0; }
+    .score-number { font-size: 3rem; font-weight: 800; color: var(--primary); }
+    .badge-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+    .badge { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <header>
+    <h1>☕ Memory Check-In A1</h1>
+    <p>General vs. Specific Past Review</p>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen active">
+    <div class="input-group">
+      <label for="student-a">Student A Name (Role A: Reviewer)</label>
+      <input type="text" id="student-a" value="Student A">
+    </div>
+    <div class="input-group">
+      <label for="student-b">Student B Name (Role B: Storyteller)</label>
+      <input type="text" id="student-b" value="Student B">
+    </div>
+    <div class="input-group">
+      <label for="practice-mode">Practice Mode</label>
+      <select id="practice-mode">
+        <option value="pair">Pair Mode (2 Live Students)</option>
+        <option value="solo">Solo Mode (Listen to Speech Assist)</option>
+      </select>
+    </div>
+    <button class="btn" onclick="startActivity()">Start Check-In Activity ☕</button>
+  </div>
+
+  <!-- ACTIVITY SCREEN -->
+  <div id="screen-activity" class="screen">
+    <div class="timer-bar">
+      <span id="phase-badge" class="phase-badge">Phase 1: Student A Reviews</span>
+      <span id="time-display" class="time-display">10:00</span>
+    </div>
+
+    <div id="role-banner" class="role-banner">
+      <span>Reviewer (Asks): <strong id="active-asker">Student A</strong></span>
+      <span>Storyteller (Answers): <strong id="active-responder">Student B</strong></span>
+    </div>
+
+    <div class="card-wrapper">
+      <div>
+        <div class="card-meta" id="card-category">General Past • Prompt 1 of 20</div>
+        <div class="card-text" id="card-prompt">Loading prompt...</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-audio" onclick="speakPrompt()">🔊 Listen Hint</button>
+      </div>
+    </div>
+
+    <div class="progress-dots">
+      <span>Completed: <strong id="completed-count">0</strong>/20</span>
+      <button class="btn" style="margin: 0; width: auto; padding: 8px 16px;" onclick="nextPrompt()">Next Prompt ➔</button>
+    </div>
+
+    <!-- HELPER DRAWER -->
+    <details>
+      <summary>💡 Validation Check & Grammar Helper</summary>
+      <div class="helper-content">
+        <strong>General Past (Broad Time Frame):</strong>
+        <div class="helper-grid">
+          <div class="helper-item">when I was young / little</div>
+          <div class="helper-item">in the past / a few years ago</div>
+          <div class="helper-item">usually / often / every summer</div>
+          <div class="helper-item">I had / I played / I liked</div>
+        </div>
+        <strong style="display:block; margin-top:8px;">Specific Past (Exact Time Frame):</strong>
+        <div class="helper-grid">
+          <div class="helper-item">yesterday morning at 9:00 AM</div>
+          <div class="helper-item">last Sunday / last Saturday</div>
+          <div class="helper-item">this morning / last night</div>
+          <div class="helper-item">I bought / I went / I woke up</div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- REVIEW / SUMMARY SCREEN -->
+  <div id="screen-review" class="screen">
+    <div class="score-card">
+      <h2>Check-In Complete! ☕</h2>
+      <p style="color: var(--text-muted); margin-top: 4px;">Great job validating general memories and specific past events!</p>
+      
+      <div class="score-number" id="final-score">0/20</div>
+      <p style="font-size: 0.9rem; font-weight: 600;">Prompts Completed</p>
+
+      <div class="badge-container">
+        <span class="badge">✓ General Past Validation</span>
+        <span class="badge">✓ Specific Past Validation</span>
+        <span class="badge">✓ Time Marker Accuracy</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="resetActivity()">Start New Session 🔄</button>
+  </div>
+</div>
+
+<script>
+  const PROMPTS = [
+    { id: 1, type: "General Past", text: "Ask your partner if they liked eating vegetables when they were a young child." },
+    { id: 2, type: "General Past", text: "Tell your partner about a game or toy you played with a lot in the past." },
+    { id: 3, type: "General Past", text: "Ask your partner if they lived in a different house or city when they were younger." },
+    { id: 4, type: "General Past", text: "Tell your partner about a food or drink you disliked when you were little." },
+    { id: 5, type: "General Past", text: "Ask your partner if their family went on holiday every summer in the past." },
+    { id: 6, type: "General Past", text: "Tell your partner about a pet you had (or wanted to have) when you were young." },
+    { id: 7, type: "General Past", text: "Ask your partner what TV shows or music they enjoyed a few years ago." },
+    { id: 8, type: "General Past", text: "Tell your partner about a place you visited often with your friends in the past." },
+    { id: 9, type: "General Past", text: "Ask your partner if they had short hair or long hair when they were in primary school." },
+    { id: 10, type: "General Past", text: "Tell your partner about a habit or routine you had every morning when you were younger." },
+    { id: 11, type: "Specific Past", text: "Ask your partner what specific thing they did yesterday morning at 9:00 AM." },
+    { id: 12, type: "Specific Past", text: "Tell your partner what exact drink or meal you bought yesterday." },
+    { id: 13, type: "Specific Past", text: "Ask your partner where they went last Sunday afternoon." },
+    { id: 14, type: "Specific Past", text: "Tell your partner what exact time you woke up and got out of bed this morning." },
+    { id: 15, type: "Specific Past", text: "Ask your partner who they spoke to on the phone or texted yesterday evening." },
+    { id: 16, type: "Specific Past", text: "Tell your partner about one specific movie, video, or show you watched last night." },
+    { id: 17, type: "Specific Past", text: "Ask your partner what specific clothes they wore last Saturday." },
+    { id: 18, type: "Specific Past", text: "Tell your partner about one specific task you completed earlier today before coming to class." },
+    { id: 19, type: "Specific Past", text: "Ask your partner what exact place they visited on their last birthday." },
+    { id: 20, type: "Specific Past", text: "Tell your partner what exact time you went to sleep last night." }
+  ];
+
+  let currentPromptIdx = 0;
+  let completedCount = 0;
+  let totalSeconds = 600; // 10 minutes
+  let timerInterval = null;
+  let nameA = "Student A";
+  let nameB = "Student B";
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function playChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 523.25; // C5 tone
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+  }
+
+  function updateCardDisplay() {
+    const prompt = PROMPTS[currentPromptIdx];
+    document.getElementById('card-category').innerText = `${prompt.type} • Prompt ${currentPromptIdx + 1} of 20`;
+    document.getElementById('card-prompt').innerText = prompt.text;
+  }
+
+  function speakPrompt() {
+    const text = PROMPTS[currentPromptIdx].text;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.85; // A1 rate
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Text-to-speech is not supported on this browser.");
+    }
+  }
+
+  function nextPrompt() {
+    completedCount++;
+    document.getElementById('completed-count').innerText = completedCount;
+    currentPromptIdx = (currentPromptIdx + 1) % PROMPTS.length;
+    updateCardDisplay();
+  }
+
+  function updateTimerUI() {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    document.getElementById('time-display').innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    const badge = document.getElementById('phase-badge');
+    const activeAsker = document.getElementById('active-asker');
+    const activeResponder = document.getElementById('active-responder');
+
+    const elapsed = 600 - totalSeconds;
+
+    if (elapsed < 240) {
+      badge.innerText = `Phase 1: ${nameA} Reviews`;
+      badge.style.background = "var(--phase1-color)";
+      activeAsker.innerText = nameA;
+      activeResponder.innerText = nameB;
+    } else if (elapsed < 480) {
+      if (elapsed === 240 && totalSeconds === 360) playChime();
+      badge.innerText = `Phase 2: ${nameB} Reviews (Swap!)`;
+      badge.style.background = "var(--phase2-color)";
+      activeAsker.innerText = nameB;
+      activeResponder.innerText = nameA;
+    } else {
+      if (elapsed === 480) playChime();
+      badge.innerText = `Phase 3: Wrap-Up & Review`;
+      badge.style.background = "var(--phase3-color)";
+    }
+  }
+
+  function startActivity() {
+    nameA = document.getElementById('student-a').value.trim() || "Student A";
+    nameB = document.getElementById('student-b').value.trim() || "Student B";
+    
+    currentPromptIdx = 0;
+    completedCount = 0;
+    totalSeconds = 600;
+
+    document.getElementById('completed-count').innerText = "0";
+    updateCardDisplay();
+    updateTimerUI();
+    showScreen('screen-activity');
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      totalSeconds--;
+      updateTimerUI();
+
+      if (totalSeconds <= 0) {
+        clearInterval(timerInterval);
+        endActivity();
+      }
+    }, 1000);
+  }
+
+  function endActivity() {
+    document.getElementById('final-score').innerText = `${completedCount}/20`;
+    showScreen('screen-review');
+  }
+
+  function resetActivity() {
+    clearInterval(timerInterval);
+    showScreen('screen-setup');
+  }
+</script>
+
+</body>
+</html>
