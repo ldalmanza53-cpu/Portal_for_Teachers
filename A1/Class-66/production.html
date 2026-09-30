@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanCheck: Validate Plans & Messages (A1 ESL Activity)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Alpine.js for lightweight state management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+
+        /* Pulse glow animation for timer */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.6); }
+        }
+        .timer-active {
+            animation: pulse-glow 2s infinite;
+        }
+
+        /* Card flip / randomizer animation */
+        @keyframes card-flip {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.05) rotate(3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .animate-card-flip {
+            animation: card-flip 0.4s ease-in-out;
+        }
+
+        /* Smartphone chat bubble pop-in */
+        @keyframes bubble-pop {
+            0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .chat-bubble {
+            animation: bubble-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white"
+      x-data="planCheckApp()" 
+      x-init="initApp()">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-accent-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-comments-text text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+                        PlanCheck <span class="bg-brand-500/20 text-brand-400 text-xs px-2 py-0.5 rounded-full border border-brand-500/30">A1 ESL Activity</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Validate Plans & Send Text Messages (10 Min)</p>
+                </div>
+            </div>
+
+            <!-- Global Action Controls -->
+            <div class="flex items-center gap-3">
+                <button @click="toggleSound()" 
+                        class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors text-sm flex items-center gap-2"
+                        :title="soundEnabled ? 'Mute Sound Effects' : 'Enable Sound Effects'">
+                    <i class="fa-solid" :class="soundEnabled ? 'fa-volume-high text-brand-400' : 'fa-volume-xmark text-slate-500'"></i>
+                    <span class="text-xs hidden md:inline" x-text="soundEnabled ? 'Sound On' : 'Muted'"></span>
+                </button>
+
+                <button @click="resetAll()" 
+                        class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 hover:text-rose-300 text-slate-300 transition-colors text-xs font-medium flex items-center gap-1.5 border border-slate-700">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset Session</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Banner & Timer Grid Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left: Context & Role Overview (7 Cols) -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-accent-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-400 uppercase tracking-wider mb-1">
+                            <i class="fa-solid fa-bullseye"></i> Real-World Scenario
+                        </span>
+                        <h2 class="text-xl font-bold text-white">Checking & Confirming Plans via Text</h2>
+                    </div>
+                    <button @click="showInfoModal = true" class="text-xs text-slate-400 hover:text-white underline">
+                        <i class="fa-solid fa-circle-info"></i> Instructions
+                    </button>
+                </div>
+
+                <p class="text-sm text-slate-300 leading-relaxed mb-4">
+                    You made plans with a friend or colleague earlier this week. Before going out, send a quick text message to check details (activity, day, time, or place). Your partner reads the message, checks their details, and replies to confirm or update!
+                </p>
+
+                <!-- Role Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Role A -->
+                    <div class="p-3.5 rounded-xl bg-slate-800/80 border border-accent-500/30 relative">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-accent-500/20 text-accent-300 border border-accent-500/30">
+                                Role A
+                            </span>
+                            <i class="fa-solid fa-paper-plane text-accent-400 text-sm"></i>
+                        </div>
+                        <p class="font-semibold text-sm text-white">The Plan Sender / Checker</p>
+                        <p class="text-xs text-slate-400 mt-1">Sends a text to review details: <em>"Hi! Are we still meeting for...?"</em></p>
+                    </div>
+
+                    <!-- Role B -->
+                    <div class="p-3.5 rounded-xl bg-slate-800/80 border border-brand-500/30 relative">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                                Role B
+                            </span>
+                            <i class="fa-solid fa-reply-all text-brand-400 text-sm"></i>
+                        </div>
+                        <p class="font-semibold text-sm text-white">The Plan Receiver / Confirmator</p>
+                        <p class="text-xs text-slate-400 mt-1">Checks details, validates or corrects: <em>"Yes, that's right!"</em> or <em>"Actually..."</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: 10-Minute Phase Timer (5 Cols) -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between"
+                 :class="{ 'timer-active border-brand-500/40': timerRunning }">
+                
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-stopwatch text-brand-400"></i> Activity Timer
+                        </span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold"
+                              :class="{
+                                  'bg-amber-500/20 text-amber-300 border border-amber-500/30': currentPhase === 1,
+                                  'bg-brand-500/20 text-brand-300 border border-brand-500/30': currentPhase === 2,
+                                  'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30': currentPhase === 3
+                              }"
+                              x-text="getPhaseName(currentPhase)">
+                        </span>
+                    </div>
+
+                    <!-- Digital Timer Display -->
+                    <div class="text-center py-2">
+                        <div class="text-4xl sm:text-5xl font-mono font-extrabold tracking-tight text-white drop-shadow-md">
+                            <span x-text="formatTime(timeRemaining)">10:00</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1" x-text="getPhaseInstruction(currentPhase)"></p>
+                    </div>
+
+                    <!-- 3-Stage Phase Progress Bar -->
+                    <div class="mt-3 space-y-1">
+                        <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden flex gap-0.5 p-0.5">
+                            <!-- Phase 1: 2 min (20%) -->
+                            <div class="h-full rounded-l transition-all duration-300"
+                                 :class="timeRemaining <= 600 && timeRemaining > 480 ? 'bg-amber-400' : 'bg-slate-700'"
+                                 style="width: 20%"></div>
+                            <!-- Phase 2: 6 min (60%) -->
+                            <div class="h-full transition-all duration-300"
+                                 :class="timeRemaining <= 480 && timeRemaining > 120 ? 'bg-brand-500' : 'bg-slate-700'"
+                                 style="width: 60%"></div>
+                            <!-- Phase 3: 2 min (20%) -->
+                            <div class="h-full rounded-r transition-all duration-300"
+                                 :class="timeRemaining <= 120 ? 'bg-indigo-500' : 'bg-slate-700'"
+                                 style="width: 20%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
+                            <span>0m: Setup</span>
+                            <span>2m: Text Exchange</span>
+                            <span>8m: Class Report</span>
+                            <span>10m</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer Controls -->
+                <div class="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-slate-800">
+                    <button @click="toggleTimer()" 
+                            class="flex-1 py-2 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md"
+                            :class="timerRunning ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-brand-600 hover:bg-brand-500 text-white'">
+                        <i class="fa-solid" :class="timerRunning ? 'fa-pause' : 'fa-play'"></i>
+                        <span x-text="timerRunning ? 'Pause Timer' : 'Start Timer'"></span>
+                    </button>
+
+                    <button @click="resetTimer()" 
+                            class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                            title="Reset Timer to 10:00">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Smartphone Texting Simulator & Scaffolds Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Column: Smartphone Simulator (7 Cols) -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col">
+                
+                <!-- Chat Screen Header -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <span class="w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full absolute bottom-0 right-0"></span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                                <span x-text="activeRole === 'A' ? 'Messaging Partner (Role B)' : 'Messaging Partner (Role A)'"></span>
+                            </h3>
+                            <p class="text-xs text-brand-400 font-medium" x-text="activePrompt ? 'Prompt #' + activePrompt.id + ': ' + activePrompt.title : 'No prompt selected (Pick below)'"></p>
+                        </div>
+                    </div>
+
+                    <!-- Role Switcher Control -->
+                    <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+                        <button @click="setRole('A')" 
+                                class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                                :class="activeRole === 'A' ? 'bg-accent-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'">
+                            <i class="fa-solid fa-paper-plane text-[10px]"></i> Role A
+                        </button>
+                        <button @click="setRole('B')" 
+                                class="px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                                :class="activeRole === 'B' ? 'bg-brand-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'">
+                            <i class="fa-solid fa-reply text-[10px]"></i> Role B
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Card Prompt Context Banner inside Chat -->
+                <template x-if="activePrompt">
+                    <div class="mb-3 p-2.5 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs flex items-start gap-2.5">
+                        <div class="p-1.5 rounded-lg bg-brand-500/20 text-brand-300 font-bold shrink-0">
+                            #<span x-text="activePrompt.id"></span>
+                        </div>
+                        <div class="flex-1">
+                            <span class="font-bold text-slate-200" x-text="activePrompt.title"></span>
+                            <div class="text-slate-400 text-[11px] mt-0.5 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                <div><strong class="text-accent-400">Sender Check:</strong> <span x-text="activePrompt.senderCheck"></span></div>
+                                <div><strong class="text-brand-400">Receiver Task:</strong> <span x-text="activePrompt.receiverTask"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Phone Chat Messages Display Window -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 h-80 overflow-y-auto space-y-3 shadow-inner flex flex-col" id="chatWindow">
+                    
+                    <div x-show="messages.length === 0" class="m-auto text-center py-8 text-slate-500">
+                        <i class="fa-regular fa-comments text-3xl mb-2 opacity-50"></i>
+                        <p class="text-xs">No messages yet. Use the scaffold chips or type below to send a text!</p>
+                    </div>
+
+                    <template x-for="(msg, index) in messages" :key="index">
+                        <div class="flex flex-col" :class="msg.role === activeRole ? 'items-end' : 'items-start'">
+                            <div class="chat-bubble max-w-[85%] rounded-2xl px-4 py-2.5 text-xs shadow-md relative"
+                                 :class="msg.role === 'A' 
+                                    ? 'bg-accent-600 text-white rounded-br-none' 
+                                    : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-none'">
+                                
+                                <div class="flex items-center justify-between gap-3 text-[10px] opacity-80 mb-1 pb-1 border-b border-white/10">
+                                    <span class="font-bold" x-text="msg.role === 'A' ? 'Role A (Sender)' : 'Role B (Receiver)'"></span>
+                                    <span x-text="msg.time"></span>
+                                </div>
+
+                                <p class="text-sm leading-relaxed whitespace-pre-wrap" x-text="msg.text"></p>
+
+                                <!-- Validation Tag Badge -->
+                                <template x-if="msg.badge">
+                                    <div class="mt-2 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-black/30 border border-white/10">
+                                        <span x-text="msg.badge"></span>
+                                    </div>
+                                </template>
+
+                                <!-- Speak Message Audio Button -->
+                                <button @click="speakText(msg.text)" 
+                                        class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-900 border border-slate-700 text-slate-300 hover:text-brand-400 flex items-center justify-center text-[10px] shadow"
+                                        title="Listen to pronunciation">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Text-to-Speech Preview & Badge Selector -->
+                <div class="mt-3 space-y-3">
+                    
+                    <!-- Badge / Intent Selector -->
+                    <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 text-xs">
+                        <span class="text-slate-400 text-[11px] font-medium shrink-0">Add Status Tag:</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <template x-for="b in badges" :key="b">
+                                <button @click="selectedBadge = (selectedBadge === b ? '' : b)"
+                                        class="px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all"
+                                        :class="selectedBadge === b ? 'bg-brand-500/20 text-brand-300 border-brand-500/50' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'">
+                                    <span x-text="b"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Input Box with Audio & Send Controls -->
+                    <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-xl p-1.5 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
+                        <input type="text" 
+                               x-model="inputText" 
+                               @keydown.enter="sendMessage()"
+                               placeholder="Type your text message or click a scaffold chip below..." 
+                               class="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none">
+                        
+                        <!-- Speak Pronunciation Audio Button -->
+                        <button @click="speakText(inputText)" 
+                                :disabled="!inputText.trim()"
+                                class="p-2 rounded-lg text-slate-400 hover:text-brand-400 disabled:opacity-40 transition-colors"
+                                title="Listen to text pronunciation before sending">
+                            <i class="fa-solid fa-headphones text-sm"></i>
+                        </button>
+
+                        <!-- Send Button -->
+                        <button @click="sendMessage()" 
+                                :disabled="!inputText.trim()"
+                                class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow">
+                            <span>Send</span>
+                            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <!-- Quick Scaffold Selector Tabs for A1 Learners -->
+                    <div class="bg-slate-800/60 rounded-xl p-3 border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> A1 Scaffold Chips (Click to insert)
+                            </span>
+                            <span class="text-[10px] text-slate-500" x-text="activeRole === 'A' ? 'Showing Role A Checking Chips' : 'Showing Role B Response Chips'"></span>
+                        </div>
+
+                        <!-- Role A Scaffolds -->
+                        <div x-show="activeRole === 'A'" class="flex flex-wrap gap-1.5">
+                            <template x-for="chip in scaffolds.roleA" :key="chip">
+                                <button @click="appendScaffold(chip)" 
+                                        class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-accent-950 hover:border-accent-500/50 border border-slate-700 text-slate-200 text-xs transition-all text-left">
+                                    <span x-text="chip"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Role B Scaffolds -->
+                        <div x-show="activeRole === 'B'" class="flex flex-wrap gap-1.5">
+                            <template x-for="chip in scaffolds.roleB" :key="chip">
+                                <button @click="appendScaffold(chip)" 
+                                        class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-brand-950 hover:border-brand-500/50 border border-slate-700 text-slate-200 text-xs transition-all text-left">
+                                    <span x-text="chip"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Class Wrap-Up Presentation Generator (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Pair Report Generator Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                            <i class="fa-solid fa-award text-amber-400"></i> Pair Presentation Generator
+                        </h3>
+                        <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 font-semibold">Phase 3</span>
+                    </div>
+
+                    <p class="text-xs text-slate-400">
+                        Fill in your validated plan details to create your final class report sentence:
+                    </p>
+
+                    <!-- Form Input Fields -->
+                    <div class="space-y-2.5 text-xs">
+                        <div>
+                            <label class="text-slate-300 font-medium block mb-1">Activity / Event:</label>
+                            <input type="text" x-model="reportActivity" placeholder="e.g., studying English / movie night" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-slate-300 font-medium block mb-1">Confirmed Day:</label>
+                                <input type="text" x-model="reportDay" placeholder="e.g., Friday / Saturday" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="text-slate-300 font-medium block mb-1">Confirmed Time:</label>
+                                <input type="text" x-model="reportTime" placeholder="e.g., 4:00 PM" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-slate-300 font-medium block mb-1">Confirmed Place or Note:</label>
+                            <input type="text" x-model="reportPlace" placeholder="e.g., at Star Cafe / bring coursebook" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Generated Output Box -->
+                    <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-brand-400">Class Presentation Sentence:</span>
+                        <p class="text-xs sm:text-sm font-semibold text-white leading-relaxed italic" x-text="generatedReportSentence"></p>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button @click="copyReport()" 
+                                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5 border border-slate-700">
+                                <i class="fa-regular fa-copy"></i>
+                                <span x-text="copiedReport ? 'Copied!' : 'Copy Text'"></span>
+                            </button>
+                            <button @click="speakText(generatedReportSentence)" 
+                                    class="px-3 py-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 text-xs font-semibold transition-colors flex items-center gap-1.5 border border-brand-500/30">
+                                <i class="fa-solid fa-volume-high"></i>
+                                <span>Read Aloud</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Language Scaffolding Cheat Sheet Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+                    <h3 class="font-bold text-sm text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-book-bookmark text-indigo-400"></i> Language Reference Cheat-Sheet
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <span class="font-bold text-accent-400 block mb-1">Checking / Validating:</span>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                                <li>Are we still meeting for [Activity]?</li>
+                                <li>Just checking: Are you going to [Place] on [Day]?</li>
+                                <li>Do you remember our plan for [Day] at [Time]?</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <span class="font-bold text-brand-400 block mb-1">Confirming Details:</span>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                                <li>Yes, that's right! See you then!</li>
+                                <li>Everything is ready! I am excited.</li>
+                                <li>Perfect! See you at [Place] at [Time].</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <span class="font-bold text-amber-400 block mb-1">Correcting / Updating:</span>
+                            <ul class="list-disc list-inside text-slate-300 space-y-1 pl-1">
+                                <li>Actually, can we meet at [Time] instead?</li>
+                                <li>Oh! The time is [Time], not [Old Time].</li>
+                                <li>Sorry, the location changed to [Place].</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Outcome Prompts Library Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-brand-400"></i> Outcome Prompt Library
+                        <span class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-normal border border-slate-700" x-text="filteredPrompts.length + ' Cards'"></span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Select a prompt card to load into your chat simulator or practice with a partner.</p>
+                </div>
+
+                <!-- Lucky Draw / Randomizer Button -->
+                <button @click="pickRandomPrompt()" 
+                        class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-dice" :class="isRandomizing ? 'animate-spin' : ''"></i>
+                    <span>Lucky Draw Randomizer</span>
+                </button>
+            </div>
+
+            <!-- Search & Category Filters -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                
+                <!-- Category Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                    <template x-for="cat in categories" :key="cat">
+                        <button @click="selectedCategory = cat" 
+                                class="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border"
+                                :class="selectedCategory === cat 
+                                    ? 'bg-brand-600 text-white border-brand-500' 
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'">
+                            <span x-text="cat"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Search Input -->
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" 
+                           x-model="searchQuery" 
+                           placeholder="Search prompts..." 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <!-- 20 Prompts Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <template x-for="prompt in filteredPrompts" :key="prompt.id">
+                    <div @click="setActivePrompt(prompt)" 
+                         class="p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between relative group"
+                         :class="activePrompt && activePrompt.id === prompt.id 
+                            ? 'bg-slate-800 border-brand-500 ring-2 ring-brand-500/30 shadow-lg scale-[1.01]' 
+                            : 'bg-slate-950/60 hover:bg-slate-800/80 border-slate-800 hover:border-slate-700'">
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700" x-text="'Prompt #' + prompt.id"></span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full font-medium" 
+                                      :class="getCategoryBadgeClass(prompt.category)" 
+                                      x-text="prompt.category"></span>
+                            </div>
+
+                            <h4 class="font-bold text-sm text-white mb-2 group-hover:text-brand-300 transition-colors" x-text="prompt.title"></h4>
+
+                            <div class="space-y-1.5 text-xs text-slate-300">
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/80">
+                                    <span class="text-[10px] uppercase font-bold text-accent-400 block mb-0.5">Role A Check:</span>
+                                    <p class="text-[11px] text-slate-300" x-text="prompt.senderCheck"></p>
+                                </div>
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/80">
+                                    <span class="text-[10px] uppercase font-bold text-brand-400 block mb-0.5">Role B Response:</span>
+                                    <p class="text-[11px] text-slate-300" x-text="prompt.receiverTask"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                            <span class="text-slate-500 flex items-center gap-1">
+                                <i class="fa-solid fa-bullseye text-[10px]"></i> Target: Validate
+                            </span>
+                            <span class="font-bold text-brand-400 group-hover:underline flex items-center gap-1">
+                                <span x-text="activePrompt && activePrompt.id === prompt.id ? 'Active' : 'Select Card'"></span>
+                                <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Instructions Modal -->
+    <div x-show="showInfoModal" 
+         x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100">
+        
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4" @click.outside="showInfoModal = false">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chalkboard-user text-brand-400"></i> How to Play (10 Minutes)
+                </h3>
+                <button @click="showInfoModal = false" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <div class="flex gap-3 items-start">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold flex items-center justify-center shrink-0">1</span>
+                    <div>
+                        <strong class="text-white block mb-0.5">Setup & Pick Prompt (2 Mins)</strong>
+                        <p>Work in pairs (Role A and Role B). Choose 1 Prompt Card from the library or click <em>Lucky Draw</em>.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-start">
+                    <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 font-bold flex items-center justify-center shrink-0">2</span>
+                    <div>
+                        <strong class="text-white block mb-0.5">Text Exchange & Validation (6 Mins)</strong>
+                        <p>Role A sends a text checking details. Role B reads, verifies on their calendar, and replies with a confirmation or correction. Swap roles and repeat!</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 items-start">
+                    <span class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold flex items-center justify-center shrink-0">3</span>
+                    <div>
+                        <strong class="text-white block mb-0.5">Class Wrap-Up Report (2 Mins)</strong>
+                        <p>Use the Presentation Generator to report your confirmed plans to the class!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 text-right">
+                <button @click="showInfoModal = false" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs">
+                    Got It, Let's Start!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioEngine = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playChime(freq = 523.25, type = 'sine', duration = 0.3) {
+                try {
+                    this.init();
+                    if (this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) { console.log('Audio init warning', e); }
+            },
+            playSuccess() {
+                this.playChime(523.25, 'sine', 0.15); // C5
+                setTimeout(() => this.playChime(659.25, 'sine', 0.25), 120); // E5
+            },
+            playBell() {
+                this.playChime(880, 'triangle', 0.6); // A5 bell sound
+            }
+        };
+
+        function planCheckApp() {
+            return {
+                // Timer State
+                timeRemaining: 600, // 10 minutes in seconds
+                timerRunning: false,
+                timerInterval: null,
+                currentPhase: 1, // 1: Setup, 2: Texting, 3: Report
+                soundEnabled: true,
+                showInfoModal: false,
+
+                // Prompt Filter & Library State
+                searchQuery: '',
+                selectedCategory: 'All',
+                categories: ['All', 'Social', 'Study/Work', 'Sports & Outings', 'Food & Parties'],
+                activePrompt: null,
+                isRandomizing: false,
+
+                // Smartphone Chat State
+                activeRole: 'A', // 'A' or 'B'
+                messages: [],
+                inputText: '',
+                selectedBadge: '✅ Plan Validated',
+                badges: ['✅ Plan Validated', '🔄 Time Corrected', '📍 Venue Updated', '🎒 Item Reminder Added'],
+
+                // Scaffolds Database
+                scaffolds: {
+                    roleA: [
+                        "Hi! Are we still meeting for...?",
+                        "Is our meeting at...?",
+                        "Do you remember our plan for...?",
+                        "Are you going to... on...?",
+                        "Just checking our plan for..."
+                    ],
+                    roleB: [
+                        "Yes, that's right! See you then!",
+                        "Everything is ready!",
+                        "Actually, can we meet at... instead?",
+                        "Oh! The time is..., not...",
+                        "Don't forget to bring...",
+                        "Sorry, the location changed to..."
+                    ]
+                },
+
+                // Report Generator State
+                reportActivity: '',
+                reportDay: '',
+                reportTime: '',
+                reportPlace: '',
+                copiedReport: false,
+
+                // 20 Outcome Prompts List
+                prompts: [
+                    { id: 1, category: 'Study/Work', title: 'Library Study Group', senderCheck: 'Are we still studying English at the library on Friday at 4:00 PM?', receiverTask: 'Confirm: Yes! Remind Role A to bring coursebook.' },
+                    { id: 2, category: 'Social', title: 'Saturday Movie Night', senderCheck: 'Is the cinema movie starting at 7:30 PM on Saturday?', receiverTask: 'Confirm: Yes, and mention tickets are already bought.' },
+                    { id: 3, category: 'Food & Parties', title: 'Pizza Lunch Date', senderCheck: 'Are we having pizza together on Wednesday at 1:00 PM?', receiverTask: 'Correction: Change time to 1:30 PM because of class.' },
+                    { id: 4, category: 'Social', title: 'Airport Pickup', senderCheck: 'Is your flight arriving tomorrow morning at 8:00 AM?', receiverTask: 'Confirm: Yes! Ask Role A to send a text upon arrival.' },
+                    { id: 5, category: 'Sports & Outings', title: 'Morning Gym Workout', senderCheck: 'Are we going to the gym on Tuesday at 7:00 AM?', receiverTask: 'Confirm: Yes! Remind Role A to bring a water bottle.' },
+                    { id: 6, category: 'Social', title: 'Birthday Present Shopping', senderCheck: 'Are we buying Sarah\'s gift on Thursday at 4:00 PM?', receiverTask: 'Confirm: Yes, and suggest meeting at main mall entrance.' },
+                    { id: 7, category: 'Sports & Outings', title: 'Sunday Mountain Hike', senderCheck: 'Is our Sunday hike still starting at 9:00 AM?', receiverTask: 'Correction: Change time to 10:00 AM due to early rain.' },
+                    { id: 8, category: 'Food & Parties', title: 'Coffee Catch-Up', senderCheck: 'Are we meeting at Star Cafe at 5:00 PM today?', receiverTask: 'Confirm: Yes! Reply: "See you in 30 minutes!"' },
+                    { id: 9, category: 'Study/Work', title: 'Group Presentation Practice', senderCheck: 'Are we practicing our presentation on Monday at 3:00 PM?', receiverTask: 'Confirm: Yes! Ask Role A to bring their laptop.' },
+                    { id: 10, category: 'Social', title: 'Friday Rock Concert', senderCheck: 'Are we going to the concert this Friday at 8:00 PM?', receiverTask: 'Confirm: Yes! Tell Role A to meet near Gate B.' },
+                    { id: 11, category: 'Food & Parties', title: 'Taco Night at Home', senderCheck: 'Are you coming over for tacos on Saturday at 6:30 PM?', receiverTask: 'Confirm: Yes! Offer to bring drinks or dessert.' },
+                    { id: 12, category: 'Sports & Outings', title: 'Park Picnic', senderCheck: 'Is our Sunday picnic at Central Park still at 12:00 PM?', receiverTask: 'Confirm: Yes! Specify meeting near the fountain.' },
+                    { id: 13, category: 'Social', title: 'Mall Shopping Spree', senderCheck: 'Are we going shopping today at 2:00 PM?', receiverTask: 'Correction: Plan was for Saturday at 2:00 PM, not today.' },
+                    { id: 14, category: 'Sports & Outings', title: 'History Museum Trip', senderCheck: 'Is our museum visit on Sunday at 11:00 AM?', receiverTask: 'Confirm: Yes! Mention student tickets are $5.' },
+                    { id: 15, category: 'Sports & Outings', title: 'Watching Football Game', senderCheck: 'Are we watching the match together on Sunday at 4:00 PM?', receiverTask: 'Confirm: Yes! Decide on meeting at house or sports cafe.' },
+                    { id: 16, category: 'Food & Parties', title: 'Cooking Class', senderCheck: 'Is our Italian cooking class starting at 6:00 PM tonight?', receiverTask: 'Confirm: Yes! Reply: "Don\'t be late!"' },
+                    { id: 17, category: 'Sports & Outings', title: 'Road Trip to Beach', senderCheck: 'Are we driving to the beach on Saturday at 8:00 AM?', receiverTask: 'Correction: Change time to 8:30 AM at your house.' },
+                    { id: 18, category: 'Social', title: 'Online Video Games', senderCheck: 'Are we playing online games tonight at 9:00 PM?', receiverTask: 'Confirm: Yes! Send gamer tag in the text.' },
+                    { id: 19, category: 'Study/Work', title: 'Language Exchange Meetup', senderCheck: 'Is the English meetup at the downtown cafe on Thursday at 7:00 PM?', receiverTask: 'Confirm: Yes! Reply: "See you there!"' },
+                    { id: 20, category: 'Food & Parties', title: 'Weekend Barbecue', senderCheck: 'Are we bringing drinks to the BBQ on Sunday at 2:00 PM?', receiverTask: 'Confirm: Yes! Ask Role A to buy orange juice & soda.' }
+                ],
+
+                initApp() {
+                    // Set default prompt
+                    this.activePrompt = this.prompts[0];
+                    this.updateReportFromPrompt(this.prompts[0]);
+                },
+
+                get filteredPrompts() {
+                    return this.prompts.filter(p => {
+                        const matchesCategory = this.selectedCategory === 'All' || p.category === this.selectedCategory;
+                        const matchesSearch = p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                                              p.senderCheck.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        return matchesCategory && matchesSearch;
+                    });
+                },
+
+                get generatedReportSentence() {
+                    const activity = this.reportActivity || '[Activity]';
+                    const day = this.reportDay || '[Day]';
+                    const time = this.reportTime || '[Time]';
+                    const place = this.reportPlace || '[Place]';
+                    return `We texted about ${activity}. We are meeting on ${day} at ${time} ${place.startsWith('at') || place.startsWith('in') ? place : 'at ' + place}!`;
+                },
+
+                // Timer Controls
+                toggleTimer() {
+                    if (this.timerRunning) {
+                        clearInterval(this.timerInterval);
+                        this.timerRunning = false;
+                    } else {
+                        if (this.soundEnabled) AudioEngine.playSuccess();
+                        this.timerRunning = true;
+                        this.timerInterval = setInterval(() => {
+                            if (this.timeRemaining > 0) {
+                                this.timeRemaining--;
+                                this.checkPhase();
+                            } else {
+                                this.resetTimer();
+                                if (this.soundEnabled) AudioEngine.playBell();
+                            }
+                        }, 1000);
+                    }
+                },
+
+                resetTimer() {
+                    clearInterval(this.timerInterval);
+                    this.timerRunning = false;
+                    this.timeRemaining = 600;
+                    this.currentPhase = 1;
+                },
+
+                checkPhase() {
+                    // 10:00 to 8:00 (600-481s) -> Phase 1 Setup
+                    // 8:00 to 2:00 (480-121s) -> Phase 2 Texting
+                    // 2:00 to 0:00 (120-0s) -> Phase 3 Class Report
+                    const oldPhase = this.currentPhase;
+                    if (this.timeRemaining > 480) this.currentPhase = 1;
+                    else if (this.timeRemaining > 120) this.currentPhase = 2;
+                    else this.currentPhase = 3;
+
+                    if (oldPhase !== this.currentPhase && this.soundEnabled) {
+                        AudioEngine.playBell();
+                    }
+                },
+
+                getPhaseName(phase) {
+                    if (phase === 1) return 'Phase 1: Setup (2m)';
+                    if (phase === 2) return 'Phase 2: Text Exchange (6m)';
+                    return 'Phase 3: Class Report (2m)';
+                },
+
+                getPhaseInstruction(phase) {
+                    if (phase === 1) return 'Pick a prompt card and prepare your text.';
+                    if (phase === 2) return 'Send text messages to validate and confirm details!';
+                    return 'Assemble your final pair summary and present to class.';
+                },
+
+                formatTime(seconds) {
+                    const m = Math.floor(seconds / 60);
+                    const s = seconds % 60;
+                    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                },
+
+                // Chat & Role Functions
+                setRole(role) {
+                    this.activeRole = role;
+                    if (this.soundEnabled) AudioEngine.playChime(600, 'sine', 0.1);
+                },
+
+                appendScaffold(text) {
+                    if (this.inputText.trim()) {
+                        this.inputText += ' ' + text;
+                    } else {
+                        this.inputText = text;
+                    }
+                },
+
+                sendMessage() {
+                    if (!this.inputText.trim()) return;
+
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    this.messages.push({
+                        role: this.activeRole,
+                        text: this.inputText.trim(),
+                        time: timeStr,
+                        badge: this.selectedBadge
+                    });
+
+                    this.inputText = '';
+                    if (this.soundEnabled) AudioEngine.playSuccess();
+
+                    // Scroll chat window to bottom
+                    this.$nextTick(() => {
+                        const win = document.getElementById('chatWindow');
+                        if (win) win.scrollTop = win.scrollHeight;
+                    });
+                },
+
+                speakText(text) {
+                    if (!text || !('speechSynthesis' in window)) return;
+                    window.speechSynthesis.cancel(); // Stop active speech
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9; // Slightly slower for A1 learners
+                    window.speechSynthesis.speak(utterance);
+                },
+
+                // Prompt Selection & Randomizer
+                setActivePrompt(prompt) {
+                    this.activePrompt = prompt;
+                    this.updateReportFromPrompt(prompt);
+                    if (this.soundEnabled) AudioEngine.playChime(700, 'sine', 0.15);
+                },
+
+                pickRandomPrompt() {
+                    this.isRandomizing = true;
+                    if (this.soundEnabled) AudioEngine.playChime(400, 'triangle', 0.1);
+                    
+                    setTimeout(() => {
+                        const randomIndex = Math.floor(Math.random() * this.prompts.length);
+                        this.activePrompt = this.prompts[randomIndex];
+                        this.updateReportFromPrompt(this.activePrompt);
+                        this.isRandomizing = false;
+                        if (this.soundEnabled) AudioEngine.playSuccess();
+                    }, 400);
+                },
+
+                updateReportFromPrompt(prompt) {
+                    if (!prompt) return;
+                    this.reportActivity = prompt.title;
+                    this.reportDay = 'Friday';
+                    this.reportTime = '4:00 PM';
+                    this.reportPlace = 'Star Cafe';
+                },
+
+                getCategoryBadgeClass(cat) {
+                    switch(cat) {
+                        case 'Social': return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+                        case 'Study/Work': return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                        case 'Sports & Outings': return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                        case 'Food & Parties': return 'bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                        default: return 'bg-slate-800 text-slate-300';
+                    }
+                },
+
+                copyReport() {
+                    const text = this.generatedReportSentence;
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text);
+                    } else {
+                        const dummy = document.createElement('textarea');
+                        document.body.appendChild(dummy);
+                        dummy.value = text;
+                        dummy.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(dummy);
+                    }
+                    this.copiedReport = true;
+                    setTimeout(() => this.copiedReport = false, 2000);
+                },
+
+                toggleSound() {
+                    this.soundEnabled = !this.soundEnabled;
+                },
+
+                resetAll() {
+                    this.resetTimer();
+                    this.messages = [];
+                    this.inputText = '';
+                    this.reportActivity = '';
+                    this.reportDay = '';
+                    this.reportTime = '';
+                    this.reportPlace = '';
+                    if (this.soundEnabled) AudioEngine.playChime(300, 'sine', 0.2);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
