@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EFL Grammar Studio - First Conditional Interactive Projection App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Global scrollbar hiding rule */
+    *::-webkit-scrollbar { display: none !important; }
+    * { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP HEADER & TOOLBAR (Compact single line visual hierarchy) -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-slate-950 border-b border-slate-800 shadow-2xl">
+    <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Topic Badge -->
+      <div class="flex items-center space-x-3 shrink-0">
+        <div class="bg-indigo-600 text-white p-2 rounded-lg font-black text-xl shadow-lg">FC</div>
+        <div>
+          <h1 class="text-lg font-bold text-white leading-tight">First Conditional Studio</h1>
+          <p class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">EFL Projection App • Real Future Possibilities</p>
+        </div>
+      </div>
+
+      <!-- Team Scoreboard -->
+      <div class="flex items-center space-x-6 bg-slate-900/90 border border-slate-800 rounded-xl px-4 py-1.5 shadow-inner">
+        <!-- Red Team -->
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">Red Team</span>
+          <div class="flex items-center bg-slate-950 rounded-lg border border-slate-800 px-2 py-0.5">
+            <button onclick="adjustScore('red', -1)" class="text-rose-400 font-bold hover:text-rose-300 text-lg px-1">-</button>
+            <span id="score-red" class="text-xl font-extrabold text-white min-w-[2rem] text-center">0</span>
+            <button onclick="adjustScore('red', 1)" class="text-rose-400 font-bold hover:text-rose-300 text-lg px-1">+</button>
+          </div>
+        </div>
+
+        <div class="h-6 w-px bg-slate-800"></div>
+
+        <!-- Blue Team -->
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-sky-500 animate-pulse"></span>
+          <span class="text-xs font-bold text-sky-400 uppercase tracking-wider">Blue Team</span>
+          <div class="flex items-center bg-slate-950 rounded-lg border border-slate-800 px-2 py-0.5">
+            <button onclick="adjustScore('blue', -1)" class="text-sky-400 font-bold hover:text-sky-300 text-lg px-1">-</button>
+            <span id="score-blue" class="text-xl font-extrabold text-white min-w-[2rem] text-center">0</span>
+            <button onclick="adjustScore('blue', 1)" class="text-sky-400 font-bold hover:text-sky-300 text-lg px-1">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Tools -->
+      <div class="flex items-center space-x-2 shrink-0">
+        <button onclick="toggleAudio()" id="audio-toggle" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+          <span>🔊</span> <span id="audio-status-text">Audio ON</span>
+        </button>
+        <button onclick="openGrammarModal()" class="bg-amber-600/30 hover:bg-amber-600/40 text-amber-300 text-xs font-bold px-3 py-2 rounded-lg border border-amber-500/50 transition flex items-center gap-1.5">
+          <span>💡</span> <span>Grammar Rules</span>
+        </button>
+        <button onclick="toggleLiveEdit()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg border border-indigo-400/50 transition flex items-center gap-1.5 shadow-md">
+          <span>✏️</span> <span>Teacher Edit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sleek Horizontal Navigation (1 single line, whitespace-nowrap, hidden scrollbar) -->
+    <nav class="w-full bg-slate-900 border-t border-slate-800 overflow-x-auto whitespace-nowrap py-2 px-4 shadow-md">
+      <div class="inline-flex space-x-2 text-base font-semibold" id="nav-tabs-container">
+        <!-- Tab 1 to 11 generated dynamically or static -->
+        <button onclick="switchSection(1)" id="tab-1" class="nav-tab px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold transition">1. Scrambled Sentences</button>
+        <button onclick="switchSection(2)" id="tab-2" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">2. Fill Blanks</button>
+        <button onclick="switchSection(3)" id="tab-3" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">3. Error Spotting</button>
+        <button onclick="switchSection(4)" id="tab-4" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">4. Transformations</button>
+        <button onclick="switchSection(5)" id="tab-5" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">5. Story Cloze</button>
+        <button onclick="switchSection(6)" id="tab-6" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">6. Dialogues</button>
+        <button onclick="switchSection(7)" id="tab-7" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">7. Rule Sorting</button>
+        <button onclick="switchSection(8)" id="tab-8" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">8. Information Gap</button>
+        <button onclick="switchSection(9)" id="tab-9" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">9. Situation Cards</button>
+        <button onclick="switchSection(10)" id="tab-10" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">10. Spot Difference</button>
+        <button onclick="switchSection(11)" id="tab-11" class="nav-tab px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">11. Guided Debate</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- MAIN ACTIVE SLOT CONTAINER (Massive padding-top/bottom to avoid fixed header overlap) -->
+  <main class="w-full max-w-7xl mx-auto px-4 pt-36 pb-32 min-h-screen">
+
+    <!-- SECTION 1: WORD ORDER & SCRAMBLED SENTENCES (DEFAULT ACTIVE) -->
+    <section id="section-1" class="activity-section block">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-indigo-500/20 text-indigo-300 font-bold px-3 py-1 rounded-full text-sm border border-indigo-500/30">Activity 1 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🧩 Scrambled First Conditionals</h2>
+            <p class="text-slate-400 text-lg">Click the word tiles in order to assemble the correct First Conditional sentence.</p>
+          </div>
+          <button onclick="resetSection(1)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="scramble-container" class="space-y-8">
+          <!-- Exercise items generated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: FILL IN THE BLANKS -->
+    <section id="section-2" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-emerald-500/20 text-emerald-300 font-bold px-3 py-1 rounded-full text-sm border border-emerald-500/30">Activity 2 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">✏️ Targeted Choice Cloze</h2>
+            <p class="text-slate-400 text-lg">Choose the correct verb forms (Simple Present in If-clause, Will + Verb in Main clause).</p>
+          </div>
+          <button onclick="resetSection(2)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="fill-container" class="space-y-6">
+          <!-- JS dynamic insertion -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: ERROR SPOTTING & PROOFREADING -->
+    <section id="section-3" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-rose-500/20 text-rose-300 font-bold px-3 py-1 rounded-full text-sm border border-rose-500/30">Activity 3 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🔍 Common Spanish-Speaker Error Spotting</h2>
+            <p class="text-slate-400 text-lg">Identify and correct fossilized errors (e.g., using "will" inside the if-clause, double negatives with "unless").</p>
+          </div>
+          <button onclick="resetSection(3)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="error-container" class="space-y-8">
+          <!-- JS populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: SENTENCE TRANSFORMATION -->
+    <section id="section-4" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-amber-500/20 text-amber-300 font-bold px-3 py-1 rounded-full text-sm border border-amber-500/30">Activity 4 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🔄 Sentence Rewriting & Transformations</h2>
+            <p class="text-slate-400 text-lg">Rewrite imperative or conditional statements using 'If' or 'Unless'.</p>
+          </div>
+          <button onclick="resetSection(4)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="transform-container" class="space-y-8">
+          <!-- JS populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: CONTEXTUAL STORY CLOZE -->
+    <section id="section-5" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-purple-500/20 text-purple-300 font-bold px-3 py-1 rounded-full text-sm border border-purple-500/30">Activity 5 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">📖 Contextual Narrative Cloze</h2>
+            <p class="text-slate-400 text-lg">Complete the paragraph story about Sarah's job interview by picking the correct verb structures.</p>
+          </div>
+          <button onclick="checkStoryCloze()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg transition">Check Story</button>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-8 leading-relaxed text-2xl md:text-3xl font-medium text-slate-200">
+          <p class="mb-6">
+            Tomorrow is Sarah's big career interview. If she 
+            <select id="story-1" class="bg-slate-800 text-amber-400 font-bold border-2 border-indigo-500 rounded-lg px-3 py-1 mx-1 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">[select...]</option>
+              <option value="wakes up">wakes up</option>
+              <option value="will wake up">will wake up</option>
+              <option value="woke up">woke up</option>
+            </select>
+            early, she 
+            <select id="story-2" class="bg-slate-800 text-amber-400 font-bold border-2 border-indigo-500 rounded-lg px-3 py-1 mx-1 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">[select...]</option>
+              <option value="catches">catches</option>
+              <option value="will catch">will catch</option>
+              <option value="catch">catch</option>
+            </select>
+            the 8:00 AM express train.
+          </p>
+          <p class="mb-6">
+            If the train 
+            <select id="story-3" class="bg-slate-800 text-amber-400 font-bold border-2 border-indigo-500 rounded-lg px-3 py-1 mx-1 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">[select...]</option>
+              <option value="will be">will be</option>
+              <option value="is">is</option>
+              <option value="are">are</option>
+            </select>
+            on time, she 
+            <select id="story-4" class="bg-slate-800 text-amber-400 font-bold border-2 border-indigo-500 rounded-lg px-3 py-1 mx-1 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">[select...]</option>
+              <option value="will arrive">will arrive</option>
+              <option value="arrives">arrives</option>
+              <option value="arrived">arrived</option>
+            </select>
+            at the office with plenty of time to prepare.
+          </p>
+          <p>
+            Unless she 
+            <select id="story-5" class="bg-slate-800 text-amber-400 font-bold border-2 border-indigo-500 rounded-lg px-3 py-1 mx-1 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="">[select...]</option>
+              <option value="panics">panics</option>
+              <option value="won't panic">won't panic</option>
+              <option value="doesn't panic">doesn't panic</option>
+            </select>
+            during the interview, she will impress the hiring manager!
+          </p>
+        </div>
+
+        <div id="story-feedback" class="mt-6 hidden p-4 rounded-xl text-xl font-bold"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: REAL-WORLD DIALOGUE COMPLETION -->
+    <section id="section-6" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-cyan-500/20 text-cyan-300 font-bold px-3 py-1 rounded-full text-sm border border-cyan-500/30">Activity 6 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">💬 Conversational Exchanges</h2>
+            <p class="text-slate-400 text-lg">Select the natural response that correctly applies First Conditional rules in context.</p>
+          </div>
+          <button onclick="resetSection(6)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="dialogue-container" class="space-y-8">
+          <!-- JS Populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: CATEGORY & RULE SORTING -->
+    <section id="section-7" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-teal-500/20 text-teal-300 font-bold px-3 py-1 rounded-full text-sm border border-teal-500/30">Activity 7 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">📊 T-Chart Rule & Clause Sorting</h2>
+            <p class="text-slate-400 text-lg">Classify clause fragments into <b>IF-Clause (Simple Present)</b> vs <b>MAIN Clause (Will + Verb)</b>.</p>
+          </div>
+          <button onclick="checkSorting()" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg transition">Check Categories</button>
+        </div>
+
+        <div id="sorting-unassigned" class="bg-slate-900 border border-slate-700 rounded-xl p-4 mb-8 flex flex-wrap gap-3 min-h-[100px] items-center">
+          <!-- Dynamic cards -->
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900/90 border-2 border-indigo-500/50 rounded-2xl p-6">
+            <h3 class="text-2xl font-bold text-indigo-400 mb-2">IF / UNLESS CLAUSE</h3>
+            <p class="text-xs text-slate-400 mb-4 uppercase tracking-wider font-semibold">Condition (Requires Simple Present)</p>
+            <div id="bucket-if" class="space-y-3 min-h-[200px] border-2 border-dashed border-slate-700 rounded-xl p-3" ondragover="allowDrop(event)" ondrop="dropTile(event, 'if')">
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 border-2 border-emerald-500/50 rounded-2xl p-6">
+            <h3 class="text-2xl font-bold text-emerald-400 mb-2">MAIN RESULT CLAUSE</h3>
+            <p class="text-xs text-slate-400 mb-4 uppercase tracking-wider font-semibold">Result (Will / Won't + Base Verb)</p>
+            <div id="bucket-main" class="space-y-3 min-h-[200px] border-2 border-dashed border-slate-700 rounded-xl p-3" ondragover="allowDrop(event)" ondrop="dropTile(event, 'main')">
+            </div>
+          </div>
+        </div>
+
+        <div id="sorting-feedback" class="mt-6 hidden p-4 rounded-xl text-xl font-bold"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: INFORMATION GAP -->
+    <section id="section-8" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-orange-500/20 text-orange-300 font-bold px-3 py-1 rounded-full text-sm border border-orange-500/30">Activity 8 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🤝 Interactive Information Gap</h2>
+            <p class="text-slate-400 text-lg">Pair Work: Student A sees Conditions; Student B sees Results. Ask and answer to connect!</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="toggleInfogapRole('A')" id="btn-role-a" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-lg">Student A</button>
+            <button onclick="toggleInfogapRole('B')" id="btn-role-b" class="bg-slate-700 text-slate-300 hover:bg-slate-600 font-bold px-4 py-2 rounded-xl text-lg">Student B</button>
+          </div>
+        </div>
+
+        <!-- Student A Panel -->
+        <div id="infogap-panel-a" class="space-y-4">
+          <div class="bg-indigo-950/40 border border-indigo-500/30 p-4 rounded-xl mb-4">
+            <p class="text-lg font-bold text-indigo-300">👤 Student A Instructions:</p>
+            <p class="text-slate-300">Ask Student B questions like: <i>"What will happen if the flight is delayed?"</i> or <i>"What will we do if it rains?"</i></p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="infogap-cards-a">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Student B Panel -->
+        <div id="infogap-panel-b" class="space-y-4 hidden">
+          <div class="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-xl mb-4">
+            <p class="text-lg font-bold text-emerald-300">👤 Student B Instructions:</p>
+            <p class="text-slate-300">Answer Student A using your secret results list: <i>"If the flight is delayed, we will take the express train."</i></p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="infogap-cards-b">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: REAL-LIFE SITUATION CARDS -->
+    <section id="section-9" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-fuchsia-500/20 text-fuchsia-300 font-bold px-3 py-1 rounded-full text-sm border border-fuchsia-500/30">Activity 9 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🃏 Real-Life Decision Role-Play</h2>
+            <p class="text-slate-400 text-lg">Read the scenario card and formulate full oral responses using First Conditional.</p>
+          </div>
+          <button onclick="resetSection(9)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="situation-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 10: SPOT THE DIFFERENCE -->
+    <section id="section-10" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-sky-500/20 text-sky-300 font-bold px-3 py-1 rounded-full text-sm border border-sky-500/30">Activity 10 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">👁️ Spot the Difference: Scenario Comparison</h2>
+            <p class="text-slate-400 text-lg">Compare Plan A (Optimistic) vs Plan B (Pessimistic) and select the matching conditional outcome.</p>
+          </div>
+          <button onclick="resetSection(10)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="spot-container" class="space-y-8">
+          <!-- JS dynamic content -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 11: GUIDED DEBATE & OPINION PROMPTS -->
+    <section id="section-11" class="activity-section hidden">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700">
+          <div>
+            <span class="bg-yellow-500/20 text-yellow-300 font-bold px-3 py-1 rounded-full text-sm border border-yellow-500/30">Activity 11 of 11</span>
+            <h2 class="text-3xl font-extrabold text-white mt-2">🗣️ Classroom Debate Prompts</h2>
+            <p class="text-slate-400 text-lg">Classroom discussion cards with target structure frames for public speaking.</p>
+          </div>
+          <button onclick="resetSection(11)" class="text-slate-400 hover:text-white bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold">🔄 Reset Activity</button>
+        </div>
+
+        <div id="debate-container" class="grid grid-cols-1 gap-6">
+          <!-- JS populated -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- GRAMMAR RULE CHEAT SHEET MODAL -->
+  <div id="grammar-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl relative">
+      <button onclick="closeGrammarModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">✕</button>
+      
+      <div class="flex items-center space-x-3 mb-6">
+        <span class="text-3xl">💡</span>
+        <h3 class="text-3xl font-extrabold text-white">First Conditional Formula & Rules</h3>
+      </div>
+
+      <div class="space-y-6 text-slate-200">
+        <div class="bg-indigo-950/60 border border-indigo-500/40 p-6 rounded-xl">
+          <h4 class="text-xl font-bold text-indigo-300 mb-2">Structure Formula:</h4>
+          <p class="text-2xl font-mono font-bold text-amber-300">IF + Simple Present , WILL / WON'T + Base Verb</p>
+          <p class="text-sm text-slate-400 mt-2">Example: <i>If it <b>rains</b> tomorrow, we <b>will stay</b> at home.</i></p>
+        </div>
+
+        <div class="bg-rose-950/40 border border-rose-500/40 p-6 rounded-xl">
+          <h4 class="text-xl font-bold text-rose-300 mb-2">⚠️ Watch Out Spanish Speakers! (Fossilized Errors)</h4>
+          <ul class="list-disc list-inside space-y-2 text-lg">
+            <li><span class="text-rose-400 font-bold">Incorrect:</span> If it <s>will rain</s>, I will take an umbrella.</li>
+            <li><span class="text-emerald-400 font-bold">Correct:</span> If it <b>rains</b>, I will take an umbrella. (No "will" in the IF-clause!)</li>
+            <li><span class="text-rose-400 font-bold">Incorrect:</span> I will <s>to call</s> you later.</li>
+            <li><span class="text-emerald-400 font-bold">Correct:</span> I will <b>call</b> you later. (Base verb after modal "will", no "to").</li>
+          </ul>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <h4 class="text-xl font-bold text-amber-400 mb-2">Unless = If ... Not</h4>
+          <p class="text-lg"><i>"<b>Unless</b> you study, you won't pass."</i> = <i>"<b>If</b> you <b>don't</b> study, you won't pass."</i></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEACHER LIVE-EDIT PANEL (OFF-CANVAS MODAL) -->
+  <div id="liveedit-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-end">
+    <div class="bg-slate-900 border-l border-slate-700 w-full max-w-lg h-full p-6 shadow-2xl flex flex-col justify-between overflow-y-auto">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-slate-700 mb-6">
+          <h3 class="text-2xl font-extrabold text-white flex items-center gap-2"><span>✏️</span> Live Teacher Controls</h3>
+          <button onclick="toggleLiveEdit()" class="text-slate-400 hover:text-white text-2xl font-bold">✕</button>
+        </div>
+
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-bold text-slate-300 mb-2">Reset All Team Scores</label>
+            <button onclick="resetScores()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition">Reset Scores to 0</button>
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-300 mb-2">Classroom Banner Announcement</label>
+            <input id="teacher-announcement" type="text" placeholder="e.g. 5 minutes remaining for team challenge!" class="w-full bg-slate-800 border border-slate-700 text-white p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2">
+            <button onclick="broadcastAnnouncement()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition">Broadcast Banner</button>
+          </div>
+
+          <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <p class="text-sm text-slate-300 font-semibold mb-2">Quick Navigation Jump</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="switchSection(1); toggleLiveEdit();" class="bg-slate-700 text-slate-200 p-2 rounded text-xs font-bold hover:bg-slate-600">Sec 1: Scramble</button>
+              <button onclick="switchSection(3); toggleLiveEdit();" class="bg-slate-700 text-slate-200 p-2 rounded text-xs font-bold hover:bg-slate-600">Sec 3: Errors</button>
+              <button onclick="switchSection(7); toggleLiveEdit();" class="bg-slate-700 text-slate-200 p-2 rounded text-xs font-bold hover:bg-slate-600">Sec 7: Sorting</button>
+              <button onclick="switchSection(11); toggleLiveEdit();" class="bg-slate-700 text-slate-200 p-2 rounded text-xs font-bold hover:bg-slate-600">Sec 11: Debate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-slate-800 text-xs text-slate-500 text-center">
+        EFL Interactive Class Engine v3.5 • All Rights Reserved
+      </div>
+    </div>
+  </div>
+
+  <!-- BROADCAST BANNER CONTAINER -->
+  <div id="broadcast-banner" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-amber-500 text-slate-950 font-black text-2xl px-8 py-4 rounded-2xl shadow-2xl hidden animate-bounce border-2 border-amber-300">
+  </div>
+
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    // State management
+    let currentSection = 1;
+    let scores = { red: 0, blue: 0 };
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    // Web Audio API Synthesizer Sound FX
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      try {
+        let ctx = getAudioContext();
+        let osc = ctx.createOscillator();
+        let gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25); // A5
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'incorrect') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime); // A3
+          osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.3); // A2
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        }
+      } catch (e) { console.log('Audio Context Error', e); }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-status-text').innerText = audioEnabled ? 'Audio ON' : 'Audio OFF';
+      document.getElementById('audio-toggle').classList.toggle('opacity-50', !audioEnabled);
+    }
+
+    // Native Text to Speech
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        let utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Navigation Switcher (State Preservation via CSS display)
+    function switchSection(index) {
+      document.getElementById(`section-${currentSection}`).classList.add('hidden');
+      document.getElementById(`section-${currentSection}`).classList.remove('block');
+      
+      document.getElementById(`tab-${currentSection}`).classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+      document.getElementById(`tab-${currentSection}`).classList.add('text-slate-400');
+
+      currentSection = index;
+
+      document.getElementById(`section-${currentSection}`).classList.remove('hidden');
+      document.getElementById(`section-${currentSection}`).classList.add('block');
+      
+      document.getElementById(`tab-${currentSection}`).classList.add('bg-indigo-600', 'text-white', 'font-bold');
+      document.getElementById(`tab-${currentSection}`).classList.remove('text-slate-400');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Scoreboard functions
+    function adjustScore(team, val) {
+      scores[team] = Math.max(0, scores[team] + val);
+      document.getElementById(`score-${team}`).innerText = scores[team];
+      playSound('correct');
+    }
+
+    function resetScores() {
+      scores.red = 0;
+      scores.blue = 0;
+      document.getElementById('score-red').innerText = 0;
+      document.getElementById('score-blue').innerText = 0;
+    }
+
+    // Modals
+    function openGrammarModal() { document.getElementById('grammar-modal').classList.remove('hidden'); }
+    function closeGrammarModal() { document.getElementById('grammar-modal').classList.add('hidden'); }
+    function toggleLiveEdit() { document.getElementById('liveedit-modal').classList.toggle('hidden'); }
+
+    function broadcastAnnouncement() {
+      let input = document.getElementById('teacher-announcement').value;
+      if (!input) return;
+      let banner = document.getElementById('broadcast-banner');
+      banner.innerText = input;
+      banner.classList.remove('hidden');
+      playSound('correct');
+      setTimeout(() => { banner.classList.add('hidden'); }, 5000);
+    }
+
+    // DATA FOR ACTIVITIES
+    const scrambleData = [
+      { id: 1, sentence: "If you study hard , you will pass the exam ." },
+      { id: 2, sentence: "We will go to the beach if it is sunny tomorrow ." },
+      { id: 3, sentence: "If she doesn't hurry , she will miss the bus ." },
+      { id: 4, sentence: "Unless you eat breakfast , you will feel tired today ." },
+      { id: 5, sentence: "What will you do if you lose your passport ?" }
+    ];
+
+    const fillData = [
+      { id: 1, sentence: "If he _______ (call) me tonight, I _______ (answer) the phone.", options: ["calls / will answer", "will call / answer", "calls / answer"], correct: 0 },
+      { id: 2, sentence: "They won't go to the park if it _______ (rain) heavily.", options: ["rains", "will rain", "is raining"], correct: 0 },
+      { id: 3, sentence: "If you _______ (not / hurry), we _______ (be) late for the train.", options: ["don't hurry / will be", "won't hurry / are", "not hurry / will be"], correct: 0 },
+      { id: 4, sentence: "Unless she _______ (finish) her homework, she _______ (not / watch) TV.", options: ["finishes / won't watch", "doesn't finish / will watch", "will finish / doesn't watch"], correct: 0 },
+      { id: 5, sentence: "If I _______ (save) enough money, I _______ (buy) a new laptop.", options: ["save / will buy", "will save / buy", "save / buy"], correct: 0 }
+    ];
+
+    const errorData = [
+      { id: 1, bad: "If it will rain tomorrow, I will bring my umbrella.", correct: "If it rains tomorrow, I will bring my umbrella.", reason: "Never use 'will' in the IF-clause! Use Present Simple." },
+      { id: 2, bad: "If she study hard, she will to pass the test.", correct: "If she studies hard, she will pass the test.", reason: "3rd person needs '-s' in present simple, and modal 'will' is followed by base verb without 'to'." },
+      { id: 3, bad: "Unless you don't practice, you won't get better.", correct: "Unless you practice, you won't get better.", reason: "'Unless' already means 'If... not'. Avoid double negatives!" },
+      { id: 4, bad: "If we will arrive early, we will save good seats.", correct: "If we arrive early, we will save good seats.", reason: "Don't repeat 'will' in both clauses! Use present tense after 'if'." },
+      { id: 5, bad: "What will happen if he doesn't comes to class?", correct: "What will happen if he doesn't come to class?", reason: "After auxiliary 'doesn't', use base form 'come'." }
+    ];
+
+    const transformData = [
+      { id: 1, original: "Study hard or you won't pass the exam.", prompt: "If you...", choices: ["If you don't study hard, you won't pass.", "If you will study hard, you pass.", "Unless you don't study, you pass."], correct: 0 },
+      { id: 2, original: "If you don't wear a warm jacket, you will catch a cold.", prompt: "Unless...", choices: ["Unless you wear a warm jacket, you will catch a cold.", "Unless you don't wear a warm jacket, you catch cold.", "Unless you will wear jacket, you catch cold."], correct: 0 },
+      { id: 3, original: "Arrive on time and we will save a seat for you.", prompt: "If we...", choices: ["If you arrive on time, we will save a seat for you.", "If you will arrive on time, we save a seat.", "Unless you arrive on time, we save a seat."], correct: 0 },
+      { id: 4, original: "She will fail the exam if she doesn't revise her notes.", prompt: "She will fail the exam unless...", choices: ["She will fail the exam unless she revises her notes.", "She will fail the exam unless she doesn't revise.", "She will fail unless she will revise."], correct: 0 },
+      { id: 5, original: "Eat an apple every day to stay healthy.", prompt: "If you eat...", choices: ["If you eat an apple every day, you will stay healthy.", "If you will eat an apple, you stay healthy.", "Unless you eat an apple, you will stay healthy."], correct: 0 }
+    ];
+
+    const dialogueData = [
+      { id: 1, speakerA: "Boss: What will happen if we miss the project deadline?", speakerB: "Employee: _______", options: ["If we miss the deadline, our client will be disappointed.", "If we will miss the deadline, client is disappointed.", "Unless we miss deadline, client will be disappointed."], correct: 0 },
+      { id: 2, speakerA: "Friend: Will you come to my birthday party on Saturday?", speakerB: "You: _______", options: ["If I finish my work early, I will definitely come!", "If I will finish work early, I come!", "Unless I finish work, I will come!"], correct: 0 },
+      { id: 3, speakerA: "Doctor: You need to rest your voice for three days.", speakerB: "Patient: What if I speak too much?", speakerA2: "Doctor: _______", options: ["If you talk too much, your throat will get worse.", "If you will talk too much, throat gets worse.", "Unless you don't talk, you get worse."], correct: 0 },
+      { id: 4, speakerA: "Travel Agent: Are you ready to book the flights to Tokyo?", speakerB: "Customer: _______", options: ["We will book the tickets if the prices drop tomorrow.", "We book tickets if prices will drop.", "Unless prices drop, we will book today."], correct: 0 },
+      { id: 5, speakerA: "Student: I am nervous about the grammar quiz!", speakerB: "Teacher: _______", options: ["If you review the rule sheet tonight, you will do great!", "If you will review, you do great!", "Unless you review, you will do great!"], correct: 0 }
+    ];
+
+    const sortData = [
+      { id: "s1", text: "If it rains tomorrow", category: "if" },
+      { id: "s2", text: "I will call you tonight", category: "main" },
+      { id: "s3", text: "Unless she studies hard", category: "if" },
+      { id: "s4", text: "you won't pass the exam", category: "main" },
+      { id: "s5", text: "If we save enough money", category: "if" },
+      { id: "s6", text: "we will travel to Japan", category: "main" },
+      { id: "s7", text: "If you press this red button", category: "if" },
+      { id: "s8", text: "the alarm will sound immediately", category: "main" }
+    ];
+
+    const infogapDataA = [
+      { cond: "If the plane is delayed by 2 hours...", hint: "Ask B about plane delay outcome" },
+      { cond: "If the hotel booking is cancelled...", hint: "Ask B about hotel problem outcome" },
+      { cond: "If the temperature exceeds 35°C...", hint: "Ask B about hot weather plan" },
+      { cond: "If the budget drops below $200...", hint: "Ask B about budget outcome" }
+    ];
+
+    const infogapDataB = [
+      { res: "...we will take the express bullet train instead.", match: 1 },
+      { res: "...we will stay at my cousin's apartment downtown.", match: 2 },
+      { res: "...we will spend the entire afternoon at the air-conditioned museum.", match: 3 },
+      { res: "...we will cook meals at home instead of dining out.", match: 4 }
+    ];
+
+    const situationData = [
+      { title: "Job Interview Delay", text: "Your train is running late 20 minutes before your dream job interview. What will you do?", formula: "If the train is late, I will call the interviewer..." },
+      { title: "Sudden Rainstorm", text: "You are hosting an outdoor barbecue with 15 guests and dark clouds appear. What will you do?", formula: "If it starts raining, we will move the party inside..." },
+      { title: "Winning $1,000", text: "You unexpectedly win a $1,000 local raffle prize today. How will you spend it?", formula: "If I win $1,000, I will buy a new laptop and save the rest..." },
+      { title: "Friend Forgets Wallet", text: "At a restaurant, your friend realizes they forgot their wallet. How will you react?", formula: "If my friend forgets their wallet, I will pay for dinner..." }
+    ];
+
+    const spotData = [
+      { title: "Plan A (Optimistic) vs Plan B (Pessimistic)", 
+        descA: "Plan A: Sun shines, road is clear, hotel is open.",
+        descB: "Plan B: Rain pours, heavy traffic, hotel fully booked.",
+        q: "Select the correct conditional sentence for Plan A:",
+        options: ["If the sun shines, we will go hiking on the mountain.", "If the sun will shine, we go hiking.", "Unless the sun shines, we will go hiking."],
+        correct: 0
+      },
+      { title: "Exam Preparation Strategy", 
+        descA: "Student A: Reviews notes daily, sleeps 8 hours.",
+        descB: "Student B: Cramming last minute, drinks 4 energy drinks.",
+        q: "Select the correct conditional sentence for Student A:",
+        options: ["If Student A reviews daily, she will get a top grade.", "If Student A will review daily, she gets top grade.", "Unless Student A reviews daily, she will get top grade."],
+        correct: 0
+      }
+    ];
+
+    const debateData = [
+      { topic: "AI & Job Automation", text: "If artificial intelligence replaces 50% of office jobs in 5 years, will society be better or worse?", sentenceFrame: "If AI replaces office jobs, I believe society will... because..." },
+      { topic: "Free Higher Education", text: "If university education becomes 100% free for all citizens, how will universities change?", sentenceFrame: "If university becomes free, the quality of education will... because..." },
+      { topic: "Smartphone Ban in Schools", text: "If high schools ban smartphones completely during school hours, will student grades improve?", sentenceFrame: "If schools ban smartphones, students will... because..." }
+    ];
+
+    // INITIALIZATION & RENDER FUNCTIONS
+    window.addEventListener('DOMContentLoaded', () => {
+      renderScramble();
+      renderFill();
+      renderError();
+      renderTransform();
+      renderDialogue();
+      renderSorting();
+      renderInfogap();
+      renderSituation();
+      renderSpot();
+      renderDebate();
+    });
+
+    // 1. SCRAMBLE SECTION RENDER & LOGIC
+    let scrambleUserSelections = {};
+
+    function renderScramble() {
+      const container = document.getElementById('scramble-container');
+      container.innerHTML = '';
+
+      scrambleData.forEach((item, index) => {
+        scrambleUserSelections[item.id] = [];
+        let words = item.sentence.split(' ').sort(() => Math.random() - 0.5);
+
+        let itemHTML = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md" id="scramble-card-${item.id}">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-indigo-400 font-bold text-xl">Prompt ${index + 1}</span>
+              <button onclick="speakText('${item.sentence.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-white bg-slate-800 p-2 rounded-lg text-sm flex items-center gap-1">🔊 Listen</button>
+            </div>
+
+            <!-- Answer Dropzone Area -->
+            <div id="scramble-target-${item.id}" class="min-h-[70px] bg-slate-950 border-2 border-dashed border-indigo-500/40 rounded-xl p-3 flex flex-wrap gap-2 items-center mb-4">
+              <span class="text-slate-600 text-lg italic pointer-events-none" id="scramble-placeholder-${item.id}">Click words below to build sentence...</span>
+            </div>
+
+            <!-- Word Bank -->
+            <div id="scramble-bank-${item.id}" class="flex flex-wrap gap-2 min-h-[50px] p-2 bg-slate-800/50 rounded-xl">
+              ${words.map((w, wIdx) => `<button onclick="pickScrambleWord(${item.id}, '${w.replace(/'/g, "\\'")}', this)" class="bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-xl px-4 py-2 rounded-xl shadow-md transition transform hover:-translate-y-0.5">${w}</button>`).join('')}
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <button onclick="checkScramble(${item.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-6 py-2 rounded-xl shadow-lg transition">Check Answer</button>
+              <button onclick="resetSingleScramble(${item.id})" class="text-slate-400 hover:text-slate-200 text-sm font-semibold">Clear Words</button>
+            </div>
+            <div id="scramble-feedback-${item.id}" class="mt-3 hidden p-3 rounded-xl font-bold text-lg"></div>
+          </div>
+        `;
+        container.innerHTML += itemHTML;
+      });
+    }
+
+    function pickScrambleWord(itemId, word, btn) {
+      scrambleUserSelections[itemId].push(word);
+      btn.classList.add('hidden');
+
+      let target = document.getElementById(`scramble-target-${itemId}`);
+      document.getElementById(`scramble-placeholder-${itemId}`).classList.add('hidden');
+
+      let tile = document.createElement('span');
+      tile.className = "bg-indigo-600 text-white font-bold text-xl px-4 py-2 rounded-xl shadow-md cursor-pointer inline-block";
+      tile.innerText = word;
+      tile.onclick = function() {
+        tile.remove();
+        btn.classList.remove('hidden');
+        scrambleUserSelections[itemId] = scrambleUserSelections[itemId].filter(w => w !== word);
+        if (scrambleUserSelections[itemId].length === 0) {
+          document.getElementById(`scramble-placeholder-${itemId}`).classList.remove('hidden');
+        }
+      };
+      target.appendChild(tile);
+    }
+
+    function checkScramble(itemId) {
+      let targetSentence = scrambleData.find(d => d.id === itemId).sentence;
+      let userSentence = scrambleUserSelections[itemId].join(' ');
+
+      let feedback = document.getElementById(`scramble-feedback-${itemId}`);
+      feedback.classList.remove('hidden', 'bg-emerald-900/60', 'text-emerald-300', 'bg-rose-900/60', 'text-rose-300');
+
+      if (userSentence.trim() === targetSentence.trim()) {
+        feedback.innerText = "✨ Excellent! Perfect sentence structure.";
+        feedback.classList.add('bg-emerald-900/60', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        feedback.innerText = `❌ Not quite. Expected: "${targetSentence}"`;
+        feedback.classList.add('bg-rose-900/60', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    function resetSingleScramble(itemId) {
+      scrambleUserSelections[itemId] = [];
+      renderScramble();
+    }
+
+    // 2. FILL BLANKS RENDER & LOGIC
+    function renderFill() {
+      const container = document.getElementById('fill-container');
+      container.innerHTML = '';
+
+      fillData.forEach((item, index) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <p class="text-2xl font-semibold text-slate-100 mb-4">${index + 1}. ${item.sentence}</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              ${item.options.map((opt, oIdx) => `
+                <button onclick="checkFill(${item.id}, ${oIdx}, this)" class="fill-opt-${item.id} bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xl font-bold p-4 rounded-xl transition text-left">
+                  ${opt}
+                </button>
+              `).join('')}
+            </div>
+            <div id="fill-feedback-${item.id}" class="mt-4 hidden p-3 rounded-xl font-bold text-lg"></div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function checkFill(itemId, choiceIdx, btn) {
+      let data = fillData.find(f => f.id === itemId);
+      let buttons = document.querySelectorAll(`.fill-opt-${itemId}`);
+      buttons.forEach(b => b.classList.remove('bg-emerald-600', 'bg-rose-600', 'text-white'));
+
+      let feedback = document.getElementById(`fill-feedback-${itemId}`);
+      feedback.classList.remove('hidden', 'bg-emerald-900/60', 'text-emerald-300', 'bg-rose-900/60', 'text-rose-300');
+
+      if (choiceIdx === data.correct) {
+        btn.classList.add('bg-emerald-600', 'text-white');
+        feedback.innerText = "✨ Correct! Remember: If + Present Simple, Main clause + Will + Verb.";
+        feedback.classList.add('bg-emerald-900/60', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        btn.classList.add('bg-rose-600', 'text-white');
+        feedback.innerText = "❌ Incorrect. Remember not to put 'will' inside the 'If' clause!";
+        feedback.classList.add('bg-rose-900/60', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 3. ERROR SPOTTING RENDER & LOGIC
+    function renderError() {
+      const container = document.getElementById('error-container');
+      container.innerHTML = '';
+
+      errorData.forEach((item, index) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <div class="flex items-center space-x-2 text-rose-400 font-bold text-sm mb-2">
+              <span>⚠️ Fossilized Error Pattern #${index + 1}</span>
+            </div>
+            <p class="text-3xl font-extrabold text-rose-300 mb-4 leading-snug">"${item.bad}"</p>
+            
+            <div class="flex flex-wrap gap-3">
+              <button onclick="revealErrorFix(${item.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-6 py-2.5 rounded-xl transition">Reveal Correct Sentence</button>
+              <button onclick="speakText('${item.correct.replace(/'/g, "\\'")}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-lg px-4 py-2.5 rounded-xl transition">🔊 Pronounce Correct</button>
+            </div>
+
+            <div id="error-fix-${item.id}" class="mt-4 hidden bg-slate-950 border border-emerald-500/40 p-5 rounded-xl">
+              <p class="text-2xl font-bold text-emerald-400 mb-2">✅ Correct: "${item.correct}"</p>
+              <p class="text-lg text-slate-300">💡 <b>Grammar Explanation:</b> ${item.reason}</p>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function revealErrorFix(itemId) {
+      document.getElementById(`error-fix-${itemId}`).classList.remove('hidden');
+      playSound('correct');
+    }
+
+    // 4. TRANSFORMATIONS RENDER
+    function renderTransform() {
+      const container = document.getElementById('transform-container');
+      container.innerHTML = '';
+
+      transformData.forEach((item, index) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <p class="text-lg text-slate-400 font-semibold mb-1">Original Sentence #${index + 1}:</p>
+            <p class="text-2xl font-bold text-amber-300 mb-4">"${item.original}"</p>
+            
+            <p class="text-xl font-bold text-slate-200 mb-3">Rewrite using prompt: <span class="text-indigo-400 font-mono">${item.prompt}</span></p>
+
+            <div class="space-y-2">
+              ${item.choices.map((c, cIdx) => `
+                <button onclick="checkTransform(${item.id}, ${cIdx}, this)" class="trans-opt-${item.id} w-full text-left bg-slate-800 hover:bg-slate-700 text-slate-200 text-xl font-medium p-4 rounded-xl border border-slate-700 transition">
+                  ${c}
+                </button>
+              `).join('')}
+            </div>
+            <div id="transform-feedback-${item.id}" class="mt-4 hidden p-3 rounded-xl font-bold text-lg"></div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function checkTransform(itemId, choiceIdx, btn) {
+      let data = transformData.find(t => t.id === itemId);
+      let buttons = document.querySelectorAll(`.trans-opt-${itemId}`);
+      buttons.forEach(b => b.classList.remove('bg-emerald-600', 'bg-rose-600', 'text-white'));
+
+      let feedback = document.getElementById(`transform-feedback-${itemId}`);
+      feedback.classList.remove('hidden', 'bg-emerald-900/60', 'text-emerald-300', 'bg-rose-900/60', 'text-rose-300');
+
+      if (choiceIdx === data.correct) {
+        btn.classList.add('bg-emerald-600', 'text-white');
+        feedback.innerText = "✨ Excellent transformation!";
+        feedback.classList.add('bg-emerald-900/60', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        btn.classList.add('bg-rose-600', 'text-white');
+        feedback.innerText = "❌ Incorrect structure. Watch out for negative forms and modal placement.";
+        feedback.classList.add('bg-rose-900/60', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 5. STORY CLOZE LOGIC
+    function checkStoryCloze() {
+      let answers = {
+        'story-1': 'wakes up',
+        'story-2': 'will catch',
+        'story-3': 'is',
+        'story-4': 'will arrive',
+        'story-5': 'panics'
+      };
+
+      let correctCount = 0;
+      for (let key in answers) {
+        let el = document.getElementById(key);
+        if (el.value === answers[key]) {
+          el.classList.remove('border-indigo-500', 'border-rose-500');
+          el.classList.add('border-emerald-500', 'bg-emerald-950/80');
+          correctCount++;
+        } else {
+          el.classList.remove('border-indigo-500', 'border-emerald-500');
+          el.classList.add('border-rose-500', 'bg-rose-950/80');
+        }
+      }
+
+      let fb = document.getElementById('story-feedback');
+      fb.classList.remove('hidden', 'bg-emerald-900/80', 'text-emerald-300', 'bg-rose-900/80', 'text-rose-300');
+
+      if (correctCount === 5) {
+        fb.innerText = "🎉 Fantastic! You completed Sarah's story with 100% accuracy!";
+        fb.classList.add('bg-emerald-900/80', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        fb.innerText = `⚠️ You got ${correctCount}/5 correct. Check the highlighted red dropdowns and try again.`;
+        fb.classList.add('bg-rose-900/80', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 6. DIALOGUE RENDER
+    function renderDialogue() {
+      const container = document.getElementById('dialogue-container');
+      container.innerHTML = '';
+
+      dialogueData.forEach((item, index) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <div class="space-y-3 mb-6">
+              <div class="bg-slate-800 p-4 rounded-xl border-l-4 border-indigo-500">
+                <p class="text-2xl font-bold text-slate-100">${item.speakerA}</p>
+              </div>
+              <div class="bg-slate-800/60 p-4 rounded-xl border-l-4 border-emerald-500">
+                <p class="text-2xl font-bold text-emerald-300">${item.speakerB}</p>
+              </div>
+              ${item.speakerA2 ? `
+                <div class="bg-slate-800 p-4 rounded-xl border-l-4 border-indigo-500">
+                  <p class="text-2xl font-bold text-slate-100">${item.speakerA2}</p>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="space-y-2">
+              ${item.options.map((opt, oIdx) => `
+                <button onclick="checkDialogue(${item.id}, ${oIdx}, this)" class="dial-opt-${item.id} w-full text-left bg-slate-800 hover:bg-slate-700 text-slate-200 text-xl font-bold p-4 rounded-xl border border-slate-700 transition">
+                  ${opt}
+                </button>
+              `).join('')}
+            </div>
+            <div id="dialogue-feedback-${item.id}" class="mt-4 hidden p-3 rounded-xl font-bold text-lg"></div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function checkDialogue(itemId, choiceIdx, btn) {
+      let data = dialogueData.find(d => d.id === itemId);
+      let buttons = document.querySelectorAll(`.dial-opt-${itemId}`);
+      buttons.forEach(b => b.classList.remove('bg-emerald-600', 'bg-rose-600', 'text-white'));
+
+      let feedback = document.getElementById(`dialogue-feedback-${itemId}`);
+      feedback.classList.remove('hidden', 'bg-emerald-900/60', 'text-emerald-300', 'bg-rose-900/60', 'text-rose-300');
+
+      if (choiceIdx === data.correct) {
+        btn.classList.add('bg-emerald-600', 'text-white');
+        feedback.innerText = "✨ Natural exchange! Grammatically spot on.";
+        feedback.classList.add('bg-emerald-900/60', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        btn.classList.add('bg-rose-600', 'text-white');
+        feedback.innerText = "❌ Incorrect conditional syntax in conversation.";
+        feedback.classList.add('bg-rose-900/60', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 7. SORTING RENDER & DRAG-DROP
+    function renderSorting() {
+      const unassigned = document.getElementById('sorting-unassigned');
+      unassigned.innerHTML = '';
+      document.getElementById('bucket-if').innerHTML = '';
+      document.getElementById('bucket-main').innerHTML = '';
+
+      sortData.forEach(item => {
+        let card = document.createElement('div');
+        card.id = item.id;
+        card.className = "bg-slate-800 border border-slate-600 text-white font-bold text-xl px-4 py-3 rounded-xl cursor-grab shadow-md hover:bg-slate-700 transition flex items-center gap-2";
+        card.draggable = true;
+        card.innerText = item.text;
+        card.ondragstart = (e) => e.dataTransfer.setData('text/plain', item.id);
+        
+        // Mobile tap to move fallback
+        card.onclick = () => {
+          let bucketIf = document.getElementById('bucket-if');
+          let bucketMain = document.getElementById('bucket-main');
+          if (card.parentElement.id === 'sorting-unassigned') {
+            bucketIf.appendChild(card);
+          } else if (card.parentElement.id === 'bucket-if') {
+            bucketMain.appendChild(card);
+          } else {
+            unassigned.appendChild(card);
+          }
+        };
+
+        unassigned.appendChild(card);
+      });
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+    function dropTile(ev, targetCategory) {
+      ev.preventDefault();
+      let dataId = ev.dataTransfer.getData('text/plain');
+      let tile = document.getElementById(dataId);
+      if (tile) {
+        let targetBucket = targetCategory === 'if' ? document.getElementById('bucket-if') : document.getElementById('bucket-main');
+        targetBucket.appendChild(tile);
+      }
+    }
+
+    function checkSorting() {
+      let ifCards = Array.from(document.getElementById('bucket-if').children);
+      let mainCards = Array.from(document.getElementById('bucket-main').children);
+
+      let errors = 0;
+      ifCards.forEach(card => {
+        let original = sortData.find(s => s.id === card.id);
+        if (original.category !== 'if') errors++;
+      });
+      mainCards.forEach(card => {
+        let original = sortData.find(s => s.id === card.id);
+        if (original.category !== 'main') errors++;
+      });
+
+      let unassigned = document.getElementById('sorting-unassigned').children.length;
+
+      let fb = document.getElementById('sorting-feedback');
+      fb.classList.remove('hidden', 'bg-emerald-900/80', 'text-emerald-300', 'bg-rose-900/80', 'text-rose-300');
+
+      if (unassigned > 0) {
+        fb.innerText = "⚠️ Please sort all cards into a bucket before checking.";
+        fb.classList.add('bg-rose-900/80', 'text-rose-300');
+        playSound('incorrect');
+      } else if (errors === 0) {
+        fb.innerText = "🎉 Perfect Sorting! All clauses classified accurately.";
+        fb.classList.add('bg-emerald-900/80', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        fb.innerText = `❌ You have ${errors} misplaced cards. Review which clause contains 'If/Unless'.`;
+        fb.classList.add('bg-rose-900/80', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 8. INFORMATION GAP RENDER
+    function renderInfogap() {
+      const panelA = document.getElementById('infogap-cards-a');
+      const panelB = document.getElementById('infogap-cards-b');
+      panelA.innerHTML = '';
+      panelB.innerHTML = '';
+
+      infogapDataA.forEach((item, idx) => {
+        panelA.innerHTML += `
+          <div class="bg-slate-900 border border-slate-700 p-5 rounded-xl shadow">
+            <span class="text-xs font-bold text-indigo-400 uppercase">Condition Card #${idx + 1}</span>
+            <p class="text-2xl font-bold text-slate-100 my-2">"${item.cond}"</p>
+            <p class="text-xs text-slate-400 italic">${item.hint}</p>
+          </div>
+        `;
+      });
+
+      infogapDataB.forEach((item, idx) => {
+        panelB.innerHTML += `
+          <div class="bg-slate-900 border border-slate-700 p-5 rounded-xl shadow">
+            <span class="text-xs font-bold text-emerald-400 uppercase">Result Card #${idx + 1}</span>
+            <p class="text-2xl font-bold text-emerald-300 my-2">"${item.res}"</p>
+            <p class="text-xs text-slate-400 italic">Matches Condition #${item.match}</p>
+          </div>
+        `;
+      });
+    }
+
+    function toggleInfogapRole(role) {
+      if (role === 'A') {
+        document.getElementById('infogap-panel-a').classList.remove('hidden');
+        document.getElementById('infogap-panel-b').classList.add('hidden');
+        document.getElementById('btn-role-a').className = "bg-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-lg";
+        document.getElementById('btn-role-b').className = "bg-slate-700 text-slate-300 hover:bg-slate-600 font-bold px-4 py-2 rounded-xl text-lg";
+      } else {
+        document.getElementById('infogap-panel-a').classList.add('hidden');
+        document.getElementById('infogap-panel-b').classList.remove('hidden');
+        document.getElementById('btn-role-b').className = "bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-lg";
+        document.getElementById('btn-role-a').className = "bg-slate-700 text-slate-300 hover:bg-slate-600 font-bold px-4 py-2 rounded-xl text-lg";
+      }
+    }
+
+    // 9. SITUATION CARDS RENDER
+    function renderSituation() {
+      const container = document.getElementById('situation-container');
+      container.innerHTML = '';
+
+      situationData.forEach((item, idx) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md flex flex-col justify-between">
+            <div>
+              <span class="bg-fuchsia-500/20 text-fuchsia-300 font-bold px-3 py-1 rounded-full text-xs">Role-Play #${idx + 1}</span>
+              <h3 class="text-2xl font-bold text-white mt-3">${item.title}</h3>
+              <p class="text-xl text-slate-300 mt-2 mb-4 leading-relaxed font-medium">"${item.text}"</p>
+            </div>
+
+            <div>
+              <button onclick="toggleSituationModel(${idx})" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-xl border border-slate-700 transition">
+                Show Target Model Frame
+              </button>
+              <div id="situation-model-${idx}" class="mt-3 hidden bg-slate-950 p-4 rounded-xl border border-fuchsia-500/40">
+                <p class="text-lg font-mono text-fuchsia-300 font-bold mb-2">${item.formula}</p>
+                <button onclick="speakText('${item.formula.replace(/'/g, "\\'")}')" class="text-xs bg-fuchsia-600 text-white px-3 py-1.5 rounded-lg font-bold">🔊 Speak Model</button>
+              </div>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function toggleSituationModel(idx) {
+      document.getElementById(`situation-model-${idx}`).classList.toggle('hidden');
+      playSound('correct');
+    }
+
+    // 10. SPOT DIFFERENCE RENDER
+    function renderSpot() {
+      const container = document.getElementById('spot-container');
+      container.innerHTML = '';
+
+      spotData.forEach((item, idx) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <h3 class="text-2xl font-bold text-white mb-4">${item.title}</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div class="bg-indigo-950/40 border border-indigo-500/40 p-4 rounded-xl">
+                <p class="text-lg font-bold text-indigo-300 mb-1">Scenario A</p>
+                <p class="text-slate-200 font-medium">${item.descA}</p>
+              </div>
+              <div class="bg-rose-950/40 border border-rose-500/40 p-4 rounded-xl">
+                <p class="text-lg font-bold text-rose-300 mb-1">Scenario B</p>
+                <p class="text-slate-200 font-medium">${item.descB}</p>
+              </div>
+            </div>
+
+            <p class="text-xl font-bold text-slate-200 mb-3">${item.q}</p>
+            <div class="space-y-2">
+              ${item.options.map((opt, oIdx) => `
+                <button onclick="checkSpot(${idx}, ${oIdx}, this)" class="spot-opt-${idx} w-full text-left bg-slate-800 hover:bg-slate-700 text-slate-200 text-xl font-bold p-4 rounded-xl border border-slate-700 transition">
+                  ${opt}
+                </button>
+              `).join('')}
+            </div>
+            <div id="spot-feedback-${idx}" class="mt-4 hidden p-3 rounded-xl font-bold text-lg"></div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    function checkSpot(itemIdx, choiceIdx, btn) {
+      let data = spotData[itemIdx];
+      let buttons = document.querySelectorAll(`.spot-opt-${itemIdx}`);
+      buttons.forEach(b => b.classList.remove('bg-emerald-600', 'bg-rose-600', 'text-white'));
+
+      let feedback = document.getElementById(`spot-feedback-${itemIdx}`);
+      feedback.classList.remove('hidden', 'bg-emerald-900/60', 'text-emerald-300', 'bg-rose-900/60', 'text-rose-300');
+
+      if (choiceIdx === data.correct) {
+        btn.classList.add('bg-emerald-600', 'text-white');
+        feedback.innerText = "✨ Correct comparison!";
+        feedback.classList.add('bg-emerald-900/60', 'text-emerald-300');
+        playSound('correct');
+      } else {
+        btn.classList.add('bg-rose-600', 'text-white');
+        feedback.innerText = "❌ Incorrect conditional structure.";
+        feedback.classList.add('bg-rose-900/60', 'text-rose-300');
+        playSound('incorrect');
+      }
+    }
+
+    // 11. DEBATE PROMPTS RENDER
+    function renderDebate() {
+      const container = document.getElementById('debate-container');
+      container.innerHTML = '';
+
+      debateData.forEach((item, idx) => {
+        let html = `
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-md">
+            <span class="bg-yellow-500/20 text-yellow-300 font-bold px-3 py-1 rounded-full text-xs">Debate Topic #${idx + 1}</span>
+            <h3 class="text-3xl font-black text-white my-3">${item.topic}</h3>
+            <p class="text-2xl font-semibold text-slate-200 mb-6 leading-relaxed">"${item.text}"</p>
+
+            <div class="bg-slate-950 p-5 rounded-xl border border-yellow-500/40">
+              <p class="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-2">Target Speaking Frame:</p>
+              <p class="text-xl font-mono text-slate-100 font-bold">"${item.sentenceFrame}"</p>
+            </div>
+          </div>
+        `;
+        container.innerHTML += html;
+      });
+    }
+
+    // Reset handlers
+    function resetSection(secId) {
+      if (secId === 1) renderScramble();
+      if (secId === 2) renderFill();
+      if (secId === 3) renderError();
+      if (secId === 4) renderTransform();
+      if (secId === 6) renderDialogue();
+      if (secId === 7) renderSorting();
+      if (secId === 9) renderSituation();
+      if (secId === 10) renderSpot();
+      if (secId === 11) renderDebate();
+      playSound('correct');
+    }
+  </script>
+</body>
+</html>
