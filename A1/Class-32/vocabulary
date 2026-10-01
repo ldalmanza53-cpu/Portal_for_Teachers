@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Places & Activities Explorer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0f172a',
+                        brandCard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .matched-card { opacity: 0.5; pointer-events: none; border-color: #10b981 !important; }
+        .selected-item { ring: 3px solid #6366f1; background-color: #312e81 !important; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white">Places & Activities Studio</h1>
+                    <p class="text-xs text-slate-400">Vocabulary & Relative Clauses • Level A1–A2</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center gap-6 bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-700 text-sm">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span class="text-slate-400">Score:</span>
+                    <span id="scoreDisplay" class="font-bold text-indigo-400 text-base">0</span>
+                </div>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-orange-500"></i>
+                    <span class="text-slate-400">Streak:</span>
+                    <span id="streakDisplay" class="font-bold text-orange-400 text-base">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-slate-800/90 border-t border-slate-700/60 px-4">
+            <div class="max-w-7xl mx-auto flex gap-2 overflow-x-auto py-2">
+                <button onclick="switchTab('matching')" id="tab-matching" class="nav-tab active px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap bg-rose-600 text-white shadow">
+                    <i class="fa-solid fa-object-group"></i> 1. Part A: Place Matcher
+                </button>
+                <button onclick="switchTab('builder')" id="tab-builder" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-pen-ruler"></i> 2. Part B: Definition Builder
+                </button>
+                <button onclick="switchTab('guesser')" id="tab-guesser" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-circle-question"></i> 3. Part C: Mystery Guessing Game
+                </button>
+                <button onclick="switchTab('speaking')" id="tab-speaking" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-comments"></i> 4. Speaking Dialogue Trainer
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: PART A MATCHING GAME -->
+        <section id="sec-matching" class="tab-content block space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-3 py-1 bg-rose-900/60 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-full">Part A Practice</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">Match Places to Their Definitions</h2>
+                        <p class="text-sm text-slate-400">Tap a place on the left, then tap its corresponding definition on the right.</p>
+                    </div>
+                    <button onclick="resetMatchingGame()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 self-start md:self-auto">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Game
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Column 1: Places -->
+                    <div class="space-y-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-2">
+                            <i class="fa-solid fa-location-dot"></i> Places ("What's a...?")
+                        </h3>
+                        <div id="placesList" class="space-y-2">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Definitions -->
+                    <div class="space-y-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye"></i> Definitions ("It's a place where you...")
+                        </h3>
+                        <div id="definitionsList" class="space-y-2">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="matchFeedback" class="hidden p-4 rounded-xl text-center font-bold text-sm"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PART B DEFINITION BUILDER -->
+        <section id="sec-builder" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6">
+                <div>
+                    <span class="px-3 py-1 bg-amber-900/60 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-full">Part B Grammar Builder</span>
+                    <h2 class="text-2xl font-bold text-white mt-1">Build Your Own Place Definitions</h2>
+                    <p class="text-sm text-slate-400">Practice using relative clauses with <code class="bg-slate-900 px-2 py-0.5 rounded text-amber-400">"It's a place where you..."</code></p>
+                </div>
+
+                <!-- Select Place -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    <button onclick="selectBuilderPlace('coffee shop', 'drink coffee and tea and eat small meals')" class="builder-place-btn bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-amber-500 transition text-center space-y-1">
+                        <i class="fa-solid fa-mug-hot text-amber-400 text-xl"></i>
+                        <div class="text-xs font-bold text-white">coffee shop</div>
+                    </button>
+                    <button onclick="selectBuilderPlace('drugstore', 'buy medicine and health items')" class="builder-place-btn bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-amber-500 transition text-center space-y-1">
+                        <i class="fa-solid fa-pills text-rose-400 text-xl"></i>
+                        <div class="text-xs font-bold text-white">drugstore</div>
+                    </button>
+                    <button onclick="selectBuilderPlace('gas station', 'put gas in your car')" class="builder-place-btn bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-amber-500 transition text-center space-y-1">
+                        <i class="fa-solid fa-gas-pump text-emerald-400 text-xl"></i>
+                        <div class="text-xs font-bold text-white">gas station</div>
+                    </button>
+                    <button onclick="selectBuilderPlace('library', 'borrow books and study quietly')" class="builder-place-btn bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-amber-500 transition text-center space-y-1">
+                        <i class="fa-solid fa-book-open text-sky-400 text-xl"></i>
+                        <div class="text-xs font-bold text-white">library</div>
+                    </button>
+                    <button onclick="selectBuilderPlace('post office', 'mail letters and send packages')" class="builder-place-btn bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-amber-500 transition text-center space-y-1">
+                        <i class="fa-solid fa-envelope-open-text text-purple-400 text-xl"></i>
+                        <div class="text-xs font-bold text-white">post office</div>
+                    </button>
+                </div>
+
+                <!-- Sentence Construction Card -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Constructed Definition
+                        </h3>
+                        <button onclick="speakCurrentSentence()" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high"></i> Listen
+                        </button>
+                    </div>
+
+                    <div id="builderSentenceBox" class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-lg text-white font-medium flex flex-wrap items-center gap-2">
+                        <span class="text-amber-400 font-bold">It's a place where you</span>
+                        <span id="builderActionText" class="text-slate-400 underline decoration-dashed">[select an action or type below]</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-400">Custom Action Phrase:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="customActionInput" placeholder="e.g. buy fresh bread or meet friends" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none">
+                            <button onclick="updateCustomBuilderAction()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition">
+                                Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: PART C MYSTERY GUESSING GAME -->
+        <section id="sec-guesser" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6 max-w-2xl mx-auto">
+                <div class="text-center space-y-2">
+                    <span class="px-3 py-1 bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-full">Part C Arcade Challenge</span>
+                    <h2 class="text-2xl font-bold text-white">Can You Guess the Place?</h2>
+                    <p class="text-sm text-slate-400">Read the definition and pick the correct place in the city!</p>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 space-y-6">
+                    <div class="p-5 bg-slate-800 rounded-xl border border-emerald-500/30 text-center space-y-2">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Clue:</span>
+                        <p id="mysteryClueText" class="text-lg font-bold text-white">"It's a place where you see a game or a concert."</p>
+                        <button onclick="speakClueText()" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold inline-flex items-center gap-1 mt-2">
+                            <i class="fa-solid fa-volume-high"></i> Listen to Clue
+                        </button>
+                    </div>
+
+                    <!-- Multiple Choice Grid -->
+                    <div id="mysteryOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div id="mysteryFeedback" class="hidden p-3 rounded-xl text-center font-bold text-sm"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SPEAKING DIALOGUE TRAINER -->
+        <section id="sec-speaking" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6 max-w-3xl mx-auto">
+                <div class="text-center space-y-2">
+                    <span class="px-3 py-1 bg-indigo-900/60 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-full">Speaking & Listening</span>
+                    <h2 class="text-2xl font-bold text-white">Interactive Dialogue Trainer</h2>
+                    <p class="text-sm text-slate-400">Practice target question & answer patterns with full TTS audio support.</p>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 space-y-6">
+                    <!-- Dialogue Cards -->
+                    <div class="space-y-4">
+                        <!-- Question A -->
+                        <div class="bg-slate-800/80 p-4 rounded-xl border border-rose-500/30 flex items-start justify-between gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-rose-400">Speaker A:</span>
+                                <p id="dialogueQuestion" class="text-lg font-bold text-white">"What's a laundromat?"</p>
+                            </div>
+                            <button onclick="speakText(document.getElementById('dialogueQuestion').innerText)" class="w-10 h-10 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center flex-shrink-0 shadow">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <!-- Answer B -->
+                        <div class="bg-slate-800/80 p-4 rounded-xl border border-indigo-500/30 flex items-start justify-between gap-3 ml-6">
+                            <div>
+                                <span class="text-xs font-bold text-indigo-400">Speaker B:</span>
+                                <p id="dialogueAnswer" class="text-lg font-bold text-white">"It's a place where you wash and dry your clothes."</p>
+                            </div>
+                            <button onclick="speakText(document.getElementById('dialogueAnswer').innerText)" class="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center flex-shrink-0 shadow">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="shuffleDialogue()" class="w-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shuffle"></i> Practice Next Place
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-400">
+        Unit 3 • Word Power: Places and Activities Studio
+    </footer>
+
+    <script>
+        // Core Textbook Data (Part A)
+        const matchData = [
+            { id: 1, place: "clothing store", def: "find new fashions", icon: "fa-shirt" },
+            { id: 2, place: "grocery store", def: "get food and small items for the home", icon: "fa-basket-shopping" },
+            { id: 3, place: "hair salon", def: "get a haircut", icon: "fa-scissors" },
+            { id: 4, place: "laundromat", def: "wash and dry your clothes", icon: "fa-soap" },
+            { id: 5, place: "newsstand", def: "buy newspapers and magazines", icon: "fa-newspaper" },
+            { id: 6, place: "stadium", def: "see a game or a concert", icon: "fa-trophy" },
+            { id: 7, place: "Wi-Fi hot spot", def: "can connect to the Internet", icon: "fa-wifi" }
+        ];
+
+        // Part B Data
+        const partBData = [
+            { place: "coffee shop", def: "drink coffee and tea and eat small meals" },
+            { place: "drugstore", def: "buy medicine, vitamins, and health care items" },
+            { place: "gas station", def: "put gas in your car or buy snacks" },
+            { place: "library", def: "borrow books, study quietly, or use computers" },
+            { place: "post office", def: "mail letters, buy stamps, and send packages" }
+        ];
+
+        // Combine for Arcade
+        const allPlacesData = [...matchData, ...partBData];
+
+        // State
+        let selectedPlace = null;
+        let selectedDef = null;
+        let matchedPairsCount = 0;
+        let score = 0;
+        let streak = 0;
+        let currentMystery = null;
+        let activeBuilderPlace = "coffee shop";
+        let activeBuilderAction = "drink coffee and tea and eat small meals";
+
+        // Web Audio API Synth FX
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        // Text To Speech
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.rate = 0.9;
+                utter.lang = 'en-US';
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        // DOM Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initMatchingGame();
+            loadNextMystery();
+            shuffleDialogue();
+        });
+
+        // Tab Switcher
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('bg-rose-600', 'text-white', 'shadow');
+                el.classList.add('text-slate-300');
+            });
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-rose-600', 'text-white', 'shadow');
+            activeBtn.classList.remove('text-slate-300');
+        }
+
+        /* --- TAB 1: MATCHING GAME --- */
+        function initMatchingGame() {
+            selectedPlace = null;
+            selectedDef = null;
+            matchedPairsCount = 0;
+
+            const placesContainer = document.getElementById('placesList');
+            const defsContainer = document.getElementById('definitionsList');
+
+            placesContainer.innerHTML = '';
+            defsContainer.innerHTML = '';
+
+            // Shuffle places and definitions independently
+            const shuffledPlaces = [...matchData].sort(() => Math.random() - 0.5);
+            const shuffledDefs = [...matchData].sort(() => Math.random() - 0.5);
+
+            shuffledPlaces.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `place-btn-${item.id}`;
+                btn.className = 'w-full bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-rose-500 transition text-left flex items-center justify-between text-sm font-semibold text-white';
+                btn.onclick = () => selectPlace(item.id);
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid ${item.icon} text-rose-400 w-5"></i>
+                        <span>${item.place}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-slate-600 text-xs"></i>
+                `;
+                placesContainer.appendChild(btn);
+            });
+
+            shuffledDefs.forEach(item => {
+                const btn = document.createElement('button');
+                btn.id = `def-btn-${item.id}`;
+                btn.className = 'w-full bg-slate-900 border border-slate-700 p-3 rounded-xl hover:border-indigo-500 transition text-left text-xs text-slate-300';
+                btn.onclick = () => selectDef(item.id);
+                btn.innerHTML = `<span class="text-indigo-400 font-bold">...</span> ${item.def}`;
+                defsContainer.appendChild(btn);
+            });
+
+            document.getElementById('matchFeedback').classList.add('hidden');
+        }
+
+        function resetMatchingGame() {
+            playSound('click');
+            initMatchingGame();
+        }
+
+        function selectPlace(id) {
+            playSound('click');
+            document.querySelectorAll('#placesList button').forEach(btn => btn.classList.remove('selected-item'));
+            selectedPlace = id;
+            document.getElementById(`place-btn-${id}`).classList.add('selected-item');
+            checkPairMatch();
+        }
+
+        function selectDef(id) {
+            playSound('click');
+            document.querySelectorAll('#definitionsList button').forEach(btn => btn.classList.remove('selected-item'));
+            selectedDef = id;
+            document.getElementById(`def-btn-${id}`).classList.add('selected-item');
+            checkPairMatch();
+        }
+
+        function checkPairMatch() {
+            if (selectedPlace !== null && selectedDef !== null) {
+                const feedback = document.getElementById('matchFeedback');
+                feedback.classList.remove('hidden');
+
+                if (selectedPlace === selectedDef) {
+                    playSound('correct');
+                    score += 20;
+                    streak++;
+                    matchedPairsCount++;
+                    updateStats();
+
+                    const item = matchData.find(x => x.id === selectedPlace);
+                    speakText(`${item.place}: It's a place where you ${item.def}`);
+
+                    document.getElementById(`place-btn-${selectedPlace}`).classList.add('matched-card');
+                    document.getElementById(`def-btn-${selectedDef}`).classList.add('matched-card');
+
+                    feedback.className = 'p-3 rounded-xl text-center font-bold text-xs bg-emerald-950 text-emerald-300 border border-emerald-600';
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Correct Match! (+20 pts)`;
+
+                    if (matchedPairsCount === matchData.length) {
+                        confetti({ particleCount: 100, spread: 70 });
+                        feedback.innerHTML = `<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Outstanding! All places matched correctly!`;
+                    }
+                } else {
+                    playSound('wrong');
+                    streak = 0;
+                    updateStats();
+                    feedback.className = 'p-3 rounded-xl text-center font-bold text-xs bg-rose-950 text-rose-300 border border-rose-600';
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Not a match. Try again!`;
+                }
+
+                selectedPlace = null;
+                selectedDef = null;
+                document.querySelectorAll('#placesList button').forEach(btn => btn.classList.remove('selected-item'));
+                document.querySelectorAll('#definitionsList button').forEach(btn => btn.classList.remove('selected-item'));
+            }
+        }
+
+        /* --- TAB 2: BUILDER --- */
+        function selectBuilderPlace(placeName, actionText) {
+            playSound('click');
+            activeBuilderPlace = placeName;
+            activeBuilderAction = actionText;
+            document.getElementById('builderActionText').innerText = actionText;
+            speakCurrentSentence();
+        }
+
+        function updateCustomBuilderAction() {
+            const val = document.getElementById('customActionInput').value.trim();
+            if (val) {
+                playSound('click');
+                activeBuilderAction = val;
+                document.getElementById('builderActionText').innerText = val;
+                speakCurrentSentence();
+            }
+        }
+
+        function speakCurrentSentence() {
+            speakText(`It's a place where you ${activeBuilderAction}`);
+        }
+
+        /* --- TAB 3: MYSTERY GUESSING GAME --- */
+        function loadNextMystery() {
+            currentMystery = allPlacesData[Math.floor(Math.random() * allPlacesData.length)];
+            
+            document.getElementById('mysteryClueText').innerText = `"It's a place where you ${currentMystery.def || currentMystery.action}."`;
+            document.getElementById('mysteryFeedback').classList.add('hidden');
+
+            // Options: correct place + 3 random wrong places
+            let options = [currentMystery.place];
+            while (options.length < 4) {
+                const rand = allPlacesData[Math.floor(Math.random() * allPlacesData.length)].place;
+                if (!options.includes(rand)) options.push(rand);
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('mysteryOptionsGrid');
+            grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500 p-3 rounded-xl font-bold text-sm text-white transition text-center';
+                btn.onclick = () => answerMystery(opt);
+                btn.innerText = opt;
+                grid.appendChild(btn);
+            });
+        }
+
+        function speakClueText() {
+            speakText(`It's a place where you ${currentMystery.def || currentMystery.action}`);
+        }
+
+        function answerMystery(chosen) {
+            const feedback = document.getElementById('mysteryFeedback');
+            feedback.classList.remove('hidden');
+
+            if (chosen === currentMystery.place) {
+                playSound('correct');
+                score += 30;
+                streak++;
+                updateStats();
+                confetti({ particleCount: 50, spread: 50 });
+                feedback.className = 'p-3 rounded-xl text-center font-bold text-xs bg-emerald-950 text-emerald-300 border border-emerald-600';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> Exactly! It's a ${currentMystery.place}! (+30 pts)`;
+                setTimeout(loadNextMystery, 1800);
+            } else {
+                playSound('wrong');
+                streak = 0;
+                updateStats();
+                feedback.className = 'p-3 rounded-xl text-center font-bold text-xs bg-rose-950 text-rose-300 border border-rose-600';
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Incorrect. Try again!`;
+            }
+        }
+
+        /* --- TAB 4: SPEAKING DIALOGUE --- */
+        function shuffleDialogue() {
+            playSound('click');
+            const item = allPlacesData[Math.floor(Math.random() * allPlacesData.length)];
+            const defText = item.def || item.action;
+            document.getElementById('dialogueQuestion').innerText = `"What's a ${item.place}?"`;
+            document.getElementById('dialogueAnswer').innerText = `"It's a place where you ${defText}."`;
+        }
+
+        function updateStats() {
+            document.getElementById('scoreDisplay').innerText = score;
+            document.getElementById('streakDisplay').innerText = streak;
+        }
+    </script>
+</body>
+</html>
