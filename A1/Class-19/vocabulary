@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Power: Family Tree & Relationship Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .font-heading {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+        /* 3D Flip Card Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        /* Glassmorphism effects */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        /* Drop zones & drag elements */
+        .drop-zone {
+            transition: all 0.2s ease-in-out;
+        }
+        .drop-zone.drag-over {
+            background-color: #f0fdf4;
+            border-color: #22c55e !important;
+            transform: scale(1.03);
+        }
+        .drop-zone.filled {
+            border-style: solid;
+            background-color: #f8fafc;
+        }
+        .drop-zone.correct {
+            border-color: #10b981 !important;
+            background-color: #ecfdf5 !important;
+        }
+        .drop-zone.incorrect {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col selection:bg-amber-200 selection:text-amber-900">
+
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20">
+                <!-- App Logo / Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-amber-500 via-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-rose-200">
+                        <i class="fa-solid fa-people-roof text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">ESL Studio</span>
+                            <span class="text-xs text-slate-400 font-medium hidden sm:inline">Level A1 - Beginner</span>
+                        </div>
+                        <h1 class="font-heading text-lg sm:text-2xl font-bold text-slate-900 leading-tight">Word Power: Family Tree</h1>
+                    </div>
+                </div>
+
+                <!-- Global Controls & Score Tracker -->
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <!-- Global Score -->
+                    <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl shadow-xs">
+                        <i class="fa-solid fa-trophy text-amber-500 text-lg"></i>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-amber-700 tracking-wider">Score</div>
+                            <div id="global-score" class="text-base font-bold text-amber-900 leading-none">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Audio Sound Toggle -->
+                    <button id="sfx-toggle-btn" title="Toggle Sound Effects" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                        <i id="sfx-icon" class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mode Navigation Tabs -->
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto pb-2 scrollbar-none border-t border-slate-100 pt-2">
+                <button onclick="switchTab('exercise-a')" id="tab-exercise-a" class="tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm whitespace-nowrap transition bg-amber-500 text-white shadow-sm shadow-amber-200">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>1. Joseph's Family Tree</span>
+                </button>
+                <button onclick="switchTab('flashcards')" id="tab-flashcards" class="tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm text-slate-600 hover:bg-slate-100 whitespace-nowrap transition">
+                    <i class="fa-solid fa-clone"></i>
+                    <span>2. Audio Flashcards</span>
+                </button>
+                <button onclick="switchTab('builder')" id="tab-builder" class="tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm text-slate-600 hover:bg-slate-100 whitespace-nowrap transition">
+                    <i class="fa-solid fa-pen-ruler"></i>
+                    <span>3. Build My Family Tree</span>
+                </button>
+                <button onclick="switchTab('detective')" id="tab-detective" class="tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm text-slate-600 hover:bg-slate-100 whitespace-nowrap transition">
+                    <i class="fa-solid fa-user-secret"></i>
+                    <span>4. Family Detective Q&A</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================================================================== -->
+        <!-- MODE 1: JOSEPH'S FAMILY TREE (EXERCISE A) -->
+        <!-- ==================================================================== -->
+        <section id="sec-exercise-a" class="tab-content block space-y-6">
+            <!-- Instruction Banner -->
+            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-4 sm:p-6 text-white shadow-lg relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 text-white/10 text-9xl font-bold pointer-events-none">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="relative z-10 max-w-3xl">
+                    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full mb-3">
+                        <i class="fa-solid fa-circle-info"></i> Interactive Exercise A
+                    </div>
+                    <h2 class="font-heading text-2xl sm:text-3xl font-bold mb-2">Look at Joseph's Family Tree</h2>
+                    <p class="text-amber-50 text-sm sm:text-base leading-relaxed">
+                        How are these people related to Joseph? Drag and drop or click words from the <strong>Word Bank</strong> to complete the blank boxes in the family tree.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Word Bank Section -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-box-archive text-amber-500"></i>
+                        <h3 class="font-heading font-bold text-slate-800 text-base">Word Bank</h3>
+                        <span class="text-xs text-slate-500">(Drag or tap a word, then tap a target blank)</span>
+                    </div>
+                    <button onclick="resetExerciseA()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition self-start sm:self-auto">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset Tree
+                    </button>
+                </div>
+
+                <!-- Word Pills -->
+                <div id="word-bank-container" class="flex flex-wrap gap-2.5 min-h-[50px] p-2 bg-slate-50 rounded-xl border border-dashed border-slate-300 items-center">
+                    <!-- Word bank items populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Interactive Family Tree Diagram -->
+            <div class="bg-white rounded-2xl p-4 sm:p-8 shadow-sm border border-slate-200 overflow-x-auto">
+                <div class="min-w-[780px] space-y-8 flex flex-col items-center">
+                    
+                    <!-- LEVEL 1: GRANDPARENTS -->
+                    <div class="flex flex-col items-center">
+                        <div class="flex items-center justify-center gap-12 relative">
+                            <!-- James -->
+                            <div class="flex flex-col items-center">
+                                <div class="relative group">
+                                    <div class="w-20 h-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-md overflow-hidden text-amber-700">
+                                        <svg class="w-16 h-16" viewBox="0 0 36 36" fill="currentColor">
+                                            <path d="M18 10a5 5 0 100 10 5 5 0 000-10zM10 28c0-4.4 3.6-8 8-8s8 3.6 8 8v1H10v-1z" opacity="0.8"/>
+                                            <path d="M12 9c0 0 3-3 6-3s6 3 6 3-2-2-6-2-6 2-6 2z" fill="#94a3b8"/>
+                                        </svg>
+                                    </div>
+                                    <button onclick="speakText('James, Grandfather')" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md hover:scale-110 transition">
+                                        <i class="fa-solid fa-volume-high text-xs"></i>
+                                    </button>
+                                </div>
+                                <span class="mt-2 text-sm font-bold text-slate-800 bg-slate-900 text-white px-3 py-0.5 rounded-md">James</span>
+                            </div>
+
+                            <!-- Marriage Line -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-1 bg-amber-400 my-auto relative">
+                                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-amber-100 border border-amber-300 rounded-full w-6 h-6 flex items-center justify-center text-amber-600 text-xs font-bold">
+                                        <i class="fa-solid fa-heart text-[10px]"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Betty -->
+                            <div class="flex flex-col items-center">
+                                <div class="relative group">
+                                    <div class="w-20 h-20 rounded-2xl bg-rose-100 border-2 border-rose-300 flex items-center justify-center shadow-md overflow-hidden text-rose-700">
+                                        <svg class="w-16 h-16" viewBox="0 0 36 36" fill="currentColor">
+                                            <path d="M18 10a5 5 0 100 10 5 5 0 000-10zM10 28c0-4.4 3.6-8 8-8s8 3.6 8 8v1H10v-1z" opacity="0.8"/>
+                                            <path d="M12 8c2-2 10-2 12 0s2 6 0 7-12 1-12-7z" fill="#cbd5e1"/>
+                                        </svg>
+                                    </div>
+                                    <button onclick="speakText('Betty, Grandmother')" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-md hover:scale-110 transition">
+                                        <i class="fa-solid fa-volume-high text-xs"></i>
+                                    </button>
+                                </div>
+                                <span class="mt-2 text-sm font-bold text-slate-800 bg-slate-900 text-white px-3 py-0.5 rounded-md">Betty</span>
+                            </div>
+                        </div>
+
+                        <!-- Blank Slot 1 -->
+                        <div class="mt-3 flex items-center gap-1.5 text-sm font-semibold text-slate-700 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 shadow-xs">
+                            <span>grandfather and</span>
+                            <div id="drop-1" data-slot="1" data-answer="grandmother" class="drop-zone w-36 h-9 rounded-lg border-2 border-dashed border-amber-400 bg-white flex items-center justify-center px-2 text-xs font-bold text-indigo-700 shadow-inner">
+                                <!-- Drop target -->
+                            </div>
+                        </div>
+
+                        <!-- Vertical Connector Line -->
+                        <div class="w-0.5 h-8 bg-slate-300 mt-2"></div>
+                    </div>
+
+                    <!-- LEVEL 2: PARENTS & AUNT/UNCLE -->
+                    <div class="w-full flex justify-around relative pt-2">
+                        <div class="absolute top-0 left-1/4 right-1/4 h-0.5 bg-slate-300"></div>
+
+                        <!-- Branch 1: Parents (Robert & Patricia) -->
+                        <div class="flex flex-col items-center relative">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-8">
+                                <!-- Robert -->
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-18 h-18 w-[72px] h-[72px] rounded-2xl bg-blue-100 border-2 border-blue-300 flex items-center justify-center shadow-md text-blue-700">
+                                            <i class="fa-solid fa-user-tie text-3xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Robert, Father')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md hover:scale-110">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1.5 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2.5 py-0.5 rounded-md">Robert</span>
+                                </div>
+
+                                <div class="w-10 h-0.5 bg-sky-400"></div>
+
+                                <!-- Patricia -->
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-[72px] h-[72px] rounded-2xl bg-sky-100 border-2 border-sky-300 flex items-center justify-center shadow-md text-sky-700">
+                                            <i class="fa-solid fa-user-nurse text-3xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Patricia, Mother')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-md hover:scale-110">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1.5 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2.5 py-0.5 rounded-md">Patricia</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 2 -->
+                            <div class="mt-2.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-200">
+                                <div id="drop-2" data-slot="2" data-answer="father" class="drop-zone w-28 h-8 rounded-lg border-2 border-dashed border-sky-400 bg-white flex items-center justify-center px-2 font-bold text-indigo-700 shadow-inner"></div>
+                                <span>and mother</span>
+                            </div>
+
+                            <div class="w-0.5 h-8 bg-slate-300 mt-2"></div>
+                        </div>
+
+                        <!-- Branch 2: Aunt & Uncle (Deborah & Arturo) -->
+                        <div class="flex flex-col items-center relative">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-8">
+                                <!-- Deborah -->
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-[72px] h-[72px] rounded-2xl bg-purple-100 border-2 border-purple-300 flex items-center justify-center shadow-md text-purple-700">
+                                            <i class="fa-solid fa-user-doctor text-3xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Deborah, Aunt')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-md hover:scale-110">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1.5 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2.5 py-0.5 rounded-md">Deborah</span>
+                                </div>
+
+                                <div class="w-10 h-0.5 bg-purple-400"></div>
+
+                                <!-- Arturo -->
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-[72px] h-[72px] rounded-2xl bg-indigo-100 border-2 border-indigo-300 flex items-center justify-center shadow-md text-indigo-700">
+                                            <i class="fa-solid fa-user-large text-3xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Arturo, Uncle')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center shadow-md hover:scale-110">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1.5 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2.5 py-0.5 rounded-md">Arturo</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 3 -->
+                            <div class="mt-2.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200">
+                                <span>aunt and</span>
+                                <div id="drop-3" data-slot="3" data-answer="uncle" class="drop-zone w-28 h-8 rounded-lg border-2 border-dashed border-purple-400 bg-white flex items-center justify-center px-2 font-bold text-indigo-700 shadow-inner"></div>
+                            </div>
+
+                            <div class="w-0.5 h-8 bg-slate-300 mt-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- LEVEL 3: GENERATION 3 (JOSEPH, KEIKO, JOSHUA, NICOLE, VERONICA) -->
+                    <div class="w-full flex justify-between relative pt-2 px-4">
+                        <div class="absolute top-0 left-16 right-16 h-0.5 bg-slate-300"></div>
+
+                        <!-- Sub-group 1: Joseph & Keiko -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-16 h-16 rounded-2xl bg-amber-200 border-2 border-amber-500 flex items-center justify-center shadow-md text-amber-900 ring-2 ring-amber-400 ring-offset-1">
+                                            <i class="fa-solid fa-user-check text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Joseph, Main Subject')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-amber-900 bg-amber-300 px-2 py-0.5 rounded-md border border-amber-400">Joseph ★</span>
+                                </div>
+
+                                <div class="w-6 h-0.5 bg-amber-400"></div>
+
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-16 h-16 rounded-2xl bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center shadow-md text-emerald-700">
+                                            <i class="fa-solid fa-user-graduate text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Keiko, Wife')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2 py-0.5 rounded-md">Keiko</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 4 -->
+                            <div class="mt-2 flex items-center gap-1 text-xs font-semibold text-slate-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                                <span>Joseph (husband) and his</span>
+                                <div id="drop-4" data-slot="4" data-answer="wife" class="drop-zone w-24 h-7 rounded-lg border-2 border-dashed border-emerald-400 bg-white flex items-center justify-center font-bold text-indigo-700 shadow-inner"></div>
+                            </div>
+
+                            <div class="w-0.5 h-8 bg-slate-300 mt-2"></div>
+                        </div>
+
+                        <!-- Sub-group 2: Joshua & Nicole -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-16 h-16 rounded-2xl bg-teal-100 border-2 border-teal-300 flex items-center justify-center shadow-md text-teal-700">
+                                            <i class="fa-solid fa-user text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Joshua, Brother')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2 py-0.5 rounded-md">Joshua</span>
+                                </div>
+
+                                <div class="w-6 h-0.5 bg-teal-400"></div>
+
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-16 h-16 rounded-2xl bg-lime-100 border-2 border-lime-300 flex items-center justify-center shadow-md text-lime-700">
+                                            <i class="fa-solid fa-user-astronaut text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Nicole, Sister-in-law')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-lime-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2 py-0.5 rounded-md">Nicole</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 5 -->
+                            <div class="mt-2 flex items-center gap-1 text-xs font-semibold text-slate-700 bg-teal-50 px-2.5 py-1 rounded-xl border border-teal-200">
+                                <span>brother and</span>
+                                <div id="drop-5" data-slot="5" data-answer="sister-in-law" class="drop-zone w-28 h-7 rounded-lg border-2 border-dashed border-teal-400 bg-white flex items-center justify-center font-bold text-indigo-700 shadow-inner"></div>
+                            </div>
+
+                            <div class="w-0.5 h-8 bg-slate-300 mt-2"></div>
+                        </div>
+
+                        <!-- Sub-group 3: Veronica -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex flex-col items-center">
+                                <div class="relative">
+                                    <div class="w-16 h-16 rounded-2xl bg-pink-100 border-2 border-pink-300 flex items-center justify-center shadow-md text-pink-700">
+                                        <i class="fa-solid fa-user-ninja text-2xl"></i>
+                                    </div>
+                                    <button onclick="speakText('Veronica, Cousin')" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-md">
+                                        <i class="fa-solid fa-volume-high text-[10px]"></i>
+                                    </button>
+                                </div>
+                                <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-900 text-white px-2 py-0.5 rounded-md">Veronica</span>
+                            </div>
+
+                            <!-- Blank Slot 6 -->
+                            <div class="mt-2 flex items-center gap-1 text-xs font-semibold text-slate-700 bg-pink-50 px-2.5 py-1 rounded-xl border border-pink-200">
+                                <div id="drop-6" data-slot="6" data-answer="cousin" class="drop-zone w-28 h-7 rounded-lg border-2 border-dashed border-pink-400 bg-white flex items-center justify-center font-bold text-indigo-700 shadow-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LEVEL 4: CHILDREN & NIECE/NEPHEW -->
+                    <div class="w-full flex justify-start pl-16 gap-32 relative pt-2">
+                        <!-- Children of Joseph & Keiko -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-8">
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-14 h-14 rounded-2xl bg-cyan-100 border-2 border-cyan-300 flex items-center justify-center shadow-md text-cyan-700">
+                                            <i class="fa-solid fa-child text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Andrew, Son')" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[9px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-800 text-white px-2 py-0.5 rounded-md">Andrew</span>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-14 h-14 rounded-2xl bg-rose-100 border-2 border-rose-300 flex items-center justify-center shadow-md text-rose-700">
+                                            <i class="fa-solid fa-child-dress text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Emily, Daughter')" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[9px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-800 text-white px-2 py-0.5 rounded-md">Emily</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 7 -->
+                            <div class="mt-2 flex items-center gap-1 text-xs font-semibold text-slate-700 bg-cyan-50 px-2.5 py-1 rounded-xl border border-cyan-200">
+                                <span>son and</span>
+                                <div id="drop-7" data-slot="7" data-answer="daughter" class="drop-zone w-26 h-7 rounded-lg border-2 border-dashed border-cyan-400 bg-white flex items-center justify-center font-bold text-indigo-700 shadow-inner"></div>
+                            </div>
+                        </div>
+
+                        <!-- Children of Joshua & Nicole -->
+                        <div class="flex flex-col items-center pl-8">
+                            <div class="w-0.5 h-4 bg-slate-300 -mt-2 mb-2"></div>
+                            <div class="flex items-center gap-8">
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-14 h-14 rounded-2xl bg-fuchsia-100 border-2 border-fuchsia-300 flex items-center justify-center shadow-md text-fuchsia-700">
+                                            <i class="fa-solid fa-child-dress text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Alyssa, Niece')" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-fuchsia-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[9px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-800 text-white px-2 py-0.5 rounded-md">Alyssa</span>
+                                </div>
+
+                                <div class="flex flex-col items-center">
+                                    <div class="relative">
+                                        <div class="w-14 h-14 rounded-2xl bg-violet-100 border-2 border-violet-300 flex items-center justify-center shadow-md text-violet-700">
+                                            <i class="fa-solid fa-child text-2xl"></i>
+                                        </div>
+                                        <button onclick="speakText('Ethan, Nephew')" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-violet-500 text-white flex items-center justify-center shadow-md">
+                                            <i class="fa-solid fa-volume-high text-[9px]"></i>
+                                        </button>
+                                    </div>
+                                    <span class="mt-1 text-xs font-bold text-slate-800 bg-slate-800 text-white px-2 py-0.5 rounded-md">Ethan</span>
+                                </div>
+                            </div>
+
+                            <!-- Blank Slot 8 -->
+                            <div class="mt-2 flex items-center gap-1 text-xs font-semibold text-slate-700 bg-fuchsia-50 px-2.5 py-1 rounded-xl border border-fuchsia-200">
+                                <div id="drop-8" data-slot="8" data-answer="niece" class="drop-zone w-24 h-7 rounded-lg border-2 border-dashed border-fuchsia-400 bg-white flex items-center justify-center font-bold text-indigo-700 shadow-inner"></div>
+                                <span>and nephew</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <button onclick="showExerciseAHint()" class="px-4 py-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 font-semibold text-sm hover:bg-amber-100 transition flex items-center gap-2">
+                    <i class="fa-regular fa-lightbulb text-amber-600"></i> Need a Hint?
+                </button>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="resetExerciseA()" class="px-5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-600 hover:bg-slate-100 transition text-sm">
+                        Clear All
+                    </button>
+                    <button onclick="checkExerciseA()" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-md shadow-amber-200 transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-check"></i> Check Answers
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- MODE 2: INTERACTIVE AUDIO FLASHCARDS -->
+        <!-- ==================================================================== -->
+        <section id="sec-flashcards" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="font-heading text-xl sm:text-2xl font-bold text-slate-900">Audio Vocabulary Flashcards</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Tap card to flip between word & definition. Listen to correct English pronunciation.</p>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    <button onclick="filterFlashcards('all')" id="fc-filter-all" class="fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-white">All (16)</button>
+                    <button onclick="filterFlashcards('older')" id="fc-filter-older" class="fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Older Gen</button>
+                    <button onclick="filterFlashcards('parent')" id="fc-filter-parent" class="fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Parents/Uncles</button>
+                    <button onclick="filterFlashcards('youth')" id="fc-filter-youth" class="fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Kids/Youth</button>
+                </div>
+            </div>
+
+            <!-- Flashcards Grid -->
+            <div id="flashcards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Dynamic Cards Inserted via JS -->
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- MODE 3: BUILD YOUR FAMILY TREE (EXERCISE B) -->
+        <!-- ==================================================================== -->
+        <section id="sec-builder" class="tab-content hidden space-y-6">
+            <!-- Instruction Header -->
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
+                <div class="max-w-3xl">
+                    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full mb-3">
+                        <i class="fa-solid fa-pen"></i> Exercise B
+                    </div>
+                    <h2 class="font-heading text-2xl sm:text-3xl font-bold mb-2">Build Your Own Family Tree</h2>
+                    <p class="text-indigo-100 text-sm sm:text-base">
+                        Add members of your family (or a friend's family). As you add relatives, the studio will automatically compose a natural English paragraph for speaking practice!
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Column: Add Relative Form -->
+                <div class="lg:col-span-5 bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-heading font-bold text-lg text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-indigo-500"></i> Add Family Member
+                    </h3>
+
+                    <form id="add-member-form" onsubmit="handleAddMember(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Full Name or First Name</label>
+                            <input type="text" id="member-name" placeholder="e.g. Maria, Lucas, Grandpa Sam" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none transition">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Relationship</label>
+                                <select id="member-relation" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none transition bg-white">
+                                    <option value="father">Father</option>
+                                    <option value="mother">Mother</option>
+                                    <option value="brother">Brother</option>
+                                    <option value="sister">Sister</option>
+                                    <option value="grandfather">Grandfather</option>
+                                    <option value="grandmother">Grandmother</option>
+                                    <option value="uncle">Uncle</option>
+                                    <option value="aunt">Aunt</option>
+                                    <option value="cousin">Cousin</option>
+                                    <option value="husband">Husband</option>
+                                    <option value="wife">Wife</option>
+                                    <option value="son">Son</option>
+                                    <option value="daughter">Daughter</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Age (Optional)</label>
+                                <input type="number" id="member-age" placeholder="e.g. 28" min="0" max="120" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Gender</label>
+                            <div class="flex gap-4 pt-1">
+                                <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+                                    <input type="radio" name="member-gender" value="male" checked class="text-indigo-600 focus:ring-indigo-500"> Male
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+                                    <input type="radio" name="member-gender" value="female" class="text-indigo-600 focus:ring-indigo-500"> Female
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Add to Family Tree
+                        </button>
+                    </form>
+
+                    <!-- Quick Sample Loader -->
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span>Need inspiration?</span>
+                        <button onclick="loadSampleFamily()" class="text-indigo-600 font-bold hover:underline">
+                            Load Sample Family
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Visual Members & AI Paragraph -->
+                <div class="lg:col-span-7 space-y-6">
+                    <!-- Family Members Cards -->
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-heading font-bold text-lg text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-users text-indigo-500"></i> My Family Tree Members
+                                <span id="family-count-badge" class="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                            </h3>
+                            <button onclick="clearCustomFamily()" class="text-xs text-rose-600 font-semibold hover:underline">Clear All</button>
+                        </div>
+
+                        <div id="custom-family-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-[100px]">
+                            <!-- Family items added here -->
+                        </div>
+                    </div>
+
+                    <!-- Speaking & Paragraph Box -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                                    <i class="fa-solid fa-comment-dots"></i>
+                                </div>
+                                <h3 class="font-heading font-bold text-slate-900 text-base">Generated ESL Presentation Script</h3>
+                            </div>
+                            <button onclick="speakGeneratedText()" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> Read Aloud
+                            </button>
+                        </div>
+
+                        <div class="p-4 bg-white/90 rounded-xl border border-amber-200/80 text-slate-800 text-sm sm:text-base leading-relaxed font-medium shadow-xs italic" id="generated-paragraph-box">
+                            "There are 0 people in my family tree yet. Use the form on the left to add relatives!"
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-500">
+                            <span><i class="fa-solid fa-microphone mr-1 text-amber-600"></i> Tip: Read this script out loud 3 times for fluency!</span>
+                            <button onclick="copyGeneratedScript()" class="text-indigo-600 font-bold hover:underline flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> Copy Script
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- MODE 4: FAMILY DETECTIVE Q&A GAME -->
+        <!-- ==================================================================== -->
+        <section id="sec-detective" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="max-w-3xl relative z-10">
+                    <div class="inline-flex items-center gap-2 bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-xs px-3 py-1 rounded-full mb-3">
+                        <i class="fa-solid fa-user-secret"></i> Interactive Role-Play Practice
+                    </div>
+                    <h2 class="font-heading text-2xl sm:text-3xl font-bold mb-2">Family Detective Q&A</h2>
+                    <p class="text-slate-300 text-sm sm:text-base">
+                        Listen to the questions asked by the Detective and choose the most natural, correct English answer based on Joseph's family!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Game Card Screen -->
+            <div class="max-w-3xl mx-auto bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <!-- Header Stats -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm" id="detective-q-num">1</span>
+                        <span class="text-xs font-bold uppercase text-slate-500 tracking-wider">Question <span id="q-current">1</span> of <span id="q-total">6</span></span>
+                    </div>
+
+                    <div class="w-36 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="detective-progress" class="h-full bg-indigo-600 transition-all duration-300 w-1/6"></div>
+                    </div>
+                </div>
+
+                <!-- Detective Character Speech Bubble -->
+                <div class="flex gap-4 items-start bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-900 text-amber-400 flex items-center justify-center text-2xl shrink-0 shadow-md">
+                        <i class="fa-solid fa-user-secret"></i>
+                    </div>
+                    <div class="space-y-2 flex-grow">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detective Inspector</span>
+                            <button onclick="speakDetectiveQuestion()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-xs">
+                                <i class="fa-solid fa-volume-high"></i> Listen Prompt
+                            </button>
+                        </div>
+                        <p id="detective-question-text" class="font-heading text-lg sm:text-xl font-bold text-slate-900">
+                            "How many people are in Joseph's immediate family?"
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Options Grid -->
+                <div id="detective-options" class="space-y-3">
+                    <!-- Option buttons rendered dynamically -->
+                </div>
+
+                <!-- Explanation / Feedback Box -->
+                <div id="detective-feedback" class="hidden p-4 rounded-xl text-sm font-medium transition">
+                    <!-- Feedback text -->
+                </div>
+
+                <!-- Next Question Button -->
+                <div class="flex justify-end pt-2">
+                    <button id="detective-next-btn" onclick="nextDetectiveQuestion()" class="hidden px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition flex items-center gap-2">
+                        Next Question <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>Word Power: Family Tree & Relationship Studio — ESL Beginner Level A1</p>
+            <p><i class="fa-solid fa-heart text-rose-500"></i> Interactive ESL Learning Environment</p>
+        </div>
+    </footer>
+
+    <script>
+        let sfxEnabled = true;
+        let audioCtx = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!sfxEnabled) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                
+                if (type === 'correct') {
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc1.type = 'sine';
+                    osc2.type = 'triangle';
+                    
+                    osc1.frequency.setValueAtTime(523.25, now); // C5
+                    osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc1.frequency.exponentialRampToValueAtTime(783.99, now + 0.25); // G5
+                    
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc1.start(now);
+                    osc1.stop(now + 0.4);
+                } else if (type === 'incorrect') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+                    
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'pop') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                    
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                }
+            } catch(e) {
+                console.log("Audio not allowed yet");
+            }
+        }
+
+        // Toggle Audio Button
+        document.getElementById('sfx-toggle-btn').addEventListener('click', () => {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfx-icon');
+            if (sfxEnabled) {
+                icon.className = 'fa-solid fa-volume-high';
+                playSound('pop');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+            }
+        });
+
+        // Web Speech API Pronunciation
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9; // Slightly slower for ESL beginners
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Score Tracker State
+        let globalScore = 0;
+        function addScore(points) {
+            globalScore += points;
+            document.getElementById('global-score').textContent = globalScore;
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            playSound('pop');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm text-slate-600 hover:bg-slate-100 whitespace-nowrap transition';
+            });
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.className = 'tab-btn flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm whitespace-nowrap transition bg-amber-500 text-white shadow-sm shadow-amber-200';
+        }
+
+        const wordBankWords = [
+            'cousin', 'daughter', 'father', 'grandmother', 
+            'niece', 'sister-in-law', 'uncle', 'wife'
+        ];
+
+        let selectedWordPill = null;
+
+        function renderWordBank() {
+            const container = document.getElementById('word-bank-container');
+            container.innerHTML = '';
+
+            wordBankWords.forEach(word => {
+                const btn = document.createElement('div');
+                btn.className = 'word-pill cursor-pointer px-3.5 py-2 bg-white rounded-xl border-2 border-amber-300 hover:border-amber-500 font-bold text-slate-800 text-xs sm:text-sm shadow-xs transition transform hover:-translate-y-0.5 active:translate-y-0 select-none flex items-center gap-1.5';
+                btn.setAttribute('draggable', 'true');
+                btn.dataset.word = word;
+                btn.innerHTML = `
+                    <span>${word}</span>
+                    <button type="button" onclick="event.stopPropagation(); speakText('${word}')" class="text-amber-500 hover:text-amber-700 ml-1">
+                        <i class="fa-solid fa-volume-high text-[11px]"></i>
+                    </button>
+                `;
+
+                // Drag & Drop handlers
+                btn.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', word);
+                    playSound('pop');
+                });
+
+                // Tap-to-select support for touch & accessibility
+                btn.addEventListener('click', () => {
+                    playSound('pop');
+                    document.querySelectorAll('.word-pill').forEach(p => p.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-100'));
+                    if (selectedWordPill === word) {
+                        selectedWordPill = null;
+                    } else {
+                        selectedWordPill = word;
+                        btn.classList.add('ring-4', 'ring-amber-400', 'bg-amber-100');
+                    }
+                });
+
+                container.appendChild(btn);
+            });
+        }
+
+        function setupDropZones() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const word = e.dataTransfer.getData('text/plain');
+                    if (word) {
+                        placeWordInZone(zone, word);
+                    }
+                });
+
+                zone.addEventListener('click', () => {
+                    if (selectedWordPill) {
+                        placeWordInZone(zone, selectedWordPill);
+                        selectedWordPill = null;
+                        document.querySelectorAll('.word-pill').forEach(p => p.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-100'));
+                    } else if (zone.dataset.currentWord) {
+                        // Return word on click if filled
+                        clearZone(zone);
+                    }
+                });
+            });
+        }
+
+        function placeWordInZone(zone, word) {
+            playSound('pop');
+            zone.dataset.currentWord = word;
+            zone.classList.add('filled');
+            zone.innerHTML = `
+                <div class="flex items-center justify-between w-full">
+                    <span>${word}</span>
+                    <i class="fa-solid fa-xmark text-slate-400 hover:text-slate-600 text-[10px] cursor-pointer"></i>
+                </div>
+            `;
+            speakText(word);
+        }
+
+        function clearZone(zone) {
+            playSound('pop');
+            delete zone.dataset.currentWord;
+            zone.classList.remove('filled', 'correct', 'incorrect');
+            zone.innerHTML = '';
+        }
+
+        function checkExerciseA() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            let correctCount = 0;
+            let total = dropZones.length;
+
+            dropZones.forEach(zone => {
+                const userWord = (zone.dataset.currentWord || '').trim().toLowerCase();
+                const answer = zone.dataset.answer;
+
+                zone.classList.remove('correct', 'incorrect');
+
+                if (userWord === answer) {
+                    correctCount++;
+                    zone.classList.add('correct');
+                } else if (userWord !== '') {
+                    zone.classList.add('incorrect');
+                }
+            });
+
+            if (correctCount === total) {
+                playSound('correct');
+                addScore(100);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                playSound('incorrect');
+            }
+        }
+
+        function resetExerciseA() {
+            playSound('pop');
+            document.querySelectorAll('.drop-zone').forEach(zone => clearZone(zone));
+            renderWordBank();
+        }
+
+        function showExerciseAHint() {
+            playSound('pop');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            for (let zone of dropZones) {
+                if (!zone.dataset.currentWord) {
+                    const ans = zone.dataset.answer;
+                    placeWordInZone(zone, ans);
+                    break;
+                }
+            }
+        }
+
+        const flashcardsData = [
+            { word: 'Father', pair: 'Mother', phonetic: '/ˈfɑːðər/', cat: 'parent', sentence: 'Robert is Joseph\'s father.', icon: 'fa-user-tie' },
+            { word: 'Mother', pair: 'Father', phonetic: '/ˈmʌðər/', cat: 'parent', sentence: 'Patricia is Joseph\'s mother.', icon: 'fa-user-nurse' },
+            { word: 'Grandfather', pair: 'Grandmother', phonetic: '/ˈɡræn.fɑː.ðər/', cat: 'older', sentence: 'James is Joseph\'s grandfather.', icon: 'fa-person-cane' },
+            { word: 'Grandmother', pair: 'Grandfather', phonetic: '/ˈɡræn.mʌð.ər/', cat: 'older', sentence: 'Betty is Joseph\'s grandmother.', icon: 'fa-wheelchair' },
+            { word: 'Uncle', pair: 'Aunt', phonetic: '/ˈʌŋ.kəl/', cat: 'parent', sentence: 'Arturo is Joseph\'s uncle.', icon: 'fa-user-large' },
+            { word: 'Aunt', pair: 'Uncle', phonetic: '/ɑːnt/', cat: 'parent', sentence: 'Deborah is Joseph\'s aunt.', icon: 'fa-user-doctor' },
+            { word: 'Brother', pair: 'Sister', phonetic: '/ˈbrʌð.ər/', cat: 'youth', sentence: 'Joshua is Joseph\'s brother.', icon: 'fa-user' },
+            { word: 'Sister', pair: 'Brother', phonetic: '/ˈsɪs.tər/', cat: 'youth', sentence: 'Joseph has no sister.', icon: 'fa-user-ninja' },
+            { word: 'Husband', pair: 'Wife', phonetic: '/ˈhʌz.bənd/', cat: 'parent', sentence: 'Joseph is Keiko\'s husband.', icon: 'fa-user-check' },
+            { word: 'Wife', pair: 'Husband', phonetic: '/waɪf/', cat: 'parent', sentence: 'Keiko is Joseph\'s wife.', icon: 'fa-user-graduate' },
+            { word: 'Sister-in-law', pair: 'Brother-in-law', phonetic: '/ˈsɪs.tər.ɪn.lɔː/', cat: 'parent', sentence: 'Nicole is Joseph\'s sister-in-law.', icon: 'fa-user-astronaut' },
+            { word: 'Cousin', pair: 'Cousin', phonetic: '/ˈkʌz.ən/', cat: 'youth', sentence: 'Veronica is Joseph\'s cousin.', icon: 'fa-user-ninja' },
+            { word: 'Son', pair: 'Daughter', phonetic: '/sʌn/', cat: 'youth', sentence: 'Andrew is Joseph\'s son.', icon: 'fa-child' },
+            { word: 'Daughter', pair: 'Son', phonetic: '/ˈdɔː.tər/', cat: 'youth', sentence: 'Emily is Joseph\'s daughter.', icon: 'fa-child-dress' },
+            { word: 'Niece', pair: 'Nephew', phonetic: '/niːs/', cat: 'youth', sentence: 'Alyssa is Joseph\'s niece.', icon: 'fa-child-dress' },
+            { word: 'Nephew', pair: 'Niece', phonetic: '/ˈnef.juː/', cat: 'youth', sentence: 'Ethan is Joseph\'s nephew.', icon: 'fa-child' }
+        ];
+
+        function renderFlashcards(filter = 'all') {
+            const container = document.getElementById('flashcards-grid');
+            container.innerHTML = '';
+
+            const filtered = filter === 'all' 
+                ? flashcardsData 
+                : flashcardsData.filter(card => card.cat === filter);
+
+            filtered.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'perspective-1000 h-56 cursor-pointer group';
+                cardEl.innerHTML = `
+                    <div class="card-inner relative w-full h-full duration-500 transform-style-3d transition-transform">
+                        <!-- Front Face -->
+                        <div class="absolute inset-0 w-full h-full rounded-2xl bg-white border border-slate-200 shadow-sm p-5 flex flex-col justify-between backface-hidden group-hover:border-amber-400">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">Vocabulary</span>
+                                <button onclick="event.stopPropagation(); speakText('${card.word}')" class="w-8 h-8 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-600 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-volume-high text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="text-center my-auto">
+                                <div class="w-12 h-12 mx-auto rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl mb-2">
+                                    <i class="fa-solid ${card.icon}"></i>
+                                </div>
+                                <h3 class="font-heading font-bold text-xl text-slate-900">${card.word}</h3>
+                                <p class="text-xs text-slate-400 font-mono mt-0.5">${card.phonetic}</p>
+                            </div>
+
+                            <div class="text-center text-[11px] font-semibold text-slate-400 flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-rotate"></i> Tap to flip card
+                            </div>
+                        </div>
+
+                        <!-- Back Face -->
+                        <div class="absolute inset-0 w-full h-full rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md p-5 flex flex-col justify-between backface-hidden rotate-y-180">
+                            <div class="flex items-center justify-between border-b border-white/20 pb-2">
+                                <span class="text-xs font-bold uppercase text-amber-100 tracking-wider">Pair: ${card.pair}</span>
+                                <button onclick="event.stopPropagation(); speakText('${card.sentence}')" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition">
+                                    <i class="fa-solid fa-volume-high text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="my-auto space-y-2">
+                                <p class="text-xs text-amber-100 font-semibold uppercase tracking-wider">Example Sentence:</p>
+                                <p class="text-sm font-medium leading-snug font-heading">"${card.sentence}"</p>
+                            </div>
+
+                            <div class="text-center text-[10px] text-amber-100">
+                                Click anywhere to flip back
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const innerDiv = cardEl.querySelector('.card-inner');
+                cardEl.addEventListener('click', () => {
+                    playSound('pop');
+                    innerDiv.classList.toggle('rotate-y-180');
+                });
+
+                container.appendChild(cardEl);
+            });
+        }
+
+        function filterFlashcards(cat) {
+            playSound('pop');
+            document.querySelectorAll('.fc-filter-btn').forEach(b => {
+                b.className = 'fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200';
+            });
+            document.getElementById(`fc-filter-${cat}`).className = 'fc-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-white';
+            renderFlashcards(cat);
+        }
+
+        let customFamilyMembers = [];
+
+        function handleAddMember(e) {
+            e.preventDefault();
+            const name = document.getElementById('member-name').value.trim();
+            const relation = document.getElementById('member-relation').value;
+            const age = document.getElementById('member-age').value;
+            const gender = document.querySelector('input[name="member-gender"]:checked').value;
+
+            if (name) {
+                playSound('pop');
+                customFamilyMembers.push({ id: Date.now(), name, relation, age, gender });
+                document.getElementById('member-name').value = '';
+                document.getElementById('member-age').value = '';
+                renderCustomFamily();
+                generateFamilyScript();
+            }
+        }
+
+        function renderCustomFamily() {
+            const grid = document.getElementById('custom-family-grid');
+            const badge = document.getElementById('family-count-badge');
+            badge.textContent = customFamilyMembers.length;
+
+            if (customFamilyMembers.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-2 py-8 text-center text-slate-400 text-sm italic">
+                        No family members added yet. Add one above!
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = '';
+            customFamilyMembers.forEach(mem => {
+                const el = document.createElement('div');
+                el.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between shadow-2xs';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl ${mem.gender === 'female' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'} flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid ${mem.gender === 'female' ? 'fa-user-nurse' : 'fa-user-tie'}"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-900">${mem.name}</div>
+                            <div class="text-xs text-slate-500 capitalize">${mem.relation} ${mem.age ? `• ${mem.age} yrs old` : ''}</div>
+                        </div>
+                    </div>
+                    <button onclick="removeFamilyMember(${mem.id})" class="text-slate-400 hover:text-rose-600 transition p-1">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                grid.appendChild(el);
+            });
+        }
+
+        function removeFamilyMember(id) {
+            playSound('pop');
+            customFamilyMembers = customFamilyMembers.filter(m => m.id !== id);
+            renderCustomFamily();
+            generateFamilyScript();
+        }
+
+        function clearCustomFamily() {
+            playSound('pop');
+            customFamilyMembers = [];
+            renderCustomFamily();
+            generateFamilyScript();
+        }
+
+        function loadSampleFamily() {
+            playSound('pop');
+            customFamilyMembers = [
+                { id: 1, name: 'Carlos', relation: 'father', age: '52', gender: 'male' },
+                { id: 2, name: 'Elena', relation: 'mother', age: '49', gender: 'female' },
+                { id: 3, name: 'Mateo', relation: 'brother', age: '22', gender: 'male' },
+                { id: 4, name: 'Sofia', relation: 'sister', age: '18', gender: 'female' }
+            ];
+            renderCustomFamily();
+            generateFamilyScript();
+        }
+
+        function generateFamilyScript() {
+            const box = document.getElementById('generated-paragraph-box');
+            if (customFamilyMembers.length === 0) {
+                box.textContent = '"There are 0 people in my family tree yet. Use the form on the left to add relatives!"';
+                return;
+            }
+
+            const total = customFamilyMembers.length;
+            const brothers = customFamilyMembers.filter(m => m.relation === 'brother');
+            const sisters = customFamilyMembers.filter(m => m.relation === 'sister');
+
+            let script = `There are ${total} people in my family tree. `;
+
+            if (brothers.length > 0 || sisters.length > 0) {
+                const bText = brothers.length === 1 ? 'one brother' : brothers.length > 1 ? `${brothers.length} brothers` : '';
+                const sText = sisters.length === 1 ? 'one sister' : sisters.length > 1 ? `${sisters.length} sisters` : '';
+                
+                if (bText && sText) {
+                    script += `I have ${bText} and ${sText}. `;
+                } else if (bText) {
+                    script += `I have ${bText}. `;
+                } else if (sText) {
+                    script += `I have ${sText}. `;
+                }
+            }
+
+            customFamilyMembers.forEach(mem => {
+                const pronoun = mem.gender === 'female' ? 'She' : 'He';
+                const pos = mem.gender === 'female' ? 'Her' : 'His';
+
+                if (mem.age) {
+                    script += `My ${mem.relation}'s name is ${mem.name}, and ${pronoun.toLowerCase()} is ${mem.age} years old. `;
+                } else {
+                    script += `My ${mem.relation} is ${mem.name}. `;
+                }
+            });
+
+            box.textContent = `"${script.trim()}"`;
+        }
+
+        function speakGeneratedText() {
+            const text = document.getElementById('generated-paragraph-box').textContent.replace(/"/g, '');
+            speakText(text);
+        }
+
+        function copyGeneratedScript() {
+            const text = document.getElementById('generated-paragraph-box').textContent.replace(/"/g, '');
+            navigator.clipboard.writeText(text);
+            playSound('pop');
+            alert('Script copied to clipboard!');
+        }
+
+        const detectiveQuestions = [
+            {
+                q: "How many people are in Joseph's immediate family (Joseph, wife, and children)?",
+                options: [
+                    { text: "There are four people in his immediate family.", correct: true },
+                    { text: "There are six people in his family.", correct: false },
+                    { text: "He has three brothers.", correct: false }
+                ],
+                explanation: "Correct! Joseph, his wife Keiko, his son Andrew, and his daughter Emily make 4 people."
+            },
+            {
+                q: "What is the relationship between Keiko and Joseph?",
+                options: [
+                    { text: "Keiko is Joseph's sister.", correct: false },
+                    { text: "Keiko is Joseph's wife.", correct: true },
+                    { text: "Keiko is Joseph's aunt.", correct: false }
+                ],
+                explanation: "Spot on! Keiko is married to Joseph, so she is his wife."
+            },
+            {
+                q: "Who is Ethan's sister in the family tree?",
+                options: [
+                    { text: "Emily is Ethan's sister.", correct: false },
+                    { text: "Veronica is Ethan's sister.", correct: false },
+                    { text: "Alyssa is Ethan's sister.", correct: true }
+                ],
+                explanation: "Great detective work! Alyssa and Ethan are children of Joshua & Nicole, so Alyssa is Ethan's sister."
+            },
+            {
+                q: "How is Arturo related to Joseph?",
+                options: [
+                    { text: "Arturo is Joseph's uncle.", correct: true },
+                    { text: "Arturo is Joseph's grandfather.", correct: false },
+                    { text: "Arturo is Joseph's nephew.", correct: false }
+                ],
+                explanation: "Exactly! Arturo is married to Deborah (Joseph's aunt), making him Joseph's uncle."
+            },
+            {
+                q: "Who are James and Betty to Andrew and Emily?",
+                options: [
+                    { text: "They are their parents.", correct: false },
+                    { text: "They are their great-grandparents.", correct: false },
+                    { text: "They are their grandparents.", correct: true }
+                ],
+                explanation: "Correct! James and Betty are the grandparents of Joseph's children."
+            },
+            {
+                q: "What is Nicole's relationship to Joseph?",
+                options: [
+                    { text: "Nicole is Joseph's sister-in-law.", correct: true },
+                    { text: "Nicole is Joseph's mother.", correct: false },
+                    { text: "Nicole is Joseph's daughter.", correct: false }
+                ],
+                explanation: "Awesome! Nicole is married to Joseph's brother Joshua, making her his sister-in-law."
+            }
+        ];
+
+        let currentDetectiveQ = 0;
+
+        function renderDetectiveQuestion() {
+            const data = detectiveQuestions[currentDetectiveQ];
+            document.getElementById('q-current').textContent = currentDetectiveQ + 1;
+            document.getElementById('q-total').textContent = detectiveQuestions.length;
+            document.getElementById('detective-q-num').textContent = currentDetectiveQ + 1;
+            document.getElementById('detective-progress').style.width = `${((currentDetectiveQ + 1) / detectiveQuestions.length) * 100}%`;
+
+            document.getElementById('detective-question-text').textContent = `"${data.q}"`;
+
+            const optsContainer = document.getElementById('detective-options');
+            optsContainer.innerHTML = '';
+
+            const feedback = document.getElementById('detective-feedback');
+            feedback.className = 'hidden p-4 rounded-xl text-sm font-medium transition';
+            document.getElementById('detective-next-btn').classList.add('hidden');
+
+            data.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 font-medium text-slate-800 text-sm sm:text-base transition flex items-center justify-between group';
+                btn.innerHTML = `
+                    <span>${opt.text}</span>
+                    <i class="fa-regular fa-circle text-slate-300 group-hover:text-indigo-500"></i>
+                `;
+                btn.onclick = () => selectDetectiveAnswer(opt, btn, data.explanation);
+                optsContainer.appendChild(btn);
+            });
+
+            // Speak question automatically
+            speakText(data.q);
+        }
+
+        function speakDetectiveQuestion() {
+            const data = detectiveQuestions[currentDetectiveQ];
+            speakText(data.q);
+        }
+
+        function selectDetectiveAnswer(opt, btnEl, explanation) {
+            const allBtns = document.querySelectorAll('#detective-options button');
+            allBtns.forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('detective-feedback');
+            feedback.classList.remove('hidden');
+
+            if (opt.correct) {
+                playSound('correct');
+                addScore(50);
+                btnEl.className = 'w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 text-sm sm:text-base flex items-center justify-between';
+                btnEl.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-600';
+                
+                feedback.className = 'p-4 rounded-xl text-sm font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200';
+                feedback.textContent = explanation;
+            } else {
+                playSound('incorrect');
+                btnEl.className = 'w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 text-sm sm:text-base flex items-center justify-between';
+                btnEl.querySelector('i').className = 'fa-solid fa-circle-xmark text-rose-600';
+
+                feedback.className = 'p-4 rounded-xl text-sm font-semibold bg-rose-100 text-rose-900 border border-rose-200';
+                feedback.textContent = "Not quite! Try reviewing Joseph's family tree visual in Tab 1.";
+            }
+
+            document.getElementById('detective-next-btn').classList.remove('hidden');
+        }
+
+        function nextDetectiveQuestion() {
+            playSound('pop');
+            currentDetectiveQ++;
+            if (currentDetectiveQ < detectiveQuestions.length) {
+                renderDetectiveQuestion();
+            } else {
+                // Game Completed!
+                playSound('correct');
+                confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } });
+                document.getElementById('sec-detective').innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center max-w-xl mx-auto border border-slate-200 shadow-md space-y-4">
+                        <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl mx-auto">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h2 class="font-heading text-2xl font-bold text-slate-900">Detective Master Badge Unlocked!</h2>
+                        <p class="text-slate-600 text-sm">Congratulations! You completed all Q&A role-play challenges and mastered family vocabulary.</p>
+                        <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md hover:bg-indigo-700 transition">
+                            Play Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        window.onload = function() {
+            renderWordBank();
+            setupDropZones();
+            renderFlashcards();
+            renderCustomFamily();
+            renderDetectiveQuestion();
+        };
+    </script>
+</body>
+</html>
