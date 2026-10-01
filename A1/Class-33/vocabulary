@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Nice Neighborhood • Speaking & Grammar Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#0f172a',
+                        brandCard: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .selected-btn { ring: 3px solid #6366f1; background-color: #312e81 !important; }
+        .map-grid-cell { transition: all 0.2s ease-in-out; }
+        .map-grid-cell:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    <i class="fa-solid fa-city"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white">A Nice Neighborhood Studio</h1>
+                    <p class="text-xs text-slate-400">There is / There are • Speaking & Survey Practice • Level A1–A2</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center gap-6 bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-700 text-sm">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-thumbs-up text-emerald-400"></i>
+                    <span class="text-slate-400">"YES" Count:</span>
+                    <span id="yesDisplay" class="font-bold text-emerald-400 text-base">0</span>
+                </div>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span class="text-slate-400">Points:</span>
+                    <span id="pointsDisplay" class="font-bold text-amber-400 text-base">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-slate-800/90 border-t border-slate-700/60 px-4">
+            <div class="max-w-7xl mx-auto flex gap-2 overflow-x-auto py-2">
+                <button onclick="switchTab('chart')" id="tab-chart" class="nav-tab active px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap bg-emerald-600 text-white shadow">
+                    <i class="fa-solid fa-table-cells font-bold"></i> 1. Part A: Neighborhood Chart
+                </button>
+                <button onclick="switchTab('survey')" id="tab-survey" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-gamepad"></i> 2. Part B: "Who Gets More YES?" Game
+                </button>
+                <button onclick="switchTab('map')" id="tab-map" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-map-location-dot"></i> 3. Interactive Neighborhood Map
+                </button>
+                <button onclick="switchTab('dialogue')" id="tab-dialogue" class="nav-tab px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:bg-slate-700">
+                    <i class="fa-solid fa-comments"></i> 4. Group Speaking Trainer
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: PART A NEIGHBORHOOD CHART -->
+        <section id="sec-chart" class="tab-content block space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-3 py-1 bg-emerald-900/60 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-full">Part A Chart Builder</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">Describe Your Neighborhood</h2>
+                        <p class="text-sm text-slate-400">Fill in the 4 grammar quadrants with places and location phrases.</p>
+                    </div>
+                    <button onclick="clearAllChartEntries()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 self-start md:self-auto">
+                        <i class="fa-solid fa-trash-can"></i> Clear Chart
+                    </button>
+                </div>
+
+                <!-- 4 Quadrants Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- Quadrant 1: There is a/an -->
+                    <div class="bg-slate-900/90 border border-emerald-500/30 p-5 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check"></i> There is a/an . . . (where?)
+                            </h3>
+                            <span class="text-xs text-slate-500">Singular Affirmative</span>
+                        </div>
+                        <div id="quadrant-1" class="space-y-2">
+                            <!-- Items inserted here -->
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <input type="text" id="input-q1" placeholder="e.g. gym across from the park" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none">
+                            <button onclick="addChartItem(1)" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quadrant 2: There are some -->
+                    <div class="bg-slate-900/90 border border-teal-500/30 p-5 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-sm font-bold text-teal-400 flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group"></i> There are some . . . (where?)
+                            </h3>
+                            <span class="text-xs text-slate-500">Plural Affirmative</span>
+                        </div>
+                        <div id="quadrant-2" class="space-y-2">
+                            <!-- Items inserted here -->
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <input type="text" id="input-q2" placeholder="e.g. coffee shops near the station" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-teal-500 focus:outline-none">
+                            <button onclick="addChartItem(2)" class="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quadrant 3: There isn't a/an -->
+                    <div class="bg-slate-900/90 border border-rose-500/30 p-5 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-sm font-bold text-rose-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-xmark"></i> There isn't a/an . . . (where?)
+                            </h3>
+                            <span class="text-xs text-slate-500">Singular Negative</span>
+                        </div>
+                        <div id="quadrant-3" class="space-y-2">
+                            <!-- Items inserted here -->
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <input type="text" id="input-q3" placeholder="e.g. bookstore in our neighborhood" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none">
+                            <button onclick="addChartItem(3)" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quadrant 4: There aren't any -->
+                    <div class="bg-slate-900/90 border border-amber-500/30 p-5 rounded-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+                                <i class="fa-solid fa-ban"></i> There aren't any . . . (where?)
+                            </h3>
+                            <span class="text-xs text-slate-500">Plural Negative</span>
+                        </div>
+                        <div id="quadrant-4" class="space-y-2">
+                            <!-- Items inserted here -->
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <input type="text" id="input-q4" placeholder="e.g. clothing stores near here" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none">
+                            <button onclick="addChartItem(4)" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PART B "WHO GETS MORE YES?" GAME -->
+        <section id="sec-survey" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6 max-w-3xl mx-auto">
+                <div class="text-center space-y-2">
+                    <span class="px-3 py-1 bg-amber-900/60 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-full">Part B Speaking Game</span>
+                    <h2 class="text-2xl font-bold text-white">Who Gets More "YES" Answers?</h2>
+                    <p class="text-sm text-slate-400">Ask partner questions about the neighborhood facilities to score points!</p>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 space-y-6">
+                    <!-- Current Question Display -->
+                    <div class="p-6 bg-slate-800 rounded-2xl border border-amber-500/30 text-center space-y-3">
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Question To Ask:</span>
+                        <p id="gameQuestionText" class="text-xl font-bold text-white">"Is there a gym in your neighborhood?"</p>
+                        <button onclick="speakText(document.getElementById('gameQuestionText').innerText)" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold inline-flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high"></i> Listen
+                        </button>
+                    </div>
+
+                    <!-- Answer Reveal Box -->
+                    <div id="surveyAnswerCard" class="hidden p-5 rounded-xl border text-center space-y-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Partner Response:</span>
+                        <p id="surveyAnswerText" class="text-lg font-bold"></p>
+                        <p id="surveyPointsAdded" class="text-xs font-bold"></p>
+                    </div>
+
+                    <!-- Game Action Buttons -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="askSurveyQuestion()" id="btnAskQuestion" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Ask Question
+                        </button>
+                        <button onclick="nextSurveyQuestion()" id="btnNextQuestion" class="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-forward"></i> Next Place
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: INTERACTIVE NEIGHBORHOOD MAP -->
+        <section id="sec-map" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6">
+                <div>
+                    <span class="px-3 py-1 bg-indigo-900/60 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-full">Interactive Neighborhood Grid</span>
+                    <h2 class="text-2xl font-bold text-white mt-1">Map Explorer & Sentence Generator</h2>
+                    <p class="text-sm text-slate-400">Toggle places on/off to update the live neighborhood grammar report!</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Map Toggle Grid -->
+                    <div class="lg:col-span-2 bg-slate-900 p-5 rounded-2xl border border-slate-700 space-y-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Neighborhood Layout:</h3>
+                        <div id="mapGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Sentence List -->
+                    <div class="bg-slate-900 p-5 rounded-2xl border border-slate-700 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3">Live Neighborhood Summary:</h3>
+                            <div id="mapGrammarSummary" class="space-y-3 text-xs">
+                                <!-- Generated statements -->
+                            </div>
+                        </div>
+                        <button onclick="readMapSummary()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-volume-high"></i> Listen To Full Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: GROUP SPEAKING TRAINER -->
+        <section id="sec-dialogue" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6 max-w-3xl mx-auto">
+                <div class="text-center space-y-2">
+                    <span class="px-3 py-1 bg-teal-900/60 text-teal-300 border border-teal-500/40 text-xs font-bold rounded-full">Part B Dialogue Practice</span>
+                    <h2 class="text-2xl font-bold text-white">4-Person Group Dialogue Trainer</h2>
+                    <p class="text-sm text-slate-400">Practice full group conversations with roles A, B, C, and D.</p>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700 space-y-4">
+                    <!-- Speaker Lines -->
+                    <div class="space-y-3">
+                        <div class="p-3 bg-slate-800 rounded-xl border border-rose-500/30 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-rose-400">Speaker A:</span>
+                                <p class="text-sm font-medium text-white">"Is there a gym in your neighborhood?"</p>
+                            </div>
+                            <button onclick="speakText('Is there a gym in your neighborhood?')" class="text-rose-400 hover:text-rose-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3 bg-slate-800 rounded-xl border border-emerald-500/30 flex items-center justify-between ml-4">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-400">Speaker B:</span>
+                                <p class="text-sm font-medium text-white">"Yes, there's one across from the park."</p>
+                            </div>
+                            <button onclick="speakText('Yes, there is one across from the park.')" class="text-emerald-400 hover:text-emerald-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3 bg-slate-800 rounded-xl border border-indigo-500/30 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-indigo-400">Speaker C:</span>
+                                <p class="text-sm font-medium text-white">"Are there any coffee shops?"</p>
+                            </div>
+                            <button onclick="speakText('Are there any coffee shops?')" class="text-indigo-400 hover:text-indigo-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3 bg-slate-800 rounded-xl border border-amber-500/30 flex items-center justify-between ml-4">
+                            <div>
+                                <span class="text-xs font-bold text-amber-400">Speaker D:</span>
+                                <p class="text-sm font-medium text-white">"No, there aren't any in our neighborhood."</p>
+                            </div>
+                            <button onclick="speakText('No, there are not any in our neighborhood.')" class="text-amber-400 hover:text-amber-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3 bg-slate-800 rounded-xl border border-teal-500/30 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-teal-400">Speaker B:</span>
+                                <p class="text-sm font-medium text-white">"Is there a bookstore in your neighborhood?"</p>
+                            </div>
+                            <button onclick="speakText('Is there a bookstore in your neighborhood?')" class="text-teal-400 hover:text-teal-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3 bg-slate-800 rounded-xl border border-purple-500/30 flex items-center justify-between ml-4">
+                            <div>
+                                <span class="text-xs font-bold text-purple-400">Speaker A:</span>
+                                <p class="text-sm font-medium text-white">"Sorry, I don't know."</p>
+                            </div>
+                            <button onclick="speakText('Sorry, I don\'t know.')" class="text-purple-400 hover:text-purple-300 text-xs p-2">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="playFullDialogue()" class="w-full bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-play"></i> Play Complete Dialogue
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-400">
+        Unit 8 • Exercise 7: Speaking - A Nice Neighborhood Studio
+    </footer>
+
+    <script>
+        // Default Part A Chart Sample Data
+        const chartData = {
+            1: ["gym across from the park", "supermarket near the bus station", "library on Main Street"],
+            2: ["coffee shops near the center", "banks on 5th Avenue", "restaurants near my house"],
+            3: ["bookstore in our neighborhood", "movie theater near here", "gas station on this street"],
+            4: ["clothing stores near the park", "laundromats in this area", "hair salons on 2nd Street"]
+        };
+
+        // Neighborhood Map Interactive Toggle Data
+        const mapItems = [
+            { id: "gym", name: "Gym", icon: "fa-dumbbell", isPlural: false, present: true, location: "across from the park" },
+            { id: "coffee", name: "Coffee Shops", icon: "fa-mug-hot", isPlural: true, present: true, location: "near the center" },
+            { id: "supermarket", name: "Supermarket", icon: "fa-cart-shopping", isPlural: false, present: true, location: "on Main Street" },
+            { id: "bookstore", name: "Bookstore", icon: "fa-book", isPlural: false, present: false, location: "near here" },
+            { id: "laundromat", name: "Laundromats", icon: "fa-soap", isPlural: true, present: false, location: "in our area" },
+            { id: "park", name: "Park", icon: "fa-tree", isPlural: false, present: true, location: "on 5th Avenue" }
+        ];
+
+        // Game Survey Questions
+        const surveyQuestions = [
+            { place: "gym", type: "singular", text: "Is there a gym in your neighborhood?" },
+            { place: "coffee shops", type: "plural", text: "Are there any coffee shops?" },
+            { place: "bookstore", type: "singular", text: "Is there a bookstore in your neighborhood?" },
+            { place: "supermarket", type: "singular", text: "Is there a supermarket nearby?" },
+            { place: "clothing stores", type: "plural", text: "Are there any clothing stores in your area?" },
+            { place: "banks", type: "plural", text: "Are there any banks near your house?" }
+        ];
+
+        // Simulated Answers for Game
+        const possibleAnswers = [
+            { answer: "Yes, there's one across from the park.", type: "YES", points: 2 },
+            { answer: "Yes, there are some near the station.", type: "YES", points: 2 },
+            { answer: "No, there isn't one in our neighborhood.", type: "NO", points: 0 },
+            { answer: "No, there aren't any near here.", type: "NO", points: 0 },
+            { answer: "Sorry, I don't know.", type: "UNKNOWN", points: 1 }
+        ];
+
+        // App State
+        let currentSurveyIndex = 0;
+        let yesCount = 0;
+        let points = 0;
+
+        // Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'yes') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.35);
+            } else if (type === 'no') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        // Speech Synthesis TTS
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.rate = 0.9;
+                utter.lang = 'en-US';
+                window.speechSynthesis.speak(utter);
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderChart();
+            renderMapGrid();
+            updateMapSummary();
+            updateSurveyQuestion();
+        });
+
+        // Tab Switching
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('bg-emerald-600', 'text-white', 'shadow');
+                el.classList.add('text-slate-300');
+            });
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow');
+            activeBtn.classList.remove('text-slate-300');
+        }
+
+        /* --- PART A: CHART BUILDER --- */
+        function renderChart() {
+            for (let q = 1; q <= 4; q++) {
+                const container = document.getElementById(`quadrant-${q}`);
+                container.innerHTML = '';
+                chartData[q].forEach((item, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs text-white';
+                    div.innerHTML = `
+                        <span class="font-medium">${item}</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="speakChartItem(${q}, ${idx})" class="text-indigo-400 hover:text-indigo-300">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                            <button onclick="removeChartItem(${q}, ${idx})" class="text-slate-600 hover:text-rose-400">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function addChartItem(q) {
+            const input = document.getElementById(`input-q${q}`);
+            const val = input.value.trim();
+            if (val) {
+                playSound('click');
+                chartData[q].push(val);
+                input.value = '';
+                renderChart();
+            }
+        }
+
+        function removeChartItem(q, idx) {
+            playSound('click');
+            chartData[q].splice(idx, 1);
+            renderChart();
+        }
+
+        function clearAllChartEntries() {
+            playSound('click');
+            for (let q = 1; q <= 4; q++) chartData[q] = [];
+            renderChart();
+        }
+
+        function speakChartItem(q, idx) {
+            const item = chartData[q][idx];
+            let prefix = "";
+            if (q === 1) prefix = "There is a ";
+            else if (q === 2) prefix = "There are some ";
+            else if (q === 3) prefix = "There isn't a ";
+            else if (q === 4) prefix = "There aren't any ";
+            speakText(`${prefix} ${item}`);
+        }
+
+        /* --- PART B: SURVEY GAME --- */
+        function updateSurveyQuestion() {
+            const q = surveyQuestions[currentSurveyIndex];
+            document.getElementById('gameQuestionText').innerText = `"${q.text}"`;
+            document.getElementById('surveyAnswerCard').classList.add('hidden');
+            document.getElementById('btnAskQuestion').disabled = false;
+        }
+
+        function askSurveyQuestion() {
+            playSound('click');
+            const randAns = possibleAnswers[Math.floor(Math.random() * possibleAnswers.length)];
+            const card = document.getElementById('surveyAnswerCard');
+            const textEl = document.getElementById('surveyAnswerText');
+            const pointsEl = document.getElementById('surveyPointsAdded');
+
+            card.classList.remove('hidden');
+            textEl.innerText = `"${randAns.answer}"`;
+
+            if (randAns.type === 'YES') {
+                playSound('yes');
+                yesCount++;
+                points += randAns.points;
+                card.className = "p-5 rounded-xl border text-center space-y-2 bg-emerald-950/80 border-emerald-500 text-emerald-200";
+                pointsEl.innerText = `+${randAns.points} Points! (YES answer)`;
+                confetti({ particleCount: 40, spread: 50 });
+            } else if (randAns.type === 'UNKNOWN') {
+                playSound('click');
+                points += randAns.points;
+                card.className = "p-5 rounded-xl border text-center space-y-2 bg-amber-950/80 border-amber-500 text-amber-200";
+                pointsEl.innerText = `+${randAns.points} Point (Sorry, I don't know)`;
+            } else {
+                playSound('no');
+                card.className = "p-5 rounded-xl border text-center space-y-2 bg-rose-950/80 border-rose-500 text-rose-200";
+                pointsEl.innerText = `0 Points (NO answer)`;
+            }
+
+            document.getElementById('yesDisplay').innerText = yesCount;
+            document.getElementById('pointsDisplay').innerText = points;
+            speakText(randAns.answer);
+            document.getElementById('btnAskQuestion').disabled = true;
+        }
+
+        function nextSurveyQuestion() {
+            playSound('click');
+            currentSurveyIndex = (currentSurveyIndex + 1) % surveyQuestions.length;
+            updateSurveyQuestion();
+        }
+
+        /* --- MAP EXPLORER --- */
+        function renderMapGrid() {
+            const grid = document.getElementById('mapGrid');
+            grid.innerHTML = '';
+
+            mapItems.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = `map-grid-cell p-4 rounded-xl border flex flex-col items-center justify-center gap-2 font-bold text-xs transition ${
+                    item.present 
+                    ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300' 
+                    : 'bg-slate-950 border-slate-800 text-slate-500 line-through'
+                }`;
+                btn.onclick = () => toggleMapItem(item.id);
+                btn.innerHTML = `
+                    <i class="fa-solid ${item.icon} text-2xl ${item.present ? 'text-emerald-400' : 'text-slate-600'}"></i>
+                    <span>${item.name}</span>
+                    <span class="text-[10px] font-normal ${item.present ? 'text-emerald-400' : 'text-slate-600'}">
+                        ${item.present ? 'PRESENT' : 'ABSENT'}
+                    </span>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleMapItem(id) {
+            playSound('click');
+            const item = mapItems.find(x => x.id === id);
+            if (item) {
+                item.present = !item.present;
+                renderMapGrid();
+                updateMapSummary();
+            }
+        }
+
+        function updateMapSummary() {
+            const summaryContainer = document.getElementById('mapGrammarSummary');
+            summaryContainer.innerHTML = '';
+
+            mapItems.forEach(item => {
+                let sentence = "";
+                if (item.present) {
+                    if (item.isPlural) sentence = `There are some ${item.name.toLowerCase()} ${item.location}.`;
+                    else sentence = `There is a ${item.name.toLowerCase()} ${item.location}.`;
+                } else {
+                    if (item.isPlural) sentence = `There aren't any ${item.name.toLowerCase()} in our neighborhood.`;
+                    else sentence = `There isn't a ${item.name.toLowerCase()} in our neighborhood.`;
+                }
+
+                const p = document.createElement('p');
+                p.className = `p-2 rounded-lg border ${item.present ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/40 border-rose-500/30 text-rose-300'}`;
+                p.innerText = sentence;
+                summaryContainer.appendChild(p);
+            });
+        }
+
+        function readMapSummary() {
+            const texts = Array.from(document.querySelectorAll('#mapGrammarSummary p')).map(p => p.innerText);
+            speakText(texts.join(" "));
+        }
+
+        /* --- DIALOGUE TRAINER --- */
+        function playFullDialogue() {
+            const lines = [
+                "Is there a gym in your neighborhood?",
+                "Yes, there is one across from the park.",
+                "Are there any coffee shops?",
+                "No, there are not any in our neighborhood.",
+                "Is there a bookstore in your neighborhood?",
+                "Sorry, I don't know."
+            ];
+            speakText(lines.join(" "));
+        }
+    </script>
+</body>
+</html>
