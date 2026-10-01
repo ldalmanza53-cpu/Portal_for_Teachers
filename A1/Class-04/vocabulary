@@ -1,1 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What's Your Opinion? - ESL Emotion Vocabulary App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .animated-pulse-subtle {
+            animation: pulse-subtle 2s infinite ease-in-out;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Application Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                
+                <!-- Title & Badge -->
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-200 font-bold">
+                        6
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold text-slate-900 tracking-tight">What's Your Opinion?</h1>
+                            <span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">ESL VRB-67</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">Beginner Emotion Vocabulary & Speaking Activity</p>
+                    </div>
+                </div>
+
+                <!-- Controls & Stats Bar -->
+                <div class="flex items-center flex-wrap gap-3 sm:gap-4 justify-center md:justify-end w-full md:w-auto">
+                    
+                    <!-- Stars / Score Counter -->
+                    <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-xl shadow-xs">
+                        <i class="fa-solid fa-star text-amber-500 text-lg"></i>
+                        <span id="star-count" class="font-bold text-base">0</span>
+                        <span class="text-xs text-amber-700 font-medium hidden sm:inline">Stars</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="flex flex-col min-w-[120px] sm:min-w-[150px]">
+                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium mb-1">
+                            <span>Progress</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Speech Speed Toggle -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                        <span class="text-slate-500 px-2 font-medium hidden sm:inline"><i class="fa-solid fa-gauge-high"></i> Speed:</span>
+                        <button id="speed-slow-btn" onclick="setSpeed(0.75)" class="px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900">
+                            🐢 Slow
+                        </button>
+                        <button id="speed-normal-btn" onclick="setSpeed(1.0)" class="px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all">
+                            🐇 Normal
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Tab Navigation Buttons -->
+            <nav class="flex items-center justify-start sm:justify-center gap-1 sm:gap-2 mt-3 pt-2 border-t border-slate-100 overflow-x-auto custom-scrollbar">
+                <button onclick="switchTab('scenarios')" id="tab-scenarios" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-xs transition-all">
+                    <i class="fa-solid fa-film"></i>
+                    <span>Scenarios</span>
+                </button>
+                <button onclick="switchTab('flashcards')" id="tab-flashcards" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Flashcards</span>
+                </button>
+                <button onclick="switchTab('games')" id="tab-games" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span>Practice Games</span>
+                </button>
+                <button onclick="switchTab('partner')" id="tab-partner" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Partner Discussion</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- TAB 1: Core Scenarios -->
+        <section id="content-scenarios" class="tab-content block space-y-6">
+            
+            <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-xs px-3 py-1 rounded-full uppercase tracking-wider font-semibold mb-2 inline-block">Interactive Activity</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mb-2">What's Your Opinion?</h2>
+                    <p class="text-slate-300 text-sm sm:text-base">Look at each scene from the event. What do you think the characters are feeling? Choose your opinion, then build your reason sentence!</p>
+                </div>
+                <div class="absolute right-4 bottom-0 opacity-10 text-9xl pointer-events-none">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+            </div>
+
+            <!-- Scenarios Grid -->
+            <div id="scenarios-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Dynamically rendered via JS -->
+            </div>
+
+            <!-- Global Sentence Builder & Speaking Pad -->
+            <div class="bg-white border-2 border-indigo-100 rounded-3xl p-6 shadow-md relative">
+                <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-microphone-lines"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">"Why Do You Think So?" Speaking Assistant</h3>
+                            <p class="text-xs text-slate-500">Practice saying your complete opinion sentence clearly.</p>
+                        </div>
+                    </div>
+                    <button onclick="speakCurrentSentence()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-all shadow-sm">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Listen to Sentence</span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p id="constructed-sentence-display" class="text-base sm:text-lg font-medium text-slate-700 italic">
+                        "Select a scenario above to start building your sentence..."
+                    </p>
+                    <button onclick="saveActiveOpinion()" id="save-opinion-btn" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-xs transition-all opacity-50 cursor-not-allowed" disabled>
+                        <i class="fa-solid fa-check-circle"></i>
+                        <span>Save My Opinion (+10 Stars)</span>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: Flashcards -->
+        <section id="content-flashcards" class="tab-content hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Emotion Vocabulary Flashcards</h2>
+                        <p class="text-slate-500 text-sm">Listen to native pronunciation, study definitions, and practice your speaking!</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs bg-slate-100 px-3 py-1.5 rounded-xl text-slate-600">
+                        <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                        <span>Click audio buttons to hear pronunciation</span>
+                    </div>
+                </div>
+
+                <!-- Flashcard Grid -->
+                <div id="flashcards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards rendered by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Games -->
+        <section id="content-games" class="tab-content hidden space-y-6">
+            
+            <!-- Games Header Subnav -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-2 flex items-center justify-center gap-2 max-w-xl mx-auto shadow-xs">
+                <button onclick="switchSubGame('matcher')" id="subgame-matcher-btn" class="subgame-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white transition-all text-center">
+                    <i class="fa-solid fa-puzzle-piece mr-1"></i> Matcher
+                </button>
+                <button onclick="switchSubGame('blanks')" id="subgame-blanks-btn" class="subgame-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all text-center">
+                    <i class="fa-solid fa-pen-to-square mr-1"></i> Fill Blanks
+                </button>
+                <button onclick="switchSubGame('quiz')" id="subgame-quiz-btn" class="subgame-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all text-center">
+                    <i class="fa-solid fa-bolt mr-1"></i> Speed Quiz
+                </button>
+            </div>
+
+            <!-- SUB-GAME 1: Scenario Matcher -->
+            <div id="subgame-matcher" class="subgame-panel block bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+                <div class="mb-6 text-center max-w-lg mx-auto">
+                    <h3 class="text-xl font-bold text-slate-900 mb-1">Emotion & Situation Matcher</h3>
+                    <p class="text-xs text-slate-500">Select an emotion word on the left, then tap its matching scenario on the right!</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <!-- Left: Emotions -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">1. Select Emotion</h4>
+                        <div id="matcher-emotions-list" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Right: Situations -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">2. Select Matching Situation</h4>
+                        <div id="matcher-scenarios-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-center">
+                    <button onclick="resetMatcherGame()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Reset Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUB-GAME 2: Fill in the Blanks -->
+            <div id="subgame-blanks" class="subgame-panel hidden bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+                <div class="mb-6 text-center max-w-lg mx-auto">
+                    <h3 class="text-xl font-bold text-slate-900 mb-1">Fill in the Blanks</h3>
+                    <p class="text-xs text-slate-500">Complete each sentence with the correct emotion word from the word bank.</p>
+                </div>
+
+                <!-- Word Bank -->
+                <div id="word-bank-container" class="flex flex-wrap justify-center gap-2 mb-8 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl">
+                    <!-- Words rendered by JS -->
+                </div>
+
+                <!-- Sentences List -->
+                <div id="blanks-sentences-container" class="space-y-4 max-w-3xl mx-auto">
+                    <!-- Questions rendered by JS -->
+                </div>
+
+                <div class="mt-6 text-center">
+                    <button onclick="checkFillBlanksAnswers()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-2xl shadow-md transition-all active:scale-95">
+                        <i class="fa-solid fa-check mr-2"></i> Check Answers
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUB-GAME 3: Speed Quiz -->
+            <div id="subgame-quiz" class="subgame-panel hidden bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+                <div id="quiz-start-screen" class="text-center py-8 max-w-md mx-auto space-y-4">
+                    <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold text-slate-900">Emotion Speed Challenge</h3>
+                    <p class="text-slate-500 text-sm">Test your vocabulary speed! Answer 5 quick questions about emotions and earn bonus stars.</p>
+                    <button onclick="startSpeedQuiz()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-8 py-3 rounded-2xl shadow-lg transition-all transform active:scale-95 text-lg">
+                        Start Quiz 🚀
+                    </button>
+                </div>
+
+                <!-- Active Quiz View -->
+                <div id="quiz-active-screen" class="hidden max-w-xl mx-auto space-y-6 py-4">
+                    <div class="flex justify-between items-center text-sm border-b border-slate-100 pb-3">
+                        <span id="quiz-progress-indicator" class="font-bold text-slate-500">Question 1 of 5</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400">Streak:</span>
+                            <span id="quiz-streak-count" class="font-bold text-amber-500 text-base">🔥 0</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center">
+                        <p id="quiz-question-text" class="text-lg font-bold text-slate-800">
+                            Loading question...
+                        </p>
+                        <button onclick="speakQuizQuestion()" class="mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high"></i> Read Question
+                        </button>
+                    </div>
+
+                    <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Options generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Quiz Results Screen -->
+                <div id="quiz-result-screen" class="hidden text-center py-8 max-w-md mx-auto space-y-4">
+                    <div class="text-5xl">🎉</div>
+                    <h3 class="text-2xl font-bold text-slate-900">Quiz Completed!</h3>
+                    <p id="quiz-score-summary" class="text-slate-600 text-base font-medium">You scored 5 out of 5!</p>
+                    <button onclick="startSpeedQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition-all">
+                        Try Again 🔄
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 4: Partner Comparison Mode -->
+        <section id="content-partner" class="tab-content hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <span class="bg-emerald-100 text-emerald-800 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide">Classroom Pair Work</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">Compare Opinions with a Partner 👥</h2>
+                    <p class="text-slate-500 text-sm mt-1">Student 1 and Student 2 can input their choices below to compare answers and practice speaking together!</p>
+                </div>
+
+                <!-- Dual Input Panels -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- Student 1 Box -->
+                    <div class="bg-slate-50 border-2 border-indigo-200 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center gap-2 border-b border-indigo-100 pb-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">1</div>
+                            <h3 class="font-bold text-slate-800 text-lg">Student A's Opinions</h3>
+                        </div>
+
+                        <div id="partner-s1-options" class="space-y-4">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Student 2 Box -->
+                    <div class="bg-slate-50 border-2 border-teal-200 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center gap-2 border-b border-teal-100 pb-3">
+                            <div class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-sm">2</div>
+                            <h3 class="font-bold text-slate-800 text-lg">Student B's Opinions</h3>
+                        </div>
+
+                        <div id="partner-s2-options" class="space-y-4">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Comparison Action Button -->
+                <div class="mt-8 text-center">
+                    <button onclick="comparePartnerOpinions()" class="bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 text-base">
+                        <i class="fa-solid fa-code-compare mr-2"></i> Compare Opinions & Get Speaking Prompts
+                    </button>
+                </div>
+
+                <!-- Output Comparison Results -->
+                <div id="partner-results-container" class="mt-8 hidden bg-slate-900 text-white p-6 rounded-3xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-amber-400"></i> Partner Speaking Cards
+                        </h3>
+                        <span class="text-xs text-slate-400">Read these prompts out loud together!</span>
+                    </div>
+
+                    <div id="partner-prompts-list" class="grid grid-cols-1 gap-4">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            <p>What's Your Opinion? • ESL Interactive Learning Module • Designed for English Beginners</p>
+        </div>
+    </footer>
+
+    <script>
+        
+        // App State
+        const state = {
+            stars: 0,
+            speechSpeed: 1.0,
+            activeTab: 'scenarios',
+            activeScenarioId: 1,
+            completedScenarios: {},
+            scenarioSelections: {
+                1: { option: null, reason: null },
+                2: { option: null, reason: null },
+                3: { option: null, reason: null }
+            },
+            partner1Selections: { 1: null, 2: null, 3: null },
+            partner2Selections: { 1: null, 2: null, 3: null }
+        };
+
+        // Data Definitions
+        const vocabularyData = [
+            {
+                id: 'angry',
+                word: 'Angry',
+                emoji: '😠',
+                pronunciation: '/ˈæŋ.ɡri/',
+                definition: 'Feeling mad or upset when something goes wrong or is unfair.',
+                example: 'The clerk felt angry when the computer broke down.',
+                synonyms: ['Mad', 'Upset', 'Annoyed'],
+                antonyms: ['Calm', 'Happy', 'Pleased'],
+                color: 'bg-red-50 border-red-200 text-red-700'
+            },
+            {
+                id: 'amused',
+                word: 'Amused',
+                emoji: '😄',
+                pronunciation: '/əˈmjuːzd/',
+                definition: 'Finding something funny, enjoyable, or entertaining.',
+                example: 'He was amused by the silly mistake on the poster.',
+                synonyms: ['Entertained', 'Tickled', 'Smiling'],
+                antonyms: ['Bored', 'Serious', 'Unhappy'],
+                color: 'bg-amber-50 border-amber-200 text-amber-700'
+            },
+            {
+                id: 'confused',
+                word: 'Confused',
+                emoji: '😕',
+                pronunciation: '/kənˈfjuːzd/',
+                definition: 'Unable to understand clearly or not knowing what is happening.',
+                example: 'She felt confused when she lost her name tag in the bag.',
+                synonyms: ['Puzzled', 'Uncertain', 'Baffled'],
+                antonyms: ['Clear', 'Certain', 'Sure'],
+                color: 'bg-purple-50 border-purple-200 text-purple-700'
+            },
+            {
+                id: 'pleased',
+                word: 'Pleased',
+                emoji: '😊',
+                pronunciation: '/pliːzd/',
+                definition: 'Happy, satisfied, or glad about a good situation or meeting someone.',
+                example: 'Evan was pleased to meet his new friends at the party.',
+                synonyms: ['Happy', 'Glad', 'Satisfied'],
+                antonyms: ['Disappointed', 'Sad', 'Upset'],
+                color: 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            },
+            {
+                id: 'surprised',
+                word: 'Surprised',
+                emoji: '😲',
+                pronunciation: '/səˈpraɪzd/',
+                definition: 'Feeling shocked or astonished because something unexpected happened.',
+                example: 'He was surprised to see his old friend at the event.',
+                synonyms: ['Astonished', 'Amazed', 'Shocked'],
+                antonyms: ['Expected', 'Unsurprised'],
+                color: 'bg-sky-50 border-sky-200 text-sky-700'
+            },
+            {
+                id: 'embarrassed',
+                word: 'Embarrassed',
+                emoji: '😳',
+                pronunciation: '/ɪmˈbær.əst/',
+                definition: 'Feeling awkward, shy, or self-conscious about a mistake.',
+                example: 'Mike felt embarrassed when he realized he wore the wrong badge.',
+                synonyms: ['Self-conscious', 'Awkward', 'Shy'],
+                antonyms: ['Confident', 'Proud', 'Bold'],
+                color: 'bg-rose-50 border-rose-200 text-rose-700'
+            }
+        ];
+
+        const scenariosData = [
+            {
+                id: 1,
+                title: "1. The Front Desk Clerk",
+                question: "When the clerk can't find Evan's name tag, how does she feel?",
+                character: "the clerk",
+                options: [
+                    { word: "angry", emoji: "😠", text: "Angry" },
+                    { word: "amused", emoji: "😄", text: "Amused" },
+                    { word: "confused", emoji: "😕", text: "Confused" }
+                ],
+                reasons: [
+                    "she cannot find the name tag anywhere",
+                    "there are many name tags on the table",
+                    "she searched the box and it was empty",
+                    "she doesn't know where Evan's tag is"
+                ],
+                visualSvg: `
+                    <svg viewBox="0 0 300 180" class="w-full h-auto rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-slate-200">
+                        <!-- Front Desk -->
+                        <rect x="20" y="120" width="260" height="40" rx="6" fill="#cbd5e1" />
+                        <rect x="10" y="110" width="280" height="15" rx="4" fill="#94a3b8" />
+                        <!-- Clerk -->
+                        <circle cx="150" cy="65" r="28" fill="#fcd34d" />
+                        <!-- Hair -->
+                        <path d="M 120 65 Q 120 30 150 30 Q 180 30 180 65 Q 185 85 175 90 Q 150 75 125 90 Z" fill="#334155" />
+                        <!-- Confused Expression -->
+                        <circle cx="140" cy="60" r="3" fill="#1e293b" />
+                        <circle cx="160" cy="60" r="3" fill="#1e293b" />
+                        <path d="M 138 52 L 146 55" stroke="#1e293b" stroke-width="2" stroke-linecap="round" />
+                        <path d="M 162 55 L 154 52" stroke="#1e293b" stroke-width="2" stroke-linecap="round" />
+                        <path d="M 142 75 Q 150 70 158 75" stroke="#1e293b" stroke-width="2.5" fill="none" />
+                        <!-- Question marks -->
+                        <text x="185" y="45" font-size="22" font-weight="bold" fill="#6366f1">?</text>
+                        <text x="105" y="50" font-size="18" font-weight="bold" fill="#8b5cf6">?</text>
+                        <!-- Desk papers / boxes -->
+                        <rect x="40" y="95" width="40" height="15" rx="3" fill="#e2e8f0" stroke="#cbd5e1" />
+                        <rect x="220" y="90" width="35" height="20" rx="3" fill="#93c5fd" />
+                    </svg>
+                `
+            },
+            {
+                id: 2,
+                title: "2. Evan Meets Rachel & Mike",
+                question: "When Evan meets Rachel and Mike, how does he feel?",
+                character: "Evan",
+                options: [
+                    { word: "pleased", emoji: "😊", text: "Pleased" },
+                    { word: "amused", emoji: "😄", text: "Amused" },
+                    { word: "surprised", emoji: "😲", text: "Surprised" }
+                ],
+                reasons: [
+                    "he is happy to meet friendly people",
+                    "Rachel and Mike welcomed him warmly",
+                    "he enjoys joining the conversation",
+                    "they are smiling and shaking hands"
+                ],
+                visualSvg: `
+                    <svg viewBox="0 0 300 180" class="w-full h-auto rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-slate-200">
+                        <!-- Background Event -->
+                        <rect x="0" y="0" width="300" height="180" fill="none" />
+                        <!-- Evan (Center) -->
+                        <circle cx="150" cy="60" r="24" fill="#fed7aa" />
+                        <path d="M 130 50 Q 150 35 170 50 Q 165 40 150 40 Z" fill="#78350f" />
+                        <circle cx="143" cy="58" r="2.5" fill="#1e293b" />
+                        <circle cx="157" cy="58" r="2.5" fill="#1e293b" />
+                        <path d="M 143 70 Q 150 76 157 70" stroke="#1e293b" stroke-width="2" fill="none" />
+                        <path d="M 125 100 C 125 80, 175 80, 175 100 L 175 150 L 125 150 Z" fill="#3b82f6" />
+                        
+                        <!-- Rachel (Left) -->
+                        <circle cx="75" cy="70" r="22" fill="#fbcfe8" />
+                        <path d="M 55 90 C 55 75, 95 75, 95 90 L 95 150 L 55 150 Z" fill="#a855f7" />
+                        
+                        <!-- Mike (Right) -->
+                        <circle cx="225" cy="70" r="22" fill="#fde68a" />
+                        <path d="M 205 90 C 205 75, 245 75, 245 90 L 245 150 L 205 150 Z" fill="#0284c7" />
+
+                        <!-- Name Badges -->
+                        <rect x="142" y="95" width="16" height="10" rx="2" fill="#ffffff" stroke="#cbd5e1" />
+                        <rect x="217" y="95" width="16" height="10" rx="2" fill="#ffffff" stroke="#cbd5e1" />
+                        <rect x="67" y="95" width="16" height="10" rx="2" fill="#ffffff" stroke="#cbd5e1" />
+
+                        <!-- Happy Sparks -->
+                        <path d="M 110 45 L 115 50 M 185 45 L 180 50" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                `
+            },
+            {
+                id: 3,
+                title: "3. Mike Realizes the Name Tag",
+                question: "When Mike realizes he has Evan's name tag, how does he feel?",
+                character: "Mike",
+                options: [
+                    { word: "angry", emoji: "😠", text: "Angry" },
+                    { word: "embarrassed", emoji: "😳", text: "Embarrassed" },
+                    { word: "pleased", emoji: "😊", text: "Pleased" }
+                ],
+                reasons: [
+                    "he put on the wrong name badge by mistake",
+                    "he saw that the badge says 'EVAN'",
+                    "he made a silly mistake in front of everyone",
+                    "he gave Evan his badge by accident"
+                ],
+                visualSvg: `
+                    <svg viewBox="0 0 300 180" class="w-full h-auto rounded-2xl bg-gradient-to-br from-rose-50 to-orange-50 border border-slate-200">
+                        <!-- Mike Big View -->
+                        <circle cx="150" cy="70" r="35" fill="#fde68a" />
+                        <!-- Hair -->
+                        <path d="M 120 65 Q 150 40 180 65 Z" fill="#475569" />
+                        <!-- Blushing cheeks -->
+                        <circle cx="132" cy="78" r="7" fill="#fca5a5" opacity="0.6" />
+                        <circle cx="168" cy="78" r="7" fill="#fca5a5" opacity="0.6" />
+                        <!-- Surprised/Embarrassed Face -->
+                        <circle cx="138" cy="65" r="3.5" fill="#1e293b" />
+                        <circle cx="162" cy="65" r="3.5" fill="#1e293b" />
+                        <circle cx="150" cy="80" r="6" fill="#1e293b" />
+                        <!-- Sweat Drop -->
+                        <path d="M 180 50 C 180 50, 185 58, 180 62 C 176 62, 175 58, 180 50 Z" fill="#38bdf8" />
+                        
+                        <!-- Jacket & Name Tag -->
+                        <path d="M 100 120 C 100 100, 200 100, 200 120 L 210 180 L 90 180 Z" fill="#1e293b" />
+                        <!-- Zoomed Name Tag -->
+                        <rect x="125" y="115" width="50" height="30" rx="4" fill="#ffffff" stroke="#ef4444" stroke-width="2" />
+                        <text x="135" y="134" font-size="11" font-weight="bold" fill="#ef4444">EVAN</text>
+                        <!-- Pointer Arrow -->
+                        <path d="M 150 160 L 150 148" stroke="#ef4444" stroke-width="2.5" marker-end="url(#arrow)" />
+                    </svg>
+                `
+            }
+        ];
+
+
+        // Web Audio Synthesizer for SFX
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'correct') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, index) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + index * 0.08);
+                        gain.gain.setValueAtTime(0.2, now + index * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + index * 0.08);
+                        osc.stop(now + index * 0.08 + 0.25);
+                    });
+                } else if (type === 'star') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.2); // A5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'wrong') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(120, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {
+                console.log("Audio FX error or muted:", e);
+            }
+        }
+
+        // Web Speech API for TTS
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast("Text-to-Speech not supported in this browser.", "warning");
+                return;
+            }
+            window.speechSynthesis.cancel(); // stop current audio
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.speechSpeed;
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function setSpeed(speed) {
+            playSound('click');
+            state.speechSpeed = speed;
+            document.getElementById('speed-slow-btn').className = speed === 0.75 
+                ? "px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all" 
+                : "px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900";
+            document.getElementById('speed-normal-btn').className = speed === 1.0 
+                ? "px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all" 
+                : "px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900";
+        }
+
+        function addStars(amount) {
+            state.stars += amount;
+            document.getElementById('star-count').innerText = state.stars;
+            playSound('star');
+            
+            // Pulse star icon
+            const starIcon = document.querySelector('.fa-star');
+            starIcon.classList.add('scale-125', 'text-amber-400');
+            setTimeout(() => {
+                starIcon.classList.remove('scale-125', 'text-amber-400');
+            }, 300);
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            let totalTasks = 3 + 6 + 1; // 3 scenarios, 6 flashcards, 1 game
+            let completed = Object.keys(state.completedScenarios).length;
+            let percent = Math.min(100, Math.round((completed / totalTasks) * 100));
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = percent + '%';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 pointer-events-auto transition-all transform translate-y-2 opacity-0 text-white ${
+                type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-slate-800'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${textEscape(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function textEscape(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+
+        function renderScenarios() {
+            const container = document.getElementById('scenarios-container');
+            container.innerHTML = '';
+
+            scenariosData.forEach((sc) => {
+                const activeSel = state.scenarioSelections[sc.id];
+
+                const card = document.createElement('div');
+                card.className = `bg-white border-2 ${activeSel.option ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200'} rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-all space-y-4`;
+
+                let optionsHtml = sc.options.map(opt => {
+                    const isSelected = activeSel.option === opt.word;
+                    return `
+                        <button onclick="selectScenarioOption(${sc.id}, '${opt.word}')" className="w-full">
+                            <div class="flex items-center justify-between p-3 rounded-2xl border ${isSelected ? 'border-indigo-600 bg-indigo-50/80 font-bold text-indigo-900 shadow-xs' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700'} transition-all cursor-pointer">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-2xl">${opt.emoji}</span>
+                                    <span class="text-sm">${opt.text}</span>
+                                </div>
+                                <div class="w-5 h-5 rounded-full border ${isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'} flex items-center justify-center">
+                                    ${isSelected ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ''}
+                                </div>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+
+                let reasonsHtml = '';
+                if (activeSel.option) {
+                    reasonsHtml = `
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Choose a reason:</label>
+                            <div class="space-y-1.5">
+                                ${sc.reasons.map(reason => {
+                                    const isReasonSel = activeSel.reason === reason;
+                                    return `
+                                        <button onclick="selectScenarioReason(${sc.id}, '${reason.replace(/'/g, "\\'")}')" class="w-full text-left p-2.5 rounded-xl text-xs font-medium border transition-all ${isReasonSel ? 'border-teal-500 bg-teal-50 text-teal-900 font-semibold' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}">
+                                            <i class="fa-solid ${isReasonSel ? 'fa-circle-dot text-teal-600' : 'fa-circle text-slate-300'} mr-1.5"></i>
+                                            because ${reason}
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-slate-900 text-base">${sc.title}</h3>
+                            <button onclick="speak('${sc.question.replace(/'/g, "\\'")}')" class="text-indigo-600 hover:text-indigo-800 p-1.5 bg-indigo-50 rounded-xl text-xs flex items-center gap-1 font-semibold">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+
+                        ${sc.visualSvg}
+
+                        <p class="text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                            "${sc.question}"
+                        </p>
+
+                        <div class="space-y-2">
+                            ${optionsHtml}
+                        </div>
+
+                        ${reasonsHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            updateSentenceDisplay();
+        }
+
+        function selectScenarioOption(scenarioId, optionWord) {
+            playSound('click');
+            state.activeScenarioId = scenarioId;
+            state.scenarioSelections[scenarioId].option = optionWord;
+            // Auto select first reason if not selected
+            const sc = scenariosData.find(s => s.id === scenarioId);
+            if (!state.scenarioSelections[scenarioId].reason && sc) {
+                state.scenarioSelections[scenarioId].reason = sc.reasons[0];
+            }
+            speak(`${optionWord}`);
+            renderScenarios();
+        }
+
+        function selectScenarioReason(scenarioId, reasonText) {
+            playSound('click');
+            state.activeScenarioId = scenarioId;
+            state.scenarioSelections[scenarioId].reason = reasonText;
+            renderScenarios();
+        }
+
+        function updateSentenceDisplay() {
+            const activeId = state.activeScenarioId;
+            const sc = scenariosData.find(s => s.id === activeId);
+            const sel = state.scenarioSelections[activeId];
+
+            const displayEl = document.getElementById('constructed-sentence-display');
+            const saveBtn = document.getElementById('save-opinion-btn');
+
+            if (sel && sel.option && sel.reason) {
+                const sentence = `I think ${sc.character} feels ${sel.option} because ${sel.reason}.`;
+                displayEl.innerHTML = `
+                    <span class="text-indigo-600 font-bold">Scenario ${activeId}:</span> 
+                    "<span class="text-slate-900 font-bold">${sentence}</span>"
+                `;
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else if (sel && sel.option) {
+                displayEl.innerHTML = `
+                    <span class="text-indigo-600 font-bold">Scenario ${activeId}:</span> 
+                    "I think ${sc.character} feels <span class="text-indigo-600 font-bold">${sel.option}</span> because..." (Please select a reason)
+                `;
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                displayEl.innerHTML = `"Select an emotion and reason above to construct your sentence..."`;
+                saveBtn.disabled = true;
+                saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function speakCurrentSentence() {
+            const activeId = state.activeScenarioId;
+            const sc = scenariosData.find(s => s.id === activeId);
+            const sel = state.scenarioSelections[activeId];
+
+            if (sel && sel.option && sel.reason) {
+                speak(`I think ${sc.character} feels ${sel.option} because ${sel.reason}.`);
+            } else {
+                speak("Please choose an emotion and a reason first.");
+            }
+        }
+
+        function saveActiveOpinion() {
+            const activeId = state.activeScenarioId;
+            if (!state.completedScenarios[activeId]) {
+                state.completedScenarios[activeId] = true;
+                addStars(10);
+                showToast(`Opinion saved for Scenario ${activeId}! Earned +10 Stars!`, "success");
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.8 }
+                });
+            } else {
+                showToast(`Updated opinion for Scenario ${activeId}!`, "info");
+            }
+        }
+
+
+        function renderFlashcards() {
+            const container = document.getElementById('flashcards-container');
+            container.innerHTML = '';
+
+            vocabularyData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `bg-white border-2 border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-indigo-300 transition-all`;
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <!-- Top Row -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-4xl">${item.emoji}</span>
+                            <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">${item.pronunciation}</span>
+                        </div>
+
+                        <!-- Word & Speaker -->
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-2xl font-extrabold text-slate-900">${item.word}</h3>
+                            <button onclick="speak('${item.word}')" class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-all shadow-xs">
+                                <i class="fa-solid fa-volume-high text-base"></i>
+                            </button>
+                        </div>
+
+                        <!-- Definition -->
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                            ${item.definition}
+                        </p>
+
+                        <!-- Example Sentence -->
+                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Example Sentence</span>
+                                <button onclick="speak('${item.example.replace(/'/g, "\\'")}')" class="text-indigo-600 text-xs hover:underline">
+                                    <i class="fa-solid fa-volume-low"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-slate-700 italic">"${item.example}"</p>
+                        </div>
+
+                        <!-- Synonyms & Antonyms -->
+                        <div class="pt-2 border-t border-slate-100 space-y-1.5 text-xs">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-slate-400 font-semibold">Synonyms:</span>
+                                ${item.synonyms.map(s => `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-medium text-[11px]">${s}</span>`).join('')}
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="text-slate-400 font-semibold">Antonyms:</span>
+                                ${item.antonyms.map(a => `<span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md font-medium text-[11px]">${a}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+
+        // Game 1: Matcher State
+        let matcherState = {
+            selectedEmotion: null,
+            matchedPairs: {},
+            emotions: ['confused', 'embarrassed', 'pleased', 'surprised', 'angry', 'amused'],
+            scenarios: [
+                { id: 'confused', text: 'You cannot find your key in your pocket.' },
+                { id: 'embarrassed', text: 'You wear two different shoes to school.' },
+                { id: 'pleased', text: 'Your teacher gives you an A+ on your test.' },
+                { id: 'surprised', text: 'Your friends throw an unexpected party.' },
+                { id: 'angry', text: 'Someone breaks your new pencils on purpose.' },
+                { id: 'amused', text: 'A cat does a silly dance on video.' }
+            ]
+        };
+
+        function initMatcherGame() {
+            renderMatcherGame();
+        }
+
+        function renderMatcherGame() {
+            const emotionsList = document.getElementById('matcher-emotions-list');
+            const scenariosList = document.getElementById('matcher-scenarios-list');
+
+            emotionsList.innerHTML = '';
+            scenariosList.innerHTML = '';
+
+            matcherState.emotions.forEach(emo => {
+                const isMatched = matcherState.matchedPairs[emo];
+                const isSelected = matcherState.selectedEmotion === emo;
+
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded-2xl border text-sm font-bold flex items-center justify-between transition-all ${
+                    isMatched ? 'bg-emerald-50 border-emerald-300 text-emerald-700 opacity-60 cursor-default' :
+                    isSelected ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' :
+                    'bg-slate-50 border-slate-200 text-slate-800 hover:bg-slate-100'
+                }`;
+                btn.disabled = !!isMatched;
+                btn.onclick = () => {
+                    playSound('click');
+                    matcherState.selectedEmotion = emo;
+                    speak(emo);
+                    renderMatcherGame();
+                };
+
+                btn.innerHTML = `
+                    <span class="capitalize">${emo}</span>
+                    <i class="fa-solid ${isMatched ? 'fa-circle-check text-emerald-600' : isSelected ? 'fa-arrow-right text-white' : 'fa-circle text-slate-300'}"></i>
+                `;
+                emotionsList.appendChild(btn);
+            });
+
+            matcherState.scenarios.forEach(sc => {
+                const isMatchedKey = Object.keys(matcherState.matchedPairs).find(k => matcherState.matchedPairs[k] === sc.id);
+
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded-2xl border text-xs sm:text-sm font-medium flex items-center justify-between transition-all ${
+                    isMatchedKey ? 'bg-emerald-50 border-emerald-300 text-emerald-800 opacity-60 cursor-default' :
+                    'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`;
+                btn.disabled = !!isMatchedKey;
+                btn.onclick = () => {
+                    if (!matcherState.selectedEmotion) {
+                        showToast("Please select an emotion word on the left first!", "warning");
+                        return;
+                    }
+                    if (matcherState.selectedEmotion === sc.id) {
+                        playSound('correct');
+                        matcherState.matchedPairs[matcherState.selectedEmotion] = sc.id;
+                        matcherState.selectedEmotion = null;
+                        addStars(5);
+                        showToast("Correct Match! +5 Stars!", "success");
+                        renderMatcherGame();
+
+                        if (Object.keys(matcherState.matchedPairs).length === matcherState.emotions.length) {
+                            confetti({ particleCount: 80, spread: 70 });
+                            showToast("You matched all emotions! Great job!", "success");
+                        }
+                    } else {
+                        playSound('wrong');
+                        showToast("Not quite! Try another match.", "warning");
+                    }
+                };
+
+                btn.innerHTML = `
+                    <span>"${sc.text}"</span>
+                    <i class="fa-solid ${isMatchedKey ? 'fa-check text-emerald-600' : 'fa-hand-pointer text-slate-300'}"></i>
+                `;
+                scenariosList.appendChild(btn);
+            });
+        }
+
+        function resetMatcherGame() {
+            matcherState.selectedEmotion = null;
+            matcherState.matchedPairs = {};
+            renderMatcherGame();
+        }
+
+        // Game 2: Fill in the Blanks
+        const blanksData = [
+            { id: 1, sentence: "When I called my teacher by the wrong name, I felt ________.", answer: "embarrassed" },
+            { id: 2, sentence: "The manager was very ________ with our excellent teamwork.", answer: "pleased" },
+            { id: 3, sentence: "She felt ________ when she looked at the map and realized she was lost.", answer: "confused" },
+            { id: 4, sentence: "He was ________ by the puppy's funny tricks and laughed out loud.", answer: "amused" }
+        ];
+
+        let blanksSelections = { 1: '', 2: '', 3: '' };
+
+        function initBlanksGame() {
+            const wordBank = ['embarrassed', 'pleased', 'confused', 'amused', 'angry', 'surprised'];
+            const bankContainer = document.getElementById('word-bank-container');
+            bankContainer.innerHTML = wordBank.map(word => `
+                <span onclick="speak('${word}')" class="bg-white border border-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-xs cursor-pointer hover:bg-indigo-600 hover:text-white transition-all">
+                    ${word} <i class="fa-solid fa-volume-low text-[10px] ml-1"></i>
+                </span>
+            `).join('');
+
+            const sentencesContainer = document.getElementById('blanks-sentences-container');
+            sentencesContainer.innerHTML = blanksData.map((item, idx) => `
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-slate-800">
+                        ${idx + 1}. ${item.sentence.replace('________', `<span class="inline-block border-b-2 border-indigo-600 min-w-[100px] text-indigo-600 text-center font-bold px-2">${blanksSelections[item.id] || '_______'}</span>`)}
+                    </p>
+                    <select onchange="blanksSelections[${item.id}] = this.value" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-600">
+                        <option value="">-- Choose Word --</option>
+                        ${wordBank.map(w => `<option value="${w}">${w}</option>`).join('')}
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function checkFillBlanksAnswers() {
+            let correct = 0;
+            blanksData.forEach(item => {
+                if (blanksSelections[item.id] === item.answer) {
+                    correct++;
+                }
+            });
+
+            if (correct === blanksData.length) {
+                playSound('correct');
+                addStars(15);
+                showToast("Perfect! All sentences completed correctly! +15 Stars", "success");
+                confetti({ particleCount: 70, spread: 60 });
+            } else {
+                playSound('wrong');
+                showToast(`You got ${correct} of ${blanksData.length} correct. Check again!`, "warning");
+            }
+        }
+
+        // Game 3: Speed Quiz
+        const quizQuestions = [
+            { q: "How do you feel when you can't find your name tag and don't know where it went?", options: ["Confused", "Pleased", "Angry"], correct: 0 },
+            { q: "How do you feel when you meet friendly new people at an event?", options: ["Embarrassed", "Pleased", "Angry"], correct: 1 },
+            { q: "How do you feel when you make a funny mistake in front of everyone?", options: ["Embarrassed", "Confused", "Amused"], correct: 0 },
+            { q: "How do you feel when someone gives you an unexpected birthday gift?", options: ["Surprised", "Confused", "Angry"], correct: 0 },
+            { q: "How do you feel when a dog does a funny trick?", options: ["Amused", "Embarrassed", "Pleased"], correct: 0 }
+        ];
+
+        let quizState = { current: 0, score: 0, streak: 0 };
+
+        function startSpeedQuiz() {
+            quizState = { current: 0, score: 0, streak: 0 };
+            document.getElementById('quiz-start-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.add('hidden');
+            document.getElementById('quiz-active-screen').classList.remove('hidden');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const q = quizQuestions[quizState.current];
+            document.getElementById('quiz-progress-indicator').innerText = `Question ${quizState.current + 1} of ${quizQuestions.length}`;
+            document.getElementById('quiz-streak-count').innerText = `🔥 ${quizState.streak}`;
+            document.getElementById('quiz-question-text').innerText = `"${q.q}"`;
+
+            const optionsContainer = document.getElementById('quiz-options-container');
+            optionsContainer.innerHTML = q.options.map((opt, idx) => `
+                <button onclick="answerQuiz(${idx})" class="w-full bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-500 rounded-2xl p-4 text-slate-800 font-bold text-base transition-all shadow-xs active:scale-95 text-center">
+                    ${opt}
+                </button>
+            `).join('');
+
+            speak(q.q);
+        }
+
+        function speakQuizQuestion() {
+            speak(quizQuestions[quizState.current].q);
+        }
+
+        function answerQuiz(optionIndex) {
+            const q = quizQuestions[quizState.current];
+            if (optionIndex === q.correct) {
+                playSound('correct');
+                quizState.score++;
+                quizState.streak++;
+                addStars(5);
+                showToast("Correct! +5 Stars", "success");
+            } else {
+                playSound('wrong');
+                quizState.streak = 0;
+                showToast(`Incorrect! The right answer was ${q.options[q.correct]}`, "warning");
+            }
+
+            quizState.current++;
+            if (quizState.current < quizQuestions.length) {
+                setTimeout(renderQuizQuestion, 600);
+            } else {
+                setTimeout(showQuizResults, 600);
+            }
+        }
+
+        function showQuizResults() {
+            document.getElementById('quiz-active-screen').classList.add('hidden');
+            document.getElementById('quiz-result-screen').classList.remove('hidden');
+            document.getElementById('quiz-score-summary').innerText = `You scored ${quizState.score} out of ${quizQuestions.length}!`;
+            if (quizState.score >= 4) {
+                confetti({ particleCount: 100, spread: 80 });
+            }
+        }
+
+        function switchSubGame(gameKey) {
+            playSound('click');
+            document.querySelectorAll('.subgame-btn').forEach(btn => {
+                btn.className = "subgame-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all text-center";
+            });
+            document.querySelectorAll('.subgame-panel').forEach(p => p.classList.add('hidden'));
+
+            document.getElementById(`subgame-${gameKey}-btn`).className = "subgame-btn flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white transition-all text-center";
+            document.getElementById(`subgame-${gameKey}`).classList.remove('hidden');
+
+            if (gameKey === 'matcher') initMatcherGame();
+            if (gameKey === 'blanks') initBlanksGame();
+        }
+
+
+        function renderPartnerInputs() {
+            const s1Box = document.getElementById('partner-s1-options');
+            const s2Box = document.getElementById('partner-s2-options');
+
+            s1Box.innerHTML = '';
+            s2Box.innerHTML = '';
+
+            scenariosData.forEach(sc => {
+                s1Box.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <p class="text-xs font-bold text-slate-700">Scenario ${sc.id}: ${sc.character}</p>
+                        <select onchange="state.partner1Selections[${sc.id}] = this.value" class="w-full bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
+                            <option value="">Select Student A Opinion</option>
+                            ${sc.options.map(o => `<option value="${o.word}">${o.emoji} ${o.text}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+
+                s2Box.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <p class="text-xs font-bold text-slate-700">Scenario ${sc.id}: ${sc.character}</p>
+                        <select onchange="state.partner2Selections[${sc.id}] = this.value" class="w-full bg-slate-50 border border-slate-300 text-xs font-semibold rounded-lg p-2">
+                            <option value="">Select Student B Opinion</option>
+                            ${sc.options.map(o => `<option value="${o.word}">${o.emoji} ${o.text}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            });
+        }
+
+        function comparePartnerOpinions() {
+            playSound('correct');
+            const container = document.getElementById('partner-results-container');
+            const promptsList = document.getElementById('partner-prompts-list');
+
+            promptsList.innerHTML = '';
+
+            scenariosData.forEach(sc => {
+                const ans1 = state.partner1Selections[sc.id] || "unselected";
+                const ans2 = state.partner2Selections[sc.id] || "unselected";
+
+                const isAgreed = ans1 === ans2 && ans1 !== "unselected";
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700 p-4 rounded-2xl space-y-2";
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400">Scenario ${sc.id}: ${sc.character}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${isAgreed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'}">
+                            ${isAgreed ? '🎯 Same Opinion!' : '💡 Different Perspectives'}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs py-1">
+                        <div class="bg-slate-900/60 p-2 rounded-lg">
+                            <span class="text-slate-400 block">Student A:</span>
+                            <span class="font-bold text-indigo-300 capitalize">${ans1}</span>
+                        </div>
+                        <div class="bg-slate-900/60 p-2 rounded-lg">
+                            <span class="text-slate-400 block">Student B:</span>
+                            <span class="font-bold text-teal-300 capitalize">${ans2}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-950/80 border border-indigo-800/50 p-3 rounded-xl text-xs space-y-1">
+                        <p class="text-amber-300 font-bold"><i class="fa-solid fa-comments mr-1"></i> Partner Discussion Prompt:</p>
+                        <p class="text-slate-200 italic">
+                            Student A says: "I think ${sc.character} feels <strong>${ans1}</strong>. What about you?"<br>
+                            Student B replies: "I chose <strong>${ans2}</strong> because..."
+                        </p>
+                    </div>
+                `;
+
+                promptsList.appendChild(card);
+            });
+
+            container.classList.remove('hidden');
+            container.scrollIntoView({ behavior: 'smooth' });
+            confetti({ particleCount: 40, spread: 50 });
+        }
+
+
+        function switchTab(tabKey) {
+            playSound('click');
+            state.activeTab = tabKey;
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all";
+            });
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            const activeBtn = document.getElementById(`tab-${tabKey}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-xs transition-all";
+            }
+
+            const activeContent = document.getElementById(`content-${tabKey}`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+
+            if (tabKey === 'scenarios') renderScenarios();
+            if (tabKey === 'flashcards') renderFlashcards();
+            if (tabKey === 'games') switchSubGame('matcher');
+            if (tabKey === 'partner') renderPartnerInputs();
+        }
+
+        // Window Init
+        window.onload = function() {
+            renderScenarios();
+            renderFlashcards();
+            renderPartnerInputs();
+            updateProgress();
+        };
+    </script>
+</body>
+</html>
