@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Power: That's Entertainment! - Interactive ESL Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars & Animations */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .genre-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+    .genre-card:hover {
+      transform: translateY(-2px) scale(1.02);
+    }
+    .genre-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    
+    .drop-zone {
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .drop-zone.drag-over {
+      background-color: #f3e8ff !important;
+      border-color: #8b5cf6 !important;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+      50% { box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); }
+    }
+    .active-tab {
+      border-bottom: 3px solid #7c3aed;
+      color: #6d28d9;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between selection:bg-purple-200">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-gradient-to-r from-purple-800 via-indigo-700 to-purple-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/10 p-2 rounded-xl backdrop-blur-md border border-white/20">
+          <i class="fa-solid font-bold fa-compact-disc text-2xl text-yellow-300 animate-spin" style="animation-duration: 8s;"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-yellow-400 text-purple-950 font-black text-xs px-2 py-0.5 rounded-full uppercase tracking-wider">Unit 4</span>
+            <span class="text-xs text-purple-200 font-medium">Beginner Vocabulary</span>
+          </div>
+          <h1 class="font-display font-extrabold text-xl sm:text-2xl tracking-tight leading-none text-white">
+            WORD POWER: <span class="text-yellow-300">That's Entertainment!</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Header Action Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Sound FX Toggle -->
+        <button id="soundToggleBtn" onclick="toggleAudio()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 border border-white/20 transition" title="Toggle Sound FX">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-yellow-300"></i>
+          <span id="soundLabel" class="hidden sm:inline">Sound ON</span>
+        </button>
+
+        <!-- Total Stars / Points -->
+        <div class="bg-yellow-400/20 border border-yellow-300/40 text-yellow-300 px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-star text-yellow-400"></i>
+          <span id="scoreDisplay">0 / 12</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-purple-950/50 backdrop-blur-sm border-t border-white/10">
+      <div class="max-w-6xl mx-auto px-4 flex overflow-x-auto no-scrollbar text-sm font-medium text-purple-200">
+        <button onclick="switchTab('tab1')" id="nav-tab1" class="px-4 py-3 flex items-center gap-2 whitespace-nowrap hover:text-white transition active-tab">
+          <i class="fa-solid fa-sitemap"></i> A. Word Map
+        </button>
+        <button onclick="switchTab('tab2')" id="nav-tab2" class="px-4 py-3 flex items-center gap-2 whitespace-nowrap hover:text-white transition">
+          <i class="fa-solid fa-plus-circle"></i> B. Add More Words
+        </button>
+        <button onclick="switchTab('tab3')" id="nav-tab3" class="px-4 py-3 flex items-center gap-2 whitespace-nowrap hover:text-white transition">
+          <i class="fa-solid fa-list-ol"></i> C. Rank Your Favorites
+        </button>
+        <button onclick="switchTab('tab4')" id="nav-tab4" class="px-4 py-3 flex items-center gap-2 whitespace-nowrap hover:text-white transition">
+          <i class="fa-solid fa-comments"></i> Speaking Practice
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Interactive Content Container -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: WORD MAP SORTING (Exercise A)       -->
+    <!-- ========================================== -->
+    <section id="tab1" class="tab-content space-y-6">
+      
+      <!-- Section Instructions Card -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center">A</span>
+            <h2 class="font-display font-bold text-lg text-slate-800">Complete the Word Map</h2>
+          </div>
+          <p class="text-sm text-slate-600">
+            Drag or click genres from the list to put them in the right category. 
+            <span class="inline-block bg-purple-100 text-purple-800 font-semibold text-xs px-2 py-0.5 rounded ml-1">Tip: Some words can go in more than one category!</span>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="speakInstruction('Complete the word map with words from the list. Some words can go in more than one category.')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-volume-high text-purple-600"></i> Listen
+          </button>
+          <button onclick="checkWordMapAnswers()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-purple-200 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-check-circle"></i> Check Answers
+          </button>
+          <button onclick="resetWordMap()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-rotate-right"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Unassigned Word Bank Area -->
+      <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-layer-group"></i> Unassigned Word Bank (<span id="unassignedCount">12</span> remaining)
+          </h3>
+          <span class="text-xs text-indigo-600 font-medium">Click word to auto-select or drag into target</span>
+        </div>
+        
+        <div id="wordBank" class="flex flex-wrap gap-2.5 min-h-[60px] items-center">
+          <!-- Dynamically populated word cards -->
+        </div>
+      </div>
+
+      <!-- Category Columns Drop Zones Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <!-- TV SHOWS Column -->
+        <div class="bg-white rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-2 font-display font-bold">
+              <i class="fa-solid fa-tv text-yellow-300"></i>
+              <h3>TV SHOWS</h3>
+            </div>
+            <span id="tvCount" class="text-xs bg-white/20 font-bold px-2 py-0.5 rounded-full">0 items</span>
+          </div>
+
+          <div id="zone-tv" data-category="tv" class="drop-zone p-4 flex-grow min-h-[260px] space-y-2 bg-slate-50/50">
+            <!-- Items dropped here -->
+          </div>
+        </div>
+
+        <!-- MOVIES Column -->
+        <div class="bg-white rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-2 font-display font-bold">
+              <i class="fa-solid fa-film text-yellow-300"></i>
+              <h3>MOVIES</h3>
+            </div>
+            <span id="moviesCount" class="text-xs bg-white/20 font-bold px-2 py-0.5 rounded-full">0 items</span>
+          </div>
+
+          <div id="zone-movies" data-category="movies" class="drop-zone p-4 flex-grow min-h-[260px] space-y-2 bg-slate-50/50">
+            <!-- Items dropped here -->
+          </div>
+        </div>
+
+        <!-- MUSIC Column -->
+        <div class="bg-white rounded-2xl border-2 border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-2 font-display font-bold">
+              <i class="fa-solid fa-music text-yellow-300"></i>
+              <h3>MUSIC</h3>
+            </div>
+            <span id="musicCount" class="text-xs bg-white/20 font-bold px-2 py-0.5 rounded-full">0 items</span>
+          </div>
+
+          <div id="zone-music" data-category="music" class="drop-zone p-4 flex-grow min-h-[260px] space-y-2 bg-slate-50/50">
+            <!-- Items dropped here -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Helper Action Footer Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-circle-info text-purple-600 text-sm"></i>
+          <span>Multi-category genres like <strong>action</strong>, <strong>horror</strong>, <strong>science fiction</strong>, or <strong>musical</strong> count in multiple columns!</span>
+        </div>
+        <button onclick="showSolutionModal()" class="text-purple-700 hover:text-purple-900 font-bold underline flex items-center gap-1">
+          <i class="fa-regular fa-lightbulb"></i> View Word Map Solution Guide
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: ADD MORE WORDS (Exercise B)         -->
+    <!-- ========================================== -->
+    <section id="tab2" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center">B</span>
+          <h2 class="font-display font-bold text-lg text-slate-800">Add Two More Words to Each Category</h2>
+        </div>
+        <p class="text-sm text-slate-600">
+          Expand your vocabulary! Click quick suggestions or type your own entertainment words to add them to each category.
+        </p>
+      </div>
+
+      <!-- Category Expansion Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        
+        <!-- TV Expansion -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <h3 class="font-display font-bold text-blue-700 flex items-center gap-2">
+              <i class="fa-solid fa-tv"></i> TV Shows
+            </h3>
+            <span class="text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full" id="tvExpandedBadge">2 Custom Added</span>
+          </div>
+
+          <!-- Quick Preset Chips -->
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Quick Suggestions:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="addCustomWord('tv', 'comedy')" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ comedy</button>
+              <button onclick="addCustomWord('tv', 'news')" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ news</button>
+              <button onclick="addCustomWord('tv', 'cartoon')" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ cartoon</button>
+              <button onclick="addCustomWord('tv', 'documentary')" class="bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ documentary</button>
+            </div>
+          </div>
+
+          <!-- Input Box -->
+          <div class="flex gap-2">
+            <input type="text" id="tvInput" placeholder="Type new genre..." class="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <button onclick="addCustomWordFromInput('tv')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0">Add</button>
+          </div>
+
+          <!-- Custom Word List -->
+          <div id="custom-tv-list" class="space-y-2 pt-2">
+            <!-- Words inserted here -->
+          </div>
+        </div>
+
+        <!-- Movies Expansion -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <h3 class="font-display font-bold text-purple-700 flex items-center gap-2">
+              <i class="fa-solid fa-film"></i> Movies
+            </h3>
+            <span class="text-xs bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-full" id="moviesExpandedBadge">2 Custom Added</span>
+          </div>
+
+          <!-- Quick Preset Chips -->
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Quick Suggestions:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="addCustomWord('movies', 'drama')" class="bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ drama</button>
+              <button onclick="addCustomWord('movies', 'animation')" class="bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ animation</button>
+              <button onclick="addCustomWord('movies', 'thriller')" class="bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ thriller</button>
+              <button onclick="addCustomWord('movies', 'anime')" class="bg-slate-100 hover:bg-purple-50 hover:text-purple-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ anime</button>
+            </div>
+          </div>
+
+          <!-- Input Box -->
+          <div class="flex gap-2">
+            <input type="text" id="moviesInput" placeholder="Type new genre..." class="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:outline-none">
+            <button onclick="addCustomWordFromInput('movies')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0">Add</button>
+          </div>
+
+          <!-- Custom Word List -->
+          <div id="custom-movies-list" class="space-y-2 pt-2">
+            <!-- Words inserted here -->
+          </div>
+        </div>
+
+        <!-- Music Expansion -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <h3 class="font-display font-bold text-emerald-700 flex items-center gap-2">
+              <i class="fa-solid fa-music"></i> Music
+            </h3>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full" id="musicExpandedBadge">2 Custom Added</span>
+          </div>
+
+          <!-- Quick Preset Chips -->
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Quick Suggestions:</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="addCustomWord('music', 'pop')" class="bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ pop</button>
+              <button onclick="addCustomWord('music', 'rock')" class="bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ rock</button>
+              <button onclick="addCustomWord('music', 'jazz')" class="bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ jazz</button>
+              <button onclick="addCustomWord('music', 'K-pop')" class="bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 text-xs text-slate-700 px-2.5 py-1 rounded-lg transition border border-slate-200">+ K-pop</button>
+            </div>
+          </div>
+
+          <!-- Input Box -->
+          <div class="flex gap-2">
+            <input type="text" id="musicInput" placeholder="Type new genre..." class="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <button onclick="addCustomWordFromInput('music')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0">Add</button>
+          </div>
+
+          <!-- Custom Word List -->
+          <div id="custom-music-list" class="space-y-2 pt-2">
+            <!-- Words inserted here -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: RANKING FAVORITES (Exercise C)      -->
+    <!-- ========================================== -->
+    <section id="tab3" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center">C</span>
+            <h2 class="font-display font-bold text-lg text-slate-800">Rank Your Favorites (1 to 6)</h2>
+          </div>
+          <p class="text-sm text-slate-600">
+            Number the items in each list from <strong>1</strong> (you like it the most) to <strong>6</strong> (you like it the least).
+          </p>
+        </div>
+
+        <!-- Category selector dropdown -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-bold text-slate-500 uppercase">Category:</label>
+          <select id="rankingCategorySelect" onchange="loadRankingCategory()" class="bg-slate-100 text-slate-800 font-bold text-xs px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+            <option value="tv">TV Shows</option>
+            <option value="movies">Movies</option>
+            <option value="music">Music</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Re-order List Column -->
+        <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+            <h3 class="font-display font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-arrow-down-short-wide text-purple-600"></i>
+              <span id="rankingTitle">TV Show Genres</span>
+            </h3>
+            <span class="text-xs text-slate-500">Use ▲ ▼ buttons to re-order</span>
+          </div>
+
+          <div id="rankingListContainer" class="space-y-2.5">
+            <!-- Reorderable Items Dynamic List -->
+          </div>
+        </div>
+
+        <!-- Spoken Practice Summary Generator Column -->
+        <div class="lg:col-span-6 bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-950 text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="bg-yellow-400 text-purple-950 font-black text-xs px-2.5 py-1 rounded-full uppercase tracking-wider">
+                Generated Speaking Guide
+              </span>
+              <button onclick="speakRankingSummary()" class="bg-white/10 hover:bg-white/20 text-yellow-300 border border-white/20 text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-volume-high"></i> Read Whole Summary
+              </button>
+            </div>
+
+            <h4 class="font-display font-bold text-xl text-yellow-300">How to Express Your Opinion:</h4>
+
+            <!-- Live Spoken Sentence Breakdown -->
+            <div id="rankingSentencesContainer" class="space-y-2 text-sm text-purple-100 bg-white/5 p-4 rounded-xl border border-white/10 font-sans">
+              <!-- Dynamically generated English phrases -->
+            </div>
+          </div>
+
+          <!-- Partner Prompt Hint -->
+          <div class="bg-purple-800/60 p-3 rounded-xl border border-purple-500/30 text-xs text-purple-200 flex items-center gap-2">
+            <i class="fa-solid fa-user-group text-yellow-300 text-base"></i>
+            <span>Compare your ideas with a partner! Ask: <em>"What is your number 1 choice?"</em></span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: CLASSROOM SURVEY & ROLE PLAY        -->
+    <!-- ========================================== -->
+    <section id="tab4" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center"><i class="fa-solid fa-comments"></i></span>
+          <h2 class="font-display font-bold text-lg text-slate-800">Group Work & Dialogue Partner</h2>
+        </div>
+        <p class="text-sm text-slate-600">
+          Practice talking about entertainment with your virtual classmate, Alex! Listen to questions and click your response.
+        </p>
+      </div>
+
+      <!-- Dialogue Simulation Interface -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12">
+        
+        <!-- Virtual Partner Profile Sidebar -->
+        <div class="md:col-span-4 bg-gradient-to-b from-slate-900 to-indigo-950 p-6 text-white flex flex-col items-center text-center justify-center space-y-4">
+          <div class="relative">
+            <div class="w-24 h-24 rounded-full bg-purple-500 border-4 border-yellow-400 flex items-center justify-center text-4xl shadow-xl">
+              🧑‍🎓
+            </div>
+            <span class="absolute bottom-0 right-0 bg-emerald-500 border-2 border-slate-900 w-5 h-5 rounded-full" title="Online"></span>
+          </div>
+
+          <div>
+            <h3 class="font-display font-bold text-xl text-yellow-300">Alex</h3>
+            <p class="text-xs text-purple-200 font-medium">Virtual ESL Conversation Partner</p>
+          </div>
+
+          <div class="w-full bg-white/10 p-3 rounded-xl border border-white/10 text-xs text-purple-100 space-y-1">
+            <p class="font-bold text-yellow-300">Target Conversation Structures:</p>
+            <p>• "What kind of [movies/TV/music] do you like?"</p>
+            <p>• "I like [genre] the most."</p>
+            <p>• "I prefer [genre A] over [genre B]."</p>
+          </div>
+        </div>
+
+        <!-- Interactive Chat Dialogue Cards -->
+        <div class="md:col-span-8 p-6 space-y-5 flex flex-col justify-between">
+          
+          <!-- Chat Log Display -->
+          <div id="dialogueChatLog" class="space-y-4 min-h-[280px]">
+            <!-- Virtual partner bubble -->
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold shrink-0">A</div>
+              <div class="bg-purple-100 border border-purple-200 text-purple-950 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] space-y-1.5 shadow-sm">
+                <p id="partnerSpeechText" class="text-sm font-medium">
+                  "Hi! Let me ask you: What kind of movies do you like the most?"
+                </p>
+                <button onclick="speakPartnerCurrentText()" class="text-xs text-purple-700 font-bold flex items-center gap-1 hover:underline">
+                  <i class="fa-solid fa-volume-high"></i> Listen to Alex
+                </button>
+              </div>
+            </div>
+
+            <!-- Student Bubble Response Placeholder -->
+            <div id="studentResponseBubble" class="flex items-start gap-3 justify-end hidden">
+              <div class="bg-purple-600 text-white p-3.5 rounded-2xl rounded-tr-none max-w-[85%] space-y-1.5 shadow-sm">
+                <p id="studentSpeechText" class="text-sm font-medium"></p>
+                <button onclick="speakStudentCurrentText()" class="text-xs text-purple-200 font-bold flex items-center gap-1 hover:underline">
+                  <i class="fa-solid fa-volume-high"></i> Listen to My Response
+                </button>
+              </div>
+              <div class="w-9 h-9 rounded-full bg-yellow-400 text-purple-950 flex items-center justify-center font-bold shrink-0">YOU</div>
+            </div>
+          </div>
+
+          <!-- Student Option Picker Buttons -->
+          <div class="border-t border-slate-100 pt-4 space-y-2">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Select Your Response:</label>
+            <div id="dialogueOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Dynamically populated answer choices -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Solution Guide Modal -->
+  <div id="solutionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in duration-200">
+      
+      <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-purple-600 text-xl"></i>
+          <h3 class="font-display font-bold text-xl text-slate-800">Word Map Complete Solution Guide</h3>
+        </div>
+        <button onclick="closeSolutionModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-700 max-h-[60vh] overflow-y-auto pr-2">
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
+          <h4 class="font-bold text-blue-900 flex items-center gap-1.5"><i class="fa-solid fa-tv"></i> TV SHOWS</h4>
+          <p>action, game show, horror, musical, reality show, science fiction, soap opera, talk show</p>
+        </div>
+
+        <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
+          <h4 class="font-bold text-purple-900 flex items-center gap-1.5"><i class="fa-solid fa-film"></i> MOVIES</h4>
+          <p>action, horror, musical, science fiction</p>
+        </div>
+
+        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+          <h4 class="font-bold text-emerald-900 flex items-center gap-1.5"><i class="fa-solid fa-music"></i> MUSIC</h4>
+          <p>electronic, musical, rap, reggae, salsa</p>
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-1">
+          <h4 class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-question"></i> Overlapping Genres Note:</h4>
+          <p>Notice that words like <strong>musical</strong> fit into all 3 categories! Words like <strong>action</strong>, <strong>horror</strong>, and <strong>science fiction</strong> fit into both Movies and TV Shows.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeSolutionModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs">
+          Got It, Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Message Banner -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 max-w-md pointer-events-none">
+    <div id="toastIcon" class="text-xl text-yellow-400"><i class="fa-solid fa-circle-info"></i></div>
+    <div id="toastText" class="text-xs sm:text-sm font-medium">Notification message here</div>
+  </div>
+
+  <!-- Footer Banner -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Word Power Vocabulary Studio • Interchange / ESL Beginner Level</p>
+      <p>Designed for Interactive Vocabulary Learning & Practice</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ========================================== */
+    /* APPLICATION STATE & VOCABULARY DATA        */
+    /* ========================================== */
+    
+    // Core 12 Vocabulary Items from textbook prompt
+    const VOCABULARY_LIST = [
+      { id: 'action', text: 'action', icon: 'fa-burst', categories: ['tv', 'movies'] },
+      { id: 'electronic', text: 'electronic', icon: 'fa-bolt', categories: ['music'] },
+      { id: 'game_show', text: 'game show', icon: 'fa-trophy', categories: ['tv'] },
+      { id: 'horror', text: 'horror', icon: 'fa-ghost', categories: ['tv', 'movies'] },
+      { id: 'musical', text: 'musical', icon: 'fa-masks-theater', categories: ['tv', 'movies', 'music'] },
+      { id: 'rap', text: 'rap', icon: 'fa-microphone-lines', categories: ['music'] },
+      { id: 'reality_show', text: 'reality show', icon: 'fa-camera-retro', categories: ['tv'] },
+      { id: 'reggae', text: 'reggae', icon: 'fa-drum', categories: ['music'] },
+      { id: 'salsa', text: 'salsa', icon: 'fa-pepper-hot', categories: ['music'] },
+      { id: 'science_fiction', text: 'science fiction', icon: 'fa-robot', categories: ['tv', 'movies'] },
+      { id: 'soap_opera', text: 'soap opera', icon: 'fa-heart-crack', categories: ['tv'] },
+      { id: 'talk_show', text: 'talk show', icon: 'fa-headset', categories: ['tv'] }
+    ];
+
+    // Current word placement mapping { tv: [], movies: [], music: [] }
+    let wordPlacements = {
+      tv: [],
+      movies: [],
+      music: []
+    };
+
+    // User score tracking
+    let score = 0;
+    let soundEnabled = true;
+    let selectedWordForClickMove = null;
+
+    // Custom added words (Exercise B)
+    let customWords = {
+      tv: ['comedy', 'news'],
+      movies: ['drama', 'animation'],
+      music: ['pop', 'rock']
+    };
+
+    // Ranking Activity lists (Exercise C)
+    const rankingPresets = {
+      tv: ['Science fiction', 'Action', 'Talk show', 'Game show', 'Reality show', 'Soap opera'],
+      movies: ['Science fiction', 'Action', 'Horror', 'Musical', 'Comedy', 'Drama'],
+      music: ['Electronic', 'Rap', 'Reggae', 'Salsa', 'Pop', 'Rock']
+    };
+    let currentRankingList = [...rankingPresets.tv];
+
+    /* ========================================== */
+    /* WEB AUDIO API SOUND EFFECTS                */
+    /* ========================================== */
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const soundIcon = document.getElementById('soundIcon');
+      const soundLabel = document.getElementById('soundLabel');
+      if (soundEnabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-yellow-300';
+        soundLabel.innerText = 'Sound ON';
+        showToast('🔊 Sound Effects Enabled', 'info');
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        soundLabel.innerText = 'Sound OFF';
+        showToast('0🔇 Sound Effects Muted', 'info');
+      }
+    }
+
+    function playTone(freq, type, duration) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        console.log('Audio playback error', e);
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      if (type === 'click') {
+        playTone(400, 'sine', 0.08);
+      } else if (type === 'drop') {
+        playTone(300, 'triangle', 0.12);
+      } else if (type === 'correct') {
+        playTone(523.25, 'sine', 0.1); // C5
+        setTimeout(() => playTone(659.25, 'sine', 0.15), 100); // E5
+        setTimeout(() => playTone(783.99, 'sine', 0.25), 200); // G5
+      } else if (type === 'wrong') {
+        playTone(220, 'sawtooth', 0.15);
+        setTimeout(() => playTone(180, 'sawtooth', 0.2), 120);
+      }
+    }
+
+    /* ========================================== */
+    /* WEB SPEECH SYNTHESIS (AUDIO PRONUNCIATION) */
+    /* ========================================== */
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9; // Slightly slower for language learners
+        utterance.pitch = 1.0;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      } else {
+        showToast('Speech synthesis not supported in this browser', 'info');
+      }
+    }
+
+    function speakInstruction(text) {
+      speakText(text);
+    }
+
+    /* ========================================== */
+    /* TAB NAVIGATION SYSTEM                      */
+    /* ========================================== */
+    function switchTab(tabId) {
+      playSound('click');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.querySelectorAll('[id^="nav-tab"]').forEach(el => el.classList.remove('active-tab'));
+      document.getElementById(`nav-${tabId}`).classList.add('active-tab');
+    }
+
+    /* ========================================== */
+    /* EXERCISE A: WORD MAP LOGIC                 */
+    /* ========================================== */
+    
+    function initWordMap() {
+      const wordBank = document.getElementById('wordBank');
+      wordBank.innerHTML = '';
+
+      VOCABULARY_LIST.forEach(item => {
+        // Check if item is already placed somewhere
+        const isPlaced = Object.values(wordPlacements).some(arr => arr.includes(item.id));
+        if (!isPlaced) {
+          const card = createWordCard(item);
+          wordBank.appendChild(card);
+        }
+      });
+
+      renderCategoryZones();
+      updateUnassignedCount();
+    }
+
+    function createWordCard(item) {
+      const card = document.createElement('div');
+      card.id = `card-${item.id}`;
+      card.className = `genre-card bg-white border border-slate-200 hover:border-purple-400 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center gap-2 cursor-grab active:cursor-grabbing hover:shadow-md transition`;
+      card.draggable = true;
+      card.dataset.id = item.id;
+
+      card.innerHTML = `
+        <i class="fa-solid ${item.icon} text-purple-600"></i>
+        <span>${item.text}</span>
+        <button onclick="event.stopPropagation(); speakText('${item.text}')" class="text-slate-400 hover:text-purple-600 ml-1 p-0.5" title="Listen to pronunciation">
+          <i class="fa-solid fa-volume-high"></i>
+        </button>
+      `;
+
+      // Drag Events
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', item.id);
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+
+      // Click to Select / Move logic
+      card.addEventListener('click', () => {
+        handleWordCardClick(item);
+      });
+
+      return card;
+    }
+
+    function handleWordCardClick(item) {
+      playSound('click');
+      if (selectedWordForClickMove === item.id) {
+        // Deselect
+        selectedWordForClickMove = null;
+        document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('ring-2', 'ring-purple-600', 'bg-purple-50'));
+        showToast('Selection cleared', 'info');
+      } else {
+        selectedWordForClickMove = item.id;
+        document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('ring-2', 'ring-purple-600', 'bg-purple-50'));
+        const activeCard = document.getElementById(`card-${item.id}`);
+        if (activeCard) {
+          activeCard.classList.add('ring-2', 'ring-purple-600', 'bg-purple-50');
+        }
+        showToast(`Selected "${item.text}". Click a category column below to move it!`, 'info');
+      }
+    }
+
+    // Setup Drop Zones for Drag and Drop
+    function setupDropZones() {
+      const zones = ['zone-tv', 'zone-movies', 'zone-music'];
+
+      zones.forEach(zoneId => {
+        const zone = document.getElementById(zoneId);
+        const category = zone.dataset.category;
+
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('drag-over');
+        });
+
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const wordId = e.dataTransfer.getData('text/plain');
+          if (wordId) {
+            moveWordToCategory(wordId, category);
+          }
+        });
+
+        // Click zone to place selected word
+        zone.addEventListener('click', (e) => {
+          if (selectedWordForClickMove && e.target.closest('.genre-card') === null) {
+            moveWordToCategory(selectedWordForClickMove, category);
+            selectedWordForClickMove = null;
+            document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('ring-2', 'ring-purple-600', 'bg-purple-50'));
+          }
+        });
+      });
+    }
+
+    function moveWordToCategory(wordId, category) {
+      playSound('drop');
+      
+      // Remove from all existing placements if any
+      Object.keys(wordPlacements).forEach(cat => {
+        wordPlacements[cat] = wordPlacements[cat].filter(id => id !== wordId);
+      });
+
+      // Add to target category
+      if (category) {
+        wordPlacements[category].push(wordId);
+      }
+
+      initWordMap();
+    }
+
+    function removeWordFromCategory(wordId, category) {
+      playSound('click');
+      wordPlacements[category] = wordPlacements[category].filter(id => id !== wordId);
+      initWordMap();
+    }
+
+    function renderCategoryZones() {
+      const categories = ['tv', 'movies', 'music'];
+
+      categories.forEach(cat => {
+        const zone = document.getElementById(`zone-${cat}`);
+        const countSpan = document.getElementById(`${cat}Count`);
+        zone.innerHTML = '';
+
+        const wordIds = wordPlacements[cat];
+        countSpan.innerText = `${wordIds.length} items`;
+
+        if (wordIds.length === 0) {
+          zone.innerHTML = `<div class="text-center text-xs text-slate-400 py-8 border-2 border-dashed border-slate-200 rounded-xl">Drop or click words here</div>`;
+        } else {
+          wordIds.forEach(id => {
+            const item = VOCABULARY_LIST.find(v => v.id === id);
+            if (item) {
+              const card = document.createElement('div');
+              card.className = `genre-card bg-white border border-slate-200 text-slate-800 text-xs font-bold px-3 py-2 rounded-xl shadow-sm flex items-center justify-between gap-2`;
+              card.innerHTML = `
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid ${item.icon} text-purple-600"></i>
+                  <span>${item.text}</span>
+                  <button onclick="event.stopPropagation(); speakText('${item.text}')" class="text-slate-400 hover:text-purple-600" title="Listen">
+                    <i class="fa-solid fa-volume-high"></i>
+                  </button>
+                </div>
+                <button onclick="removeWordFromCategory('${item.id}', '${cat}')" class="text-slate-300 hover:text-red-500 transition" title="Remove">
+                  <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+              `;
+              zone.appendChild(card);
+            }
+          });
+        }
+      });
+    }
+
+    function updateUnassignedCount() {
+      const placedCount = new Set([
+        ...wordPlacements.tv,
+        ...wordPlacements.movies,
+        ...wordPlacements.music
+      ]).size;
+
+      const remaining = VOCABULARY_LIST.length - placedCount;
+      document.getElementById('unassignedCount').innerText = remaining;
+    }
+
+    // Check Word Map Answers against official key
+    function checkWordMapAnswers() {
+      let correctCount = 0;
+      let totalPlaced = 0;
+
+      VOCABULARY_LIST.forEach(item => {
+        const isPlacedIn = Object.keys(wordPlacements).filter(cat => wordPlacements[cat].includes(item.id));
+        if (isPlacedIn.length > 0) {
+          totalPlaced++;
+          // Check if placed in valid category
+          const isCorrect = isPlacedIn.some(cat => item.categories.includes(cat));
+          if (isCorrect) {
+            correctCount++;
+          }
+        }
+      });
+
+      score = correctCount;
+      document.getElementById('scoreDisplay').innerText = `${score} / 12`;
+
+      if (correctCount === 12) {
+        playSound('correct');
+        showToast('🎉 Outstanding! All 12 entertainment genres are correctly categorized!', 'success');
+      } else if (totalPlaced === 0) {
+        playSound('wrong');
+        showToast('Please place some genres into categories before checking!', 'info');
+      } else {
+        playSound('correct');
+        showToast(`Good effort! ${correctCount} out of 12 words are in valid categories. Check the solution guide if needed!`, 'info');
+      }
+    }
+
+    function resetWordMap() {
+      playSound('click');
+      wordPlacements = { tv: [], movies: [], music: [] };
+      selectedWordForClickMove = null;
+      initWordMap();
+      showToast('Word map reset!', 'info');
+    }
+
+    function showSolutionModal() {
+      playSound('click');
+      document.getElementById('solutionModal').classList.remove('hidden');
+    }
+
+    function closeSolutionModal() {
+      playSound('click');
+      document.getElementById('solutionModal').classList.add('hidden');
+    }
+
+    /* ========================================== */
+    /* EXERCISE B: CATEGORY EXPANSION LOGIC       */
+    /* ========================================== */
+    function renderCustomWords() {
+      ['tv', 'movies', 'music'].forEach(cat => {
+        const container = document.getElementById(`custom-${cat}-list`);
+        const badge = document.getElementById(`${cat}ExpandedBadge`);
+        container.innerHTML = '';
+
+        badge.innerText = `${customWords[cat].length} Added`;
+
+        customWords[cat].forEach((word, index) => {
+          const chip = document.createElement('div');
+          chip.className = `bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-xl flex items-center justify-between gap-2 transition`;
+          chip.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-purple-200 text-purple-800 font-bold text-[10px] flex items-center justify-center">${index + 1}</span>
+              <span class="capitalize">${word}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="speakText('${word}')" class="text-purple-600 hover:text-purple-800" title="Pronounce">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+              <button onclick="removeCustomWord('${cat}', '${word}')" class="text-slate-400 hover:text-red-500" title="Delete">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          `;
+          container.appendChild(chip);
+        });
+      });
+    }
+
+    function addCustomWord(category, word) {
+      word = word.trim().toLowerCase();
+      if (!word) return;
+
+      if (!customWords[category].includes(word)) {
+        playSound('drop');
+        customWords[category].push(word);
+        renderCustomWords();
+        speakText(word);
+        showToast(`Added "${word}" to ${category.toUpperCase()}!`, 'success');
+      } else {
+        showToast(`"${word}" is already in the list!`, 'info');
+      }
+    }
+
+    function addCustomWordFromInput(category) {
+      const input = document.getElementById(`${category}Input`);
+      if (input && input.value) {
+        addCustomWord(category, input.value);
+        input.value = '';
+      }
+    }
+
+    function removeCustomWord(category, word) {
+      playSound('click');
+      customWords[category] = customWords[category].filter(w => w !== word);
+      renderCustomWords();
+    }
+
+    /* ========================================== */
+    /* EXERCISE C: PREFERENCE RANKING (1 TO 6)    */
+    /* ========================================== */
+    function loadRankingCategory() {
+      const cat = document.getElementById('rankingCategorySelect').value;
+      const titles = { tv: 'TV Show Genres', movies: 'Movie Genres', music: 'Music Genres' };
+      document.getElementById('rankingTitle').innerText = titles[cat];
+      
+      currentRankingList = [...rankingPresets[cat]];
+      renderRankingList();
+    }
+
+    function renderRankingList() {
+      const container = document.getElementById('rankingListContainer');
+      container.innerHTML = '';
+
+      currentRankingList.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = `bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm hover:border-purple-300 transition`;
+        
+        let rankBadgeBg = 'bg-slate-200 text-slate-700';
+        if (index === 0) rankBadgeBg = 'bg-yellow-400 text-purple-950 font-black';
+        else if (index === 1) rankBadgeBg = 'bg-purple-200 text-purple-900 font-bold';
+        else if (index === 5) rankBadgeBg = 'bg-red-100 text-red-800 font-bold';
+
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg ${rankBadgeBg} text-xs flex items-center justify-center shrink-0">
+              #${index + 1}
+            </span>
+            <span class="font-bold text-slate-800 text-sm">${item}</span>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button onclick="speakText('${item}')" class="p-1.5 text-slate-400 hover:text-purple-600 rounded-lg hover:bg-white" title="Pronounce">
+              <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <button onclick="moveRankingItem(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 p-1.5"' : 'class="p-1.5 text-purple-700 hover:bg-purple-100 rounded-lg"'} title="Move Up">
+              <i class="fa-solid fa-chevron-up"></i>
+            </button>
+            <button onclick="moveRankingItem(${index}, 1)" ${index === currentRankingList.length - 1 ? 'disabled class="opacity-30 p-1.5"' : 'class="p-1.5 text-purple-700 hover:bg-purple-100 rounded-lg"'} title="Move Down">
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      generateRankingSentences();
+    }
+
+    function moveRankingItem(index, direction) {
+      playSound('click');
+      const newIndex = index + direction;
+      if (newIndex >= 0 && newIndex < currentRankingList.length) {
+        const temp = currentRankingList[index];
+        currentRankingList[index] = currentRankingList[newIndex];
+        currentRankingList[newIndex] = temp;
+        renderRankingList();
+      }
+    }
+
+    function generateRankingSentences() {
+      const container = document.getElementById('rankingSentencesContainer');
+      const cat = document.getElementById('rankingCategorySelect').value;
+      const catLabel = cat === 'tv' ? 'TV show' : cat === 'movies' ? 'movie' : 'music';
+
+      const s1 = `1. I like <strong>${currentRankingList[0].toLowerCase()}</strong> ${catLabel}s the <strong>most</strong>.`;
+      const s2 = `2. I really like <strong>${currentRankingList[1].toLowerCase()}</strong>.`;
+      const s3 = `3. <strong>${currentRankingList[2]}</strong> is pretty good.`;
+      const s4 = `4. <strong>${currentRankingList[3]}</strong> is okay.`;
+      const s5 = `5. I don't care much for <strong>${currentRankingList[4].toLowerCase()}</strong>.`;
+      const s6 = `6. I like <strong>${currentRankingList[5].toLowerCase()}</strong> the <strong>least</strong>.`;
+
+      container.innerHTML = `
+        <p class="border-b border-white/10 pb-1.5">${s1}</p>
+        <p class="border-b border-white/10 pb-1.5">${s2}</p>
+        <p class="border-b border-white/10 pb-1.5">${s3}</p>
+        <p class="border-b border-white/10 pb-1.5">${s4}</p>
+        <p class="border-b border-white/10 pb-1.5">${s5}</p>
+        <p>${s6}</p>
+      `;
+    }
+
+    function speakRankingSummary() {
+      const cat = document.getElementById('rankingCategorySelect').value;
+      const catLabel = cat === 'tv' ? 'TV show' : cat === 'movies' ? 'movie' : 'music';
+      const text = `I like ${currentRankingList[0]} ${catLabel}s the most. I really like ${currentRankingList[1]}. I like ${currentRankingList[5]} the least.`;
+      speakText(text);
+    }
+
+    /* ========================================== */
+    /* EXERCISE D: DIALOGUE & SURVEY PARTNER     */
+    /* ========================================== */
+    const dialogueQuestions = [
+      {
+        question: "Hi there! What kind of movies do you like the most?",
+        options: [
+          { label: "I like action movies the most!", text: "I like action movies the most! How about you?" },
+          { label: "I love science fiction movies!", text: "I love science fiction movies! They are exciting." },
+          { label: "I prefer comedies and animated movies.", text: "I prefer comedies and animated movies." }
+        ],
+        partnerReply: "Awesome! Action movies are so exciting. What kind of TV shows do you like the least?"
+      },
+      {
+        question: "What kind of TV shows do you like the least?",
+        options: [
+          { label: "I like soap operas the least.", text: "I like soap operas the least. I find them boring!" },
+          { label: "I dislike reality shows.", text: "I dislike reality shows the most." },
+          { label: "Game shows are my least favorite.", text: "Game shows are my least favorite TV programs." }
+        ],
+        partnerReply: "I agree! Now tell me, what is your favorite type of music?"
+      },
+      {
+        question: "What is your favorite type of music?",
+        options: [
+          { label: "I listen to a lot of pop and K-pop!", text: "I listen to a lot of pop and K-pop!" },
+          { label: "I love reggae and salsa music.", text: "I love reggae and salsa music! Great for dancing." },
+          { label: "Electronic and rap are my favorites.", text: "Electronic and rap are my absolute favorites." }
+        ],
+        partnerReply: "That's fantastic taste in music! Thanks for sharing your thoughts with me!"
+      }
+    ];
+
+    let currentDialogueIndex = 0;
+
+    function renderDialogueStep() {
+      const current = dialogueQuestions[currentDialogueIndex];
+      document.getElementById('partnerSpeechText').innerText = `"${current.question}"`;
+
+      const optionsContainer = document.getElementById('dialogueOptionsContainer');
+      optionsContainer.innerHTML = '';
+
+      current.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = `bg-slate-50 hover:bg-purple-50 hover:border-purple-300 border border-slate-200 text-slate-800 text-xs font-semibold p-3 rounded-xl text-left transition flex items-center justify-between group`;
+        btn.innerHTML = `
+          <span>${opt.label}</span>
+          <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-purple-600 transition"></i>
+        `;
+        btn.onclick = () => selectDialogueOption(opt, current.partnerReply);
+        optionsContainer.appendChild(btn);
+      });
+
+      document.getElementById('studentResponseBubble').classList.add('hidden');
+    }
+
+    function selectDialogueOption(opt, nextReply) {
+      playSound('click');
+      const bubble = document.getElementById('studentResponseBubble');
+      const speechText = document.getElementById('studentSpeechText');
+      
+      speechText.innerText = `"${opt.text}"`;
+      bubble.classList.remove('hidden');
+
+      speakText(opt.text);
+
+      setTimeout(() => {
+        currentDialogueIndex = (currentDialogueIndex + 1) % dialogueQuestions.length;
+        renderDialogueStep();
+        showToast('Partner conversation updated!', 'info');
+      }, 4000);
+    }
+
+    function speakPartnerCurrentText() {
+      const text = document.getElementById('partnerSpeechText').innerText;
+      speakText(text);
+    }
+
+    function speakStudentCurrentText() {
+      const text = document.getElementById('studentSpeechText').innerText;
+      speakText(text);
+    }
+
+    /* ========================================== */
+    /* UI TOAST NOTIFICATION UTILITY              */
+    /* ========================================== */
+    let toastTimeout = null;
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toastNotification');
+      const toastText = document.getElementById('toastText');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastText.innerText = message;
+
+      if (type === 'success') {
+        toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-xl';
+      } else if (type === 'error') {
+        toastIcon.className = 'fa-solid fa-circle-xmark text-red-400 text-xl';
+      } else {
+        toastIcon.className = 'fa-solid fa-circle-info text-yellow-400 text-xl';
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    /* ========================================== */
+    /* APPLICATION INITIALIZATION                 */
+    /* ========================================== */
+    window.onload = function() {
+      initWordMap();
+      setupDropZones();
+      renderCustomWords();
+      loadRankingCategory();
+      renderDialogueStep();
+
+      // Keyboard escape listener for modal
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSolutionModal();
+      });
+    };
+  </script>
+</body>
+</html>
