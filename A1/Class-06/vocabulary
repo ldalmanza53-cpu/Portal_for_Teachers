@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs & Industries - ESL Mind Map Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Lexend', 'sans-serif'],
+                    },
+                    colors: {
+                        office: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        food: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            200: '#fed7aa',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                        travel: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        },
+                        entertainment: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            200: '#e9d5ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .drop-target-active {
+            border-color: #6366f1 !important;
+            background-color: #e0e7ff !important;
+            transform: scale(1.01);
+        }
+        .card-selected {
+            ring: 4px;
+            ring-color: #6366f1;
+            transform: translateY(-2px);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                
+                <!-- Title & Badge -->
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-md shadow-emerald-100 font-bold">
+                        🗺️
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Jobs & Industry Mind Map</h1>
+                            <span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">ESL Beginner</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">Categorize 12 Job Titles into 4 Key Industries</p>
+                    </div>
+                </div>
+
+                <!-- Controls & Gamification Bar -->
+                <div class="flex items-center flex-wrap gap-3 sm:gap-4 justify-center md:justify-end w-full md:w-auto">
+                    
+                    <!-- Stars Counter -->
+                    <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-xl shadow-xs">
+                        <i class="fa-solid fa-star text-amber-500 text-lg"></i>
+                        <span id="star-count" class="font-extrabold text-base">0</span>
+                        <span class="text-xs text-amber-700 font-medium hidden sm:inline">Stars</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="flex flex-col min-w-[120px] sm:min-w-[140px]">
+                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium mb-1">
+                            <span>Progress</span>
+                            <span id="progress-text">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Audio Speed Selector -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                        <span class="text-slate-500 px-2 font-medium hidden sm:inline"><i class="fa-solid fa-gauge-high"></i> Audio:</span>
+                        <button id="speed-slow-btn" onclick="setSpeed(0.75)" class="px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900">
+                            🐢 Slow
+                        </button>
+                        <button id="speed-normal-btn" onclick="setSpeed(1.0)" class="px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all">
+                            🐇 Normal
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center justify-start sm:justify-center gap-1 sm:gap-2 mt-3 pt-2 border-t border-slate-100 overflow-x-auto custom-scrollbar">
+                <button onclick="switchTab('wordmap')" id="tab-wordmap" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-xs transition-all">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>Word Map Game</span>
+                </button>
+                <button onclick="switchTab('flashcards')" id="tab-flashcards" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Audio Flashcards (12)</span>
+                </button>
+                <button onclick="switchTab('riddles')" id="tab-riddles" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>"Who Am I?" Riddles</span>
+                </button>
+                <button onclick="switchTab('blanks')" id="tab-blanks" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Fill in Blanks</span>
+                </button>
+                <button onclick="switchTab('speaking')" id="tab-speaking" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Speaking Lab</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <section id="content-wordmap" class="tab-content block space-y-6">
+            
+            <!-- Instructions & Toolbar -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="space-y-1 text-center md:text-left">
+                    <div class="flex items-center justify-center md:justify-start gap-2">
+                        <h2 class="text-lg font-extrabold text-slate-900">Complete the Word Map</h2>
+                        <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2.5 py-0.5 rounded-full">Interactive Drag or Tap</span>
+                    </div>
+                    <p class="text-xs text-slate-500">Drag each job title into its correct industry box below, or tap a job then tap an industry target!</p>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                    <button onclick="giveWordMapHint()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95">
+                        <i class="fa-solid fa-lightbulb"></i> Give Hint
+                    </button>
+                    <button onclick="checkWordMapAnswers()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95">
+                        <i class="fa-solid fa-check-circle"></i> Check Answers
+                    </button>
+                    <button onclick="resetWordMap()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-rotate-right"></i> Reset Map
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unassigned Jobs Pool -->
+            <div class="bg-indigo-50/60 border-2 border-dashed border-indigo-200 rounded-3xl p-4 space-y-2">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-briefcase"></i> Job Pool (<span id="pool-count">12</span> remaining)
+                    </span>
+                    <span id="tap-mode-indicator" class="text-[11px] font-semibold text-indigo-600 hidden md:inline">Tip: You can also tap a card to select it!</span>
+                </div>
+                <div id="job-pool" class="flex flex-wrap gap-2.5 min-h-[70px] p-2 bg-white rounded-2xl border border-indigo-100 shadow-inner items-center justify-center md:justify-start">
+                    <!-- Cards dynamically rendered -->
+                </div>
+            </div>
+
+            <!-- Industry Word Map Grid (4 Quadrants surrounding Central Node) -->
+            <div class="relative">
+                <!-- Center Node for Desktop -->
+                <div class="hidden lg:flex absolute inset-0 m-auto w-24 h-24 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 text-white font-extrabold text-lg items-center justify-center shadow-lg border-4 border-white z-20 pointer-events-none tracking-widest uppercase">
+                    JOBS
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    
+                    <!-- 1. Office Work -->
+                    <div id="target-office" class="industry-box bg-office-50 border-2 border-office-200 rounded-3xl p-5 shadow-xs flex flex-col space-y-3 transition-all min-h-[220px]" data-category="Office Work">
+                        <div class="flex items-center justify-between border-b border-office-200 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🏢</span>
+                                <div>
+                                    <h3 class="text-base font-extrabold text-office-900 uppercase tracking-wide">Office Work</h3>
+                                    <p class="text-[11px] font-medium text-office-700">Business, administration & tech</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-extrabold text-office-700 bg-white px-2.5 py-1 rounded-full border border-office-200 shadow-2xs box-counter">0 / 3</span>
+                        </div>
+                        <div class="drop-zone flex-1 flex flex-wrap gap-2.5 p-2 rounded-2xl border-2 border-dashed border-office-200/80 bg-white/60 min-h-[110px] items-center content-start">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                    <!-- 2. Food Service -->
+                    <div id="target-food" class="industry-box bg-food-50 border-2 border-food-200 rounded-3xl p-5 shadow-xs flex flex-col space-y-3 transition-all min-h-[220px]" data-category="Food Service">
+                        <div class="flex items-center justify-between border-b border-food-200 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🍔</span>
+                                <div>
+                                    <h3 class="text-base font-extrabold text-food-900 uppercase tracking-wide">Food Service</h3>
+                                    <p class="text-[11px] font-medium text-food-700">Restaurants, cafes & dining</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-extrabold text-food-700 bg-white px-2.5 py-1 rounded-full border border-food-200 shadow-2xs box-counter">0 / 3</span>
+                        </div>
+                        <div class="drop-zone flex-1 flex flex-wrap gap-2.5 p-2 rounded-2xl border-2 border-dashed border-food-200/80 bg-white/60 min-h-[110px] items-center content-start">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                    <!-- 3. Travel Industry -->
+                    <div id="target-travel" class="industry-box bg-travel-50 border-2 border-travel-200 rounded-3xl p-5 shadow-xs flex flex-col space-y-3 transition-all min-h-[220px]" data-category="Travel Industry">
+                        <div class="flex items-center justify-between border-b border-travel-200 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">✈️</span>
+                                <div>
+                                    <h3 class="text-base font-extrabold text-travel-900 uppercase tracking-wide">Travel Industry</h3>
+                                    <p class="text-[11px] font-medium text-travel-700">Airplanes, tourism & guiding</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-extrabold text-travel-700 bg-white px-2.5 py-1 rounded-full border border-travel-200 shadow-2xs box-counter">0 / 3</span>
+                        </div>
+                        <div class="drop-zone flex-1 flex flex-wrap gap-2.5 p-2 rounded-2xl border-2 border-dashed border-travel-200/80 bg-white/60 min-h-[110px] items-center content-start">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                    <!-- 4. Entertainment Business -->
+                    <div id="target-entertainment" class="industry-box bg-entertainment-50 border-2 border-entertainment-200 rounded-3xl p-5 shadow-xs flex flex-col space-y-3 transition-all min-h-[220px]" data-category="Entertainment Business">
+                        <div class="flex items-center justify-between border-b border-entertainment-200 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">🎭</span>
+                                <div>
+                                    <h3 class="text-base font-extrabold text-entertainment-900 uppercase tracking-wide">Entertainment Business</h3>
+                                    <p class="text-[11px] font-medium text-entertainment-700">Music, dance & stage performance</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-extrabold text-entertainment-700 bg-white px-2.5 py-1 rounded-full border border-entertainment-200 shadow-2xs box-counter">0 / 3</span>
+                        </div>
+                        <div class="drop-zone flex-1 flex flex-wrap gap-2.5 p-2 rounded-2xl border-2 border-dashed border-entertainment-200/80 bg-white/60 min-h-[110px] items-center content-start">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+        <section id="content-flashcards" class="tab-content hidden space-y-6">
+            
+            <!-- Category Filter Header -->
+            <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-filter text-indigo-500"></i>
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Filter Flashcards:</span>
+                </div>
+                <div id="flashcard-category-pills" class="flex flex-wrap gap-1.5 justify-center">
+                    <!-- Dynamic category filter buttons -->
+                </div>
+            </div>
+
+            <!-- Flashcards Grid -->
+            <div id="flashcards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <!-- Rendered by JS -->
+            </div>
+
+        </section>
+
+        <section id="content-riddles" class="tab-content hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs max-w-3xl mx-auto space-y-6">
+                
+                <!-- Start Screen -->
+                <div id="riddle-start-view" class="text-center py-8 space-y-4 max-w-md mx-auto">
+                    <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-inner">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-slate-900">"Who Am I?" Riddle Game</h2>
+                    <p class="text-slate-500 text-xs sm:text-sm">Read or listen to the clues and guess the correct job title. Earn stars for every streak!</p>
+                    <button onclick="startRiddleGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-md transition-all active:scale-95 text-base">
+                        Start Riddles 🚀
+                    </button>
+                </div>
+
+                <!-- Playing Screen -->
+                <div id="riddle-playing-view" class="hidden space-y-6">
+                    <div class="flex items-center justify-between text-xs sm:text-sm border-b border-slate-100 pb-3">
+                        <span id="riddle-q-num" class="font-bold text-slate-500">Question 1 of 12</span>
+                        <div class="flex items-center gap-3">
+                            <span id="riddle-streak-badge" class="font-bold text-amber-500 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl">🔥 Streak: 0</span>
+                            <span id="riddle-score-badge" class="font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-xl">Score: 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Clue Card -->
+                    <div class="bg-slate-50 border-2 border-indigo-100 rounded-2xl p-6 text-center space-y-3 relative">
+                        <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-100 px-3 py-1 rounded-full">Riddle Clue</span>
+                        <p id="riddle-clue-text" class="text-lg sm:text-xl font-extrabold text-slate-800 leading-snug">
+                            "I sit in an airplane cockpit and fly passengers through the sky safely. Who am I?"
+                        </p>
+                        <button onclick="speakRiddleClue()" class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                            <i class="fa-solid fa-volume-high"></i> Listen to Riddle
+                        </button>
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="riddle-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Summary Screen -->
+                <div id="riddle-summary-view" class="hidden text-center py-8 space-y-4 max-w-md mx-auto">
+                    <div class="text-6xl">🏆</div>
+                    <h2 class="text-2xl font-extrabold text-slate-900">Riddle Challenge Finished!</h2>
+                    <p id="riddle-final-score" class="text-slate-600 font-medium">You scored 12 / 12!</p>
+                    <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-amber-800 font-bold text-sm">
+                        +<span id="riddle-stars-earned">60</span> Stars Earned!
+                    </div>
+                    <button onclick="startRiddleGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-2xl shadow-md transition-all">
+                        Play Again 🔄
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="content-blanks" class="tab-content hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs max-w-3xl mx-auto space-y-6">
+                <div class="text-center max-w-lg mx-auto">
+                    <h2 class="text-2xl font-bold text-slate-900">Fill in the Blanks 📝</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Select the best job title from the word bank to complete each sentence.</p>
+                </div>
+
+                <!-- Word Bank -->
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl space-y-2">
+                    <span class="text-xs font-bold text-indigo-700 uppercase tracking-wide block text-center">Word Bank (Click word to pronounce)</span>
+                    <div id="blanks-word-bank" class="flex flex-wrap justify-center gap-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Sentence List -->
+                <div id="blanks-questions-list" class="space-y-3.5">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="text-center pt-2">
+                    <button onclick="checkFillBlanks()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-md transition-all active:scale-95 text-base">
+                        <i class="fa-solid fa-check mr-2"></i> Check My Answers
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="content-speaking" class="tab-content hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs max-w-3xl mx-auto space-y-6">
+                <div class="text-center max-w-lg mx-auto">
+                    <span class="bg-teal-100 text-teal-800 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide">Pair Work Speaking Practice</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">Career Conversation Lab 💬</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Practice asking and answering career questions with native audio modeling.</p>
+                </div>
+
+                <!-- Target Job Selector -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">1. Choose Industry:</label>
+                        <select id="speaking-industry-select" onchange="onSpeakingIndustryChange(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
+                            <option value="Office Work">🏢 Office Work</option>
+                            <option value="Food Service">🍔 Food Service</option>
+                            <option value="Travel Industry">✈️ Travel Industry</option>
+                            <option value="Entertainment Business">🎭 Entertainment Business</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">2. Choose Job Title:</label>
+                        <select id="speaking-job-select" onchange="loadSpeakingJob(this.value)" class="w-full bg-slate-50 border border-slate-300 rounded-2xl p-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 capitalize">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conversation Cards -->
+                <div class="space-y-4">
+                    
+                    <!-- Question Prompt -->
+                    <div class="bg-slate-50 border-2 border-indigo-100 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wide">Partner A (Question):</span>
+                            <p id="speaking-question-text" class="text-lg font-bold text-slate-900">"Which industry do you want to work in?"</p>
+                        </div>
+                        <button onclick="speakCurrentQuestion()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-xs transition-all">
+                            <i class="fa-solid fa-volume-high"></i> Listen Prompt
+                        </button>
+                    </div>
+
+                    <!-- Answer Response -->
+                    <div class="bg-slate-50 border-2 border-emerald-100 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wide">Partner B (Answer Template):</span>
+                            <p id="speaking-answer-text" class="text-lg font-bold text-slate-900">"I want to work in Office Work as an accountant."</p>
+                        </div>
+                        <button onclick="speakCurrentAnswer()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-xs transition-all">
+                            <i class="fa-solid fa-volume-high"></i> Listen Answer
+                        </button>
+                    </div>
+
+                    <!-- Personal Reason Frame -->
+                    <div class="bg-amber-50 border-2 border-amber-200 p-5 rounded-2xl space-y-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-500 text-lg"></i>
+                            <span class="text-xs font-bold text-amber-800 uppercase tracking-wide">Reason Sentence Practice:</span>
+                        </div>
+                        <p id="speaking-reason-text" class="text-base font-bold text-slate-800">
+                            "I want to be an accountant because I like working with numbers and budgets."
+                        </p>
+                        <button onclick="speakCurrentReason()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-volume-high"></i> Practice Reason Sentence
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            <p>Jobs & Industry Mind Map • ESL Beginner Level Vocabulary • 12 Target Professions</p>
+        </div>
+    </footer>
+
+    <script>
+        const jobsData = [
+            {
+                id: 'accountant',
+                title: 'accountant',
+                category: 'Office Work',
+                catId: 'office',
+                emoji: '📊',
+                pronunciation: '/əˈkaʊntənt/',
+                workplace: 'Corporate office / Financial firm',
+                duty: 'Manages money, taxes, and financial records.',
+                example: 'The accountant checks the company budget every month.',
+                clue: 'I work in an office and calculate money, budgets, and tax reports. Who am I?',
+                blankSentence: 'Our company hired an ________ to manage financial accounts.',
+                reason: 'I like working with numbers and financial budgets.'
+            },
+            {
+                id: 'cashier',
+                title: 'cashier',
+                category: 'Food Service',
+                catId: 'food',
+                emoji: '💵',
+                pronunciation: '/kæˈʃɪər/',
+                workplace: 'Supermarket, Cafe, or Restaurant',
+                duty: 'Takes payments and gives change at registers.',
+                example: 'The cashier rang up my meal order quickly.',
+                clue: 'I handle money payments, scan items, and give cash receipts at the register. Who am I?',
+                blankSentence: 'I paid the ________ at the restaurant checkout register.',
+                reason: 'I like interacting with customers and handling daily transactions.'
+            },
+            {
+                id: 'chef',
+                title: 'chef',
+                category: 'Food Service',
+                catId: 'food',
+                emoji: '👨‍🍳',
+                pronunciation: '/ʃef/',
+                workplace: 'Restaurant kitchen or Hotel',
+                duty: 'Cooks and prepares delicious meals.',
+                example: 'The chef cooked a delicious pasta for dinner.',
+                clue: 'I wear a chef hat and cook delicious meals in a busy kitchen. Who am I?',
+                blankSentence: 'The head ________ prepared a special seafood meal for dinner.',
+                reason: 'I love cooking delicious food and creating new recipes.'
+            },
+            {
+                id: 'dancer',
+                title: 'dancer',
+                category: 'Entertainment Business',
+                catId: 'entertainment',
+                emoji: '💃',
+                pronunciation: '/ˈdænsər/',
+                workplace: 'Theater, Dance studio, or Stage',
+                duty: 'Performs expressive movements to music.',
+                example: 'The dancer performed gracefully on stage.',
+                clue: 'I move my body gracefully to rhythm and music on stage. Who am I?',
+                blankSentence: 'She is a professional ________ in a famous ballet theater group.',
+                reason: 'I love expressively dancing to music on stage.'
+            },
+            {
+                id: 'flight_attendant',
+                title: 'flight attendant',
+                category: 'Travel Industry',
+                catId: 'travel',
+                emoji: '✈️',
+                pronunciation: '/ˈflaɪt əˌtendənt/',
+                workplace: 'Airplane cabin',
+                duty: 'Helps passengers and ensures airplane safety.',
+                example: 'The flight attendant served drinks on the flight.',
+                clue: 'I travel in airplanes, welcome passengers, and serve food in the cabin. Who am I?',
+                blankSentence: 'The ________ showed us safety rules before the airplane took off.',
+                reason: 'I like traveling to new cities and helping airline passengers.'
+            },
+            {
+                id: 'musician',
+                title: 'musician',
+                category: 'Entertainment Business',
+                catId: 'entertainment',
+                emoji: '🎸',
+                pronunciation: '/mjuːˈzɪʃn/',
+                workplace: 'Concert hall or Recording studio',
+                duty: 'Plays instruments and composes songs.',
+                example: 'The musician played a guitar solo for the audience.',
+                clue: 'I play instruments like guitar or piano and compose music. Who am I?',
+                blankSentence: 'A talented ________ played piano at the evening concert.',
+                reason: 'I love playing musical instruments and performing live.'
+            },
+            {
+                id: 'pilot',
+                title: 'pilot',
+                category: 'Travel Industry',
+                catId: 'travel',
+                emoji: '👨‍✈️',
+                pronunciation: '/ˈpaɪlət/',
+                workplace: 'Airplane cockpit',
+                duty: 'Operates and flies airplanes across destinations.',
+                example: 'The pilot flew the plane safely to Tokyo.',
+                clue: 'I sit in the airplane cockpit and fly planes across the sky. Who am I?',
+                blankSentence: 'The ________ announced that our plane was ready for landing.',
+                reason: 'I love flying airplanes and soaring above the clouds.'
+            },
+            {
+                id: 'receptionist',
+                title: 'receptionist',
+                category: 'Office Work',
+                catId: 'office',
+                emoji: '📞',
+                pronunciation: '/rɪˈsepʃənɪst/',
+                workplace: 'Office lobby or Medical clinic desk',
+                duty: 'Answers calls, greets visitors, and books appointments.',
+                example: 'The receptionist greeted us at the office lobby.',
+                clue: 'I answer phone calls and greet visitors at the front desk. Who am I?',
+                blankSentence: 'The ________ scheduled an appointment for me on Tuesday morning.',
+                reason: 'I enjoy welcoming visitors and organizing office communication.'
+            },
+            {
+                id: 'server',
+                title: 'server',
+                category: 'Food Service',
+                catId: 'food',
+                emoji: '🍽️',
+                pronunciation: '/ˈsɜːrvər/',
+                workplace: 'Restaurant dining room or Cafe',
+                duty: 'Takes food orders and serves meals to tables.',
+                example: 'Our server brought us fresh water and menus.',
+                clue: 'I take your order at the restaurant table and bring your food. Who am I?',
+                blankSentence: 'We gave our ________ a tip after enjoying our meal.',
+                reason: 'I enjoy serving tasty meals and making restaurant guests happy.'
+            },
+            {
+                id: 'singer',
+                title: 'singer',
+                category: 'Entertainment Business',
+                catId: 'entertainment',
+                emoji: '🎤',
+                pronunciation: '/ˈsɪŋər/',
+                workplace: 'Concert stage or Music studio',
+                duty: 'Sings songs with vocal talent.',
+                example: 'The singer sang a popular hit song.',
+                clue: 'I sing songs into a microphone on stage for musical shows. Who am I?',
+                blankSentence: 'The lead ________ sang three famous songs at the concert.',
+                reason: 'I love singing songs and sharing my voice with audiences.'
+            },
+            {
+                id: 'tour_guide',
+                title: 'tour guide',
+                category: 'Travel Industry',
+                catId: 'travel',
+                emoji: '🚩',
+                pronunciation: '/ˈtʊər ɡaɪd/',
+                workplace: 'Historical monuments and sights',
+                duty: 'Leads groups and explains historical facts.',
+                example: 'The tour guide showed us around the historic castle.',
+                clue: 'I show tourists famous sights and explain historic facts. Who am I?',
+                blankSentence: 'Our ________ told us fascinating stories about the city history.',
+                reason: 'I love guiding tourists and explaining historical monuments.'
+            },
+            {
+                id: 'web_designer',
+                title: 'web designer',
+                category: 'Office Work',
+                catId: 'office',
+                emoji: '💻',
+                pronunciation: '/ˈweb dɪˌzaɪnər/',
+                workplace: 'Office or Home tech studio',
+                duty: 'Creates layouts and designs websites.',
+                example: 'The web designer built an awesome online shop.',
+                clue: 'I sit at a computer and design website layouts for the internet. Who am I?',
+                blankSentence: 'The ________ built a modern website for our new company.',
+                reason: 'I love designing computer layouts and modern websites.'
+            }
+        ];
+
+        const state = {
+            stars: 0,
+            speechSpeed: 1.0,
+            activeTab: 'wordmap',
+            selectedFlashcardCat: 'All',
+            selectedJobIdForTap: null,
+            cardsRead: {},
+            wordMapPlacements: {}, // jobId -> category
+            activeSpeakingJobId: 'accountant'
+        };
+
+        const categories = [
+            'Office Work',
+            'Food Service',
+            'Travel Industry',
+            'Entertainment Business'
+        ];
+
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'correct') {
+                    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.2);
+                    });
+                } else if (type === 'star') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'wrong') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(120, now + 0.2);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            } catch (e) {
+                console.log("Audio FX suppressed:", e);
+            }
+        }
+
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast("Text-to-Speech audio is not supported in this browser.", "warning");
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.speechSpeed;
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function setSpeed(speed) {
+            playSound('click');
+            state.speechSpeed = speed;
+            document.getElementById('speed-slow-btn').className = speed === 0.75 
+                ? "px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all" 
+                : "px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900";
+            document.getElementById('speed-normal-btn').className = speed === 1.0 
+                ? "px-2.5 py-1 rounded-lg font-medium bg-white text-indigo-600 shadow-xs transition-all" 
+                : "px-2.5 py-1 rounded-lg font-medium transition-all text-slate-600 hover:text-slate-900";
+        }
+
+        function addStars(amount) {
+            state.stars += amount;
+            document.getElementById('star-count').innerText = state.stars;
+            playSound('star');
+            updateOverallProgress();
+        }
+
+        function updateOverallProgress() {
+            const wordMapPlaced = Object.keys(state.wordMapPlacements).length;
+            const cardsReadCount = Object.keys(state.cardsRead).length;
+            const totalTasks = jobsData.length * 2; // Word map + Flashcards
+            const currentDone = wordMapPlaced + cardsReadCount;
+            const percent = Math.min(100, Math.round((currentDone / totalTasks) * 100));
+
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = percent + '%';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 pointer-events-auto transition-all transform translate-y-2 opacity-0 text-white ${
+                type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-slate-800'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function initWordMap() {
+            renderWordMap();
+            setupDropZones();
+        }
+
+        function renderWordMap() {
+            const pool = document.getElementById('job-pool');
+            pool.innerHTML = '';
+
+            // Reset box counters
+            const categoryCounts = { 'Office Work': 0, 'Food Service': 0, 'Travel Industry': 0, 'Entertainment Business': 0 };
+
+            // Render targets drop zones
+            document.querySelectorAll('.industry-box').forEach(box => {
+                const cat = box.getAttribute('data-category');
+                const dropZone = box.querySelector('.drop-zone');
+                dropZone.innerHTML = '';
+            });
+
+            let unplacedCount = 0;
+
+            jobsData.forEach(job => {
+                const placedCat = state.wordMapPlacements[job.id];
+
+                const cardEl = document.createElement('div');
+                cardEl.id = `card-${job.id}`;
+                cardEl.draggable = true;
+                
+                const isSelected = state.selectedJobIdForTap === job.id;
+
+                cardEl.className = `px-3 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-2 cursor-grab active:cursor-grabbing border-2 transition-all shadow-xs select-none ${
+                    isSelected ? 'ring-4 ring-indigo-500 scale-105 border-indigo-600 bg-indigo-50' :
+                    placedCat ? 'bg-white border-slate-300 text-slate-800' :
+                    'bg-slate-50 hover:bg-indigo-50 border-slate-200 text-slate-800'
+                }`;
+
+                cardEl.innerHTML = `
+                    <span>${job.emoji}</span>
+                    <span class="capitalize">${job.title}</span>
+                    <button onclick="event.stopPropagation(); speak('${job.title}');" class="text-slate-400 hover:text-indigo-600 ml-1 p-0.5">
+                        <i class="fa-solid fa-volume-high text-[11px]"></i>
+                    </button>
+                `;
+
+                // Drag & Tap Event Handlers
+                cardEl.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', job.id);
+                    state.selectedJobIdForTap = job.id;
+                };
+
+                cardEl.onclick = () => {
+                    playSound('click');
+                    if (state.selectedJobIdForTap === job.id) {
+                        state.selectedJobIdForTap = null;
+                    } else {
+                        state.selectedJobIdForTap = job.id;
+                        speak(job.title);
+                        showToast(`Selected "${job.title}". Tap an industry box to place!`);
+                    }
+                    renderWordMap();
+                };
+
+                if (!placedCat) {
+                    unplacedCount++;
+                    pool.appendChild(cardEl);
+                } else {
+                    categoryCounts[placedCat]++;
+                    const targetBox = Array.from(document.querySelectorAll('.industry-box')).find(b => b.getAttribute('data-category') === placedCat);
+                    if (targetBox) {
+                        targetBox.querySelector('.drop-zone').appendChild(cardEl);
+                    }
+                }
+            });
+
+            document.getElementById('pool-count').innerText = unplacedCount;
+
+            // Update box header counters
+            document.querySelectorAll('.industry-box').forEach(box => {
+                const cat = box.getAttribute('data-category');
+                const counter = box.querySelector('.box-counter');
+                counter.innerText = `${categoryCounts[cat]} / 3`;
+            });
+
+            updateOverallProgress();
+        }
+
+        function setupDropZones() {
+            document.querySelectorAll('.industry-box').forEach(box => {
+                const cat = box.getAttribute('data-category');
+
+                box.ondragover = (e) => {
+                    e.preventDefault();
+                    box.classList.add('drop-target-active');
+                };
+
+                box.ondragleave = () => {
+                    box.classList.remove('drop-target-active');
+                };
+
+                box.ondrop = (e) => {
+                    e.preventDefault();
+                    box.classList.remove('drop-target-active');
+                    const jobId = e.dataTransfer.getData('text/plain') || state.selectedJobIdForTap;
+                    if (jobId) {
+                        placeJobInCategory(jobId, cat);
+                    }
+                };
+
+                box.onclick = () => {
+                    if (state.selectedJobIdForTap) {
+                        placeJobInCategory(state.selectedJobIdForTap, cat);
+                    }
+                };
+            });
+        }
+
+        function placeJobInCategory(jobId, category) {
+            playSound('click');
+            state.wordMapPlacements[jobId] = category;
+            state.selectedJobIdForTap = null;
+            renderWordMap();
+        }
+
+        function giveWordMapHint() {
+            // Find first unplaced or incorrectly placed job
+            const unplaced = jobsData.find(j => state.wordMapPlacements[j.id] !== j.category);
+            if (!unplaced) {
+                showToast("All jobs are already correctly placed!", "success");
+                return;
+            }
+
+            state.wordMapPlacements[unplaced.id] = unplaced.category;
+            playSound('star');
+            renderWordMap();
+            showToast(`Hint: "${unplaced.title}" belongs in ${unplaced.category}!`, "info");
+        }
+
+        function checkWordMapAnswers() {
+            const placedKeys = Object.keys(state.wordMapPlacements);
+            if (placedKeys.length < jobsData.length) {
+                showToast(`Please place all 12 job cards into the mind map first! (${placedKeys.length}/12 placed)`, "warning");
+                return;
+            }
+
+            let correctCount = 0;
+            jobsData.forEach(job => {
+                const isCorrect = state.wordMapPlacements[job.id] === job.category;
+                const cardEl = document.getElementById(`card-${job.id}`);
+                if (isCorrect) {
+                    correctCount++;
+                    if (cardEl) {
+                        cardEl.classList.add('border-emerald-500', 'bg-emerald-50');
+                    }
+                } else {
+                    if (cardEl) {
+                        cardEl.classList.add('border-rose-500', 'bg-rose-50', 'animate-shake');
+                    }
+                }
+            });
+
+            if (correctCount === jobsData.length) {
+                playSound('correct');
+                addStars(20);
+                confetti({ particleCount: 100, spread: 80 });
+                showToast("Perfect! Word Map completed perfectly! +20 Stars!", "success");
+            } else {
+                playSound('wrong');
+                showToast(`You got ${correctCount} of 12 correct. Incorrect placements highlighted in red!`, "warning");
+            }
+        }
+
+        function resetWordMap() {
+            playSound('click');
+            state.wordMapPlacements = {};
+            state.selectedJobIdForTap = null;
+            renderWordMap();
+            showToast("Word Map reset.");
+        }
+
+        function initFlashcards() {
+            renderFlashcardCategories();
+            renderFlashcards();
+        }
+
+        function renderFlashcardCategories() {
+            const pillsContainer = document.getElementById('flashcard-category-pills');
+            const catList = ['All', ...categories];
+
+            pillsContainer.innerHTML = catList.map(cat => `
+                <button onclick="setFlashcardCat('${cat}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    state.selectedFlashcardCat === cat 
+                    ? 'bg-indigo-600 text-white shadow-xs' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }">
+                    ${cat}
+                </button>
+            `).join('');
+        }
+
+        function setFlashcardCat(cat) {
+            playSound('click');
+            state.selectedFlashcardCat = cat;
+            renderFlashcardCategories();
+            renderFlashcards();
+        }
+
+        function renderFlashcards() {
+            const grid = document.getElementById('flashcards-grid');
+            grid.innerHTML = '';
+
+            const filtered = jobsData.filter(j => state.selectedFlashcardCat === 'All' || j.category === state.selectedFlashcardCat);
+
+            filtered.forEach(job => {
+                const card = document.createElement('div');
+                card.className = "bg-white border-2 border-slate-200 hover:border-indigo-400 rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-all space-y-4 group";
+
+                const badgeBg = job.catId === 'office' ? 'bg-office-100 text-office-800' :
+                                job.catId === 'food' ? 'bg-food-100 text-food-800' :
+                                job.catId === 'travel' ? 'bg-travel-100 text-travel-800' :
+                                'bg-entertainment-100 text-entertainment-800';
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-4xl group-hover:scale-110 transition-transform">${job.emoji}</span>
+                            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full ${badgeBg}">${job.category}</span>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-xl font-extrabold text-slate-900 capitalize">${job.title}</h3>
+                                <button onclick="speakFlashcard('${job.id}')" class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white flex items-center justify-center transition-all shadow-xs">
+                                    <i class="fa-solid fa-volume-high text-sm"></i>
+                                </button>
+                            </div>
+                            <span class="text-xs font-mono text-slate-400 block mt-0.5">${job.pronunciation}</span>
+                        </div>
+
+                        <div class="space-y-2 text-xs">
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                <span class="font-bold text-slate-500 uppercase text-[10px] block">Workplace</span>
+                                <span class="font-semibold text-slate-800">${job.workplace}</span>
+                            </div>
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                <span class="font-bold text-slate-500 uppercase text-[10px] block">Key Duty</span>
+                                <span class="font-medium text-slate-700">${job.duty}</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50/60 border border-indigo-100 p-2.5 rounded-xl text-xs space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-indigo-600 uppercase">Example Sentence</span>
+                                <button onclick="speak('${job.example.replace(/'/g, "\\'")}')" class="text-indigo-600 text-[11px] font-semibold hover:underline">
+                                    <i class="fa-solid fa-volume-low"></i>
+                                </button>
+                            </div>
+                            <p class="text-slate-700 italic font-medium">"${job.example}"</p>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function speakFlashcard(jobId) {
+            const job = jobsData.find(j => j.id === jobId);
+            if (job) {
+                speak(job.title);
+                if (!state.cardsRead[jobId]) {
+                    state.cardsRead[jobId] = true;
+                    addStars(2);
+                }
+            }
+        }
+
+        let riddleQuestions = [];
+        let riddleState = { current: 0, score: 0, streak: 0 };
+
+        function startRiddleGame() {
+            riddleQuestions = [...jobsData].sort(() => 0.5 - Math.random());
+            riddleState = { current: 0, score: 0, streak: 0 };
+
+            document.getElementById('riddle-start-view').classList.add('hidden');
+            document.getElementById('riddle-summary-view').classList.add('hidden');
+            document.getElementById('riddle-playing-view').classList.remove('hidden');
+
+            renderRiddleQuestion();
+        }
+
+        function renderRiddleQuestion() {
+            const currentJob = riddleQuestions[riddleState.current];
+
+            document.getElementById('riddle-q-num').innerText = `Question ${riddleState.current + 1} of ${riddleQuestions.length}`;
+            document.getElementById('riddle-streak-badge').innerText = `🔥 Streak: ${riddleState.streak}`;
+            document.getElementById('riddle-score-badge').innerText = `Score: ${riddleState.score}`;
+            document.getElementById('riddle-clue-text').innerText = `"${currentJob.clue}"`;
+
+            // Choices
+            const wrongChoices = jobsData.filter(j => j.id !== currentJob.id).sort(() => 0.5 - Math.random()).slice(0, 3);
+            const choices = [currentJob, ...wrongChoices].sort(() => 0.5 - Math.random());
+
+            const optionsGrid = document.getElementById('riddle-options-grid');
+            optionsGrid.innerHTML = choices.map(choice => `
+                <button onclick="handleRiddleAnswer('${choice.id}')" class="bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-500 p-4 rounded-2xl text-left font-bold text-slate-800 flex items-center gap-3 transition-all active:scale-95 shadow-xs">
+                    <span class="text-2xl">${choice.emoji}</span>
+                    <span class="text-base capitalize">${choice.title}</span>
+                </button>
+            `).join('');
+
+            speak(`Riddle clue: ${currentJob.clue}`);
+        }
+
+        function speakRiddleClue() {
+            speak(riddleQuestions[riddleState.current].clue);
+        }
+
+        function handleRiddleAnswer(selectedId) {
+            const currentJob = riddleQuestions[riddleState.current];
+            if (selectedId === currentJob.id) {
+                playSound('correct');
+                riddleState.score++;
+                riddleState.streak++;
+                addStars(5);
+                showToast("Correct! +5 Stars!", "success");
+            } else {
+                playSound('wrong');
+                riddleState.streak = 0;
+                showToast(`Not quite! That was a ${currentJob.title}.`, "warning");
+            }
+
+            riddleState.current++;
+            if (riddleState.current < riddleQuestions.length) {
+                setTimeout(renderRiddleQuestion, 500);
+            } else {
+                setTimeout(finishRiddleGame, 500);
+            }
+        }
+
+        function finishRiddleGame() {
+            document.getElementById('riddle-playing-view').classList.add('hidden');
+            document.getElementById('riddle-summary-view').classList.remove('hidden');
+
+            const totalStars = riddleState.score * 5;
+            document.getElementById('riddle-final-score').innerText = `You scored ${riddleState.score} out of ${riddleQuestions.length}!`;
+            document.getElementById('riddle-stars-earned').innerText = totalStars;
+
+            if (riddleState.score >= 8) {
+                confetti({ particleCount: 80, spread: 70 });
+            }
+        }
+
+        let blanksSelections = {};
+
+        function initBlanksGame() {
+            const bankContainer = document.getElementById('blanks-word-bank');
+            const targetWords = jobsData.map(q => q.title).sort();
+
+            bankContainer.innerHTML = targetWords.map(w => `
+                <span onclick="speak('${w}')" class="bg-white border border-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-xs cursor-pointer hover:bg-indigo-600 hover:text-white transition-all">
+                    ${w} <i class="fa-solid fa-volume-low text-[10px] ml-1"></i>
+                </span>
+            `).join('');
+
+            const questionsList = document.getElementById('blanks-questions-list');
+            questionsList.innerHTML = jobsData.map((q, idx) => `
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-slate-800 flex-1">
+                        ${idx + 1}. ${q.blankSentence.replace('________', `<span class="inline-block border-b-2 border-indigo-600 min-w-[120px] text-indigo-600 text-center font-bold px-2">${blanksSelections[q.id] || '_______'}</span>`)}
+                    </p>
+                    <select onchange="blanksSelections['${q.id}'] = this.value; renderBlanksSentence('${q.id}');" class="bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-600 capitalize">
+                        <option value="">-- Choose Job --</option>
+                        ${targetWords.map(w => `<option value="${w}" ${blanksSelections[q.id] === w ? 'selected' : ''}>${w}</option>`).join('')}
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function renderBlanksSentence(id) {
+            initBlanksGame();
+        }
+
+        function checkFillBlanks() {
+            let correct = 0;
+            jobsData.forEach(q => {
+                if (blanksSelections[q.id] === q.title) {
+                    correct++;
+                }
+            });
+
+            if (correct === jobsData.length) {
+                playSound('correct');
+                addStars(20);
+                showToast("Perfect score! All 12 sentences correct! +20 Stars!", "success");
+                confetti({ particleCount: 90, spread: 70 });
+            } else {
+                playSound('wrong');
+                showToast(`You got ${correct} of ${jobsData.length} correct. Keep trying!`, "warning");
+            }
+        }
+
+        function initSpeakingLab() {
+            onSpeakingIndustryChange('Office Work');
+        }
+
+        function onSpeakingIndustryChange(industry) {
+            const select = document.getElementById('speaking-job-select');
+            const filteredJobs = jobsData.filter(j => j.category === industry);
+
+            select.innerHTML = filteredJobs.map(j => `
+                <option value="${j.id}">${j.emoji} ${j.title.toUpperCase()}</option>
+            `).join('');
+
+            if (filteredJobs.length > 0) {
+                loadSpeakingJob(filteredJobs[0].id);
+            }
+        }
+
+        function loadSpeakingJob(jobId) {
+            state.activeSpeakingJobId = jobId;
+            const job = jobsData.find(j => j.id === jobId);
+            if (!job) return;
+
+            const indefArticle = ['a','e','i','o','u'].includes(job.title[0]) ? 'an' : 'a';
+
+            document.getElementById('speaking-question-text').innerText = `"Which industry do you want to work in?"`;
+            document.getElementById('speaking-answer-text').innerText = `"I want to work in ${job.category} as ${indefArticle} ${job.title}."`;
+            document.getElementById('speaking-reason-text').innerText = `"I want to be ${indefArticle} ${job.title} because ${job.reason}"`;
+        }
+
+        function speakCurrentQuestion() {
+            speak("Which industry do you want to work in?");
+        }
+
+        function speakCurrentAnswer() {
+            const job = jobsData.find(j => j.id === state.activeSpeakingJobId);
+            if (job) {
+                const indefArticle = ['a','e','i','o','u'].includes(job.title[0]) ? 'an' : 'a';
+                speak(`I want to work in ${job.category} as ${indefArticle} ${job.title}.`);
+            }
+        }
+
+        function speakCurrentReason() {
+            const job = jobsData.find(j => j.id === state.activeSpeakingJobId);
+            if (job) {
+                const indefArticle = ['a','e','i','o','u'].includes(job.title[0]) ? 'an' : 'a';
+                speak(`I want to be ${indefArticle} ${job.title} because ${job.reason}`);
+            }
+        }
+
+        function switchTab(tabKey) {
+            playSound('click');
+            state.activeTab = tabKey;
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all";
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+            const activeBtn = document.getElementById(`tab-${tabKey}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-xs transition-all";
+            }
+
+            const activeContent = document.getElementById(`content-${tabKey}`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+
+            if (tabKey === 'wordmap') initWordMap();
+            if (tabKey === 'flashcards') initFlashcards();
+            if (tabKey === 'riddles') startRiddleGame();
+            if (tabKey === 'blanks') initBlanksGame();
+            if (tabKey === 'speaking') initSpeakingLab();
+        }
+
+        window.onload = function() {
+            initWordMap();
+            updateOverallProgress();
+        };
+    </script>
+</body>
+</html>
