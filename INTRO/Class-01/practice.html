@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammar World: My, Your, His, Her</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Outfit', sans-serif;
+            background-color: #F3F4F6;
+            color: #1F2937;
+            user-select: none;
+        }
+
+        /* Perspective and 3D card flip effects */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Smooth bounce & pop animations */
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Pulse glow for target words */
+        .grammar-highlight-my {
+            background-color: #FEF08A;
+            color: #854D0E;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .grammar-highlight-your {
+            background-color: #BAE6FD;
+            color: #0369A1;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .grammar-highlight-his {
+            background-color: #FED7AA;
+            color: #C2410C;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+        .grammar-highlight-her {
+            background-color: #FBCFE8;
+            color: #BE185D;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F3F4F6;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+
+    <header class="bg-white border-b-4 border-indigo-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- App Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-md transform -rotate-3">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Grammar World
+                    </h1>
+                    <p class="text-xs text-slate-500 font-semibold">Possessive Adjectives: My, Your, His, Her</p>
+                </div>
+            </div>
+
+            <!-- Global Score, Streak & Audio Controls -->
+            <div class="flex items-center gap-3 md:gap-6 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
+                <!-- Stars / Points -->
+                <div class="flex items-center gap-1.5" title="Total Stars Earned">
+                    <i class="fa-solid fa-star text-amber-400 text-lg md:text-xl animate-bounce"></i>
+                    <span id="global-stars" class="font-bold text-slate-800 text-lg">0</span>
+                </div>
+
+                <div class="h-6 w-px bg-slate-300"></div>
+
+                <!-- Streak -->
+                <div class="flex items-center gap-1.5" title="Current Streak">
+                    <i class="fa-solid fa-fire text-orange-500 text-lg md:text-xl"></i>
+                    <span id="global-streak" class="font-bold text-slate-800 text-lg">0</span>
+                </div>
+
+                <div class="h-6 w-px bg-slate-300"></div>
+
+                <!-- Sound Mute Toggle -->
+                <button id="audio-toggle-btn" onclick="toggleAudio()" class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition flex items-center justify-center" title="Toggle Sound Effects">
+                    <i id="audio-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="max-w-6xl mx-auto px-4 mt-1 overflow-x-auto">
+            <div class="flex gap-2 border-b border-slate-200 min-w-max pb-1">
+                <button onclick="switchTab('guide')" id="tab-btn-guide" class="nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
+                    <i class="fa-solid fa-book-open"></i> 📖 Grammar Guide
+                </button>
+                <button onclick="switchTab('textbook')" id="tab-btn-textbook" class="nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                    <i class="fa-solid fa-pen-to-square"></i> ✏️ Textbook Exercises
+                </button>
+                <button onclick="switchTab('memory')" id="tab-btn-memory" class="nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                    <i class="fa-solid fa-clone"></i> 🃏 Memory Match Game
+                </button>
+                <button onclick="switchTab('roleplay')" id="tab-btn-roleplay" class="nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                    <i class="fa-solid fa-comments"></i> 💬 Interactive Roleplay
+                </button>
+                <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                    <i class="fa-solid fa-trophy"></i> 🏆 Quiz Challenge
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+
+        <!-- SECTION 1: GRAMMAR GUIDE -->
+        <section id="section-guide" class="space-y-6">
+            <!-- Header banner -->
+            <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold tracking-wider uppercase mb-3 inline-block">Unit 2 Grammar Lesson</span>
+                    <h2 class="text-3xl md:text-4xl font-extrabold mb-2">Possessive Adjectives</h2>
+                    <p class="text-indigo-100 text-base md:text-lg">Learn how to talk about names and people using <span class="underline underline-offset-4 font-bold">my</span>, <span class="underline underline-offset-4 font-bold">your</span>, <span class="underline underline-offset-4 font-bold">his</span>, and <span class="underline underline-offset-4 font-bold">her</span>!</p>
+                </div>
+                <div class="absolute right-4 bottom-0 opacity-20 text-9xl pointer-events-none hidden md:block">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+            </div>
+
+            <!-- Grammar Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- MY -->
+                <div class="bg-white rounded-2xl p-5 border-2 border-yellow-300 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded-full">1st Person (Me)</span>
+                        <button onclick="speakText('My name is Carlos.')" class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center justify-center transition" title="Listen">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-3xl font-extrabold text-yellow-600 mb-1">my</h3>
+                    <p class="text-xs text-slate-500 mb-4">Talking about yourself 🙋</p>
+                    <div class="bg-yellow-50 rounded-xl p-3 border border-yellow-200">
+                        <p class="text-sm font-medium">"What's your name?"</p>
+                        <p class="text-sm font-bold text-yellow-900 mt-1">➔ "<span class="grammar-highlight-my">My</span> name's Carlos."</p>
+                    </div>
+                </div>
+
+                <!-- YOUR -->
+                <div class="bg-white rounded-2xl p-5 border-2 border-sky-300 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase bg-sky-100 text-sky-800 px-2.5 py-1 rounded-full">2nd Person (You)</span>
+                        <button onclick="speakText('What is your name?')" class="w-8 h-8 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200 flex items-center justify-center transition" title="Listen">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-3xl font-extrabold text-sky-600 mb-1">your</h3>
+                    <p class="text-xs text-slate-500 mb-4">Asking the person in front of you 🫵</p>
+                    <div class="bg-sky-50 rounded-xl p-3 border border-sky-200">
+                        <p class="text-sm font-bold text-sky-900">➔ "What's <span class="grammar-highlight-your">your</span> name?"</p>
+                        <p class="text-xs text-slate-500 mt-2">Asking someone directly.</p>
+                    </div>
+                </div>
+
+                <!-- HIS -->
+                <div class="bg-white rounded-2xl p-5 border-2 border-orange-300 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase bg-orange-100 text-orange-800 px-2.5 py-1 rounded-full">3rd Person (Male ♂️)</span>
+                        <button onclick="speakText('What is his name? His name is Joshua.')" class="w-8 h-8 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 flex items-center justify-center transition" title="Listen">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-3xl font-extrabold text-orange-600 mb-1">his</h3>
+                    <p class="text-xs text-slate-500 mb-4">Talking about a boy or man 👦</p>
+                    <div class="bg-orange-50 rounded-xl p-3 border border-orange-200">
+                        <p class="text-sm font-medium">"What's <span class="grammar-highlight-his">his</span> name?"</p>
+                        <p class="text-sm font-bold text-orange-900 mt-1">➔ "<span class="grammar-highlight-his">His</span> name's Joshua."</p>
+                    </div>
+                </div>
+
+                <!-- HER -->
+                <div class="bg-white rounded-2xl p-5 border-2 border-pink-300 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase bg-pink-100 text-pink-800 px-2.5 py-1 rounded-full">3rd Person (Female ♀️)</span>
+                        <button onclick="speakText('What is her name? Her name is Isabella.')" class="w-8 h-8 rounded-full bg-pink-100 text-pink-700 hover:bg-pink-200 flex items-center justify-center transition" title="Listen">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+                    <h3 class="text-3xl font-extrabold text-pink-600 mb-1">her</h3>
+                    <p class="text-xs text-slate-500 mb-4">Talking about a girl or woman 👧</p>
+                    <div class="bg-pink-50 rounded-xl p-3 border border-pink-200">
+                        <p class="text-sm font-medium">"What's <span class="grammar-highlight-her">her</span> name?"</p>
+                        <p class="text-sm font-bold text-pink-900 mt-1">➔ "<span class="grammar-highlight-her">Her</span> name's Isabella."</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contraction Grammar Note -->
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 md:p-5 flex items-center gap-4">
+                <div class="w-12 h-12 bg-amber-400 text-white rounded-2xl flex items-center justify-center text-xl shrink-0 font-bold">
+                    💡
+                </div>
+                <div>
+                    <h4 class="font-bold text-amber-900 text-base">Grammar Note: Short Forms (Contractions)</h4>
+                    <p class="text-sm text-amber-800 mt-0.5">
+                        <span class="font-bold bg-amber-200 px-2 py-0.5 rounded">What's</span> = <span class="font-semibold">What is</span>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <span class="font-bold bg-amber-200 px-2 py-0.5 rounded">name's</span> = <span class="font-semibold">name is</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Character Roster Interactive Gallery -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-indigo-500"></i> Meet the Characters (Tap to hear)
+                </h3>
+                <div id="character-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    <!-- Characters will be dynamically injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: TEXTBOOK EXERCISES -->
+        <section id="section-textbook" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 md:p-8 border-2 border-indigo-100 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-6">
+                    <div>
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Textbook Page 12</span>
+                        <h2 class="text-2xl font-bold text-slate-800 mt-1">Activity A: Complete the Conversations</h2>
+                        <p class="text-sm text-slate-500">Choose the correct possessive adjective: <strong class="text-indigo-600">my, your, his, her</strong>.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="resetTextbookExercise()" class="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold text-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                        <button onclick="checkTextbookAnswers()" class="px-5 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold text-sm transition shadow-md flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> Check Answers
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Exercise Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Exercise 1: Handshake Scene -->
+                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="font-bold text-lg text-indigo-900 flex items-center gap-2">
+                                    <span class="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                                    Conversation 1 (Handshake Scene)
+                                </span>
+                                <button onclick="playConversationAudio(1)" class="px-3 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-volume-high"></i> Listen
+                                </button>
+                            </div>
+
+                            <!-- Interactive SVG Artwork for Conversation 1 -->
+                            <div id="artwork-ex1" class="w-full h-44 bg-blue-100 rounded-xl mb-4 overflow-hidden relative border border-blue-200 flex items-center justify-center p-2">
+                                <!-- SVG artwork populated via JS -->
+                            </div>
+
+                            <!-- Conversation Text 1 -->
+                            <div class="space-y-3 font-medium text-slate-800 text-base">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-indigo-600 w-6">A:</span>
+                                    <span>Hello. What's</span>
+                                    <select id="ex1-blank1" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="my">my</option>
+                                        <option value="your">your</option>
+                                        <option value="his">his</option>
+                                        <option value="her">her</option>
+                                    </select>
+                                    <span>name?</span>
+                                </div>
+
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-purple-600 w-6">B:</span>
+                                    <span>Hi.</span>
+                                    <select id="ex1-blank2" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="My">My</option>
+                                        <option value="Your">Your</option>
+                                        <option value="His">His</option>
+                                        <option value="Her">Her</option>
+                                    </select>
+                                    <span>name is Carlos.</span>
+                                </div>
+
+                                <div class="flex items-center gap-2 pl-8">
+                                    <span>What's</span>
+                                    <select id="ex1-blank3" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="my">my</option>
+                                        <option value="your">your</option>
+                                        <option value="his">his</option>
+                                        <option value="her">her</option>
+                                    </select>
+                                    <span>name?</span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-indigo-600 w-6">A:</span>
+                                    <select id="ex1-blank4" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="My">My</option>
+                                        <option value="Your">Your</option>
+                                        <option value="His">His</option>
+                                        <option value="Her">Her</option>
+                                    </select>
+                                    <span>name is Akina.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Message Box 1 -->
+                        <div id="ex1-feedback" class="mt-4 hidden p-3 rounded-xl text-xs font-bold"></div>
+                    </div>
+
+                    <!-- Exercise 2: Group Scene -->
+                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="font-bold text-lg text-indigo-900 flex items-center gap-2">
+                                    <span class="w-7 h-7 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                                    Conversation 2 (Group Scene)
+                                </span>
+                                <button onclick="playConversationAudio(2)" class="px-3 py-1.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-volume-high"></i> Listen
+                                </button>
+                            </div>
+
+                            <!-- Interactive SVG Artwork for Conversation 2 -->
+                            <div id="artwork-ex2" class="w-full h-44 bg-purple-100 rounded-xl mb-4 overflow-hidden relative border border-purple-200 flex items-center justify-center p-2">
+                                <!-- SVG artwork populated via JS -->
+                            </div>
+
+                            <!-- Conversation Text 2 -->
+                            <div class="space-y-3 font-medium text-slate-800 text-base">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-indigo-600 w-6">A:</span>
+                                    <span>What's</span>
+                                    <select id="ex2-blank1" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="my">my</option>
+                                        <option value="your">your</option>
+                                        <option value="his">his</option>
+                                        <option value="her">her</option>
+                                    </select>
+                                    <span>name?</span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-purple-600 w-6">B:</span>
+                                    <select id="ex2-blank2" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="My">My</option>
+                                        <option value="Your">Your</option>
+                                        <option value="His">His</option>
+                                        <option value="Her">Her</option>
+                                    </select>
+                                    <span>name is Ethan.</span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-indigo-600 w-6">A:</span>
+                                    <span>And what's</span>
+                                    <select id="ex2-blank3" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="my">my</option>
+                                        <option value="your">your</option>
+                                        <option value="his">his</option>
+                                        <option value="her">her</option>
+                                    </select>
+                                    <span>name?</span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-purple-600 w-6">B:</span>
+                                    <select id="ex2-blank4" class="ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600">
+                                        <option value="">---</option>
+                                        <option value="My">My</option>
+                                        <option value="Your">Your</option>
+                                        <option value="His">His</option>
+                                        <option value="Her">Her</option>
+                                    </select>
+                                    <span>name is Caroline.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Message Box 2 -->
+                        <div id="ex2-feedback" class="mt-4 hidden p-3 rounded-xl text-xs font-bold"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: MEMORY MATCH GAME -->
+        <section id="section-memory" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 md:p-8 border-2 border-indigo-100 shadow-sm">
+                <!-- Game Header -->
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-6">
+                    <div>
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Memory Challenge</span>
+                        <h2 class="text-2xl font-bold text-slate-800 mt-1">"Who's Who?" Memory Match</h2>
+                        <p class="text-sm text-slate-500">Match character cards with their correct possessive adjective sentence!</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-center bg-slate-100 px-4 py-2 rounded-xl">
+                            <span class="text-xs text-slate-500 font-bold block">MOVES</span>
+                            <span id="memory-moves" class="text-xl font-extrabold text-indigo-600">0</span>
+                        </div>
+                        <button onclick="initMemoryGame()" class="px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 rounded-xl font-bold text-sm transition shadow-md flex items-center gap-2">
+                            <i class="fa-solid fa-rotate"></i> Restart Game
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Memory Grid -->
+                <div id="memory-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <!-- Cards dynamically created in JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: INTERACTIVE ROLEPLAY -->
+        <section id="section-roleplay" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 md:p-8 border-2 border-indigo-100 shadow-sm max-w-3xl mx-auto">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
+                    <div>
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Live Conversation</span>
+                        <h2 class="text-2xl font-bold text-slate-800 mt-1">Chat Simulator with Alex</h2>
+                        <p class="text-sm text-slate-500">Practice introducing people in real-time!</p>
+                    </div>
+                    <button onclick="restartRoleplay()" class="px-3.5 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i> Restart Chat
+                    </button>
+                </div>
+
+                <!-- Chat Box Screen -->
+                <div id="chat-messages" class="bg-slate-50 rounded-2xl p-4 md:p-6 min-h-[360px] max-h-[480px] overflow-y-auto space-y-4 border border-slate-200 mb-4">
+                    <!-- Messages will be injected here -->
+                </div>
+
+                <!-- Interactive Response Options Area -->
+                <div id="chat-options-container" class="space-y-2">
+                    <!-- Buttons will be dynamically generated -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: QUIZ CHALLENGE -->
+        <section id="section-quiz" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 md:p-8 border-2 border-indigo-100 shadow-sm max-w-3xl mx-auto">
+                <!-- Quiz Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="quiz-question-number" class="text-xs font-bold uppercase text-indigo-600">Question 1 of 6</span>
+                        <span id="quiz-score-badge" class="text-xs font-extrabold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">Score: 0</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                        <div id="quiz-progress-fill" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full transition-all duration-300 w-1/6"></div>
+                    </div>
+                </div>
+
+                <!-- Active Question Container -->
+                <div id="quiz-card" class="bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-6">
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <div id="quiz-image-container" class="w-24 h-24 rounded-2xl bg-indigo-100 p-2 shrink-0 border border-indigo-200 flex items-center justify-center">
+                            <!-- SVG Avatar inserted here -->
+                        </div>
+                        <div class="flex-1">
+                            <h3 id="quiz-question-text" class="text-xl font-bold text-slate-800">Loading Question...</h3>
+                            <p id="quiz-question-sub" class="text-sm text-slate-500 mt-1">Select the correct option below:</p>
+                        </div>
+                        <button onclick="speakQuizQuestion()" class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Option buttons generated via JS -->
+                    </div>
+
+                    <!-- Explanation Box -->
+                    <div id="quiz-explanation-box" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+                </div>
+
+                <!-- Next Question Button -->
+                <div class="mt-6 flex justify-end">
+                    <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden px-6 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold shadow-md transition flex items-center gap-2">
+                        Next Question <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CERTIFICATE MODAL -->
+    <div id="certificate-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 border-4 border-amber-300 shadow-2xl relative animate-pop text-center space-y-4">
+            <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner border-2 border-amber-300">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <div>
+                <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600">Certificate of Completion</span>
+                <h3 class="text-3xl font-extrabold text-slate-800 mt-1">Grammar Master!</h3>
+                <p class="text-slate-500 text-sm">You have successfully mastered <span class="font-bold text-indigo-600">My, Your, His, Her</span>!</p>
+            </div>
+
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left space-y-2">
+                <label class="text-xs font-bold text-slate-500 uppercase block">Learner Name:</label>
+                <input type="text" id="certificate-name-input" placeholder="Enter your name" value="Awesome Learner" class="w-full bg-white border-2 border-indigo-200 rounded-xl px-4 py-2 font-bold text-slate-800 focus:outline-none focus:border-indigo-500">
+                
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-2 border-t border-slate-200 text-center">
+                    <div>
+                        <span class="text-xs text-slate-400 font-bold block">FINAL SCORE</span>
+                        <span id="modal-final-score" class="text-2xl font-extrabold text-indigo-600">100%</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 font-bold block">STAR RANK</span>
+                        <span id="modal-star-rank" class="text-2xl font-extrabold text-amber-500">⭐⭐⭐</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-center pt-2">
+                <button onclick="closeCertificateModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold text-sm transition">
+                    Close
+                </button>
+                <button onclick="restartQuizFull()" class="px-6 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold text-sm shadow-md transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> Practice Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 font-semibold mt-auto">
+        <p>Interactive ESL Learning Application • Unit 2 Possessive Adjectives Guide & Practice</p>
+    </footer>
+
+    <script>
+        // Global State
+        let currentTab = 'guide';
+        let globalStars = 0;
+        let globalStreak = 0;
+        let isAudioMuted = false;
+
+        // Web Audio API Synthesizer
+        class AudioSynth {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+            }
+            playCorrect() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            }
+            playIncorrect() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(140, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            playFlip() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(500, now + 0.08);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+            playVictory() {
+                if (isAudioMuted) return;
+                this.init();
+                if (!this.ctx) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+                notes.forEach((freq, idx) => {
+                    const now = this.ctx.currentTime + idx * 0.09;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                });
+            }
+        }
+        const synth = new AudioSynth();
+
+        function speakText(text, rate = 0.9) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = rate;
+            const voices = window.speechSynthesis.getVoices();
+            const englishVoice = voices.find(v => v.lang.startsWith('en-US') || v.lang.startsWith('en'));
+            if (englishVoice) utterance.voice = englishVoice;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('audio-icon');
+            const btn = document.getElementById('audio-toggle-btn');
+            if (isAudioMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+                btn.className = 'w-9 h-9 rounded-xl bg-slate-200 text-slate-500 hover:bg-slate-300 transition flex items-center justify-center';
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-indigo-700';
+                btn.className = 'w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition flex items-center justify-center';
+            }
+        }
+
+        function addPoints(pts) {
+            globalStars += pts;
+            globalStreak += 1;
+            document.getElementById('global-stars').textContent = globalStars;
+            document.getElementById('global-streak').textContent = globalStreak;
+        }
+
+        function getAvatarSVG(name, size = 64) {
+            const charKey = name.toLowerCase();
+            const svgs = {
+                carlos: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-blue-100 border-2 border-blue-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#E0F2FE"/>
+                    <circle cx="50" cy="45" r="22" fill="#FDBA74"/>
+                    <path d="M 28 42 C 28 20, 72 20, 72 42 C 65 30, 35 30, 28 42 Z" fill="#1E293B"/>
+                    <circle cx="43" cy="42" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="42" r="2.5" fill="#0F172A"/>
+                    <path d="M 42 52 Q 50 58 58 52" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#2563EB"/>
+                </svg>`,
+                akina: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-pink-100 border-2 border-pink-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#FCE7F3"/>
+                    <circle cx="50" cy="45" r="22" fill="#FED7AA"/>
+                    <path d="M 24 45 C 24 18, 76 18, 76 45 C 76 55, 72 48, 70 38 C 60 22, 40 22, 30 38 C 28 48, 24 55, 24 45 Z" fill="#0F172A"/>
+                    <circle cx="42" cy="43" r="2.5" fill="#0F172A"/>
+                    <circle cx="58" cy="43" r="2.5" fill="#0F172A"/>
+                    <circle cx="38" cy="48" r="3" fill="#F43F5E" opacity="0.4"/>
+                    <circle cx="62" cy="48" r="3" fill="#F43F5E" opacity="0.4"/>
+                    <path d="M 43 53 Q 50 58 57 53" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#EC4899"/>
+                </svg>`,
+                joshua: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-amber-100 border-2 border-amber-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#FEF3C7"/>
+                    <circle cx="50" cy="45" r="22" fill="#FDBA74"/>
+                    <path d="M 26 40 C 26 18, 74 18, 74 40 C 68 28, 55 26, 50 32 C 45 26, 32 28, 26 40 Z" fill="#78350F"/>
+                    <circle cx="43" cy="42" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="42" r="2.5" fill="#0F172A"/>
+                    <path d="M 42 51 Q 50 57 58 51" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#EAB308"/>
+                </svg>`,
+                isabella: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-emerald-100 border-2 border-emerald-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#D1FAE5"/>
+                    <circle cx="50" cy="45" r="22" fill="#FED7AA"/>
+                    <path d="M 22 70 C 20 30, 30 18, 50 18 C 70 18, 80 30, 78 70 C 72 65, 72 40, 70 38 C 60 22, 40 22, 30 38 C 28 40, 28 65, 22 70 Z" fill="#451A03"/>
+                    <circle cx="43" cy="42" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="42" r="2.5" fill="#0F172A"/>
+                    <path d="M 43 52 Q 50 58 57 52" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#10B981"/>
+                </svg>`,
+                ethan: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-orange-100 border-2 border-orange-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#FFEDD5"/>
+                    <circle cx="50" cy="45" r="22" fill="#FED7AA"/>
+                    <path d="M 25 40 C 22 22, 40 16, 50 20 C 60 16, 78 22, 75 40 C 70 30, 60 26, 50 28 C 40 26, 30 30, 25 40 Z" fill="#B45309"/>
+                    <circle cx="43" cy="43" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="43" r="2.5" fill="#0F172A"/>
+                    <path d="M 42 52 Q 50 58 58 52" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#EF4444"/>
+                </svg>`,
+                caroline: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-teal-100 border-2 border-teal-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#CCFBF1"/>
+                    <circle cx="50" cy="45" r="22" fill="#FDBA74"/>
+                    <path d="M 24 50 C 22 25, 30 18, 50 18 C 70 18, 78 25, 76 50 C 72 48, 70 38, 50 28 C 30 38, 28 48, 24 50 Z" fill="#18181B"/>
+                    <circle cx="43" cy="42" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="42" r="2.5" fill="#0F172A"/>
+                    <path d="M 43 52 Q 50 57 57 52" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#14B8A6"/>
+                </svg>`,
+                alex: `<svg viewBox="0 0 100 100" class="w-full h-full rounded-full bg-indigo-100 border-2 border-indigo-400 p-1">
+                    <circle cx="50" cy="50" r="45" fill="#E0E7FF"/>
+                    <circle cx="50" cy="45" r="22" fill="#FED7AA"/>
+                    <path d="M 25 35 C 30 20, 70 20, 75 35 Z" fill="#4338CA"/>
+                    <circle cx="43" cy="42" r="2.5" fill="#0F172A"/>
+                    <circle cx="57" cy="42" r="2.5" fill="#0F172A"/>
+                    <path d="M 43 52 Q 50 57 57 52" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 25 88 C 25 68, 75 68, 75 88 Z" fill="#4F46E5"/>
+                </svg>`
+            };
+            return svgs[charKey] || svgs['carlos'];
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            const tabs = ['guide', 'textbook', 'memory', 'roleplay', 'quiz'];
+            tabs.forEach(t => {
+                const section = document.getElementById(`section-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabId) {
+                    section.classList.remove('hidden');
+                    btn.className = 'nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm';
+                } else {
+                    section.classList.add('hidden');
+                    btn.className = 'nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200';
+                }
+            });
+        }
+
+        const charactersData = [
+            { name: "Carlos", gender: "boy", sentence: "My name's Carlos.", color: "blue" },
+            { name: "Akina", gender: "girl", sentence: "Her name's Akina.", color: "pink" },
+            { name: "Joshua", gender: "boy", sentence: "His name's Joshua.", color: "amber" },
+            { name: "Isabella", gender: "girl", sentence: "Her name's Isabella.", color: "emerald" },
+            { name: "Ethan", gender: "boy", sentence: "His name's Ethan.", color: "orange" },
+            { name: "Caroline", gender: "girl", sentence: "Her name's Caroline.", color: "teal" }
+        ];
+
+        function renderCharacterGallery() {
+            const container = document.getElementById('character-gallery');
+            container.innerHTML = '';
+            charactersData.forEach(c => {
+                const card = document.createElement('div');
+                card.className = `bg-slate-50 border border-slate-200 rounded-2xl p-3 text-center cursor-pointer hover:border-indigo-400 hover:shadow-md transition group`;
+                card.onclick = () => speakText(c.sentence);
+                card.innerHTML = `
+                    <div class="w-16 h-16 mx-auto mb-2 transform group-hover:scale-105 transition">
+                        ${getAvatarSVG(c.name)}
+                    </div>
+                    <span class="font-bold text-sm text-slate-800 block">${c.name}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">${c.gender}</span>
+                    <button class="mt-2 w-full py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition">
+                        <i class="fa-solid fa-volume-high"></i> Listen
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTextbookArtworks() {
+            // Handshake Artwork (Carlos & Akina)
+            document.getElementById('artwork-ex1').innerHTML = `
+                <div class="flex items-center justify-center gap-6 w-full h-full relative">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto">${getAvatarSVG('carlos')}</div>
+                        <span class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded-full shadow-sm mt-1 inline-block">Carlos</span>
+                    </div>
+                    <div class="text-indigo-400 text-2xl font-bold animate-pulse">🤝</div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto">${getAvatarSVG('akina')}</div>
+                        <span class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded-full shadow-sm mt-1 inline-block">Akina</span>
+                    </div>
+                </div>
+            `;
+
+            // Group Scene Artwork (Ethan & Caroline)
+            document.getElementById('artwork-ex2').innerHTML = `
+                <div class="flex items-center justify-center gap-6 w-full h-full relative">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto">${getAvatarSVG('ethan')}</div>
+                        <span class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded-full shadow-sm mt-1 inline-block">Ethan</span>
+                    </div>
+                    <div class="text-purple-400 text-2xl font-bold">🗣️</div>
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto">${getAvatarSVG('caroline')}</div>
+                        <span class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded-full shadow-sm mt-1 inline-block">Caroline</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        const textbookAnswers = {
+            ex1: { blank1: "your", blank2: "My", blank3: "her", blank4: "Her" },
+            ex2: { blank1: "his", blank2: "His", blank3: "her", blank4: "Her" }
+        };
+
+        function checkTextbookAnswers() {
+            let correctCount = 0;
+            let totalCount = 8;
+
+            // Check Ex 1
+            Object.keys(textbookAnswers.ex1).forEach(bId => {
+                const el = document.getElementById(`ex1-${bId}`);
+                if (el.value === textbookAnswers.ex1[bId]) {
+                    el.className = "ex-select bg-emerald-100 border-2 border-emerald-500 rounded-lg px-2 py-1 font-bold text-emerald-800 focus:outline-none";
+                    correctCount++;
+                } else {
+                    el.className = "ex-select bg-rose-100 border-2 border-rose-500 rounded-lg px-2 py-1 font-bold text-rose-800 focus:outline-none";
+                }
+            });
+
+            // Check Ex 2
+            Object.keys(textbookAnswers.ex2).forEach(bId => {
+                const el = document.getElementById(`ex2-${bId}`);
+                if (el.value === textbookAnswers.ex2[bId]) {
+                    el.className = "ex-select bg-emerald-100 border-2 border-emerald-500 rounded-lg px-2 py-1 font-bold text-emerald-800 focus:outline-none";
+                    correctCount++;
+                } else {
+                    el.className = "ex-select bg-rose-100 border-2 border-rose-500 rounded-lg px-2 py-1 font-bold text-rose-800 focus:outline-none";
+                }
+            });
+
+            const fb1 = document.getElementById('ex1-feedback');
+            const fb2 = document.getElementById('ex2-feedback');
+
+            fb1.classList.remove('hidden');
+            fb2.classList.remove('hidden');
+
+            if (correctCount === totalCount) {
+                synth.playCorrect();
+                addPoints(20);
+                fb1.className = "mt-4 p-3 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold";
+                fb1.textContent = "✨ Conversation 1 Perfect! Excellent job!";
+                fb2.className = "mt-4 p-3 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-bold";
+                fb2.textContent = "✨ Conversation 2 Perfect! Great possessive adjectives!";
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            } else {
+                synth.playIncorrect();
+                fb1.className = "mt-4 p-3 rounded-xl bg-amber-100 text-amber-900 text-xs font-bold";
+                fb1.textContent = "Check highlighted red boxes and try again!";
+                fb2.className = "mt-4 p-3 rounded-xl bg-amber-100 text-amber-900 text-xs font-bold";
+                fb2.textContent = "Check highlighted red boxes and try again!";
+            }
+        }
+
+        function resetTextbookExercise() {
+            document.querySelectorAll('.ex-select').forEach(sel => {
+                sel.value = "";
+                sel.className = "ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600";
+            });
+            document.getElementById('ex1-feedback').classList.add('hidden');
+            document.getElementById('ex2-feedback').classList.add('hidden');
+        }
+
+        function playConversationAudio(num) {
+            if (num === 1) {
+                speakText("A: Hello. What's your name? B: Hi. My name is Carlos. What's her name? A: Her name is Akina.");
+            } else {
+                speakText("A: What's his name? B: His name is Ethan. A: And what's her name? B: Her name is Caroline.");
+            }
+        }
+
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let memoryMoves = 0;
+
+        const memoryPairs = [
+            { id: 1, type: 'avatar', char: 'joshua', matchId: 'his-joshua' },
+            { id: 2, type: 'text', char: 'joshua', text: "His name is Joshua.", matchId: 'his-joshua' },
+            { id: 3, type: 'avatar', char: 'akina', matchId: 'her-akina' },
+            { id: 4, type: 'text', char: 'akina', text: "Her name is Akina.", matchId: 'her-akina' },
+            { id: 5, type: 'avatar', char: 'carlos', matchId: 'my-carlos' },
+            { id: 6, type: 'text', char: 'carlos', text: "My name is Carlos.", matchId: 'my-carlos' },
+            { id: 7, type: 'avatar', char: 'isabella', matchId: 'her-isabella' },
+            { id: 8, type: 'text', char: 'isabella', text: "Her name is Isabella.", matchId: 'her-isabella' },
+            { id: 9, type: 'avatar', char: 'ethan', matchId: 'his-ethan' },
+            { id: 10, type: 'text', char: 'ethan', text: "His name is Ethan.", matchId: 'his-ethan' },
+            { id: 11, type: 'avatar', char: 'caroline', matchId: 'her-caroline' },
+            { id: 12, type: 'text', char: 'caroline', text: "Her name is Caroline.", matchId: 'her-caroline' }
+        ];
+
+        function initMemoryGame() {
+            memoryMoves = 0;
+            matchedPairs = 0;
+            flippedCards = [];
+            document.getElementById('memory-moves').textContent = "0";
+
+            // Shuffle cards
+            memoryCards = [...memoryPairs].sort(() => Math.random() - 0.5);
+
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+
+            memoryCards.forEach((card, idx) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'perspective-1000 h-32 cursor-pointer';
+                cardEl.innerHTML = `
+                    <div id="mem-card-${idx}" onclick="flipMemoryCard(${idx})" class="w-full h-full duration-300 transform-style-3d relative transition-transform rounded-2xl shadow-sm border-2 border-slate-200">
+                        <!-- Card Front (Cover) -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold backface-hidden">
+                            <i class="fa-solid fa-question"></i>
+                        </div>
+                        <!-- Card Back (Revealed) -->
+                        <div class="absolute inset-0 bg-white rounded-2xl p-2 flex flex-col items-center justify-center text-center rotate-y-180 backface-hidden border-2 border-purple-400">
+                            ${card.type === 'avatar' 
+                                ? `<div class="w-14 h-14">${getAvatarSVG(card.char)}</div><span class="text-xs font-bold text-slate-700 capitalize mt-1">${card.char}</span>` 
+                                : `<span class="text-sm font-extrabold text-purple-700">${card.text}</span>`}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function flipMemoryCard(idx) {
+            if (flippedCards.length >= 2) return;
+            const cardInner = document.getElementById(`mem-card-${idx}`);
+            if (cardInner.classList.contains('rotate-y-180')) return;
+
+            synth.playFlip();
+            cardInner.classList.add('rotate-y-180');
+            flippedCards.push({ idx, card: memoryCards[idx] });
+
+            if (flippedCards.length === 2) {
+                memoryMoves++;
+                document.getElementById('memory-moves').textContent = memoryMoves;
+                checkMemoryMatch();
+            }
+        }
+
+        function checkMemoryMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.card.matchId === c2.card.matchId) {
+                synth.playCorrect();
+                matchedPairs++;
+                if (c1.card.text) speakText(c1.card.text);
+                if (c2.card.text) speakText(c2.card.text);
+                flippedCards = [];
+
+                if (matchedPairs === memoryPairs.length / 2) {
+                    setTimeout(() => {
+                        synth.playVictory();
+                        addPoints(30);
+                        confetti({ particleCount: 80, spread: 70 });
+                    }, 500);
+                }
+            } else {
+                synth.playIncorrect();
+                setTimeout(() => {
+                    document.getElementById(`mem-card-${c1.idx}`).classList.remove('rotate-y-180');
+                    document.getElementById(`mem-card-${c2.idx}`).classList.remove('rotate-y-180');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        let chatStep = 0;
+
+        const chatScenarios = [
+            {
+                avatar: 'alex',
+                speaker: 'Alex (Teacher)',
+                text: "Hello! Welcome to ESL Grammar World! What's your name?",
+                options: [
+                    { text: "My name is Student!", nextStep: 1, correct: true, audio: "My name is Student!" },
+                    { text: "His name is Student!", nextStep: 1, correct: false, audio: "His name is Student!" }
+                ]
+            },
+            {
+                avatar: 'joshua',
+                speaker: 'Alex (Teacher)',
+                text: "Great to meet you! Look at this boy 👦. What's his name?",
+                options: [
+                    { text: "His name is Joshua.", nextStep: 2, correct: true, audio: "His name is Joshua." },
+                    { text: "Her name is Joshua.", nextStep: 2, correct: false, audio: "Her name is Joshua." }
+                ]
+            },
+            {
+                avatar: 'akina',
+                speaker: 'Alex (Teacher)',
+                text: "Awesome! And look at this girl 👧. What's her name?",
+                options: [
+                    { text: "Her name is Akina.", nextStep: 3, correct: true, audio: "Her name is Akina." },
+                    { text: "My name is Akina.", nextStep: 3, correct: false, audio: "My name is Akina." }
+                ]
+            },
+            {
+                avatar: 'alex',
+                speaker: 'Alex (Teacher)',
+                text: "🎉 You did a fantastic job with My, Your, His, and Her! Ready to take the Quiz Challenge?",
+                options: [
+                    { text: "Yes! Take me to the Quiz!", action: () => switchTab('quiz'), correct: true }
+                ]
+            }
+        ];
+
+        function renderChatStep() {
+            const container = document.getElementById('chat-messages');
+            const optionsContainer = document.getElementById('chat-options-container');
+            const sc = chatScenarios[chatStep];
+
+            // Add Bot Message
+            const botMsg = document.createElement('div');
+            botMsg.className = 'flex items-start gap-3 animate-pop';
+            botMsg.innerHTML = `
+                <div class="w-10 h-10 shrink-0">${getAvatarSVG(sc.avatar)}</div>
+                <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm max-w-[80%]">
+                    <span class="text-xs font-bold text-indigo-600 block mb-1">${sc.speaker}</span>
+                    <p class="text-sm font-semibold text-slate-800">${sc.text}</p>
+                    <button onclick="speakText('${sc.text}')" class="mt-2 text-xs font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1">
+                        <i class="fa-solid fa-volume-high"></i> Listen
+                    </button>
+                </div>
+            `;
+            container.appendChild(botMsg);
+            container.scrollTop = container.scrollHeight;
+
+            // Render Options
+            optionsContainer.innerHTML = '';
+            sc.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-3 bg-white hover:bg-indigo-50 border-2 border-indigo-200 hover:border-indigo-500 rounded-xl font-bold text-sm text-indigo-800 transition text-left flex items-center justify-between shadow-sm";
+                btn.innerHTML = `<span>${opt.text}</span> <i class="fa-solid fa-paper-plane text-indigo-400"></i>`;
+                btn.onclick = () => handleChatUserReply(opt);
+                optionsContainer.appendChild(btn);
+            });
+
+            speakText(sc.text);
+        }
+
+        function handleChatUserReply(opt) {
+            const container = document.getElementById('chat-messages');
+
+            // User message bubble
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex items-start gap-3 justify-end animate-pop';
+            userMsg.innerHTML = `
+                <div class="bg-indigo-600 text-white p-4 rounded-2xl rounded-tr-none shadow-sm max-w-[80%]">
+                    <p class="text-sm font-semibold">${opt.text}</p>
+                </div>
+            `;
+            container.appendChild(userMsg);
+            container.scrollTop = container.scrollHeight;
+
+            if (opt.correct) {
+                synth.playCorrect();
+                addPoints(10);
+            } else {
+                synth.playIncorrect();
+            }
+
+            if (opt.action) {
+                opt.action();
+            } else {
+                chatStep = opt.nextStep;
+                setTimeout(renderChatStep, 800);
+            }
+        }
+
+        function restartRoleplay() {
+            chatStep = 0;
+            document.getElementById('chat-messages').innerHTML = '';
+            renderChatStep();
+        }
+
+        const quizQuestions = [
+            {
+                question: "What's _____ name?",
+                sub: "Talking directly to your classmate in front of you.",
+                char: "carlos",
+                options: ["your", "his", "her", "my"],
+                answer: "your",
+                explanation: "Use 'your' when asking the person you are speaking to directly!"
+            },
+            {
+                question: "Look at the boy 👦. _____ name is Joshua.",
+                sub: "Talking about a male friend.",
+                char: "joshua",
+                options: ["His", "Her", "My", "Your"],
+                answer: "His",
+                explanation: "Use 'His' for boys and men!"
+            },
+            {
+                question: "Look at the girl 👧. _____ name is Akina.",
+                sub: "Talking about a female friend.",
+                char: "akina",
+                options: ["Her", "His", "Your", "My"],
+                answer: "Her",
+                explanation: "Use 'Her' for girls and women!"
+            },
+            {
+                question: "Hi! _____ name is Carlos.",
+                sub: "Introducing yourself.",
+                char: "carlos",
+                options: ["My", "His", "Her", "Your"],
+                answer: "My",
+                explanation: "Use 'My' when talking about yourself!"
+            },
+            {
+                question: "What's her name? ➔ _____ name's Isabella.",
+                sub: "Answering about a female friend.",
+                char: "isabella",
+                options: ["Her", "His", "My", "Your"],
+                answer: "Her",
+                explanation: "Her is the correct possessive pronoun for Isabella."
+            },
+            {
+                question: "And what's his name? ➔ _____ name's Ethan.",
+                sub: "Answering about a male friend.",
+                char: "ethan",
+                options: ["His", "Her", "Your", "My"],
+                answer: "His",
+                explanation: "His is the correct possessive pronoun for Ethan."
+            }
+        ];
+
+        let quizIndex = 0;
+        let quizScore = 0;
+
+        function renderQuizQuestion() {
+            const q = quizQuestions[quizIndex];
+            document.getElementById('quiz-question-number').textContent = `Question ${quizIndex + 1} of ${quizQuestions.length}`;
+            document.getElementById('quiz-progress-fill').style.width = `${((quizIndex + 1) / quizQuestions.length) * 100}%`;
+            document.getElementById('quiz-score-badge').textContent = `Score: ${quizScore}`;
+
+            document.getElementById('quiz-image-container').innerHTML = getAvatarSVG(q.char);
+            document.getElementById('quiz-question-text').textContent = q.question;
+            document.getElementById('quiz-question-sub').textContent = q.sub;
+
+            const grid = document.getElementById('quiz-options-grid');
+            grid.innerHTML = '';
+
+            const expBox = document.getElementById('quiz-explanation-box');
+            expBox.className = 'hidden';
+
+            document.getElementById('quiz-next-btn').classList.add('hidden');
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-4 bg-white border-2 border-slate-200 hover:border-indigo-500 rounded-xl font-bold text-slate-800 text-lg transition shadow-sm hover:shadow text-left flex items-center justify-between";
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-300"></i>`;
+                btn.onclick = () => selectQuizOption(opt, btn);
+                grid.appendChild(btn);
+            });
+
+            speakQuizQuestion();
+        }
+
+        function speakQuizQuestion() {
+            const q = quizQuestions[quizIndex];
+            speakText(`${q.question.replace('_____', 'blank')} ${q.sub}`);
+        }
+
+        function selectQuizOption(selected, btnEl) {
+            const q = quizQuestions[quizIndex];
+            const allBtns = document.getElementById('quiz-options-grid').children;
+            for (let b of allBtns) {
+                b.disabled = true;
+            }
+
+            const expBox = document.getElementById('quiz-explanation-box');
+            expBox.classList.remove('hidden');
+
+            if (selected.toLowerCase() === q.answer.toLowerCase()) {
+                synth.playCorrect();
+                quizScore += 10;
+                addPoints(10);
+                btnEl.className = "w-full p-4 bg-emerald-100 border-2 border-emerald-500 rounded-xl font-bold text-emerald-900 text-lg flex items-center justify-between shadow-sm";
+                btnEl.innerHTML = `<span>${selected}</span> <i class="fa-solid fa-circle-check text-emerald-600"></i>`;
+                expBox.className = "p-4 rounded-xl bg-emerald-100 text-emerald-800 text-sm font-bold border border-emerald-300";
+                expBox.textContent = `✨ Correct! ${q.explanation}`;
+            } else {
+                synth.playIncorrect();
+                btnEl.className = "w-full p-4 bg-rose-100 border-2 border-rose-500 rounded-xl font-bold text-rose-900 text-lg flex items-center justify-between shadow-sm";
+                btnEl.innerHTML = `<span>${selected}</span> <i class="fa-solid fa-circle-xmark text-rose-600"></i>`;
+                expBox.className = "p-4 rounded-xl bg-amber-100 text-amber-900 text-sm font-bold border border-amber-300";
+                expBox.textContent = `Not quite! Correct answer: ${q.answer}. ${q.explanation}`;
+            }
+
+            document.getElementById('quiz-next-btn').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            quizIndex++;
+            if (quizIndex < quizQuestions.length) {
+                renderQuizQuestion();
+            } else {
+                showCertificateModal();
+            }
+        }
+
+        function showCertificateModal() {
+            synth.playVictory();
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+            const modal = document.getElementById('certificate-modal');
+            const percent = Math.round((quizScore / (quizQuestions.length * 10)) * 100);
+            document.getElementById('modal-final-score').textContent = `${percent}%`;
+
+            let stars = "⭐";
+            if (percent >= 80) stars = "⭐⭐⭐";
+            else if (percent >= 50) stars = "⭐⭐";
+            document.getElementById('modal-star-rank').textContent = stars;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeCertificateModal() {
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+
+        function restartQuizFull() {
+            quizIndex = 0;
+            quizScore = 0;
+            closeCertificateModal();
+            renderQuizQuestion();
+        }
+
+        window.onload = function() {
+            renderCharacterGallery();
+            renderTextbookArtworks();
+            initMemoryGame();
+            renderChatStep();
+            renderQuizQuestion();
+        };
+    </script>
+</body>
+</html>
