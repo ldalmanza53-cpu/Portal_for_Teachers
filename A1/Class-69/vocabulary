@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Power: Changes - Interactive ESL App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .drag-over {
+            border-color: #22c55e !important;
+            background-color: rgba(34, 197, 94, 0.1) !important;
+            scale: 1.01;
+        }
+        .pulse-subtle {
+            animation: pulse-subtle 2s infinite;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-900">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg leading-none text-white tracking-wide">WORD POWER</h1>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Unit 16</span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium">Topic: Personal Changes & Achievements (A1-A2)</p>
+                </div>
+            </div>
+
+            <!-- Global Score Badge -->
+            <div class="hidden sm:flex items-center gap-4">
+                <div class="bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/60 flex items-center gap-2 text-xs font-medium">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span>Map Score: <strong id="globalScore" class="text-emerald-400 font-bold">0/12</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <div class="bg-slate-900/60 border-t border-slate-800/80">
+            <div class="max-w-7xl mx-auto px-4 flex space-x-1 sm:space-x-2 overflow-x-auto py-2 scrollbar-none">
+                <button onclick="switchTab('map')" id="tab-map" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all bg-emerald-500 text-slate-950 shadow-md">
+                    <i class="fa-solid fa-sitemap"></i> Section A: Word Map
+                </button>
+                <button onclick="switchTab('cards')" id="tab-cards" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-volume-high"></i> Section B: Audio Cards
+                </button>
+                <button onclick="switchTab('pair')" id="tab-pair" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-comments"></i> Section C: Pair Work Generator
+                </button>
+                <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-circle-question"></i> Practice Quiz
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- SECTION A: WORD MAP / CATEGORIZATION GAME -->
+        <section id="section-map" class="tab-content space-y-6">
+            <!-- Instruction Banner -->
+            <div class="glass-card rounded-2xl p-4 sm:p-6 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span class="text-emerald-400">Part A:</span> Complete the Word Map
+                    </h2>
+                    <p class="text-sm text-slate-300">
+                        Drag or click vocabulary items into their correct category: <strong class="text-teal-400">Appearance</strong>, <strong class="text-emerald-400">Money</strong>, or <strong class="text-sky-400">Skills</strong>.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="checkMapAnswers()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                        <i class="fa-solid fa-circle-check"></i> Check Answers
+                    </button>
+                    <button onclick="resetMapGame()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs sm:text-sm flex items-center gap-2 border border-slate-700 transition active:scale-95">
+                        <i class="fa-solid fa-rotate-right"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected Phrase Indicator (For Tap-to-Assign Mobile Support) -->
+            <div id="tapSelectBanner" class="hidden bg-slate-800 border border-emerald-500/40 rounded-xl p-3 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-xs sm:text-sm">
+                    <span class="text-emerald-400 font-bold"><i class="fa-solid fa-hand-pointer"></i> Selected:</span>
+                    <span id="selectedPhraseText" class="font-semibold text-white">"dye my hair"</span>
+                </div>
+                <span class="text-xs text-slate-400">Now tap a category box below to place it!</span>
+            </div>
+
+            <!-- Unsorted Phrase Pool -->
+            <div class="glass-card p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-emerald-400"></i> Word Bank (<span id="remainingCount">12</span> remaining)
+                    </h3>
+                    <span class="text-[11px] text-slate-400 italic">Tip: Drag or tap a word, then select a box!</span>
+                </div>
+                <div id="wordBank" class="flex flex-wrap gap-2 min-h-[60px] p-2 bg-slate-900/60 rounded-xl border border-slate-800/80 items-center">
+                    <!-- Word Badges dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- 3 Category Target Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Column 1: Appearance -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800/90 flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-extrabold text-teal-400 text-base tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-user-ninja"></i> APPEARANCE
+                            </h3>
+                            <span id="count-APPEARANCE" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md font-bold text-slate-400">0/4</span>
+                        </div>
+                        <div id="drop-APPEARANCE" data-category="APPEARANCE" onclick="handleCategoryClick('APPEARANCE')" class="drop-zone min-h-[180px] p-3 rounded-xl bg-slate-900/40 border-2 border-dashed border-slate-800 space-y-2 transition-all">
+                            <p class="drop-hint text-xs text-slate-500 text-center py-8">Drop Appearance phrases here</p>
+                        </div>
+                    </div>
+
+                    <!-- Custom Examples Inputs -->
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2">
+                        <label class="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-teal-400"></i> Add 2 Custom Examples:
+                        </label>
+                        <input type="text" id="custom-APPEARANCE-1" placeholder="Example 1 (e.g. get a tattoo)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-teal-400 transition">
+                        <input type="text" id="custom-APPEARANCE-2" placeholder="Example 2 (e.g. lose weight)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-teal-400 transition">
+                    </div>
+                </div>
+
+                <!-- Column 2: Money -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800/90 flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-extrabold text-emerald-400 text-base tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-sack-dollar"></i> MONEY
+                            </h3>
+                            <span id="count-MONEY" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md font-bold text-slate-400">0/4</span>
+                        </div>
+                        <div id="drop-MONEY" data-category="MONEY" onclick="handleCategoryClick('MONEY')" class="drop-zone min-h-[180px] p-3 rounded-xl bg-slate-900/40 border-2 border-dashed border-slate-800 space-y-2 transition-all">
+                            <p class="drop-hint text-xs text-slate-500 text-center py-8">Drop Money phrases here</p>
+                        </div>
+                    </div>
+
+                    <!-- Custom Examples Inputs -->
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2">
+                        <label class="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-emerald-400"></i> Add 2 Custom Examples:
+                        </label>
+                        <input type="text" id="custom-MONEY-1" placeholder="Example 1 (e.g. buy a house)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400 transition">
+                        <input type="text" id="custom-MONEY-2" placeholder="Example 2 (e.g. invest in stocks)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400 transition">
+                    </div>
+                </div>
+
+                <!-- Column 3: Skills -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 border border-slate-800/90 flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-extrabold text-sky-400 text-base tracking-wide flex items-center gap-2">
+                                <i class="fa-solid fa-graduation-cap"></i> SKILLS
+                            </h3>
+                            <span id="count-SKILLS" class="text-xs bg-slate-800 px-2 py-0.5 rounded-md font-bold text-slate-400">0/4</span>
+                        </div>
+                        <div id="drop-SKILLS" data-category="SKILLS" onclick="handleCategoryClick('SKILLS')" class="drop-zone min-h-[180px] p-3 rounded-xl bg-slate-900/40 border-2 border-dashed border-slate-800 space-y-2 transition-all">
+                            <p class="drop-hint text-xs text-slate-500 text-center py-8">Drop Skills phrases here</p>
+                        </div>
+                    </div>
+
+                    <!-- Custom Examples Inputs -->
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2">
+                        <label class="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-sky-400"></i> Add 2 Custom Examples:
+                        </label>
+                        <input type="text" id="custom-SKILLS-1" placeholder="Example 1 (e.g. learn coding)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400 transition">
+                        <input type="text" id="custom-SKILLS-2" placeholder="Example 2 (e.g. play guitar)" class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-sky-400 transition">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION B: PRONUNCIATION & AUDIO FLASHCARDS -->
+        <section id="section-cards" class="tab-content hidden space-y-6">
+            <!-- Header Filter Bar -->
+            <div class="glass-card rounded-2xl p-4 sm:p-6 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span class="text-emerald-400">Part B:</span> Pronunciation & Example Sentences
+                    </h2>
+                    <p class="text-sm text-slate-300">Click the audio icon to listen to native English pronunciation and practice speaking.</p>
+                </div>
+
+                <!-- Category Filter Buttons -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="filterCards('ALL')" id="filter-ALL" class="card-filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-slate-950 transition">All (12)</button>
+                    <button onclick="filterCards('APPEARANCE')" id="filter-APPEARANCE" class="card-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Appearance</button>
+                    <button onclick="filterCards('MONEY')" id="filter-MONEY" class="card-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Money</button>
+                    <button onclick="filterCards('SKILLS')" id="filter-SKILLS" class="card-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Skills</button>
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <!-- Dynamically populated flashcards -->
+            </div>
+        </section>
+
+        <!-- SECTION C: PERSONAL CHANGES SPEAKING GENERATOR (PAIR WORK) -->
+        <section id="section-pair" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-4 sm:p-6 border border-slate-800 space-y-2">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span class="text-emerald-400">Part C:</span> Pair Work & Speaking Generator
+                </h2>
+                <p class="text-sm text-slate-300">
+                    "Have you changed in any of these areas? Tell your partner about a change in each category."
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Form Inputs Column -->
+                <div class="lg:col-span-5 glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="font-bold text-sm uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-emerald-400"></i> Select Your Changes
+                    </h3>
+
+                    <!-- Appearance Selector -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-teal-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-ninja"></i> Appearance Change:
+                        </label>
+                        <select id="pair-appearance" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:border-emerald-400 outline-none">
+                            <option value="dye my hair">dye my hair</option>
+                            <option value="grow a beard">grow a beard</option>
+                            <option value="pierce my ears">pierce my ears</option>
+                            <option value="wear contact lenses">wear contact lenses</option>
+                            <option value="custom">-- Type custom change --</option>
+                        </select>
+                        <input type="text" id="pair-appearance-custom" placeholder="e.g. lost 10 pounds" class="hidden w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 mt-1">
+                    </div>
+
+                    <!-- Money Selector -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sack-dollar"></i> Money Change:
+                        </label>
+                        <select id="pair-money" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:border-emerald-400 outline-none">
+                            <option value="get a bank loan">get a bank loan</option>
+                            <option value="get a credit card">get a credit card</option>
+                            <option value="get a pay raise">get a pay raise</option>
+                            <option value="open a savings account">open a savings account</option>
+                            <option value="custom">-- Type custom change --</option>
+                        </select>
+                        <input type="text" id="pair-money-custom" placeholder="e.g. bought a new car" class="hidden w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 mt-1">
+                    </div>
+
+                    <!-- Skills Selector -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap"></i> Skills Change:
+                        </label>
+                        <select id="pair-skills" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 focus:border-emerald-400 outline-none">
+                            <option value="improve my English vocabulary">improve my English vocabulary</option>
+                            <option value="learn a new sport">learn a new sport</option>
+                            <option value="learn how to dance">learn how to dance</option>
+                            <option value="start a new online course">start a new online course</option>
+                            <option value="custom">-- Type custom change --</option>
+                        </select>
+                        <input type="text" id="pair-skills-custom" placeholder="e.g. learned Italian cooking" class="hidden w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 mt-1">
+                    </div>
+
+                    <button onclick="generatePairScript()" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm transition shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Speaking Script
+                    </button>
+                </div>
+
+                <!-- Generated Dialogue Column -->
+                <div class="lg:col-span-7 glass-card p-5 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="font-bold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                <i class="fa-solid fa-comments text-emerald-400"></i> Pair Work Dialogue Model
+                            </h3>
+                            <button onclick="speakPairDialogue()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700">
+                                <i class="fa-solid fa-volume-high"></i> Read Dialogue
+                            </button>
+                        </div>
+
+                        <!-- Dialogue Container -->
+                        <div id="dialogueContainer" class="space-y-3 font-sans text-xs sm:text-sm">
+                            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                <span class="text-xs font-bold text-teal-400 uppercase">Student A:</span>
+                                <p id="dialogue-line-a" class="text-slate-200 leading-relaxed">
+                                    "I started an Italian cooking class last month. I've always loved Italian food!"
+                                </p>
+                            </div>
+                            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                <span class="text-xs font-bold text-emerald-400 uppercase">Student B:</span>
+                                <p id="dialogue-line-b" class="text-slate-200 leading-relaxed">
+                                    "That's awesome! As for me, I've improved my English vocabulary a lot. I always watch movies with English subtitles now."
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Monologue Presentation Box -->
+                        <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-400 uppercase flex items-center gap-1">
+                                    <i class="fa-solid fa-microphone"></i> My Personal Changes Speech
+                                </span>
+                                <button onclick="speakMonologue()" class="text-xs text-amber-400 hover:underline flex items-center gap-1">
+                                    <i class="fa-solid fa-play"></i> Listen
+                                </button>
+                            </div>
+                            <p id="monologueText" class="text-xs sm:text-sm text-slate-300 italic leading-relaxed">
+                                "Recently, I have experienced a few positive changes. In my appearance, I decided to dye my hair. Financially, I opened a savings account last month. Finally, to build my skills, I started a new online course!"
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-400 text-sm"></i>
+                        <span>Grammar Note: Use <strong>Past Simple</strong> for finished time (last month) and <strong>Present Perfect</strong> for recent/life experiences (I've improved).</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION D: QUICK PRACTICE QUIZ -->
+        <section id="section-quiz" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-4 sm:p-6 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span class="text-emerald-400">Practice:</span> Quick Vocabulary Matching Quiz
+                    </h2>
+                    <p class="text-sm text-slate-300">Choose the correct category for each sentence context.</p>
+                </div>
+                <button onclick="resetQuiz()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-700 border border-slate-700">
+                    Reset Quiz
+                </button>
+            </div>
+
+            <div id="quizContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamically generated quiz questions -->
+            </div>
+
+            <div class="flex justify-end">
+                <button onclick="submitQuiz()" class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 active:scale-95">
+                    Submit Quiz Answers
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-4 mt-8 bg-slate-950/80">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>Word Power: Changes • Interchange / Passages ESL Series Practice App</p>
+            <p class="flex items-center gap-1">
+                <span>Designed for A1-A2 Beginner ESL Learners</span>
+                <i class="fa-solid fa-heart text-rose-500"></i>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        // Core Vocabulary Dataset
+        const VOCABULARY_DATA = [
+            { id: 'v1', phrase: 'dye my hair', category: 'APPEARANCE', icon: 'fa-paint-roller', past: 'I dyed my hair dark brown last month.', perf: "I've dyed my hair three times this year." },
+            { id: 'v2', phrase: 'grow a beard', category: 'APPEARANCE', icon: 'fa-user-ninja', past: 'I grew a beard last winter.', perf: "I've grown a beard recently." },
+            { id: 'v3', phrase: 'pierce my ears', category: 'APPEARANCE', icon: 'fa-ring', past: 'I pierced my ears when I turned 18.', perf: "I've pierced my ears twice." },
+            { id: 'v4', phrase: 'wear contact lenses', category: 'APPEARANCE', icon: 'fa-glasses', past: 'I bought contact lenses last week.', perf: "I've worn contact lenses for two years." },
+            { id: 'v5', phrase: 'get a bank loan', category: 'MONEY', icon: 'fa-landmark', past: 'I got a bank loan to buy a new car.', perf: "I've gotten a bank loan for my small business." },
+            { id: 'v6', phrase: 'get a credit card', category: 'MONEY', icon: 'fa-credit-card', past: 'I got my first credit card in January.', perf: "I've gotten a new credit card with cash rewards." },
+            { id: 'v7', phrase: 'get a pay raise', category: 'MONEY', icon: 'fa-arrow-trend-up', past: 'I got a pay raise at work last month.', perf: "I've gotten two pay raises this year." },
+            { id: 'v8', phrase: 'open a savings account', category: 'MONEY', icon: 'fa-piggy-bank', past: 'I opened a savings account yesterday.', perf: "I've opened a high-yield savings account." },
+            { id: 'v9', phrase: 'improve my English vocabulary', category: 'SKILLS', icon: 'fa-book-open', past: 'I improved my English vocabulary with flashcards.', perf: "I've improved my English vocabulary a lot!" },
+            { id: 'v10', phrase: 'learn a new sport', category: 'SKILLS', icon: 'fa-table-tennis-paddle-ball', past: 'I learned tennis last summer.', perf: "I've learned a new sport recently." },
+            { id: 'v11', phrase: 'learn how to dance', category: 'SKILLS', icon: 'fa-music', past: 'I learned how to dance salsa last year.', perf: "I've learned how to dance Bachata." },
+            { id: 'v12', phrase: 'start a new online course', category: 'SKILLS', icon: 'fa-laptop-code', past: 'I started a new online course last week.', perf: "I've started a new web development course." }
+        ];
+
+        // State variables
+        let mapAssignments = {}; // { phraseId: 'APPEARANCE' | 'MONEY' | 'SKILLS' }
+        let selectedPhraseForTap = null;
+        let activeTab = 'map';
+
+        // Native Speech Synthesis Helper
+        function speakText(text, rate = 0.9) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop ongoing speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = rate;
+                
+                // Try to find native English voice
+                const voices = window.speechSynthesis.getVoices();
+                const engVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+                if (engVoice) utterance.voice = engVoice;
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Text-to-speech is not supported on your browser.');
+            }
+        }
+
+        // Initialize Word Map
+        function renderWordMap() {
+            const wordBank = document.getElementById('wordBank');
+            wordBank.innerHTML = '';
+
+            let remaining = 0;
+
+            VOCABULARY_DATA.forEach(item => {
+                const isAssigned = mapAssignments[item.id];
+                if (!isAssigned) {
+                    remaining++;
+                    const badge = createWordBadge(item);
+                    wordBank.appendChild(badge);
+                }
+            });
+
+            document.getElementById('remainingCount').innerText = remaining;
+
+            // Render items inside category columns
+            ['APPEARANCE', 'MONEY', 'SKILLS'].forEach(cat => {
+                const dropZone = document.getElementById(`drop-${cat}`);
+                dropZone.innerHTML = '';
+
+                const assignedItems = VOCABULARY_DATA.filter(i => mapAssignments[i.id] === cat);
+                document.getElementById(`count-${cat}`).innerText = `${assignedItems.length}/4`;
+
+                if (assignedItems.length === 0) {
+                    dropZone.innerHTML = `<p class="drop-hint text-xs text-slate-500 text-center py-8">Drop ${cat.toLowerCase()} phrases here</p>`;
+                } else {
+                    assignedItems.forEach(item => {
+                        const badge = createWordBadge(item, true);
+                        dropZone.appendChild(badge);
+                    });
+                }
+            });
+        }
+
+        function createWordBadge(item, inColumn = false) {
+            const badge = document.createElement('div');
+            badge.draggable = true;
+            badge.id = `badge-${item.id}`;
+            badge.dataset.id = item.id;
+            
+            const isSelected = selectedPhraseForTap === item.id;
+
+            badge.className = `px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 cursor-grab active:cursor-grabbing transition-all select-none border ${
+                isSelected 
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 ring-2 ring-emerald-400 scale-105' 
+                    : inColumn 
+                        ? 'bg-slate-800 text-slate-100 border-slate-700 hover:border-slate-500' 
+                        : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`;
+
+            badge.innerHTML = `
+                <i class="fa-solid ${item.icon} text-emerald-400 text-xs"></i>
+                <span>${item.phrase}</span>
+                <button onclick="event.stopPropagation(); speakText('${item.phrase}')" class="text-slate-400 hover:text-white p-1 rounded" title="Listen">
+                    <i class="fa-solid fa-volume-high text-[10px]"></i>
+                </button>
+                ${inColumn ? `<button onclick="event.stopPropagation(); unassignPhrase('${item.id}')" class="text-slate-500 hover:text-rose-400 text-xs ml-1"><i class="fa-solid fa-xmark"></i></button>` : ''}
+            `;
+
+            // Drag Events
+            badge.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.id);
+                badge.classList.add('opacity-50');
+            });
+
+            badge.addEventListener('dragend', () => {
+                badge.classList.remove('opacity-50');
+            });
+
+            // Tap-to-select logic for mobile friendliness
+            badge.addEventListener('click', (e) => {
+                if (inColumn) return;
+                if (selectedPhraseForTap === item.id) {
+                    selectedPhraseForTap = null;
+                    document.getElementById('tapSelectBanner').classList.add('hidden');
+                } else {
+                    selectedPhraseForTap = item.id;
+                    document.getElementById('tapSelectBanner').classList.remove('hidden');
+                    document.getElementById('selectedPhraseText').innerText = `"${item.phrase}"`;
+                }
+                renderWordMap();
+            });
+
+            return badge;
+        }
+
+        // Drop Zones Setup
+        function setupDropZones() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    const phraseId = e.dataTransfer.getData('text/plain');
+                    const category = zone.dataset.category;
+                    if (phraseId && category) {
+                        assignPhrase(phraseId, category);
+                    }
+                });
+            });
+        }
+
+        function handleCategoryClick(category) {
+            if (selectedPhraseForTap) {
+                assignPhrase(selectedPhraseForTap, category);
+                selectedPhraseForTap = null;
+                document.getElementById('tapSelectBanner').classList.add('hidden');
+            }
+        }
+
+        function assignPhrase(phraseId, category) {
+            mapAssignments[phraseId] = category;
+            renderWordMap();
+        }
+
+        function unassignPhrase(phraseId) {
+            delete mapAssignments[phraseId];
+            renderWordMap();
+        }
+
+        // Check Word Map Answers
+        function checkMapAnswers() {
+            let correctCount = 0;
+            const total = VOCABULARY_DATA.length;
+
+            VOCABULARY_DATA.forEach(item => {
+                const assigned = mapAssignments[item.id];
+                const badge = document.getElementById(`badge-${item.id}`);
+
+                if (badge) {
+                    if (assigned === item.category) {
+                        correctCount++;
+                        badge.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-950/40');
+                        badge.classList.remove('bg-slate-800');
+                    } else if (assigned) {
+                        badge.classList.add('ring-2', 'ring-rose-500', 'bg-rose-950/40');
+                        badge.classList.remove('bg-slate-800');
+                    }
+                }
+            });
+
+            document.getElementById('globalScore').innerText = `${correctCount}/${total}`;
+
+            if (correctCount === total) {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+                showToast("🎉 Excellent! Perfect Score! All words correctly mapped.");
+            } else {
+                showToast(`You got ${correctCount} out of ${total} correct. Keep trying!`);
+            }
+        }
+
+        function resetMapGame() {
+            mapAssignments = {};
+            selectedPhraseForTap = null;
+            document.getElementById('tapSelectBanner').classList.add('hidden');
+            document.getElementById('globalScore').innerText = `0/12`;
+            
+            // Clear custom inputs
+            ['APPEARANCE', 'MONEY', 'SKILLS'].forEach(cat => {
+                document.getElementById(`custom-${cat}-1`).value = '';
+                document.getElementById(`custom-${cat}-2`).value = '';
+            });
+
+            renderWordMap();
+            showToast("Word Map reset successfully.");
+        }
+
+        // Flashcards Generator
+        function renderCards(filterCategory = 'ALL') {
+            const container = document.getElementById('cardsGrid');
+            container.innerHTML = '';
+
+            const filtered = filterCategory === 'ALL' 
+                ? VOCABULARY_DATA 
+                : VOCABULARY_DATA.filter(i => i.category === filterCategory);
+
+            filtered.forEach(item => {
+                const catColor = item.category === 'APPEARANCE' ? 'teal' : item.category === 'MONEY' ? 'emerald' : 'sky';
+
+                const card = document.createElement('div');
+                card.className = "glass-card rounded-2xl p-5 border border-slate-800 space-y-3 flex flex-col justify-between hover:border-slate-700 transition group";
+                
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider bg-${catColor}-500/10 text-${catColor}-400 border border-${catColor}-500/20">
+                                ${item.category}
+                            </span>
+                            <button onclick="speakText('${item.phrase}')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-500 text-slate-300 hover:text-slate-950 flex items-center justify-center transition">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                        <h3 class="font-extrabold text-base sm:text-lg text-white group-hover:text-emerald-400 transition">
+                            ${item.phrase}
+                        </h3>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2 text-xs">
+                        <div>
+                            <span class="text-slate-400 font-bold">Past Simple:</span>
+                            <p class="text-slate-200 italic mt-0.5">${item.past}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-bold">Present Perfect:</span>
+                            <p class="text-slate-200 italic mt-0.5">${item.perf}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button onclick="speakText('${item.past}')" class="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
+                            <i class="fa-solid fa-circle-play"></i> Listen Example
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filterCards(category) {
+            document.querySelectorAll('.card-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-500', 'text-slate-950', 'active');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+
+            const activeBtn = document.getElementById(`filter-${category}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+                activeBtn.classList.add('bg-emerald-500', 'text-slate-950', 'active');
+            }
+
+            renderCards(category);
+        }
+
+        // Pair Work Speaking Script Generator
+        function setupPairForm() {
+            ['appearance', 'money', 'skills'].forEach(type => {
+                const select = document.getElementById(`pair-${type}`);
+                const customInput = document.getElementById(`pair-${type}-custom`);
+
+                select.addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        customInput.classList.remove('hidden');
+                    } else {
+                        customInput.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        function getPairVal(type) {
+            const select = document.getElementById(`pair-${type}`);
+            if (select.value === 'custom') {
+                const custom = document.getElementById(`pair-${type}-custom`).value.trim();
+                return custom || `made a change in ${type}`;
+            }
+            return select.value;
+        }
+
+        function generatePairScript() {
+            const app = getPairVal('appearance');
+            const mon = getPairVal('money');
+            const ski = getPairVal('skills');
+
+            // Dialogue A & B
+            document.getElementById('dialogue-line-a').innerText = 
+                `"Recently I decided to ${app}. Also, I wanted to improve my finances, so I decided to ${mon}!"`;
+            
+            document.getElementById('dialogue-line-b').innerText = 
+                `"That sounds amazing! As for me, I've really focused on self-improvement. I decided to ${ski}!"`;
+
+            // Monologue
+            document.getElementById('monologueText').innerText = 
+                `"In the past few months, I have made significant changes in my life. For my appearance, I decided to ${app}. Regarding money, I chose to ${mon}. Finally, to build my personal skills, I started to ${ski}."`;
+
+            showToast("Updated speaking script!");
+        }
+
+        function speakPairDialogue() {
+            const lineA = document.getElementById('dialogue-line-a').innerText;
+            const lineB = document.getElementById('dialogue-line-b').innerText;
+            speakText(`Student A says: ${lineA}. Student B replies: ${lineB}`);
+        }
+
+        function speakMonologue() {
+            const mono = document.getElementById('monologueText').innerText;
+            speakText(mono);
+        }
+
+        // Quiz Generator
+        const QUIZ_QUESTIONS = [
+            { question: "Which phrase best fits under APPEARANCE?", options: ["dye my hair", "get a bank loan", "learn how to dance"], correct: 0 },
+            { question: "When you want to save money for the future, you...", options: ["pierce my ears", "open a savings account", "grow a beard"], correct: 1 },
+            { question: "If you want to communicate better in international business, you...", options: ["wear contact lenses", "get a credit card", "improve my English vocabulary"], correct: 2 },
+            { question: "Which item is categorized under MONEY?", options: ["get a pay raise", "learn a new sport", "dye my hair"], correct: 0 }
+        ];
+
+        function renderQuiz() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = '';
+
+            QUIZ_QUESTIONS.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-5 rounded-2xl border border-slate-800 space-y-3";
+                
+                let optionsHtml = q.options.map((opt, i) => `
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer text-xs sm:text-sm">
+                        <input type="radio" name="quiz-${idx}" value="${i}" class="text-emerald-500 focus:ring-emerald-500">
+                        <span>${opt}</span>
+                    </label>
+                `).join('');
+
+                card.innerHTML = `
+                    <p class="font-bold text-sm text-slate-100">${idx + 1}. ${q.question}</p>
+                    <div class="space-y-2">${optionsHtml}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function submitQuiz() {
+            let correct = 0;
+            QUIZ_QUESTIONS.forEach((q, idx) => {
+                const selected = document.querySelector(`input[name="quiz-${idx}"]:checked`);
+                if (selected && parseInt(selected.value) === q.correct) {
+                    correct++;
+                }
+            });
+
+            if (correct === QUIZ_QUESTIONS.length) {
+                confetti({ particleCount: 80, spread: 60 });
+                showToast(`🎉 Perfect Score! ${correct}/${QUIZ_QUESTIONS.length} correct.`);
+            } else {
+                showToast(`Quiz Results: ${correct}/${QUIZ_QUESTIONS.length} correct.`);
+            }
+        }
+
+        function resetQuiz() {
+            renderQuiz();
+            showToast("Quiz reset.");
+        }
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-500', 'text-slate-950', 'shadow-md');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.remove('text-slate-400');
+            activeBtn.classList.add('bg-emerald-500', 'text-slate-950', 'shadow-md');
+        }
+
+        // Toast notification helper
+        function showToast(msg) {
+            const existing = document.getElementById('toastMsg');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'toastMsg';
+            toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-800 text-slate-100 border border-emerald-500/50 px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i> <span>${msg}</span>`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast) toast.remove();
+            }, 3000);
+        }
+
+        // Initialization on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderWordMap();
+            setupDropZones();
+            renderCards();
+            setupPairForm();
+            renderQuiz();
+        });
+    </script>
+</body>
+</html>
