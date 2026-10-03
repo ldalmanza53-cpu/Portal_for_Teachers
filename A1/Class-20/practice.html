@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interchange Unit 5: Quantifiers Lab</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .spectrum-gradient {
+            background: linear-gradient(to right, 
+                #3b82f6 0%, 
+                #06b6d4 15%, 
+                #10b981 35%, 
+                #84cc16 50%, 
+                #eab308 70%, 
+                #f97316 85%, 
+                #ef4444 100%
+            );
+        }
+        .spectrum-gradient-vertical {
+            background: linear-gradient(to bottom, 
+                #ef4444 0%, 
+                #f97316 15%, 
+                #eab308 30%, 
+                #84cc16 45%, 
+                #10b981 60%, 
+                #06b6d4 75%, 
+                #3b82f6 100%
+            );
+        }
+        .drag-tile {
+            touch-action: none;
+            user-select: none;
+            cursor: grab;
+        }
+        .drag-tile:active {
+            cursor: grabbing;
+        }
+        .drop-zone-active {
+            border-color: #6366f1 !important;
+            background-color: #eef2ff !important;
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Logo & Unit Badge -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-200">
+                    5
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Interchange Level 1</span>
+                        <span class="text-xs text-slate-400 font-medium hidden sm:inline">Page 54</span>
+                    </div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">Quantifiers Master Lab</h1>
+                </div>
+            </div>
+
+            <!-- Stats & Sound Controls -->
+            <div class="flex items-center gap-3 sm:gap-6">
+                <!-- XP / Score Tracker -->
+                <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">
+                    <i class="fa-solid fa-star text-amber-500 text-base animate-bounce"></i>
+                    <span id="score-display">0</span> <span class="text-xs font-normal text-amber-600 hidden sm:inline">XP</span>
+                </div>
+
+                <!-- Global Sound Controls -->
+                <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200 text-xs font-medium">
+                    <button id="sfx-toggle-btn" title="Toggle Sound Effects" onclick="appState.toggleSFX()" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-emerald-600 transition flex items-center gap-1.5">
+                        <i id="sfx-icon" class="fa-solid fa-volume-high"></i>
+                        <span class="hidden md:inline">SFX</span>
+                    </button>
+                    <button id="speech-speed-btn" title="Cycle Voice Speed" onclick="appState.cycleSpeechRate()" class="px-2.5 py-1 text-slate-600 hover:text-slate-900 transition flex items-center gap-1">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span id="speech-rate-text">1.0x</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-100 h-1.5 overflow-hidden">
+            <div id="app-progress-bar" class="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 h-full w-0 transition-all duration-500"></div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- NAV TABS -->
+        <nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+            <button onclick="appState.switchTab('spectrum')" id="tab-btn-spectrum" class="tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-emerald-600 text-white shadow-md shadow-emerald-100">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Quantifier Spectrum</span>
+            </button>
+            <button onclick="appState.switchTab('exerciseA')" id="tab-btn-exerciseA" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Exercise A: Statistics Lab</span>
+            </button>
+            <button onclick="appState.switchTab('exerciseB')" id="tab-btn-exerciseB" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                <i class="fa-solid fa-earth-americas"></i>
+                <span>Exercise B: My Country</span>
+            </button>
+            <button onclick="appState.switchTab('game')" id="tab-btn-game" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                <i class="fa-solid fa-gamepad text-indigo-500"></i>
+                <span>Demographic Detective</span>
+            </button>
+        </nav>
+
+        <section id="tab-content-spectrum" class="tab-content space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200/80">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-2">
+                            <i class="fa-solid fa-compact-disc"></i> CD 1:45 Audio Chart
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Quantifier Spectrum (100% &rarr; 0%)</h2>
+                        <p class="text-slate-500 text-sm mt-1">Quantifiers express approximate quantities. Drag the interactive percentage slider below to explore!</p>
+                    </div>
+                    <button onclick="SpeechHelper.speakText('Quantifiers. All. Nearly all families have only one child. Most. Many. A lot of families are smaller these days. Some. Not many. Few couples have more than one child. No one gets married before the age of 18.')" class="self-start md:self-auto px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition flex items-center gap-2 text-sm border border-emerald-200">
+                        <i class="fa-solid fa-volume-high"></i> Listen to Full Chart Overview
+                    </button>
+                </div>
+
+                <!-- Interactive Slider & Live Visual Gauge -->
+                <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 space-y-6">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div id="gauge-percent-badge" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                100%
+                            </div>
+                            <div>
+                                <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold block">Active Quantifier</span>
+                                <h3 id="gauge-quantifier-title" class="text-3xl font-extrabold text-white">All</h3>
+                            </div>
+                        </div>
+                        <button onclick="QuantifierSpectrum.speakCurrentSentence()" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl transition flex items-center gap-2 shadow-md">
+                            <i class="fa-solid fa-volume-high"></i> Hear Sentence
+                        </button>
+                    </div>
+
+                    <!-- Live Dynamic Sentence Display -->
+                    <div class="p-4 rounded-2xl bg-slate-800 border border-slate-700 text-center">
+                        <p id="gauge-example-sentence" class="text-xl font-semibold text-emerald-200">
+                            "<span class="text-amber-300 font-bold">All</span> families have only one child."
+                        </p>
+                    </div>
+
+                    <!-- Range Slider Control -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs font-bold text-slate-400 px-1">
+                            <span>0% (No one)</span>
+                            <span>25% (Some)</span>
+                            <span>50% (Many)</span>
+                            <span>75% (Most)</span>
+                            <span>100% (All)</span>
+                        </div>
+                        <input type="range" id="spectrum-slider" min="0" max="100" value="100" oninput="QuantifierSpectrum.updateFromSlider(this.value)" class="w-full h-4 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-400">
+                    </div>
+
+                    <!-- Gradient Spectrum Display with Scale Markers -->
+                    <div class="space-y-2 pt-2">
+                        <div class="w-full h-6 rounded-full spectrum-gradient shadow-inner relative flex items-center justify-between px-2 text-[10px] font-black text-slate-900 select-none">
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">100%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">90%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">75%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">50%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">25%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">10%</span>
+                            <span class="z-10 bg-white/80 px-1.5 py-0.5 rounded">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantifier Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    <div onclick="QuantifierSpectrum.selectQuantifier('all')" class="q-card p-4 rounded-2xl bg-white border-2 border-emerald-300 hover:shadow-md transition cursor-pointer">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">100%</span>
+                            <i class="fa-solid fa-volume-high text-slate-400 hover:text-emerald-600"></i>
+                        </div>
+                        <h4 class="text-lg font-black text-slate-900">All / Nearly all</h4>
+                        <p class="text-xs text-slate-500 mt-1">100% to ~90%</p>
+                        <p class="text-xs font-medium text-slate-700 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            "<strong>Nearly all</strong> families have only one child."
+                        </p>
+                    </div>
+
+                    <div onclick="QuantifierSpectrum.selectQuantifier('most')" class="q-card p-4 rounded-2xl bg-white border-2 border-teal-300 hover:shadow-md transition cursor-pointer">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded">60% - 89%</span>
+                            <i class="fa-solid fa-volume-high text-slate-400 hover:text-teal-600"></i>
+                        </div>
+                        <h4 class="text-lg font-black text-slate-900">Most / Many</h4>
+                        <p class="text-xs text-slate-500 mt-1">60% to ~89%</p>
+                        <p class="text-xs font-medium text-slate-700 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            "<strong>Most</strong> high school students go to college."
+                        </p>
+                    </div>
+
+                    <div onclick="QuantifierSpectrum.selectQuantifier('some')" class="q-card p-4 rounded-2xl bg-white border-2 border-amber-300 hover:shadow-md transition cursor-pointer">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded">20% - 59%</span>
+                            <i class="fa-solid fa-volume-high text-slate-400 hover:text-amber-600"></i>
+                        </div>
+                        <h4 class="text-lg font-black text-slate-900">Some / A lot of</h4>
+                        <p class="text-xs text-slate-500 mt-1">20% to ~59%</p>
+                        <p class="text-xs font-medium text-slate-700 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            "<strong>A lot of</strong> families are smaller these days."
+                        </p>
+                    </div>
+
+                    <div onclick="QuantifierSpectrum.selectQuantifier('noone')" class="q-card p-4 rounded-2xl bg-white border-2 border-rose-300 hover:shadow-md transition cursor-pointer">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded">0% - 19%</span>
+                            <i class="fa-solid fa-volume-high text-slate-400 hover:text-rose-600"></i>
+                        </div>
+                        <h4 class="text-lg font-black text-slate-900">Not many / No one</h4>
+                        <p class="text-xs text-slate-500 mt-1">19% down to 0%</p>
+                        <p class="text-xs font-medium text-slate-700 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            "<strong>No one</strong> gets married before 18."
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Subject Verb Agreement Grammar Callout -->
+                <div class="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 text-lg font-bold">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <strong class="font-extrabold text-sm block">Grammar Tip: Subject-Verb Agreement</strong>
+                        Notice that <code class="bg-amber-100 px-1 py-0.5 rounded font-bold text-amber-900">No one</code> is singular and takes a singular verb (e.g., <em>No one <strong>gets</strong> married...</em>), whereas <code class="bg-amber-100 px-1 py-0.5 rounded font-bold text-amber-900">All / Most / Few</code> take plural verbs with plural count nouns (e.g., <em>Most couples <strong>have</strong>...</em>).
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-content-exerciseA" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">Part A</span>
+                        <h2 class="text-2xl font-extrabold text-slate-900 mt-2">Exercise A: Rewrite Sentences</h2>
+                        <p class="text-slate-500 text-sm">Convert statistical percentages into natural sentences using appropriate quantifiers!</p>
+                    </div>
+
+                    <!-- Interaction Mode Switcher -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                        <button onclick="ExerciseA.setMode('dropdown')" id="mode-btn-dropdown" class="px-3 py-1.5 rounded-lg bg-white shadow-sm text-emerald-700 transition">Dropdown</button>
+                        <button onclick="ExerciseA.setMode('drag')" id="mode-btn-drag" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Drag & Drop</button>
+                        <button onclick="ExerciseA.setMode('type')" id="mode-btn-type" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">Type Answer</button>
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Tile Bank (visible in Drag Mode) -->
+                <div id="drag-tile-bank" class="mb-6 p-4 rounded-2xl bg-slate-100 border border-slate-200 hidden">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">Drag or Click Quantifiers into sentences:</span>
+                    <div class="flex flex-wrap gap-2">
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'Most')" onclick="ExerciseA.quickInsert('Most')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">Most</div>
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'Few')" onclick="ExerciseA.quickInsert('Few')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">Few</div>
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'No one')" onclick="ExerciseA.quickInsert('No one')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">No one</div>
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'Some')" onclick="ExerciseA.quickInsert('Some')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">Some</div>
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'Not many')" onclick="ExerciseA.quickInsert('Not many')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">Not many</div>
+                        <div draggable="true" ondragstart="ExerciseA.onDragStart(event, 'Nearly all')" onclick="ExerciseA.quickInsert('Nearly all')" class="drag-tile px-3 py-1.5 bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-sm hover:scale-105 transition">Nearly all</div>
+                    </div>
+                </div>
+
+                <!-- 5 Questions List -->
+                <div class="space-y-4">
+                    <!-- Q1 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">Question 1</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">69% = Most / Many</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">
+                            Original: <span class="text-slate-600 font-normal">In the U.S., 69% of high school students go to college.</span>
+                        </p>
+
+                        <!-- Sentence Builder Container -->
+                        <div id="q1-container" class="text-sm font-bold text-slate-900 flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span>In the U.S.,</span>
+                            <span id="q1-target-slot" class="inline-block"></span>
+                            <span>high school students go to college.</span>
+                        </div>
+                        <div id="q1-feedback" class="text-xs font-bold hidden"></div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">Question 2</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">7% = Few / Not many</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">
+                            Original: <span class="text-slate-600 font-normal">Seven percent (7%) of the people in Brazil are age 65 or older.</span>
+                        </p>
+
+                        <div id="q2-container" class="text-sm font-bold text-slate-900 flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span>In Brazil,</span>
+                            <span id="q2-target-slot" class="inline-block"></span>
+                            <span>people are age 65 or older.</span>
+                        </div>
+                        <div id="q2-feedback" class="text-xs font-bold hidden"></div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">Question 3</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">0% = No one</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">
+                            Original: <span class="text-slate-600 font-normal">In India, 0% of the people vote before the age of 18.</span>
+                        </p>
+
+                        <div id="q3-container" class="text-sm font-bold text-slate-900 flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span>In India,</span>
+                            <span id="q3-target-slot" class="inline-block"></span>
+                            <span>votes before the age of 18.</span>
+                        </div>
+                        <div id="q3-feedback" class="text-xs font-bold hidden"></div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">Question 4</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">40% = Some / Many</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">
+                            Original: <span class="text-slate-600 font-normal">Forty percent (40%) of the people in Sweden live alone.</span>
+                        </p>
+
+                        <div id="q4-container" class="text-sm font-bold text-slate-900 flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span>In Sweden,</span>
+                            <span id="q4-target-slot" class="inline-block"></span>
+                            <span>people live alone.</span>
+                        </div>
+                        <div id="q4-feedback" class="text-xs font-bold hidden"></div>
+                    </div>
+
+                    <!-- Q5 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-400">Question 5</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">22% = Some / Not many</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-800">
+                            Original: <span class="text-slate-600 font-normal">In Canada, 22% of the people speak French at home.</span>
+                        </p>
+
+                        <div id="q5-container" class="text-sm font-bold text-slate-900 flex flex-wrap items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span>In Canada,</span>
+                            <span id="q5-target-slot" class="inline-block"></span>
+                            <span>people speak French at home.</span>
+                        </div>
+                        <div id="q5-feedback" class="text-xs font-bold hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button onclick="ExerciseA.checkAllAnswers()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-circle-check"></i> Check Answers
+                    </button>
+                    <button onclick="ExerciseA.revealAllAnswers()" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition border border-slate-200 text-sm">
+                        Reveal Solutions
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-content-exerciseB" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200/80">
+                <div class="mb-6">
+                    <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">Part B &bull; Pair Work</span>
+                    <h2 class="text-2xl font-extrabold text-slate-900 mt-2">Exercise B: "My Country" Data Customizer</h2>
+                    <p class="text-slate-500 text-sm">Rewrite the sentences so that they are true about your country!</p>
+                </div>
+
+                <!-- Country Selector Input -->
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-center gap-4 mb-6">
+                    <label class="text-sm font-bold text-emerald-900 shrink-0">Select or Enter Your Country:</label>
+                    <input type="text" id="user-country-input" value="Colombia" oninput="ExerciseB.updateCountryName(this.value)" class="w-full sm:w-64 px-4 py-2 bg-white rounded-xl border border-emerald-300 font-bold text-emerald-900 focus:outline-none focus:border-emerald-600 text-center">
+                </div>
+
+                <!-- 5 Customizer Topic Cards -->
+                <div class="space-y-4">
+                    <!-- Item 1 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-sm">1. High school students going to college</h4>
+                            <span id="b-val-1-badge" class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">70%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="70" oninput="ExerciseB.updateSlider(1, this.value)" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                            <p id="b-sentence-1" class="text-sm font-bold text-slate-800">
+                                In Colombia, <span class="text-emerald-600">most</span> high school students go to college.
+                            </p>
+                            <button onclick="SpeechHelper.speakText(document.getElementById('b-sentence-1').innerText)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-sm">2. People age 65 or older</h4>
+                            <span id="b-val-2-badge" class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">12%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="12" oninput="ExerciseB.updateSlider(2, this.value)" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                            <p id="b-sentence-2" class="text-sm font-bold text-slate-800">
+                                In Colombia, <span class="text-emerald-600">few</span> people are age 65 or older.
+                            </p>
+                            <button onclick="SpeechHelper.speakText(document.getElementById('b-sentence-2').innerText)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-sm">3. People voting under age 18</h4>
+                            <span id="b-val-3-badge" class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" oninput="ExerciseB.updateSlider(3, this.value)" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                            <p id="b-sentence-3" class="text-sm font-bold text-slate-800">
+                                In Colombia, <span class="text-emerald-600">no one</span> votes before the age of 18.
+                            </p>
+                            <button onclick="SpeechHelper.speakText(document.getElementById('b-sentence-3').innerText)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-sm">4. People living alone</h4>
+                            <span id="b-val-4-badge" class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">25%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="25" oninput="ExerciseB.updateSlider(4, this.value)" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                            <p id="b-sentence-4" class="text-sm font-bold text-slate-800">
+                                In Colombia, <span class="text-emerald-600">some</span> people live alone.
+                            </p>
+                            <button onclick="SpeechHelper.speakText(document.getElementById('b-sentence-4').innerText)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Item 5 -->
+                    <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-slate-900 text-sm">5. People speaking English at home</h4>
+                            <span id="b-val-5-badge" class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">5%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="5" oninput="ExerciseB.updateSlider(5, this.value)" class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                            <p id="b-sentence-5" class="text-sm font-bold text-slate-800">
+                                In Colombia, <span class="text-emerald-600">few</span> people speak English at home.
+                            </p>
+                            <button onclick="SpeechHelper.speakText(document.getElementById('b-sentence-5').innerText)" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-volume-high text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-content-game" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200/80 max-w-3xl mx-auto">
+                <div class="text-center mb-6">
+                    <span class="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 font-bold text-xs">Demographic Detective</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-2">Global Statistics Challenge</h2>
+                    <p class="text-slate-500 text-sm">Convert world percentage statistics into natural quantifier sentences!</p>
+                </div>
+
+                <!-- Game Container -->
+                <div class="bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden space-y-6">
+                    <div class="flex justify-between items-center text-xs font-bold text-indigo-300">
+                        <span id="game-q-counter">Question 1 of 5</span>
+                        <span id="game-streak" class="text-amber-400"><i class="fa-solid fa-fire"></i> Streak: 0</span>
+                    </div>
+
+                    <!-- Trivia Prompt Card -->
+                    <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center space-y-2">
+                        <span id="game-stat-badge" class="text-xs font-extrabold text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/30">Fact: 88%</span>
+                        <p id="game-fact-text" class="text-xl font-bold text-white">"88% of adults in Japan own a smartphone."</p>
+                    </div>
+
+                    <!-- Sentence Fill Target -->
+                    <div class="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-center text-lg font-bold">
+                        <span id="game-sentence-template">In Japan, <span class="text-amber-300 font-extrabold underline decoration-wavy">[ ? ]</span> adults own a smartphone.</span>
+                    </div>
+
+                    <!-- Multiple Choice Option Buttons -->
+                    <div id="game-options-grid" class="grid grid-cols-2 gap-3">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <div id="game-feedback" class="h-8 text-center text-sm font-bold flex items-center justify-center gap-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <div id="certificate-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative text-center space-y-6 animate-pulse-subtle">
+                <button onclick="document.getElementById('certificate-modal').classList.add('hidden')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-600 text-white flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-200">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-emerald-600">Unit 5 Quantifier Badge</span>
+                    <h3 class="text-2xl font-black text-slate-900 mt-1">Certificate of Completion</h3>
+                    <p class="text-xs text-slate-500 mt-1">Has successfully mastered Quantifiers & Statistics Sentences!</p>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <label class="text-xs font-bold text-slate-600 uppercase block text-left">Student Name:</label>
+                    <input type="text" id="cert-student-name" value="ESL Learner" class="w-full px-4 py-2 rounded-xl border border-slate-300 font-bold text-slate-800 text-center focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 flex items-center justify-around">
+                    <div>
+                        <span class="text-[10px] text-emerald-600 uppercase font-bold block">Final Score</span>
+                        <span id="cert-score" class="text-xl font-extrabold text-emerald-700">100 XP</span>
+                    </div>
+                    <div class="h-8 w-px bg-emerald-200"></div>
+                    <div>
+                        <span class="text-[10px] text-emerald-600 uppercase font-bold block">Unit Topic</span>
+                        <span class="text-xs font-bold text-emerald-700">Quantifiers (Page 54)</span>
+                    </div>
+                </div>
+
+                <button onclick="window.print()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> Print / Save Certificate
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>Based on <strong>Interchange Level 1</strong> &bull; Unit 5 Page 54: Quantifiers</p>
+            <button onclick="appState.showCertificate()" class="text-emerald-600 font-bold hover:underline">
+                <i class="fa-solid fa-award"></i> View Completion Certificate
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const AudioFX = {
+            ctx: null,
+            sfxEnabled: true,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+
+            playClick() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(850, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            },
+
+            playCorrect() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.3);
+            },
+
+            playError() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(180, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.25);
+            },
+
+            playTaDa() {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.3);
+                });
+            }
+        };
+
+        const SpeechHelper = {
+            rate: 1.0,
+
+            speakText(text, pitch = 1, onEndCallback = null) {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = this.rate;
+                utterance.pitch = pitch;
+                utterance.lang = 'en-US';
+
+                if (onEndCallback) {
+                    utterance.onend = onEndCallback;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+        };
+
+        const appState = {
+            score: 0,
+            currentTab: 'spectrum',
+            speechRates: [0.8, 1.0, 1.2],
+            speechRateIndex: 1,
+
+            addScore(pts) {
+                this.score += pts;
+                document.getElementById('score-display').innerText = this.score;
+                document.getElementById('cert-score').innerText = `${this.score} XP`;
+                this.updateProgressBar();
+            },
+
+            updateProgressBar() {
+                const maxXP = 120;
+                const percentage = Math.min(100, Math.round((this.score / maxXP) * 100));
+                document.getElementById('app-progress-bar').style.width = `${percentage}%`;
+            },
+
+            toggleSFX() {
+                AudioFX.sfxEnabled = !AudioFX.sfxEnabled;
+                const icon = document.getElementById('sfx-icon');
+                const btn = document.getElementById('sfx-toggle-btn');
+                if (AudioFX.sfxEnabled) {
+                    icon.className = 'fa-solid fa-volume-high';
+                    btn.classList.add('text-emerald-600');
+                    AudioFX.playClick();
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark';
+                    btn.classList.remove('text-emerald-600');
+                }
+            },
+
+            cycleSpeechRate() {
+                this.speechRateIndex = (this.speechRateIndex + 1) % this.speechRates.length;
+                SpeechHelper.rate = this.speechRates[this.speechRateIndex];
+                document.getElementById('speech-rate-text').innerText = `${SpeechHelper.rate.toFixed(1)}x`;
+                AudioFX.playClick();
+            },
+
+            switchTab(tabId) {
+                AudioFX.playClick();
+                this.currentTab = tabId;
+
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.className = 'tab-btn px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
+                });
+
+                const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+                if (activeBtn) {
+                    activeBtn.className = 'tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2 bg-emerald-600 text-white shadow-md shadow-emerald-100';
+                }
+
+                document.querySelectorAll('.tab-content').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                const target = document.getElementById(`tab-content-${tabId}`);
+                if (target) {
+                    target.classList.remove('hidden');
+                }
+            },
+
+            showCertificate() {
+                AudioFX.playTaDa();
+                triggerConfetti();
+                document.getElementById('certificate-modal').classList.remove('hidden');
+            }
+        };
+
+        const QuantifierSpectrum = {
+            currentQuantifier: 'All',
+            currentSentence: 'All families have only one child.',
+
+            updateFromSlider(val) {
+                const percent = parseInt(val);
+                document.getElementById('gauge-percent-badge').innerText = `${percent}%`;
+
+                let q = 'All';
+                let sentence = 'All families have only one child.';
+
+                if (percent === 100) {
+                    q = 'All';
+                    sentence = 'All families have only one child.';
+                } else if (percent >= 90) {
+                    q = 'Nearly all';
+                    sentence = 'Nearly all families have only one child.';
+                } else if (percent >= 60) {
+                    q = 'Most';
+                    sentence = 'Most high school students go to college.';
+                } else if (percent >= 45) {
+                    q = 'Many / A lot of';
+                    sentence = 'A lot of families are smaller these days.';
+                } else if (percent >= 20) {
+                    q = 'Some';
+                    sentence = 'Some people live alone in Sweden.';
+                } else if (percent >= 6) {
+                    q = 'Not many';
+                    sentence = 'Not many couples have more than one child.';
+                } else if (percent >= 1) {
+                    q = 'Few';
+                    sentence = 'Few people speak French at home.';
+                } else {
+                    q = 'No one';
+                    sentence = 'No one gets married before the age of 18.';
+                }
+
+                this.currentQuantifier = q;
+                this.currentSentence = sentence;
+
+                document.getElementById('gauge-quantifier-title').innerText = q;
+                document.getElementById('gauge-example-sentence').innerHTML = `"<span class="text-amber-300 font-bold">${q}</span> ${sentence.replace(q, '').trim()}"`;
+            },
+
+            selectQuantifier(type) {
+                AudioFX.playClick();
+                const slider = document.getElementById('spectrum-slider');
+                if (type === 'all') slider.value = 95;
+                if (type === 'most') slider.value = 75;
+                if (type === 'some') slider.value = 35;
+                if (type === 'noone') slider.value = 0;
+                this.updateFromSlider(slider.value);
+                this.speakCurrentSentence();
+            },
+
+            speakCurrentSentence() {
+                SpeechHelper.speakText(this.currentSentence);
+            }
+        };
+
+        const ExerciseA = {
+            mode: 'dropdown', // 'dropdown', 'drag', 'type'
+            scoreGiven: false,
+
+            setMode(m) {
+                AudioFX.playClick();
+                this.mode = m;
+
+                ['dropdown', 'drag', 'type'].forEach(mode => {
+                    const btn = document.getElementById(`mode-btn-${mode}`);
+                    if (mode === m) {
+                        btn.className = 'px-3 py-1.5 rounded-lg bg-white shadow-sm text-emerald-700 font-bold transition';
+                    } else {
+                        btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
+                    }
+                });
+
+                const bank = document.getElementById('drag-tile-bank');
+                if (m === 'drag') {
+                    bank.classList.remove('hidden');
+                } else {
+                    bank.classList.add('hidden');
+                }
+
+                this.renderSlots();
+            },
+
+            renderSlots() {
+                for (let i = 1; i <= 5; i++) {
+                    const slot = document.getElementById(`q${i}-target-slot`);
+                    if (this.mode === 'dropdown') {
+                        slot.innerHTML = `
+                            <select id="q${i}-input" class="px-3 py-1 rounded-xl bg-white border border-emerald-300 font-extrabold text-emerald-700 focus:outline-none">
+                                <option value="">-- Choose --</option>
+                                <option value="Most">Most</option>
+                                <option value="Many">Many</option>
+                                <option value="Few">Few</option>
+                                <option value="Not many">Not many</option>
+                                <option value="No one">No one</option>
+                                <option value="Some">Some</option>
+                                <option value="Nearly all">Nearly all</option>
+                            </select>
+                        `;
+                    } else if (this.mode === 'drag') {
+                        slot.innerHTML = `
+                            <span id="q${i}-input-val" class="inline-block min-w-[100px] text-center px-3 py-1 rounded-xl bg-emerald-50 border-2 border-dashed border-emerald-300 text-emerald-800 font-extrabold cursor-pointer" 
+                                  ondragover="event.preventDefault()" 
+                                  ondrop="ExerciseA.onDrop(event, ${i})">
+                                [ Drop Here ]
+                            </span>
+                        `;
+                    } else {
+                        slot.innerHTML = `
+                            <input type="text" id="q${i}-input-text" placeholder="Type quantifier..." class="w-32 px-3 py-1 rounded-xl bg-white border border-emerald-300 font-extrabold text-emerald-800 text-center focus:outline-none">
+                        `;
+                    }
+                }
+            },
+
+            onDragStart(e, val) {
+                e.dataTransfer.setData('text/plain', val);
+            },
+
+            onDrop(e, qNum) {
+                e.preventDefault();
+                const val = e.dataTransfer.getData('text/plain');
+                if (val) {
+                    AudioFX.playClick();
+                    document.getElementById(`q${qNum}-input-val`).innerText = val;
+                }
+            },
+
+            quickInsert(val) {
+                AudioFX.playClick();
+                for (let i = 1; i <= 5; i++) {
+                    const slotVal = document.getElementById(`q${i}-input-val`);
+                    if (slotVal && slotVal.innerText === '[ Drop Here ]') {
+                        slotVal.innerText = val;
+                        break;
+                    }
+                }
+            },
+
+            getValue(qNum) {
+                if (this.mode === 'dropdown') {
+                    const el = document.getElementById(`q${qNum}-input`);
+                    return el ? el.value.trim() : '';
+                } else if (this.mode === 'drag') {
+                    const el = document.getElementById(`q${qNum}-input-val`);
+                    return el && el.innerText !== '[ Drop Here ]' ? el.innerText.trim() : '';
+                } else {
+                    const el = document.getElementById(`q${qNum}-input-text`);
+                    return el ? el.value.trim() : '';
+                }
+            },
+
+            checkAllAnswers() {
+                const answers = {
+                    1: ['most', 'many', 'nearly all'],
+                    2: ['few', 'not many'],
+                    3: ['no one'],
+                    4: ['some', 'many', 'a lot of'],
+                    5: ['some', 'not many', 'few']
+                };
+
+                let correctCount = 0;
+
+                for (let i = 1; i <= 5; i++) {
+                    const userVal = this.getValue(i).toLowerCase();
+                    const validOptions = answers[i];
+                    const feedback = document.getElementById(`q${i}-feedback`);
+                    feedback.classList.remove('hidden');
+
+                    if (userVal && validOptions.includes(userVal)) {
+                        correctCount++;
+                        feedback.className = 'text-xs font-bold text-emerald-600 mt-1';
+                        feedback.innerText = '✨ Correct!';
+                    } else {
+                        feedback.className = 'text-xs font-bold text-rose-500 mt-1';
+                        feedback.innerText = `❌ Incorrect. Best answers: ${validOptions.join(' / ')}`;
+                    }
+                }
+
+                if (correctCount === 5) {
+                    AudioFX.playCorrect();
+                    if (!this.scoreGiven) {
+                        this.scoreGiven = true;
+                        appState.addScore(40);
+                    }
+                } else {
+                    AudioFX.playError();
+                }
+            },
+
+            revealAllAnswers() {
+                const best = ['Most', 'Few', 'No one', 'Some', 'Not many'];
+                for (let i = 1; i <= 5; i++) {
+                    if (this.mode === 'dropdown') {
+                        document.getElementById(`q${i}-input`).value = best[i-1];
+                    } else if (this.mode === 'drag') {
+                        document.getElementById(`q${i}-input-val`).innerText = best[i-1];
+                    } else {
+                        document.getElementById(`q${i}-input-text`).value = best[i-1];
+                    }
+                }
+                this.checkAllAnswers();
+            }
+        };
+
+        const ExerciseB = {
+            country: 'Colombia',
+
+            updateCountryName(val) {
+                this.country = val.trim() || 'My Country';
+                for (let i = 1; i <= 5; i++) {
+                    const slider = document.querySelector(`input[oninput*="ExerciseB.updateSlider(${i}"]`);
+                    if (slider) this.updateSlider(i, slider.value);
+                }
+            },
+
+            getQuantifier(percent, itemIdx) {
+                const p = parseInt(percent);
+                if (p === 100) return 'All';
+                if (p >= 90) return 'Nearly all';
+                if (p >= 60) return 'most';
+                if (p >= 40) return 'many';
+                if (p >= 20) return 'some';
+                if (p >= 6) return 'few';
+                if (p >= 1) return 'not many';
+                return 'no one';
+            },
+
+            updateSlider(itemIdx, val) {
+                document.getElementById(`b-val-${itemIdx}-badge`).innerText = `${val}%`;
+                const q = this.getQuantifier(val, itemIdx);
+                const sentenceEl = document.getElementById(`b-sentence-${itemIdx}`);
+
+                let text = '';
+                if (itemIdx === 1) text = `In ${this.country}, <span class="text-emerald-600 font-extrabold">${q}</span> high school students go to college.`;
+                if (itemIdx === 2) text = `In ${this.country}, <span class="text-emerald-600 font-extrabold">${q}</span> people are age 65 or older.`;
+                if (itemIdx === 3) {
+                    const verb = (q === 'no one') ? 'votes' : 'vote';
+                    text = `In ${this.country}, <span class="text-emerald-600 font-extrabold">${q}</span> ${verb} before the age of 18.`;
+                }
+                if (itemIdx === 4) text = `In ${this.country}, <span class="text-emerald-600 font-extrabold">${q}</span> people live alone.`;
+                if (itemIdx === 5) text = `In ${this.country}, <span class="text-emerald-600 font-extrabold">${q}</span> people speak English at home.`;
+
+                sentenceEl.innerHTML = text;
+            }
+        };
+
+        const Game = {
+            questions: [
+                { percent: '88%', fact: '88% of adults in Japan own a smartphone.', template: 'In Japan, [ ? ] adults own a smartphone.', target: 'most', options: ['most', 'few', 'no one', 'not many'] },
+                { percent: '0%', fact: '0% of penguins live in South America tropical deserts.', template: 'In tropical deserts, [ ? ] penguins live.', target: 'no one', options: ['some', 'no one', 'most', 'many'] },
+                { percent: '96%', fact: '96% of Canadian households have internet access.', template: 'In Canada, [ ? ] households have internet access.', target: 'nearly all', options: ['nearly all', 'few', 'some', 'no one'] },
+                { percent: '15%', fact: '15% of world population speaks English.', template: 'Around the world, [ ? ] people speak English.', target: 'not many', options: ['all', 'most', 'not many', 'no one'] },
+                { percent: '45%', fact: '45% of land in Sweden is covered by forest.', template: 'In Sweden, [ ? ] land is covered by forest.', target: 'some', options: ['some', 'no one', 'all', 'few'] }
+            ],
+            currentIndex: 0,
+            streak: 0,
+
+            init() {
+                this.render();
+            },
+
+            render() {
+                const q = this.questions[this.currentIndex];
+                document.getElementById('game-q-counter').innerText = `Question ${this.currentIndex + 1} of ${this.questions.length}`;
+                document.getElementById('game-streak').innerHTML = `<i class="fa-solid fa-fire"></i> Streak: ${this.streak}`;
+                document.getElementById('game-stat-badge').innerText = `Fact: ${q.percent}`;
+                document.getElementById('game-fact-text').innerText = `"${q.fact}"`;
+                document.getElementById('game-sentence-template').innerHTML = q.template.replace('[ ? ]', '<span class="text-amber-300 font-extrabold underline decoration-wavy">[ ? ]</span>');
+                document.getElementById('game-feedback').innerHTML = '';
+
+                const grid = document.getElementById('game-options-grid');
+                grid.innerHTML = q.options.map(opt => `
+                    <button onclick="Game.answer('${opt}')" class="p-3 rounded-2xl bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 font-extrabold text-sm text-slate-200 transition capitalize">
+                        ${opt}
+                    </button>
+                `).join('');
+            },
+
+            answer(selected) {
+                const q = this.questions[this.currentIndex];
+                const feedback = document.getElementById('game-feedback');
+
+                if (selected === q.target) {
+                    this.streak++;
+                    AudioFX.playCorrect();
+                    feedback.innerHTML = `<span class="text-emerald-400"> Correct answer! (+10 XP)</span>`;
+                    appState.addScore(10);
+
+                    setTimeout(() => {
+                        this.currentIndex = (this.currentIndex + 1) % this.questions.length;
+                        this.render();
+                    }, 1200);
+                } else {
+                    this.streak = 0;
+                    AudioFX.playError();
+                    feedback.innerHTML = `<span class="text-rose-400"> Try again! Hint: best quantifier is '${q.target}'</span>`;
+                }
+            }
+        };
+
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = Array.from({ length: 80 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 8 + 4,
+                color: ['#10b981', '#06b6d4', '#3b82f6', '#f59e0b', '#ec4899'][Math.floor(Math.random() * 5)],
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                });
+
+                if (particles.some(p => p.y < canvas.height)) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+        }
+
+        window.onload = function() {
+            ExerciseA.renderSlots();
+            Game.init();
+        };
+    </script>
+</body>
+</html>
