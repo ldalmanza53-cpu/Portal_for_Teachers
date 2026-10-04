@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Planner Lab: Indirect Requests & Messages</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        party: {
+                            pink: '#ec4899',
+                            purple: '#a855f7',
+                            amber: '#f59e0b',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounceShort 0.5s ease-in-out infinite alternate',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        bounceShort: {
+                            '0%': { transform: 'translateY(0)' },
+                            '100%': { transform: 'translateY(-6px)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .chat-bubble-left::after {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 18px;
+            border-width: 8px 10px 8px 0;
+            border-style: solid;
+            border-color: transparent #f3f4f6 transparent transparent;
+        }
+        .dark .chat-bubble-left::after {
+            border-color: transparent #1f2937 transparent transparent;
+        }
+        .chat-bubble-right::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: 18px;
+            border-width: 8px 0 8px 10px;
+            border-style: solid;
+            border-color: transparent transparent transparent #6366f1;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Application Navigation & Header -->
+    <header class="sticky top-0 z-50 glass-card border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo & Brand -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-party-purple to-party-pink flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid font-bold fa-compact-disc text-xl animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight leading-none">
+                        Party Planner <span class="gradient-text">Lab</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Interchange Unit 10 • Indirect Requests & Messages</p>
+                </div>
+            </div>
+
+            <!-- Stats & Settings Header Bar -->
+            <div class="flex items-center space-x-3 sm:space-x-6">
+                <!-- XP Badge -->
+                <div class="flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-bold">
+                    <i class="fa-solid fa-bolt text-amber-500 animate-pulse"></i>
+                    <span id="global-xp">0 XP</span>
+                </div>
+
+                <!-- Level Badge -->
+                <div class="hidden sm:flex items-center space-x-2 bg-brand-500/10 border border-brand-500/20 px-3 py-1.5 rounded-full text-brand-600 dark:text-brand-400 text-xs sm:text-sm font-bold">
+                    <i class="fa-solid fa-award text-brand-500"></i>
+                    <span id="user-level">Level 1</span>
+                </div>
+
+                <!-- Audio Mute Toggle -->
+                <button id="audio-toggle" onclick="toggleAudio()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Sound Effects">
+                    <i id="audio-icon" class="fa-solid fa-volume-high text-sm"></i>
+                </button>
+
+                <!-- Dark Mode Toggle -->
+                <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Toggle Theme">
+                    <i class="fa-solid fa-moon dark:hidden text-sm"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 dark:border-slate-800/80">
+            <nav class="flex space-x-2 sm:space-x-8 overflow-x-auto py-2 no-scrollbar" aria-label="Tabs">
+                <button onclick="switchTab('roleplay')" id="tab-btn-roleplay" class="tab-btn active flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Roleplay Studio</span>
+                </button>
+                <button onclick="switchTab('builder')" id="tab-btn-builder" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                    <span>Request Builder</span>
+                </button>
+                <button onclick="switchTab('matrix')" id="tab-btn-matrix" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Grammar & Item Matrix</span>
+                </button>
+                <button onclick="switchTab('arcade')" id="tab-btn-arcade" class="tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span>Party Blitz Arcade</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Application Canvas -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: PAIR WORK ROLEPLAY STUDIO           -->
+        <!-- ========================================== -->
+        <section id="tab-roleplay" class="tab-content space-y-6">
+            <!-- Section Header -->
+            <div class="bg-gradient-to-r from-brand-600 via-party-purple to-party-pink rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black">
+                    <i class="fa-solid fa-headset"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 uppercase tracking-widest text-xs font-extrabold px-3 py-1 rounded-full backdrop-blur-sm">Interactive Pair Work</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">Party Planning Roleplay Studio</h2>
+                    <p class="mt-1 text-slate-100 text-sm leading-relaxed">
+                        Practice sending requests for party supplies through a messenger! Select a party item category, target a guest, and construct indirect messages using <code class="bg-black/20 px-1.5 py-0.5 rounded font-mono text-xs">ask... to</code> or <code class="bg-black/20 px-1.5 py-0.5 rounded font-mono text-xs">tell... that</code>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Roleplay Interactive Controls Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Control Panel: Options Selector -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="glass-card rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
+                        <h3 class="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center space-x-2">
+                            <i class="fa-solid fa-sliders text-brand-500"></i>
+                            <span>Configure Scenario</span>
+                        </h3>
+
+                        <!-- 1. Party Item Category Selection -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">1. Select Party Need (Category)</label>
+                            <div class="grid grid-cols-1 gap-2">
+                                <button onclick="selectCategory(1)" id="cat-btn-1" class="cat-select-btn flex items-center justify-between p-3 rounded-xl border text-left transition border-brand-500 bg-brand-50/50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-semibold text-sm">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                                            <i class="fa-solid fa-music text-sm"></i>
+                                        </div>
+                                        <span>1. Different types of music</span>
+                                    </div>
+                                    <i class="fa-solid fa-circle-check text-brand-500 text-sm"></i>
+                                </button>
+                                <button onclick="selectCategory(2)" id="cat-btn-2" class="cat-select-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition hover:border-brand-300 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                            <i class="fa-solid fa-wine-glass text-sm"></i>
+                                        </div>
+                                        <span>2. Different types of drinks</span>
+                                    </div>
+                                </button>
+                                <button onclick="selectCategory(3)" id="cat-btn-3" class="cat-select-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition hover:border-brand-300 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-party-pink/10 flex items-center justify-center text-party-pink">
+                                            <i class="fa-solid fa-icons text-sm"></i>
+                                        </div>
+                                        <span>3. Different types of decorations</span>
+                                    </div>
+                                </button>
+                                <button onclick="selectCategory(4)" id="cat-btn-4" class="cat-select-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition hover:border-brand-300 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
+                                            <i class="fa-solid fa-cake-candles text-sm"></i>
+                                        </div>
+                                        <span>4. Different types of desserts</span>
+                                    </div>
+                                </button>
+                                <button onclick="selectCategory(5)" id="cat-btn-5" class="cat-select-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition hover:border-brand-300 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                            <i class="fa-solid fa-bowl-food text-sm"></i>
+                                        </div>
+                                        <span>5. Different types of snack food</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Target Person Selector -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">2. Target Person (Who receives the request?)</label>
+                            <select id="target-person-select" onchange="updateRoleplayView()" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="the DJ">The DJ</option>
+                                <option value="Sam">Sam</option>
+                                <option value="Sarah">Sarah</option>
+                                <option value="Alex">Alex</option>
+                                <option value="Maria">Maria</option>
+                                <option value="the party committee">The Party Committee</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Request Starter Structure -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">3. Request Lead-in Pattern</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="selectPattern('could_ask')" id="pattern-could-ask" class="pattern-btn active p-2.5 rounded-xl border text-xs font-bold transition border-brand-500 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300">
+                                    Could you ask [X] to...
+                                </button>
+                                <button onclick="selectPattern('would_ask')" id="pattern-would-ask" class="pattern-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold transition hover:border-brand-300 text-slate-700 dark:text-slate-300">
+                                    Would you ask [X] to...
+                                </button>
+                                <button onclick="selectPattern('please_ask')" id="pattern-please-ask" class="pattern-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold transition hover:border-brand-300 text-slate-700 dark:text-slate-300">
+                                    Please ask [X] to...
+                                </button>
+                                <button onclick="selectPattern('tell_that')" id="pattern-tell-that" class="pattern-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold transition hover:border-brand-300 text-slate-700 dark:text-slate-300">
+                                    Could you tell [X] that...
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Specific Items Variety Checkboxes -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">4. Specific Examples to Include</label>
+                            <div id="item-examples-container" class="flex flex-wrap gap-2">
+                                <!-- Dynamic tags populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Display Panel: Live Animated Dialogue Stage -->
+                <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+                    <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 flex-grow flex flex-col justify-between space-y-6 min-h-[420px]">
+                        
+                        <!-- Stage Header & Role Swap Button -->
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center space-x-3">
+                                <span class="flex h-3 w-3 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                </span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-300">Live Phone Call Simulation</span>
+                            </div>
+                            <button onclick="swapRoles()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">
+                                <i class="fa-solid fa-arrows-rotate text-brand-500"></i>
+                                <span>Swap Student Roles</span>
+                            </button>
+                        </div>
+
+                        <!-- Chat Simulation Stage -->
+                        <div class="space-y-6 my-auto">
+                            <!-- Speaker 1: Student A (Host) -->
+                            <div class="flex items-start space-x-3">
+                                <div id="avatar-a" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-500 to-party-purple text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
+                                    A
+                                </div>
+                                <div class="relative flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <span id="role-title-a" class="font-bold text-xs text-brand-600 dark:text-brand-400">Student A (Party Host)</span>
+                                    </div>
+                                    <div id="bubble-a" class="chat-bubble-left bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl text-slate-800 dark:text-slate-100 text-sm sm:text-base font-medium shadow-sm leading-relaxed">
+                                        "Could you ask the DJ to play different types of music, like pop and hip-hop?"
+                                    </div>
+                                    <button onclick="speakText('bubble-a')" class="mt-2 text-xs text-slate-400 hover:text-brand-500 flex items-center space-x-1">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                        <span>Listen</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Speaker 2: Student B (Messenger) -->
+                            <div class="flex items-start space-x-3 flex-row-reverse space-x-reverse">
+                                <div id="avatar-b" class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-party-pink to-party-amber text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
+                                    B
+                                </div>
+                                <div class="relative flex-1 text-right">
+                                    <div class="flex items-center justify-end space-x-2 mb-1">
+                                        <span id="role-title-b" class="font-bold text-xs text-party-pink">Student B (Messenger)</span>
+                                    </div>
+                                    <div id="bubble-b" class="chat-bubble-right bg-brand-600 text-white p-4 rounded-2xl text-sm sm:text-base font-medium shadow-sm leading-relaxed inline-block text-left">
+                                        "Sure, no problem! I'll tell the DJ to play pop and hip-hop."
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button onclick="speakText('bubble-b')" class="mt-2 text-xs text-slate-400 hover:text-brand-500 flex items-center space-x-1">
+                                            <i class="fa-solid fa-volume-high"></i>
+                                            <span>Listen</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Audio Playback Action Bar -->
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <button onclick="playFullDialogue()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-party-purple hover:from-brand-500 hover:to-party-purple text-white font-bold text-sm shadow-lg shadow-brand-500/25 flex items-center justify-center space-x-2 transition transform active:scale-95">
+                                <i class="fa-solid fa-circle-play text-lg"></i>
+                                <span>Play Full Conversation Audio</span>
+                            </button>
+
+                            <div class="flex items-center space-x-2 text-xs text-slate-500">
+                                <span>Voice Speed:</span>
+                                <select id="voice-speed" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-semibold">
+                                    <option value="0.8">0.8x (Slow)</option>
+                                    <option value="1.0" selected>1.0x (Normal)</option>
+                                    <option value="1.2">1.2x (Fast)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: REQUEST BUILDER LAB                 -->
+        <!-- ========================================== -->
+        <section id="tab-builder" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-brand-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black">
+                    <i class="fa-solid fa-puzzle-piece"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 uppercase tracking-widest text-xs font-extrabold px-3 py-1 rounded-full backdrop-blur-sm">Formula Practice</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">Request Builder Lab</h2>
+                    <p class="mt-1 text-slate-100 text-sm leading-relaxed">
+                        Convert direct party statements and instructions into grammatically correct indirect requests or messages using <span class="underline underline-offset-2">Ask + person + to...</span> or <span class="underline underline-offset-2">Tell + person + that...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Formula Reference Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold shrink-0">1</div>
+                    <div>
+                        <h4 class="font-bold text-amber-900 dark:text-amber-300 text-sm">Requests (Imperatives) &rarr; Ask + Person + To + Verb</h4>
+                        <p class="text-xs text-amber-800 dark:text-amber-400 mt-0.5">Direct: "Bring different types of drinks." &rarr; <span class="font-semibold italic">"Could you ask Sam to bring different types of drinks?"</span></p>
+                    </div>
+                </div>
+                <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40 flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold shrink-0">2</div>
+                    <div>
+                        <h4 class="font-bold text-indigo-900 dark:text-indigo-300 text-sm">Statements &rarr; Tell + Person + That + Clause</h4>
+                        <p class="text-xs text-indigo-800 dark:text-indigo-400 mt-0.5">Direct: "We need different types of decorations." &rarr; <span class="font-semibold italic">"Would you tell the committee that we need different decorations?"</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Builder Interactive Workspace -->
+            <div class="glass-card rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-6">
+                <!-- Progress Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300">
+                            Question <span id="builder-q-num">1</span> of <span id="builder-q-total">10</span>
+                        </span>
+                        <div class="w-32 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div id="builder-progress-bar" class="bg-brand-500 h-full w-10 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    <div class="text-xs font-bold text-slate-500">
+                        Score: <span id="builder-score" class="text-emerald-500">0</span>
+                    </div>
+                </div>
+
+                <!-- Prompt Question Box -->
+                <div class="bg-slate-50 dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Direct Situation / Instruction:</span>
+                        <span id="prompt-category-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">Category: Music</span>
+                    </div>
+                    <p id="builder-direct-prompt" class="text-lg font-bold text-slate-800 dark:text-slate-100">
+                        "Play different types of music like pop and hip-hop." (Ask / The DJ)
+                    </p>
+                </div>
+
+                <!-- Mode Switcher & Answer Input Area -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Construct the Indirect Request:</label>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="setBuilderMode('words')" id="mode-words-btn" class="px-2.5 py-1 rounded-md text-xs font-bold bg-brand-500 text-white transition">Word Blocks</button>
+                            <button onclick="setBuilderMode('type')" id="mode-type-btn" class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition">Type Answer</button>
+                        </div>
+                    </div>
+
+                    <!-- Word Blocks Mode Container -->
+                    <div id="word-block-container" class="space-y-4">
+                        <div id="selected-words-box" class="min-h-[60px] p-3 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 flex flex-wrap gap-2 items-center">
+                            <span class="text-xs text-slate-400 italic">Click word blocks below to construct your sentence...</span>
+                        </div>
+                        <div id="available-words-box" class="flex flex-wrap gap-2 pt-2">
+                            <!-- Dynamic Word Chips -->
+                        </div>
+                    </div>
+
+                    <!-- Type Mode Container (Hidden by default) -->
+                    <div id="type-input-container" class="hidden">
+                        <textarea id="builder-typed-input" rows="2" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Type your full sentence here (e.g., Could you ask the DJ to play different types of music?)"></textarea>
+                    </div>
+                </div>
+
+                <!-- Feedback & Hint Box -->
+                <div id="builder-feedback" class="hidden p-4 rounded-xl text-sm font-semibold flex items-start space-x-3">
+                    <i id="feedback-icon" class="fa-solid fa-circle-check text-lg mt-0.5"></i>
+                    <div id="feedback-text">Good job!</div>
+                </div>
+
+                <!-- Action Controls Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <div class="flex space-x-2">
+                        <button onclick="showBuilderHint()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                            <span>Hint</span>
+                        </button>
+                        <button onclick="autoSolveBuilder()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i>
+                            <span>Show Solution</span>
+                        </button>
+                        <button onclick="resetCurrentBuilderQuestion()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Clear</span>
+                        </button>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="checkBuilderAnswer()" id="check-ans-btn" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-md transition">
+                            Check Answer
+                        </button>
+                        <button onclick="nextBuilderQuestion()" id="next-q-btn" class="hidden px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition items-center space-x-2">
+                            <span>Next Question</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: GRAMMAR & ITEM MATRIX               -->
+        <!-- ========================================== -->
+        <section id="tab-matrix" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-purple-600 via-brand-600 to-party-pink rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 uppercase tracking-widest text-xs font-extrabold px-3 py-1 rounded-full backdrop-blur-sm">Reference Library</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">Grammar & Party Item Matrix</h2>
+                    <p class="mt-1 text-slate-100 text-sm leading-relaxed">
+                        Explore core rules for indirect requests vs messages, and inspect vocabulary examples for all 5 party items with instant native speech pronunciation.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Grammar Rules Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1: Statements with Tell -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-comment-dots"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-slate-100 text-base">Indirect Messages (Statements)</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Use <code class="text-brand-600 font-bold">tell + object + that</code> to pass along information or statements.</p>
+                    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                        <p class="text-slate-400 font-extrabold uppercase">Formula:</p>
+                        <p class="font-mono text-brand-600 dark:text-brand-400 font-bold">Could you tell [person] that + [clause]?</p>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">Example:</span>
+                            <p class="italic text-slate-500">"Could you tell Sarah that the party starts at 8:00?"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Requests with Ask -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-hand-holding-heart"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-slate-100 text-base">Indirect Requests (Imperatives)</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Use <code class="text-purple-600 font-bold">ask + object + to + verb</code> when requesting someone to do something.</p>
+                    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                        <p class="text-slate-400 font-extrabold uppercase">Formula:</p>
+                        <p class="font-mono text-purple-600 dark:text-purple-400 font-bold">Would you ask [person] to + [verb]?</p>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">Example:</span>
+                            <p class="italic text-slate-500">"Would you ask Alex to buy different types of snack food?"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Negative Requests -->
+                <div class="glass-card rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-ban"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-900 dark:text-slate-100 text-base">Negative Indirect Requests</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">Place <code class="text-rose-600 font-bold">not</code> before the infinitive <code class="text-rose-600 font-bold">to + verb</code> for negative requests.</p>
+                    <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
+                        <p class="text-slate-400 font-extrabold uppercase">Formula:</p>
+                        <p class="font-mono text-rose-600 dark:text-rose-400 font-bold">Please ask [person] not to + [verb]</p>
+                        <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">Example:</span>
+                            <p class="italic text-slate-500">"Please ask the DJ not to play loud rock music late."</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vocabulary & Item Matrix Accordion / Grid -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 class="font-bold text-slate-900 dark:text-slate-100 text-lg flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-brand-500"></i>
+                        <span>5 Party Item Categories Vocabulary Bank</span>
+                    </h3>
+                    <span class="text-xs font-semibold text-slate-400">Click speaker to hear pronunciation</span>
+                </div>
+
+                <div id="vocab-matrix-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: PARTY BLITZ ARCADE                  -->
+        <!-- ========================================== -->
+        <section id="tab-arcade" class="tab-content hidden space-y-6">
+            <div class="bg-gradient-to-r from-amber-500 via-party-pink to-brand-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl font-black">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 uppercase tracking-widest text-xs font-extrabold px-3 py-1 rounded-full backdrop-blur-sm">Gamified Arcade</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-2">Party Blitz Arcade</h2>
+                    <p class="mt-1 text-slate-100 text-sm leading-relaxed">
+                        Party guests need urgent requests sent! Race against the clock to assemble correct indirect messages before time runs out. Gain combo multipliers!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Arcade Container -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 relative min-h-[480px] flex flex-col justify-between">
+                
+                <!-- Game Start Screen -->
+                <div id="arcade-start-screen" class="my-auto text-center py-10 space-y-6 max-w-md mx-auto">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 via-party-pink to-brand-600 flex items-center justify-center text-white text-3xl shadow-xl animate-float">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 dark:text-slate-100">Ready for Party Blitz?</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">60 Seconds • High Speed • Indirect Requests</p>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl text-left text-xs space-y-2 text-slate-600 dark:text-slate-300">
+                        <p><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Match guest party needs with correct indirect sentence</p>
+                        <p><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Maintain streak combos for x2, x3 XP multipliers</p>
+                        <p><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Avoid wrong picks to keep clock bonus</p>
+                    </div>
+                    <button onclick="startArcadeGame()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-party-pink hover:from-amber-400 hover:to-party-pink text-white font-extrabold text-base shadow-lg shadow-amber-500/25 transition transform active:scale-95">
+                        Start Arcade Challenge
+                    </button>
+                </div>
+
+                <!-- Game Active Stage (Hidden initially) -->
+                <div id="arcade-game-stage" class="hidden flex-col justify-between flex-grow space-y-6">
+                    <!-- HUD Header -->
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <span class="text-xs uppercase text-slate-400 font-bold block">Score</span>
+                                <span id="arcade-score" class="text-2xl font-black text-amber-500">0</span>
+                            </div>
+                            <div>
+                                <span class="text-xs uppercase text-slate-400 font-bold block">Streak</span>
+                                <span id="arcade-streak" class="text-lg font-extrabold text-brand-500">0x</span>
+                            </div>
+                        </div>
+
+                        <!-- Countdown Clock -->
+                        <div class="flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-4 py-2 rounded-2xl text-rose-500 font-black text-xl">
+                            <i class="fa-solid fa-stopwatch animate-pulse"></i>
+                            <span id="arcade-timer">60</span>s
+                        </div>
+                    </div>
+
+                    <!-- Incoming Guest Card -->
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-amber-500 text-slate-900 flex items-center justify-center font-bold text-xs">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <span id="arcade-guest-name" class="font-bold text-sm text-amber-400">Host to Sam:</span>
+                        </div>
+                        <p id="arcade-guest-direct" class="text-xl font-bold text-slate-100">
+                            "Bring different types of drinks like soda and juice."
+                        </p>
+                    </div>
+
+                    <!-- Multiple Choice Answer Options Grid -->
+                    <div id="arcade-options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Game Results Screen (Hidden initially) -->
+                <div id="arcade-end-screen" class="hidden my-auto text-center py-8 space-y-6 max-w-md mx-auto">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-500 text-white flex items-center justify-center text-4xl shadow-xl">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 dark:text-slate-100">Party Planner Legend!</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Arcade Session Complete</p>
+                    </div>
+
+                    <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <span class="text-xs text-slate-400 block font-bold">Final Score</span>
+                            <span id="arcade-final-score" class="text-2xl font-black text-amber-500">0</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block font-bold">XP Earned</span>
+                            <span id="arcade-final-xp" class="text-2xl font-black text-emerald-500">+0</span>
+                        </div>
+                    </div>
+
+                    <button onclick="startArcadeGame()" class="w-full py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-base shadow-lg transition">
+                        Play Again
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 text-center text-xs text-slate-500">
+        <p>Party Planner Lab • Interchange Unit 10 ESL Practice Suite</p>
+    </footer>
+
+    <script>
+        /* ========================================================================== */
+        /* APPLICATION STATE & GLOBAL CONFIGURATION                                  */
+        /* ========================================================================== */
+        const state = {
+            xp: parseInt(localStorage.getItem('party_lab_xp') || '0'),
+            level: 1,
+            audioEnabled: true,
+            activeTab: 'roleplay',
+            // Roleplay Studio state
+            selectedCategory: 1,
+            selectedTarget: 'the DJ',
+            selectedPattern: 'could_ask',
+            isRoleSwapped: false,
+            // Builder Lab state
+            builderIndex: 0,
+            builderScore: 0,
+            builderMode: 'words', // 'words' or 'type'
+            selectedWords: [],
+            // Arcade state
+            arcadeActive: false,
+            arcadeScore: 0,
+            arcadeStreak: 0,
+            arcadeTimeLeft: 60,
+            arcadeTimerId: null,
+            arcadeCurrentQuestion: null
+        };
+
+        // Web Audio API Synthesizer Context
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        /* Sound Effect Synthesizer using Web Audio API */
+        function playSound(type) {
+            if (!state.audioEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'level') {
+                    // Arpeggio
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.15, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.2);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio synthesis notice:", e);
+            }
+        }
+
+        /* Speech Synthesis TTS Helper */
+        function speakSentence(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel(); // Stop ongoing speech
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = parseFloat(document.getElementById('voice-speed')?.value || '1.0');
+            utterance.pitch = 1.0;
+            utterance.lang = 'en-US';
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakText(elementId) {
+            const text = document.getElementById(elementId)?.innerText || elementId;
+            speakSentence(text.replace(/"/g, ''));
+        }
+
+        /* Global XP & Level System */
+        function addXP(amount) {
+            state.xp += amount;
+            localStorage.setItem('party_lab_xp', state.xp.toString());
+            state.level = Math.floor(state.xp / 100) + 1;
+            
+            document.getElementById('global-xp').innerText = `${state.xp} XP`;
+            document.getElementById('user-level').innerText = `Level ${state.level}`;
+        }
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            const icon = document.getElementById('audio-icon');
+            if (state.audioEnabled) {
+                icon.className = "fa-solid fa-volume-high text-sm";
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-sm text-rose-500";
+            }
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        /* Tab Navigation Handler */
+        function switchTab(tabId) {
+            playSound('click');
+            state.activeTab = tabId;
+
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active classes on buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-slate-600 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800";
+            });
+
+            // Show current tab & activate button
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn active flex items-center space-x-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-all whitespace-nowrap text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 font-bold";
+            }
+        }
+
+        /* ========================================================================== */
+        /* DATA DICTIONARY (INTERCHANGE UNIT 10 PAIR WORK)                           */
+        /* ========================================================================== */
+        const partyData = {
+            1: {
+                title: "Different types of music",
+                icon: "fa-music",
+                color: "indigo",
+                examples: ["pop and hip-hop", "rock and jazz", "EDM and Latin pop"],
+                defaultTarget: "the DJ",
+                sampleDirect: "Play different types of music like pop and hip-hop.",
+                vocabItems: [
+                    { name: "Pop Music", example: "Could you ask the DJ to play pop music?" },
+                    { name: "Hip-Hop", example: "Would you tell the DJ that we want hip-hop?" },
+                    { name: "Rock & Jazz", example: "Please ask the DJ to play rock and jazz." },
+                    { name: "EDM Beats", example: "Could you ask the DJ for EDM beats?" }
+                ]
+            },
+            2: {
+                title: "Different types of drinks",
+                icon: "fa-wine-glass",
+                color: "amber",
+                examples: ["soda and fruit juice", "iced tea and lemonade", "sparkling water"],
+                defaultTarget: "Sam",
+                sampleDirect: "Bring different types of drinks like soda and juice.",
+                vocabItems: [
+                    { name: "Soda & Soft Drinks", example: "Would you ask Sam to bring soda?" },
+                    { name: "Fruit Juices", example: "Could you tell Sam that we need fruit juice?" },
+                    { name: "Iced Tea", example: "Please ask Sam to buy iced tea." },
+                    { name: "Sparkling Water", example: "Could you ask Sam for sparkling water?" }
+                ]
+            },
+            3: {
+                title: "Different types of decorations",
+                icon: "fa-icons",
+                color: "pink",
+                examples: ["balloons and lights", "banners and streamers", "table candles"],
+                defaultTarget: "the party committee",
+                sampleDirect: "We need different types of decorations like balloons and lights.",
+                vocabItems: [
+                    { name: "Balloons", example: "Could you tell the committee to buy balloons?" },
+                    { name: "Fairy Lights", example: "Would you ask Sarah to hang fairy lights?" },
+                    { name: "Party Banners", example: "Please ask Alex to bring party banners." },
+                    { name: "Streamers", example: "Could you tell the team that we need streamers?" }
+                ]
+            },
+            4: {
+                title: "Different types of desserts",
+                icon: "fa-cake-candles",
+                color: "purple",
+                examples: ["brownies and cupcakes", "fruit tart and ice cream", "cookies"],
+                defaultTarget: "Maria",
+                sampleDirect: "Bring different types of desserts like brownies and cupcakes.",
+                vocabItems: [
+                    { name: "Chocolate Brownies", example: "Please ask Maria to bring brownies." },
+                    { name: "Vanilla Cupcakes", example: "Could you ask Maria to bake cupcakes?" },
+                    { name: "Fruit Tarts", example: "Would you tell Maria that we love fruit tarts?" },
+                    { name: "Ice Cream Tub", example: "Could you ask Maria to bring ice cream?" }
+                ]
+            },
+            5: {
+                title: "Different types of snack food",
+                icon: "fa-bowl-food",
+                color: "emerald",
+                examples: ["chips and popcorn", "nuts and pretzel sticks", "mini sandwiches"],
+                defaultTarget: "Alex",
+                sampleDirect: "Buy different types of snack food like chips and nuts.",
+                vocabItems: [
+                    { name: "Potato Chips", example: "Would you ask Alex to buy potato chips?" },
+                    { name: "Butter Popcorn", example: "Could you tell Alex that we need popcorn?" },
+                    { name: "Mixed Nuts", example: "Please ask Alex to get mixed nuts." },
+                    { name: "Pretzels", example: "Could you ask Alex to bring pretzel snacks?" }
+                ]
+            }
+        };
+
+        /* ========================================================================== */
+        /* TAB 1: ROLEPLAY STUDIO LOGIC                                              */
+        /* ========================================================================== */
+        function selectCategory(catId) {
+            playSound('click');
+            state.selectedCategory = catId;
+
+            // Highlight category button
+            document.querySelectorAll('.cat-select-btn').forEach((btn, idx) => {
+                if (idx + 1 === catId) {
+                    btn.className = "cat-select-btn flex items-center justify-between p-3 rounded-xl border text-left transition border-brand-500 bg-brand-50/50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 font-semibold text-sm";
+                    btn.querySelector('.fa-circle-check')?.classList.remove('hidden');
+                } else {
+                    btn.className = "cat-select-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition hover:border-brand-300 text-slate-700 dark:text-slate-300 font-semibold text-sm";
+                    btn.querySelector('.fa-circle-check')?.classList.add('hidden');
+                }
+            });
+
+            // Update Target person default
+            const catInfo = partyData[catId];
+            document.getElementById('target-person-select').value = catInfo.defaultTarget;
+            state.selectedTarget = catInfo.defaultTarget;
+
+            // Render example chips
+            renderExampleChips();
+            updateRoleplayView();
+        }
+
+        function selectPattern(patternKey) {
+            playSound('click');
+            state.selectedPattern = patternKey;
+
+            document.querySelectorAll('.pattern-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300');
+                btn.classList.add('border-slate-200', 'dark:border-slate-800', 'text-slate-700', 'dark:text-slate-300');
+            });
+
+            const activeBtn = document.getElementById(`pattern-${patternKey.replace('_', '-')}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300');
+                activeBtn.classList.remove('border-slate-200', 'dark:border-slate-800', 'text-slate-700', 'dark:text-slate-300');
+            }
+
+            updateRoleplayView();
+        }
+
+        function renderExampleChips() {
+            const container = document.getElementById('item-examples-container');
+            const catInfo = partyData[state.selectedCategory];
+            container.innerHTML = '';
+
+            catInfo.examples.forEach((ex, idx) => {
+                const badge = document.createElement('span');
+                badge.className = `cursor-pointer px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 text-slate-700 dark:text-slate-300 transition flex items-center space-x-1`;
+                badge.innerHTML = `<i class="fa-solid fa-plus text-[10px] text-brand-500"></i> <span>${ex}</span>`;
+                badge.onclick = () => {
+                    playSound('click');
+                    updateRoleplayView(ex);
+                };
+                container.appendChild(badge);
+            });
+        }
+
+        function updateRoleplayView(customExample = null) {
+            const target = document.getElementById('target-person-select').value;
+            state.selectedTarget = target;
+            const catInfo = partyData[state.selectedCategory];
+            const exampleText = customExample || catInfo.examples[0];
+
+            let statementA = "";
+            let statementB = "";
+
+            const catNameClean = catInfo.title.toLowerCase();
+
+            if (state.selectedPattern === 'could_ask') {
+                statementA = `"Could you ask ${target} to bring ${catNameClean}, like ${exampleText}?"`;
+                statementB = `"Sure, no problem! I'll ask ${target} to bring ${catNameClean}."`;
+            } else if (state.selectedPattern === 'would_ask') {
+                statementA = `"Would you ask ${target} to get ${catNameClean}, such as ${exampleText}?"`;
+                statementB = `"Of course! I'll tell ${target} that we need ${catNameClean} right away."`;
+            } else if (state.selectedPattern === 'please_ask') {
+                statementA = `"Please ask ${target} to arrange ${catNameClean}, especially ${exampleText}."`;
+                statementB = `"Got it! I'll make sure ${target} knows to bring ${exampleText}."`;
+            } else if (state.selectedPattern === 'tell_that') {
+                statementA = `"Could you tell ${target} that we need ${catNameClean}, like ${exampleText}?"`;
+                statementB = `"No problem at all! I'll pass along the message to ${target}."`;
+            }
+
+            if (!state.isRoleSwapped) {
+                document.getElementById('bubble-a').innerText = statementA;
+                document.getElementById('bubble-b').innerText = statementB;
+            } else {
+                document.getElementById('bubble-a').innerText = statementB;
+                document.getElementById('bubble-b').innerText = statementA;
+            }
+        }
+
+        function swapRoles() {
+            playSound('click');
+            state.isRoleSwapped = !state.isRoleSwapped;
+
+            const titleA = document.getElementById('role-title-a');
+            const titleB = document.getElementById('role-title-b');
+
+            if (state.isRoleSwapped) {
+                titleA.innerText = "Student A (Messenger)";
+                titleB.innerText = "Student B (Party Host)";
+            } else {
+                titleA.innerText = "Student A (Party Host)";
+                titleB.innerText = "Student B (Messenger)";
+            }
+
+            updateRoleplayView();
+        }
+
+        function playFullDialogue() {
+            playSound('click');
+            const textA = document.getElementById('bubble-a').innerText.replace(/"/g, '');
+            const textB = document.getElementById('bubble-b').innerText.replace(/"/g, '');
+
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+
+            const utterA = new SpeechSynthesisUtterance(textA);
+            utterA.rate = parseFloat(document.getElementById('voice-speed').value || '1.0');
+            utterA.pitch = 1.1; // Female / host tone
+
+            const utterB = new SpeechSynthesisUtterance(textB);
+            utterB.rate = parseFloat(document.getElementById('voice-speed').value || '1.0');
+            utterB.pitch = 0.9; // Male / messenger tone
+
+            utterA.onend = () => {
+                setTimeout(() => {
+                    window.speechSynthesis.speak(utterB);
+                }, 300);
+            };
+
+            window.speechSynthesis.speak(utterA);
+        }
+
+        /* ========================================================================== */
+        /* TAB 2: REQUEST BUILDER LAB LOGIC                                           */
+        /* ========================================================================== */
+        const builderQuestions = [
+            {
+                category: "Music",
+                direct: "Play different types of music like pop and hip-hop. (Ask / The DJ)",
+                target: "the DJ",
+                correct: "Could you ask the DJ to play different types of music like pop and hip-hop?",
+                words: ["Could", "you", "ask", "the DJ", "to", "play", "different", "types", "of", "music", "like", "pop", "and", "hip-hop?"],
+                hint: "Use: Ask + the DJ + to + play..."
+            },
+            {
+                category: "Drinks",
+                direct: "Bring different types of drinks like soda and juice. (Ask / Sam)",
+                target: "Sam",
+                correct: "Would you ask Sam to bring different types of drinks like soda and juice?",
+                words: ["Would", "you", "ask", "Sam", "to", "bring", "different", "types", "of", "drinks", "like", "soda", "and", "juice?"],
+                hint: "Use: Ask + Sam + to + bring..."
+            },
+            {
+                category: "Decorations",
+                direct: "We need different types of decorations like balloons and lights. (Tell / The committee)",
+                target: "the committee",
+                correct: "Could you tell the committee that we need different types of decorations like balloons and lights?",
+                words: ["Could", "you", "tell", "the committee", "that", "we", "need", "different", "types", "of", "decorations", "like", "balloons", "and", "lights?"],
+                hint: "Use: Tell + the committee + that + we need..."
+            },
+            {
+                category: "Desserts",
+                direct: "Bake different types of desserts like brownies and cupcakes. (Please ask / Maria)",
+                target: "Maria",
+                correct: "Please ask Maria to bake different types of desserts like brownies and cupcakes.",
+                words: ["Please", "ask", "Maria", "to", "bake", "different", "types", "of", "desserts", "like", "brownies", "and", "cupcakes."],
+                hint: "Use: Please ask + Maria + to + bake..."
+            },
+            {
+                category: "Snacks",
+                direct: "Buy different types of snack food like chips and nuts. (Ask / Alex)",
+                target: "Alex",
+                correct: "Would you ask Alex to buy different types of snack food like chips and nuts?",
+                words: ["Would", "you", "ask", "Alex", "to", "buy", "different", "types", "of", "snack food", "like", "chips", "and", "nuts?"],
+                hint: "Use: Ask + Alex + to + buy..."
+            },
+            {
+                category: "Music",
+                direct: "Don't play loud music after midnight. (Ask / The DJ)",
+                target: "the DJ",
+                correct: "Please ask the DJ not to play loud music after midnight.",
+                words: ["Please", "ask", "the DJ", "not", "to", "play", "loud", "music", "after", "midnight."],
+                hint: "Negative request: Use 'not to play'!"
+            },
+            {
+                category: "Drinks",
+                direct: "The party starts at 8:00 PM tonight. (Tell / Sarah)",
+                target: "Sarah",
+                correct: "Could you tell Sarah that the party starts at 8:00 PM tonight?",
+                words: ["Could", "you", "tell", "Sarah", "that", "the", "party", "starts", "at", "8:00 PM", "tonight?"],
+                hint: "Statement: Use Tell + Sarah + that..."
+            }
+        ];
+
+        function loadBuilderQuestion(idx) {
+            state.builderIndex = idx;
+            state.selectedWords = [];
+
+            const q = builderQuestions[idx];
+            document.getElementById('builder-q-num').innerText = idx + 1;
+            document.getElementById('builder-q-total').innerText = builderQuestions.length;
+            document.getElementById('builder-progress-bar').style.width = `${((idx + 1) / builderQuestions.length) * 100}%`;
+            document.getElementById('prompt-category-badge').innerText = `Category: ${q.category}`;
+            document.getElementById('builder-direct-prompt').innerText = `"${q.direct}"`;
+
+            // Reset Feedback & Controls
+            document.getElementById('builder-feedback').classList.add('hidden');
+            document.getElementById('check-ans-btn').classList.remove('hidden');
+            document.getElementById('next-q-btn').classList.add('hidden');
+            document.getElementById('builder-typed-input').value = '';
+
+            renderWordBlocks();
+        }
+
+        function setBuilderMode(mode) {
+            playSound('click');
+            state.builderMode = mode;
+
+            const wordsBtn = document.getElementById('mode-words-btn');
+            const typeBtn = document.getElementById('mode-type-btn');
+
+            if (mode === 'words') {
+                wordsBtn.className = "px-2.5 py-1 rounded-md text-xs font-bold bg-brand-500 text-white transition";
+                typeBtn.className = "px-2.5 py-1 rounded-md text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition";
+                document.getElementById('word-block-container').classList.remove('hidden');
+                document.getElementById('type-input-container').classList.add('hidden');
+            } else {
+                typeBtn.className = "px-2.5 py-1 rounded-md text-xs font-bold bg-brand-500 text-white transition";
+                wordsBtn.className = "px-2.5 py-1 rounded-md text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition";
+                document.getElementById('type-input-container').classList.remove('hidden');
+                document.getElementById('word-block-container').classList.add('hidden');
+            }
+        }
+
+        function renderWordBlocks() {
+            const q = builderQuestions[state.builderIndex];
+            const selectedBox = document.getElementById('selected-words-box');
+            const availableBox = document.getElementById('available-words-box');
+
+            selectedBox.innerHTML = '';
+            availableBox.innerHTML = '';
+
+            if (state.selectedWords.length === 0) {
+                selectedBox.innerHTML = `<span class="text-xs text-slate-400 italic">Click word blocks below to construct your sentence...</span>`;
+            } else {
+                state.selectedWords.forEach((wordObj, i) => {
+                    const chip = document.createElement('button');
+                    chip.className = "px-3 py-1.5 rounded-lg bg-brand-600 text-white font-bold text-xs shadow-sm hover:bg-brand-700 transition flex items-center space-x-1";
+                    chip.innerHTML = `<span>${wordObj.text}</span> <i class="fa-solid fa-xmark text-[10px]"></i>`;
+                    chip.onclick = () => removeWordBlock(i);
+                    selectedBox.appendChild(chip);
+                });
+            }
+
+            // Shuffle available words once
+            let shuffledWords = [...q.words].map((w, origIdx) => ({ text: w, id: origIdx }));
+            // Filter out used ones
+            const usedIds = state.selectedWords.map(w => w.id);
+            const remaining = shuffledWords.filter(w => !usedIds.includes(w.id));
+
+            remaining.forEach((wordObj) => {
+                const chip = document.createElement('button');
+                chip.className = "px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition";
+                chip.innerText = wordObj.text;
+                chip.onclick = () => addWordBlock(wordObj);
+                availableBox.appendChild(chip);
+            });
+        }
+
+        function addWordBlock(wordObj) {
+            playSound('click');
+            state.selectedWords.push(wordObj);
+            renderWordBlocks();
+        }
+
+        function removeWordBlock(idx) {
+            playSound('click');
+            state.selectedWords.splice(idx, 1);
+            renderWordBlocks();
+        }
+
+        function checkBuilderAnswer() {
+            const q = builderQuestions[state.builderIndex];
+            let userAns = "";
+
+            if (state.builderMode === 'words') {
+                userAns = state.selectedWords.map(w => w.text).join(' ');
+            } else {
+                userAns = document.getElementById('builder-typed-input').value.trim();
+            }
+
+            // Normalize punctuation/spacing for checking
+            const cleanUser = userAns.toLowerCase().replace(/[.,?!]/g, '').replace(/\s+/g, ' ');
+            const cleanCorrect = q.correct.toLowerCase().replace(/[.,?!]/g, '').replace(/\s+/g, ' ');
+
+            const feedback = document.getElementById('builder-feedback');
+            const feedbackText = document.getElementById('feedback-text');
+            const feedbackIcon = document.getElementById('feedback-icon');
+
+            feedback.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-600', 'bg-rose-500/10', 'text-rose-600');
+
+            if (cleanUser === cleanCorrect) {
+                playSound('correct');
+                addXP(20);
+                state.builderScore += 10;
+                document.getElementById('builder-score').innerText = state.builderScore;
+
+                feedback.classList.add('bg-emerald-500/10', 'text-emerald-600');
+                feedbackIcon.className = "fa-solid fa-circle-check text-lg mt-0.5";
+                feedbackText.innerHTML = `<div><strong>Excellent!</strong> Perfect indirect request. <p class="text-xs text-slate-500 mt-1">Full: "${q.correct}"</p></div>`;
+
+                document.getElementById('check-ans-btn').classList.add('hidden');
+                document.getElementById('next-q-btn').classList.remove('hidden', 'flex');
+            } else {
+                playSound('wrong');
+                feedback.classList.add('bg-rose-500/10', 'text-rose-600');
+                feedbackIcon.className = "fa-solid fa-circle-xmark text-lg mt-0.5";
+                feedbackText.innerHTML = `<div><strong>Not quite right yet.</strong> Check word order and formulas! <p class="text-xs text-slate-500 mt-1">Hint: ${q.hint}</p></div>`;
+            }
+        }
+
+        function showBuilderHint() {
+            playSound('click');
+            const q = builderQuestions[state.builderIndex];
+            const feedback = document.getElementById('builder-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-500/10', 'bg-rose-500/10');
+            feedback.classList.add('bg-amber-500/10', 'text-amber-600');
+            document.getElementById('feedback-icon').className = "fa-solid fa-lightbulb text-lg mt-0.5";
+            document.getElementById('feedback-text').innerText = `Hint: ${q.hint}`;
+        }
+
+        function autoSolveBuilder() {
+            playSound('click');
+            const q = builderQuestions[state.builderIndex];
+            if (state.builderMode === 'words') {
+                state.selectedWords = q.words.map((w, idx) => ({ text: w, id: idx }));
+                renderWordBlocks();
+            } else {
+                document.getElementById('builder-typed-input').value = q.correct;
+            }
+        }
+
+        function resetCurrentBuilderQuestion() {
+            playSound('click');
+            state.selectedWords = [];
+            document.getElementById('builder-typed-input').value = '';
+            renderWordBlocks();
+        }
+
+        function nextBuilderQuestion() {
+            playSound('click');
+            if (state.builderIndex + 1 < builderQuestions.length) {
+                loadBuilderQuestion(state.builderIndex + 1);
+            } else {
+                // Completed all questions
+                playSound('level');
+                alert("🎉 Builder Module Complete! You earned bonus XP!");
+                addXP(50);
+                loadBuilderQuestion(0);
+            }
+        }
+
+        /* ========================================================================== */
+        /* TAB 3: GRAMMAR & ITEM MATRIX LOGIC                                         */
+        /* ========================================================================== */
+        function initMatrixTab() {
+            const grid = document.getElementById('vocab-matrix-grid');
+            grid.innerHTML = '';
+
+            Object.keys(partyData).forEach(catId => {
+                const item = partyData[catId];
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-3";
+
+                let itemsHTML = item.vocabItems.map(v => `
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/50">
+                        <div>
+                            <span class="font-bold text-xs block text-slate-800 dark:text-slate-200">${v.name}</span>
+                            <span class="text-[11px] text-slate-400 italic">${v.example}</span>
+                        </div>
+                        <button onclick="speakSentence('${v.example.replace(/'/g, "\\'")}')" class="p-1.5 text-slate-400 hover:text-brand-500 transition">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center font-bold text-sm">
+                            <i class="fa-solid ${item.icon}"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100">${item.title}</h4>
+                    </div>
+                    <div class="space-y-1.5">
+                        ${itemsHTML}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        /* ========================================================================== */
+        /* TAB 4: PARTY BLITZ ARCADE GAME LOGIC                                      */
+        /* ========================================================================== */
+        const arcadePool = [
+            {
+                guest: "Party Host to Sam",
+                direct: "Bring different types of drinks like soda and fruit juice.",
+                options: [
+                    "Would you ask Sam to bring different types of drinks?",
+                    "Could you tell Sam bring different types of drinks?",
+                    "Please ask Sam bringing different types of drinks.",
+                    "Would you ask Sam bring different drinks?"
+                ],
+                correctIdx: 0
+            },
+            {
+                guest: "Party Host to The DJ",
+                direct: "Play different types of music like pop and hip-hop.",
+                options: [
+                    "Would you tell the DJ to plays different music?",
+                    "Could you ask the DJ to play different types of music?",
+                    "Please tell the DJ play different music.",
+                    "Could you ask the DJ for play different music?"
+                ],
+                correctIdx: 1
+            },
+            {
+                guest: "Party Host to Committee",
+                direct: "We need different types of decorations like balloons.",
+                options: [
+                    "Could you ask the committee that we need balloons?",
+                    "Would you tell the committee to we need balloons?",
+                    "Could you tell the committee that we need different decorations?",
+                    "Please ask the committee that we need balloons."
+                ],
+                correctIdx: 2
+            },
+            {
+                guest: "Party Host to Maria",
+                direct: "Bake different types of desserts like brownies.",
+                options: [
+                    "Please ask Maria to bake different types of desserts.",
+                    "Please tell Maria to baking different desserts.",
+                    "Would you ask Maria that bake different desserts?",
+                    "Could you ask Maria for bake desserts?"
+                ],
+                correctIdx: 0
+            },
+            {
+                guest: "Party Host to Alex",
+                direct: "Buy different types of snack food like chips and nuts.",
+                options: [
+                    "Would you tell Alex to buys snack food?",
+                    "Could you ask Alex to buy different types of snack food?",
+                    "Please ask Alex buy different types of snack food.",
+                    "Would you ask Alex that buy snack food?"
+                ],
+                correctIdx: 1
+            }
+        ];
+
+        function startArcadeGame() {
+            playSound('click');
+            state.arcadeActive = true;
+            state.arcadeScore = 0;
+            state.arcadeStreak = 0;
+            state.arcadeTimeLeft = 60;
+
+            document.getElementById('arcade-start-screen').classList.add('hidden');
+            document.getElementById('arcade-end-screen').classList.add('hidden');
+            document.getElementById('arcade-game-stage').classList.remove('hidden');
+
+            document.getElementById('arcade-score').innerText = '0';
+            document.getElementById('arcade-streak').innerText = '0x';
+            document.getElementById('arcade-timer').innerText = '60';
+
+            // Start Timer Loop
+            clearInterval(state.arcadeTimerId);
+            state.arcadeTimerId = setInterval(() => {
+                state.arcadeTimeLeft--;
+                document.getElementById('arcade-timer').innerText = state.arcadeTimeLeft;
+
+                if (state.arcadeTimeLeft <= 0) {
+                    endArcadeGame();
+                }
+            }, 1000);
+
+            nextArcadeQuestion();
+        }
+
+        function nextArcadeQuestion() {
+            const randomItem = arcadePool[Math.floor(Math.random() * arcadePool.length)];
+            state.arcadeCurrentQuestion = randomItem;
+
+            document.getElementById('arcade-guest-name').innerText = randomItem.guest;
+            document.getElementById('arcade-guest-direct').innerText = `"${randomItem.direct}"`;
+
+            const grid = document.getElementById('arcade-options-grid');
+            grid.innerHTML = '';
+
+            randomItem.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "p-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white dark:hover:bg-brand-600 font-semibold text-xs sm:text-sm text-left transition shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between";
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-solid fa-arrow-right text-xs opacity-0 group-hover:opacity-100"></i>`;
+                btn.onclick = () => selectArcadeOption(idx);
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectArcadeOption(selectedIdx) {
+            if (!state.arcadeActive) return;
+
+            const q = state.arcadeCurrentQuestion;
+            if (selectedIdx === q.correctIdx) {
+                playSound('correct');
+                state.arcadeStreak++;
+                const multiplier = Math.min(state.arcadeStreak, 5);
+                state.arcadeScore += 100 * multiplier;
+
+                document.getElementById('arcade-score').innerText = state.arcadeScore;
+                document.getElementById('arcade-streak').innerText = `${state.arcadeStreak}x`;
+
+                nextArcadeQuestion();
+            } else {
+                playSound('wrong');
+                state.arcadeStreak = 0;
+                document.getElementById('arcade-streak').innerText = '0x';
+                nextArcadeQuestion();
+            }
+        }
+
+        function endArcadeGame() {
+            clearInterval(state.arcadeTimerId);
+            state.arcadeActive = false;
+            playSound('level');
+
+            document.getElementById('arcade-game-stage').classList.add('hidden');
+            document.getElementById('arcade-end-screen').classList.remove('hidden');
+
+            const earnedXP = Math.floor(state.arcadeScore / 10);
+            addXP(earnedXP);
+
+            document.getElementById('arcade-final-score').innerText = state.arcadeScore;
+            document.getElementById('arcade-final-xp').innerText = `+${earnedXP}`;
+        }
+
+        /* ========================================================================== */
+        /* APPLICATION INITIALIZATION                                                */
+        /* ========================================================================== */
+        window.onload = function() {
+            // Set initial state badges
+            document.getElementById('global-xp').innerText = `${state.xp} XP`;
+            state.level = Math.floor(state.xp / 100) + 1;
+            document.getElementById('user-level').innerText = `Level ${state.level}`;
+
+            // Init Tab 1 default category
+            selectCategory(1);
+
+            // Init Tab 2 default question
+            loadBuilderQuestion(0);
+
+            // Init Tab 3 matrix grid
+            initMatrixTab();
+        };
+    </script>
+</body>
+</html>
