@@ -1,0 +1,694 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EFL Pro: Subject-Verb Inversion in Conditionals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CRITICAL: Hide all scrollbars while keeping functionality */
+        *::-webkit-scrollbar { display: none !important; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        body { background-color: #111827; color: #f3f4f6; }
+        
+        .nav-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .word-tile {
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        .word-tile:active { transform: scale(0.95); }
+
+        .drop-zone {
+            min-height: 4rem;
+            min-width: 100%;
+            border: 2px dashed #4b5563;
+        }
+
+        .correct-bg { background-color: #064e3b !important; color: #34d399 !important; border-color: #10b981 !important; }
+        .incorrect-bg { background-color: #7f1d1d !important; color: #f87171 !important; border-color: #ef4444 !important; }
+    </style>
+</head>
+<body class="relative flex flex-col min-h-screen">
+
+    <!-- TOP NAVIGATION & SCOREBOARD (FIXED) -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-700 shadow-lg">
+        <!-- Scoreboard -->
+        <div class="flex justify-between items-center px-6 py-2 bg-gray-800">
+            <div class="flex items-center space-x-4">
+                <button onclick="changeScore('red', 1)" class="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-xl font-bold">+1</button>
+                <button onclick="changeScore('red', -1)" class="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm">-1</button>
+                <div class="text-3xl font-black text-red-500 w-16 text-center" id="score-red">0</div>
+                <span class="text-xl font-bold uppercase tracking-wider text-gray-400">Team Red</span>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <button onclick="toggleModal('cheat-sheet')" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded shadow-lg text-lg">💡 Grammar Rules</button>
+                <button onclick="toggleEditPanel()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow-lg text-lg">✏️ Live-Edit</button>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <span class="text-xl font-bold uppercase tracking-wider text-gray-400">Team Blue</span>
+                <div class="text-3xl font-black text-blue-500 w-16 text-center" id="score-blue">0</div>
+                <button onclick="changeScore('blue', -1)" class="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm">-1</button>
+                <button onclick="changeScore('blue', 1)" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xl font-bold">+1</button>
+            </div>
+        </div>
+
+        <!-- Horizontal Nav Menu -->
+        <div class="nav-container px-4 py-3 bg-gray-900 border-t border-gray-700 gap-2">
+            <button onclick="switchSection(1)" id="btn-sec-1" class="px-5 py-2 rounded-full text-lg font-semibold bg-blue-600 text-white nav-btn">1. Word Order</button>
+            <button onclick="switchSection(2)" id="btn-sec-2" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">2. Fill in Blanks</button>
+            <button onclick="switchSection(3)" id="btn-sec-3" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">3. Error Spotting</button>
+            <button onclick="switchSection(4)" id="btn-sec-4" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">4. Transformation</button>
+            <button onclick="switchSection(5)" id="btn-sec-5" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">5. Story Cloze</button>
+            <button onclick="switchSection(6)" id="btn-sec-6" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">6. Dialogues</button>
+            <button onclick="switchSection(7)" id="btn-sec-7" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">7. Sorting Game</button>
+            <button onclick="switchSection(8)" id="btn-sec-8" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">8. Info Gap</button>
+            <button onclick="switchSection(9)" id="btn-sec-9" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">9. Role-Play</button>
+            <button onclick="switchSection(10)" id="btn-sec-10" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">10. Differences</button>
+            <button onclick="switchSection(11)" id="btn-sec-11" class="px-5 py-2 rounded-full text-lg font-semibold bg-gray-700 hover:bg-gray-600 nav-btn">11. Debate</button>
+        </div>
+    </header>
+
+    <!-- MASSIVE PADDING FOR CLASSROOM PROJECTION -->
+    <main class="w-full pt-48 pb-64 px-12 flex-grow overflow-y-auto" id="main-content">
+        
+        <!-- SECTION 1: WORD ORDER -->
+        <section id="sec-1" class="activity-section block">
+            <h1 class="text-5xl font-black text-center mb-16 text-blue-400 uppercase tracking-widest editable">Word Order & Scrambled Sentences</h1>
+            <div class="space-y-16" id="s1-container">
+                <!-- Injected via JS to keep HTML DRY and functional -->
+            </div>
+        </section>
+
+        <!-- SECTION 2: FILL IN THE BLANKS -->
+        <section id="sec-2" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-emerald-400 uppercase tracking-widest editable">Fill in the Blanks</h1>
+            <div class="space-y-16" id="s2-container"></div>
+        </section>
+
+        <!-- SECTION 3: ERROR SPOTTING -->
+        <section id="sec-3" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-red-400 uppercase tracking-widest editable">Error Spotting & Proofreading</h1>
+            <div class="space-y-16" id="s3-container"></div>
+        </section>
+
+        <!-- SECTION 4: SENTENCE TRANSFORMATION -->
+        <section id="sec-4" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-purple-400 uppercase tracking-widest editable">Sentence Transformation</h1>
+            <p class="text-3xl text-center text-gray-400 mb-12">Rewrite the 'If' sentences using Subject-Verb Inversion.</p>
+            <div class="space-y-16" id="s4-container"></div>
+        </section>
+
+        <!-- SECTION 5: CONTEXTUAL STORY CLOZE -->
+        <section id="sec-5" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-orange-400 uppercase tracking-widest editable">Contextual Story Cloze</h1>
+            <div class="bg-gray-800 p-12 rounded-3xl shadow-2xl text-4xl leading-relaxed space-y-8" id="s5-container"></div>
+        </section>
+
+        <!-- SECTION 6: DIALOGUE COMPLETION -->
+        <section id="sec-6" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-pink-400 uppercase tracking-widest editable">Real-World Dialogue</h1>
+            <div class="space-y-16" id="s6-container"></div>
+        </section>
+
+        <!-- SECTION 7: CATEGORY SORTING -->
+        <section id="sec-7" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-indigo-400 uppercase tracking-widest editable">Category Sorting</h1>
+            <div class="flex w-full gap-8">
+                <div class="flex-1 bg-gray-800 rounded-2xl p-8 border-4 border-gray-600" id="sort-standard" ondrop="dropSort(event, 'standard')" ondragover="allowDrop(event)">
+                    <h2 class="text-4xl font-bold text-center mb-8 border-b border-gray-600 pb-4">Standard 'If' Conditionals</h2>
+                </div>
+                <div class="flex-1 bg-gray-800 rounded-2xl p-8 border-4 border-indigo-600" id="sort-inverted" ondrop="dropSort(event, 'inverted')" ondragover="allowDrop(event)">
+                    <h2 class="text-4xl font-bold text-center mb-8 border-b border-indigo-600 pb-4">Inverted Conditionals</h2>
+                </div>
+            </div>
+            <div class="mt-12 flex flex-wrap justify-center gap-6" id="s7-container"></div>
+        </section>
+
+        <!-- SECTION 8: INFORMATION GAP -->
+        <section id="sec-8" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-teal-400 uppercase tracking-widest editable">Information Gap</h1>
+            <div class="flex gap-8 mb-12">
+                <button onclick="toggleInfoGap('A')" class="flex-1 py-6 bg-blue-900 hover:bg-blue-800 text-4xl font-bold rounded-2xl">Student A View</button>
+                <button onclick="toggleInfoGap('B')" class="flex-1 py-6 bg-red-900 hover:bg-red-800 text-4xl font-bold rounded-2xl">Student B View</button>
+            </div>
+            <div id="s8-A" class="space-y-8 bg-blue-950 p-12 rounded-3xl hidden text-3xl"></div>
+            <div id="s8-B" class="space-y-8 bg-red-950 p-12 rounded-3xl hidden text-3xl"></div>
+        </section>
+
+        <!-- SECTION 9: ROLE-PLAY -->
+        <section id="sec-9" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-amber-400 uppercase tracking-widest editable">Real-Life Situation Cards</h1>
+            <div class="grid grid-cols-2 gap-12" id="s9-container"></div>
+        </section>
+
+        <!-- SECTION 10: SPOT THE DIFFERENCE -->
+        <section id="sec-10" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-cyan-400 uppercase tracking-widest editable">Spot The Difference</h1>
+            <div class="space-y-16" id="s10-container"></div>
+        </section>
+
+        <!-- SECTION 11: DEBATE -->
+        <section id="sec-11" class="activity-section hidden">
+            <h1 class="text-5xl font-black text-center mb-16 text-rose-400 uppercase tracking-widest editable">Guided Debate & Opinions</h1>
+            <div class="space-y-12" id="s11-container"></div>
+        </section>
+
+    </main>
+
+    <!-- LIVE EDIT PANEL (OFF-CANVAS) -->
+    <div id="edit-panel" class="fixed top-0 right-0 w-96 h-full bg-gray-800 border-l border-gray-600 shadow-2xl z-[100] transform translate-x-full transition-transform duration-300 overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-white">Live-Edit Mode</h2>
+                <button onclick="toggleEditPanel()" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <p class="text-gray-300 mb-6">Click any text in the main view that glows yellow to edit it directly. You can also manually reload exercises below.</p>
+            <button onclick="toggleEditMode()" id="edit-toggle-btn" class="w-full py-3 bg-green-600 hover:bg-green-500 rounded text-xl font-bold text-white mb-6">Enable Click-to-Edit</button>
+            <hr class="border-gray-600 mb-6">
+            <h3 class="text-xl font-bold text-gray-400 mb-4">Reset Sections</h3>
+            <button onclick="location.reload()" class="w-full py-3 bg-red-600 hover:bg-red-500 rounded text-xl font-bold text-white">Reset Entire App</button>
+        </div>
+    </div>
+
+    <!-- GRAMMAR CHEAT SHEET MODAL -->
+    <div id="cheat-sheet" class="fixed inset-0 bg-black bg-opacity-80 z-[100] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-3xl max-w-4xl w-full p-12 border border-yellow-600 shadow-2xl relative">
+            <button onclick="toggleModal('cheat-sheet')" class="absolute top-6 right-8 text-gray-400 hover:text-white text-5xl">&times;</button>
+            <h2 class="text-5xl font-black text-yellow-500 mb-10 border-b border-gray-600 pb-6">Grammar Rule: Subject-Verb Inversion</h2>
+            
+            <div class="space-y-8 text-2xl text-gray-200">
+                <div>
+                    <h3 class="text-3xl font-bold text-blue-400 mb-3">1. Past Unreal Conditionals (Had)</h3>
+                    <p class="mb-2">Replace <em>If</em> by inverting the subject and the auxiliary <em>had</em>.</p>
+                    <p class="text-gray-400 line-through">If they had been unable to work together...</p>
+                    <p class="text-green-400 font-bold">Had they been unable to work together...</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-3xl font-bold text-red-400 mb-3">2. Negative Past Unreal (Had + not)</h3>
+                    <p class="mb-2">Negative forms are NOT contracted. <em>Not</em> is separated from <em>had</em>.</p>
+                    <p class="text-gray-400 line-through">If this company hadn't created the app...</p>
+                    <p class="text-green-400 font-bold">Had this company not created the app...</p>
+                </div>
+
+                <div>
+                    <h3 class="text-3xl font-bold text-emerald-400 mb-3">3. Present/Future Real Conditionals (Should)</h3>
+                    <p class="mb-2">Replace <em>If</em> with <em>Should</em> to sound more formal. Does NOT express obligation.</p>
+                    <p class="text-gray-400 line-through">If you want to buy natural products...</p>
+                    <p class="text-green-400 font-bold">Should you want to buy natural products...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEEDBACK BANNER -->
+    <div id="feedback-banner" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 px-12 py-6 rounded-2xl shadow-2xl text-4xl font-black text-white z-[100] hidden transition-opacity duration-300">
+        <!-- Text injected via JS -->
+    </div>
+
+    <script>
+        // === GLOBAL STATE ===
+        let scores = { red: 0, blue: 0 };
+        let isEditMode = false;
+
+        // === AUDIO CONTEXT FOR INSTANT FEEDBACK ===
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.1); // C6
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'incorrect') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // === UI CONTROLS ===
+        function switchSection(id) {
+            document.querySelectorAll('.activity-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`sec-${id}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-700', 'text-gray-300');
+            });
+            const activeBtn = document.getElementById(`btn-sec-${id}`);
+            activeBtn.classList.remove('bg-gray-700', 'text-gray-300');
+            activeBtn.classList.add('bg-blue-600', 'text-white');
+        }
+
+        function changeScore(team, amount) {
+            scores[team] += amount;
+            document.getElementById(`score-${team}`).innerText = scores[team];
+        }
+
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleEditPanel() {
+            const panel = document.getElementById('edit-panel');
+            if (panel.classList.contains('translate-x-full')) {
+                panel.classList.remove('translate-x-full');
+            } else {
+                panel.classList.add('translate-x-full');
+            }
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('edit-toggle-btn');
+            const editables = document.querySelectorAll('.editable');
+            if (isEditMode) {
+                btn.innerText = 'Disable Click-to-Edit';
+                btn.classList.replace('bg-green-600', 'bg-red-600');
+                editables.forEach(el => {
+                    el.contentEditable = "true";
+                    el.classList.add('border-2', 'border-yellow-500', 'p-2', 'rounded');
+                });
+            } else {
+                btn.innerText = 'Enable Click-to-Edit';
+                btn.classList.replace('bg-red-600', 'bg-green-600');
+                editables.forEach(el => {
+                    el.contentEditable = "false";
+                    el.classList.remove('border-2', 'border-yellow-500', 'p-2', 'rounded');
+                });
+            }
+        }
+
+        function showFeedback(message, isCorrect) {
+            const banner = document.getElementById('feedback-banner');
+            banner.innerHTML = message;
+            banner.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-12 py-6 rounded-2xl shadow-2xl text-4xl font-black text-white z-[100] transition-opacity duration-300 ${isCorrect ? 'bg-green-600' : 'bg-red-600'}`;
+            banner.classList.remove('hidden');
+            playSound(isCorrect ? 'correct' : 'incorrect');
+            setTimeout(() => { banner.classList.add('hidden'); }, 3000);
+        }
+
+        // === DATA GENERATION & INJECTION ===
+        
+        // 1. Scrambled Sentences
+        const s1_data = [
+            { words: ["Had", "they", "worked", "together,", "it", "would", "have", "succeeded."], correct: "Had they worked together, it would have succeeded." },
+            { words: ["Should", "you", "need", "help,", "call", "me", "immediately."], correct: "Should you need help, call me immediately." },
+            { words: ["Had", "the", "company", "not", "created", "it,", "they", "would", "have", "failed."], correct: "Had the company not created it, they would have failed." },
+            { words: ["Had", "I", "known", "the", "truth,", "I", "would", "have", "come."], correct: "Had I known the truth, I would have come." },
+            { words: ["Should", "anyone", "ask,", "tell", "them", "I", "am", "busy."], correct: "Should anyone ask, tell them I am busy." }
+        ];
+
+        function renderSection1() {
+            const container = document.getElementById('s1-container');
+            s1_data.forEach((item, index) => {
+                const shuffled = [...item.words].sort(() => Math.random() - 0.5);
+                let html = `<div class="bg-gray-800 p-8 rounded-2xl shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-3xl font-bold text-gray-500">Q${index+1}</span>
+                        <button onclick="checkS1(${index})" class="px-6 py-3 bg-blue-500 hover:bg-blue-400 rounded-xl text-2xl font-bold">Check</button>
+                    </div>
+                    <div class="flex flex-wrap gap-4 mb-6" id="s1-source-${index}">`;
+                
+                shuffled.forEach((word, wIdx) => {
+                    html += `<span class="word-tile bg-gray-700 text-white px-6 py-4 rounded-xl text-3xl font-bold shadow cursor-pointer editable" onclick="moveWord(this, 's1-dest-${index}')">${word}</span>`;
+                });
+                
+                html += `</div>
+                    <div class="drop-zone bg-gray-900 rounded-xl p-6 flex flex-wrap gap-4" id="s1-dest-${index}" onclick="returnWord(event, 's1-source-${index}')"></div>
+                    <div id="s1-ans-${index}" class="hidden mt-4 text-3xl font-bold text-green-400 editable">${item.correct}</div>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function moveWord(el, targetId) {
+            document.getElementById(targetId).appendChild(el);
+        }
+        function returnWord(e, sourceId) {
+            if(e.target.classList.contains('word-tile')) {
+                document.getElementById(sourceId).appendChild(e.target);
+            }
+        }
+        function checkS1(index) {
+            const dest = document.getElementById(`s1-dest-${index}`);
+            const words = Array.from(dest.children).map(el => el.innerText).join(' ');
+            if (words === s1_data[index].correct) {
+                showFeedback("Correct! Excellent word order. 🎯", true);
+                dest.classList.add('correct-bg');
+                speakText(words);
+            } else {
+                showFeedback("Incorrect. Try again! 🤔", false);
+                document.getElementById(`s1-ans-${index}`).classList.remove('hidden');
+            }
+        }
+
+        // 2. Fill in the Blanks
+        const s2_data = [
+            { pre: "", select: ["If", "Had", "Should"], post: " they been unable to work together, the search engine might never have been created.", correct: "Had", rule: "Past unreal conditionals use 'Had + subject + past participle'." },
+            { pre: "", select: ["If", "Should", "Were"], post: " you want to buy natural skin care products, this company offers over 1,200 choices.", correct: "Should", rule: "Present real conditionals use 'Should + subject + base verb'." },
+            { pre: "", select: ["Had", "Hadn't", "Should"], post: " this company not created Hello Kitty, it wouldn't have become nearly so successful.", correct: "Had", rule: "Negative forms are NOT contracted. Use 'Had + subject + not'." },
+            { pre: "", select: ["Had", "Should", "If"], post: " he known about the severe traffic, he would have left early.", correct: "Had", rule: "Past unreal conditional uses 'Had'." },
+            { pre: "", select: ["Had", "Should", "Were"], post: " she need further assistance, please give her my business card.", correct: "Should", rule: "Present formal conditional uses 'Should'." }
+        ];
+
+        function renderSection2() {
+            const container = document.getElementById('s2-container');
+            s2_data.forEach((item, index) => {
+                let options = item.select.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+                let html = `<div class="bg-gray-800 p-8 rounded-2xl shadow-xl flex items-center text-4xl leading-snug">
+                    <span class="text-gray-500 font-bold mr-6">Q${index+1}.</span>
+                    <p class="editable flex-grow">
+                        ${item.pre}
+                        <select id="s2-sel-${index}" class="bg-gray-700 text-yellow-400 font-bold rounded px-4 py-2 mx-2 cursor-pointer outline-none border-2 border-gray-600 focus:border-yellow-400">
+                            <option value="">...</option>
+                            ${options}
+                        </select>
+                        ${item.post}
+                    </p>
+                    <button onclick="checkS2(${index})" class="ml-8 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold">Check</button>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function checkS2(index) {
+            const sel = document.getElementById(`s2-sel-${index}`);
+            if (sel.value === s2_data[index].correct) {
+                showFeedback("Correct! " + s2_data[index].rule, true);
+                sel.classList.replace('bg-gray-700', 'bg-emerald-900');
+                sel.classList.add('text-emerald-300');
+                speakText(s2_data[index].correct + s2_data[index].post);
+            } else {
+                showFeedback("Incorrect. Remember the rule: " + s2_data[index].rule, false);
+                sel.classList.replace('bg-gray-700', 'bg-red-900');
+            }
+        }
+
+        // 3. Error Spotting
+        const s3_data = [
+            { errorText: "Had not they been able to secure the funding, the startup would have failed.", correct: "Had they not been able to secure the funding, the startup would have failed.", explanation: "'Not' must separate from 'Had' and follow the subject." },
+            { errorText: "Should you wants to upgrade your account, click the link below.", correct: "Should you want to upgrade your account, click the link below.", explanation: "'Should' is followed by the base form of the verb (want)." },
+            { errorText: "Had he know about the policy change, he would have protested.", correct: "Had he known about the policy change, he would have protested.", explanation: "'Had' must be followed by the past participle (known)." },
+            { errorText: "If had we seen the warning signs, we could have avoided the disaster.", correct: "Had we seen the warning signs, we could have avoided the disaster.", explanation: "Drop 'If' entirely when inverting 'Had'." },
+            { errorText: "Should they needed more resources, we can supply them.", correct: "Should they need more resources, we can supply them.", explanation: "'Should' requires the base form of the verb (need)." }
+        ];
+
+        function renderSection3() {
+            const container = document.getElementById('s3-container');
+            s3_data.forEach((item, index) => {
+                let html = `<div class="bg-gray-800 p-8 rounded-2xl shadow-xl">
+                    <p class="text-4xl text-red-300 font-bold mb-6 editable">❌ ${item.errorText}</p>
+                    <div class="flex gap-4">
+                        <input type="text" id="s3-inp-${index}" class="flex-grow bg-gray-900 text-3xl text-white p-4 rounded-xl border-2 border-gray-600 focus:border-red-400" placeholder="Type the corrected sentence here...">
+                        <button onclick="checkS3(${index})" class="px-8 py-4 bg-red-600 hover:bg-red-500 rounded-xl text-3xl font-bold">Fix It</button>
+                    </div>
+                    <p id="s3-exp-${index}" class="hidden mt-6 text-2xl text-green-400 font-bold editable">✅ ${item.correct}<br><span class="text-gray-400 text-xl font-normal">${item.explanation}</span></p>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function checkS3(index) {
+            const inp = document.getElementById(`s3-inp-${index}`).value.trim().toLowerCase();
+            const correctClean = s3_data[index].correct.toLowerCase().replace(/[^a-z ]/g, '');
+            const inpClean = inp.replace(/[^a-z ]/g, '');
+            
+            if (inpClean === correctClean) {
+                showFeedback("Perfectly corrected! ✍️", true);
+                document.getElementById(`s3-inp-${index}`).classList.add('correct-bg');
+                document.getElementById(`s3-exp-${index}`).classList.remove('hidden');
+                speakText(s3_data[index].correct);
+            } else {
+                showFeedback("Not quite right. Keep looking for the structural error.", false);
+                document.getElementById(`s3-exp-${index}`).classList.remove('hidden');
+            }
+        }
+
+        // 4. Sentence Transformation
+        const s4_data = [
+            { original: "If they had been unable to work together, it would have failed.", target: "Had they been unable to work together, it would have failed." },
+            { original: "If you want to buy natural skin care products, visit our site.", target: "Should you want to buy natural skin care products, visit our site." },
+            { original: "If this company hadn't created Hello Kitty, it wouldn't be rich.", target: "Had this company not created Hello Kitty, it wouldn't be rich." },
+            { original: "If I had known the truth, I wouldn't have trusted him.", target: "Had I known the truth, I wouldn't have trusted him." },
+            { original: "If you need any help, please don't hesitate to ask.", target: "Should you need any help, please don't hesitate to ask." }
+        ];
+
+        function renderSection4() {
+            const container = document.getElementById('s4-container');
+            s4_data.forEach((item, index) => {
+                let html = `<div class="bg-gray-800 p-8 rounded-2xl shadow-xl">
+                    <p class="text-4xl text-gray-300 font-bold mb-6 editable border-l-8 border-purple-500 pl-6">"${item.original}"</p>
+                    <div class="flex gap-4">
+                        <input type="text" id="s4-inp-${index}" class="flex-grow bg-gray-900 text-3xl text-purple-300 p-4 rounded-xl border-2 border-gray-600 focus:border-purple-400" placeholder="Transform using inversion...">
+                        <button onclick="checkS4(${index})" class="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-xl text-3xl font-bold">Transform</button>
+                    </div>
+                    <p id="s4-ans-${index}" class="hidden mt-6 text-3xl text-green-400 font-bold editable">✅ ${item.target}</p>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        function checkS4(index) {
+            const inp = document.getElementById(`s4-inp-${index}`).value.trim().toLowerCase().replace(/[^a-z ]/g, '');
+            const tgt = s4_data[index].target.toLowerCase().replace(/[^a-z ]/g, '');
+            if (inp === tgt) {
+                showFeedback("Excellent transformation! 🦋", true);
+                document.getElementById(`s4-inp-${index}`).classList.add('correct-bg');
+                speakText(s4_data[index].target);
+            } else {
+                showFeedback("Incorrect. Remember: Had/Should + Subject...", false);
+                document.getElementById(`s4-ans-${index}`).classList.remove('hidden');
+            }
+        }
+
+        // 5. Contextual Story Cloze
+        function renderSection5() {
+            const story = `
+                The tech startup faced ruin in 2018. <select id="s5-1" class="bg-gray-700 text-orange-400 rounded p-2 mx-2 text-3xl font-bold cursor-pointer"><option value="">___</option><option value="Had">Had</option><option value="Should">Should</option></select> the founders given up then, the revolutionary AI would never exist today. 
+                <br><br>
+                However, they persevered. "<select id="s5-2" class="bg-gray-700 text-orange-400 rounded p-2 mx-2 text-3xl font-bold cursor-pointer"><option value="">___</option><option value="Had">Had</option><option value="Should">Should</option></select> you ever visit our first office," the CEO recalled, "you would see how desperate we were." 
+                <br><br>
+                They secured a final investor. <select id="s5-3" class="bg-gray-700 text-orange-400 rounded p-2 mx-2 text-3xl font-bold cursor-pointer"><option value="">___</option><option value="Had">Had</option><option value="Should">Should</option></select> they not invested that $50k, bankruptcy was certain. 
+                <br><br>
+                Today, their policy is strict: "<select id="s5-4" class="bg-gray-700 text-orange-400 rounded p-2 mx-2 text-3xl font-bold cursor-pointer"><option value="">___</option><option value="Had">Had</option><option value="Should">Should</option></select> a crisis arise, communication is key."
+                <br><br>
+                Looking back, <select id="s5-5" class="bg-gray-700 text-orange-400 rounded p-2 mx-2 text-3xl font-bold cursor-pointer"><option value="">___</option><option value="Had">Had</option><option value="Should">Should</option></select> they known how hard it would be, they might not have started.
+            `;
+            document.getElementById('s5-container').innerHTML = story + `<div class="mt-12 text-center"><button onclick="checkS5()" class="px-10 py-5 bg-orange-600 hover:bg-orange-500 rounded-2xl text-4xl font-bold shadow-xl">Verify Story</button></div>`;
+        }
+        function checkS5() {
+            const answers = ["Had", "Should", "Had", "Should", "Had"];
+            let allCorrect = true;
+            answers.forEach((ans, i) => {
+                const el = document.getElementById(`s5-${i+1}`);
+                if (el.value === ans) {
+                    el.classList.replace('bg-gray-700', 'bg-green-800');
+                    el.classList.add('text-green-300');
+                } else {
+                    el.classList.replace('bg-gray-700', 'bg-red-800');
+                    allCorrect = false;
+                }
+            });
+            if (allCorrect) { showFeedback("Amazing! Story complete. 📖", true); speakText("Story completed correctly."); }
+            else { showFeedback("Some blanks are incorrect. Check context!", false); }
+        }
+
+        // 6. Dialogue Completion
+        const s6_data = [
+            { A: "Did they win the championship?", B: "No, but [Had they practiced] more, they might have.", ans: "Had they practiced" },
+            { A: "What if I have questions about the syllabus?", B: "[Should you have] any, please email me directly.", ans: "Should you have" },
+            { A: "Why did the project fail?", B: "[Had they not ignored] the warnings, it would have survived.", ans: "Had they not ignored" },
+            { A: "I missed the international flight.", B: "[Had you left] the house earlier, you'd have made it.", ans: "Had you left" },
+            { A: "I might need a refund next week.", B: "[Should you need] one, make sure to keep the receipt.", ans: "Should you need" }
+        ];
+        function renderSection6() {
+            const container = document.getElementById('s6-container');
+            s6_data.forEach((item, index) => {
+                let parts = item.B.split(/\[.*?\]/);
+                let html = `<div class="bg-gray-800 p-8 rounded-2xl shadow-xl space-y-4 text-4xl">
+                    <p class="text-pink-300 font-bold editable">A: "${item.A}"</p>
+                    <p class="text-gray-300 editable flex items-center">B: "${parts[0]} <input type="text" id="s6-inp-${index}" class="bg-gray-900 text-pink-400 p-2 mx-4 rounded-lg w-80 text-center border-b-4 border-pink-600 focus:outline-none" placeholder="..."> ${parts[1]}"</p>
+                    <div class="text-right mt-4"><button onclick="checkS6(${index}, '${item.ans}')" class="px-6 py-2 bg-pink-700 hover:bg-pink-600 rounded-lg text-2xl font-bold">Check</button></div>
+                    <p id="s6-ans-${index}" class="hidden text-2xl text-green-400 text-right mt-2 font-bold">${item.ans}</p>
+                </div>`;
+                container.innerHTML += html;
+            });
+        }
+        function checkS6(index, ans) {
+            const inp = document.getElementById(`s6-inp-${index}`);
+            if (inp.value.trim().toLowerCase() === ans.toLowerCase()) {
+                showFeedback("Perfect dialogue flow! 💬", true);
+                inp.classList.add('correct-bg');
+                speakText(ans);
+            } else {
+                showFeedback("Incorrect. Hint: " + ans.split(' ')[0] + "...", false);
+                document.getElementById(`s6-ans-${index}`).classList.remove('hidden');
+            }
+        }
+
+        // 7. Category Sorting Game
+        const s7_data = [
+            { text: "Had I been there...", type: "inverted" },
+            { text: "If it should rain...", type: "standard" },
+            { text: "Should you need me...", type: "inverted" },
+            { text: "If I had seen the email...", type: "standard" },
+            { text: "Had she not spoken up...", type: "inverted" }
+        ];
+        function renderSection7() {
+            const container = document.getElementById('s7-container');
+            s7_data.forEach((item, index) => {
+                container.innerHTML += `<div draggable="true" ondragstart="dragSort(event)" id="sort-item-${index}" data-type="${item.type}" class="bg-indigo-600 text-white px-8 py-6 rounded-xl text-3xl font-bold cursor-grab shadow-lg editable hover:bg-indigo-500">${item.text}</div>`;
+            });
+        }
+        function allowDrop(ev) { ev.preventDefault(); }
+        function dragSort(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        function dropSort(ev, targetType) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var el = document.getElementById(data);
+            if (el.dataset.type === targetType) {
+                ev.target.closest('div').appendChild(el);
+                showFeedback("Correct classification! 🗂️", true);
+            } else {
+                showFeedback("Wrong category! 🚫", false);
+            }
+        }
+
+        // 8. Information Gap
+        function renderSection8() {
+            document.getElementById('s8-A').innerHTML = `
+                <p class="editable"><strong class="text-blue-400">Instructions:</strong> Read your sentences to Student B. They must write the inverted version.</p>
+                <ol class="list-decimal pl-8 space-y-6 editable">
+                    <li>If the CEO had resigned, the stock would have crashed.</li>
+                    <li>If you have any further questions, consult the manual.</li>
+                    <li>If they hadn't found the cure, millions would have suffered.</li>
+                    <li class="mt-8 text-yellow-400 font-bold">Listen to Student B and verify:</li>
+                    <li>Had the server not crashed...</li>
+                    <li>Should management require a report...</li>
+                </ol>
+            `;
+            document.getElementById('s8-B').innerHTML = `
+                <p class="editable"><strong class="text-red-400">Instructions:</strong> Listen to Student A and write the inverted versions. Then read your sentences to them.</p>
+                <ol class="list-decimal pl-8 space-y-6 editable">
+                    <li class="mt-8 text-yellow-400 font-bold">Listen to Student A and write:</li>
+                    <li>___________________________________</li>
+                    <li>___________________________________</li>
+                    <li>___________________________________</li>
+                    <li class="mt-8 text-green-400 font-bold">Read to Student A:</li>
+                    <li>If the server hadn't crashed, we wouldn't have lost data.</li>
+                    <li>If management requires a report, notify me.</li>
+                </ol>
+            `;
+        }
+        function toggleInfoGap(student) {
+            document.getElementById('s8-A').classList.add('hidden');
+            document.getElementById('s8-B').classList.add('hidden');
+            document.getElementById(`s8-${student}`).classList.remove('hidden');
+        }
+
+        // 9. Real-Life Situation Cards
+        const s9_data = [
+            "Customer Support: A client is furious about a broken product. Apologize and state: 'If you need a replacement, we will send one.' (Use inversion)",
+            "Business Meeting: Your marketing campaign failed. Admit to the board: 'If we had known about the competitor's ad, we would have delayed ours.' (Use inversion)",
+            "Hotel Concierge: A VIP guest is checking in. Tell them politely: 'If you require anything else during your stay, call 0.' (Use inversion)",
+            "History Class: Discuss the Titanic. Say: 'If they had not ignored the iceberg warnings, it wouldn't have sunk.' (Use inversion)",
+            "Tech Support: Explain a policy. 'If the system should reboot, save your files immediately.' (Use inversion)"
+        ];
+        function renderSection9() {
+            const container = document.getElementById('s9-container');
+            s9_data.forEach((text, i) => {
+                container.innerHTML += `<div class="bg-gray-800 p-8 rounded-3xl border-4 border-amber-600 shadow-2xl editable text-3xl leading-relaxed text-gray-200">
+                    <span class="block text-4xl font-black text-amber-500 mb-4">Card ${i+1}</span>
+                    ${text}
+                </div>`;
+            });
+        }
+
+        // 10. Spot the Difference
+        function renderSection10() {
+            const container = document.getElementById('s10-container');
+            const data = [
+                ["Company A: If they had hired the consultant, they would have profited.", "Company B: Had they hired the consultant, they would have profited."],
+                ["Contract A: If you should wish to terminate the lease, give 30 days notice.", "Contract B: Should you wish to terminate the lease, give 30 days notice."],
+                ["Report A: If the manager hadn't noticed the error, it would have been published.", "Report B: Had the manager not noticed the error, it would have been published."]
+            ];
+            data.forEach((pair, i) => {
+                container.innerHTML += `<div class="flex gap-8 items-center bg-gray-800 p-8 rounded-2xl">
+                    <div class="flex-1 p-6 bg-cyan-900 rounded-xl text-3xl font-bold editable border border-cyan-500">${pair[0]}</div>
+                    <div class="text-5xl">🆚</div>
+                    <div class="flex-1 p-6 bg-purple-900 rounded-xl text-3xl font-bold editable border border-purple-500">${pair[1]}</div>
+                </div>`;
+            });
+        }
+
+        // 11. Guided Debate
+        const s11_data = [
+            "Had the internet never been invented, society would be much happier today. Agree or disagree?",
+            "Should humanity discover alien life, we should hide our presence. Agree or disagree?",
+            "Had social media not been created, political polarization would not be as extreme.",
+            "Should AI replace all manual labor, the government must provide universal basic income.",
+            "Had you been born 100 years ago, your current skills would be entirely useless."
+        ];
+        function renderSection11() {
+            const container = document.getElementById('s11-container');
+            s11_data.forEach((prompt, i) => {
+                container.innerHTML += `<div class="bg-gray-800 p-8 rounded-2xl border-l-8 border-rose-600 shadow-xl flex items-center justify-between">
+                    <p class="text-4xl text-gray-200 font-bold w-3/4 editable">${prompt}</p>
+                    <button onclick="speakText('${prompt}')" class="px-6 py-4 bg-gray-700 hover:bg-gray-600 rounded-full text-4xl">🔊</button>
+                </div>`;
+            });
+        }
+
+        // INIT
+        window.onload = () => {
+            renderSection1();
+            renderSection2();
+            renderSection3();
+            renderSection4();
+            renderSection5();
+            renderSection6();
+            renderSection7();
+            renderSection8();
+            renderSection9();
+            renderSection10();
+            renderSection11();
+        };
+
+    </script>
+</body>
+</html>
