@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Investigators - Childhood Past Tense Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-flip {
+      perspective: 1000px;
+    }
+    .card-inner {
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      backface-visibility: hidden;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.8); }
+    }
+    .recording-red {
+      animation: recordPulse 1.2s infinite;
+    }
+    @keyframes recordPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+  <!-- Header Section -->
+  <header class="max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-700/60 pb-5">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-amber-400 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg shadow-indigo-500/20">
+        <i class="fa-solid fa-magnifying-glass-location"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-amber-200 to-teal-300">
+          Memory Investigators
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400 font-medium">A2 Speaking & Past Tense Knowledge Validator Studio</p>
+      </div>
+    </div>
+
+    <!-- Global Stage Timer -->
+    <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-4 border border-indigo-500/30">
+      <div class="flex items-center gap-2">
+        <i class="fa-regular fa-clock text-indigo-400 text-lg"></i>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">Stage Time</div>
+      </div>
+      <div id="timerDisplay" class="text-2xl font-mono font-black text-amber-400">10:00</div>
+      <div class="flex gap-1">
+        <button id="startTimerBtn" onclick="toggleTimer()" class="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition">
+          <i id="playIcon" class="fa-solid fa-play text-xs"></i>
+        </button>
+        <button onclick="resetTimer()" class="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 flex items-center justify-center transition">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- Left Column: Role & Prompts Deck (7 Cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- Roles Selector Switcher -->
+      <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Role Mode:</span>
+        <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
+          <button id="roleBtnA" onclick="setRole('A')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+            <i class="fa-solid fa-user-ninja"></i> Role A: Detective
+          </button>
+          <button id="roleBtnB" onclick="setRole('B')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-user-astronaut"></i> Role B: Witness
+          </button>
+        </div>
+      </div>
+
+      <!-- Role Description Card -->
+      <div id="roleInfo" class="glass-panel p-5 rounded-2xl border-l-4 border-indigo-500">
+        <div class="flex items-center gap-2 text-indigo-300 font-bold text-sm mb-1">
+          <i class="fa-solid fa-shield-halved"></i> Role A: The Memory Detective
+        </div>
+        <p class="text-xs md:text-sm text-slate-300">
+          Pick a prompt, ask follow-up questions in the past tense (e.g., <em>"Did you enjoy it?"</em>, <em>"Who was there?"</em>), and validate whether your partner uses regular and irregular past verbs correctly!
+        </p>
+      </div>
+
+      <!-- Prompt Deck Card -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between flex-grow min-h-[320px] relative overflow-hidden">
+        <!-- Card Header -->
+        <div class="flex justify-between items-center mb-4">
+          <span id="promptCategory" class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            School & Friends
+          </span>
+          <span id="promptCounter" class="text-xs font-bold text-slate-400">
+            Card 1 of 20
+          </span>
+        </div>
+
+        <!-- Prompt Content Display -->
+        <div class="my-auto py-4">
+          <h2 id="promptTitle" class="text-xl md:text-2xl font-bold text-slate-100 mb-3 leading-snug">
+            What was your favorite toy when you were 7 years old?
+          </h2>
+          <p id="promptDetails" class="text-sm text-slate-400 leading-relaxed">
+            Tell your Detective what it was, who gave it to you, and how you played with it using Simple Past verbs!
+          </p>
+        </div>
+
+        <!-- Past Tense Sentence Helpers -->
+        <div class="bg-slate-900/80 rounded-xl p-3 border border-slate-700/50 mb-4">
+          <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Simple Past Sentence Starters
+          </div>
+          <div class="text-xs text-slate-300 italic flex flex-wrap gap-2">
+            <span class="bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">"When I was young, I..."</span>
+            <span class="bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">"My favorite was..."</span>
+            <span class="bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/50">"I played with..."</span>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-3">
+          <button onclick="prevPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button onclick="randomPrompt()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs md:text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-shuffle"></i> Draw New Memory Card
+          </button>
+          <button onclick="nextPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Audio Recorder & Verb Validator (5 Cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-6">
+
+      <!-- Audio Recording Studio -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between border border-teal-500/20">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
+            <i class="fa-solid fa-microphone-lines"></i> 1-Min Audio Studio
+          </div>
+          <span id="recordTimer" class="font-mono text-sm font-bold text-slate-400">00:00 / 01:00</span>
+        </div>
+
+        <!-- Audio Visualizer Canvas -->
+        <div class="w-full h-16 bg-slate-900/90 rounded-2xl border border-slate-700/60 overflow-hidden relative flex items-center justify-center mb-4">
+          <canvas id="visualizer" class="w-full h-full"></canvas>
+          <span id="visualizerPlaceholder" class="text-xs text-slate-500 absolute">Click record to speak</span>
+        </div>
+
+        <!-- Audio Recording Controls -->
+        <div class="flex items-center gap-3">
+          <button id="recordBtn" onclick="toggleRecord()" class="flex-1 py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-teal-500/20">
+            <i id="recordIcon" class="fa-solid fa-circle text-xs"></i>
+            <span id="recordText">Record Memory</span>
+          </button>
+          <button id="playAudioBtn" onclick="playAudio()" disabled class="p-3 rounded-xl bg-slate-800 text-slate-500 disabled:opacity-40 transition">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <a id="downloadAudioBtn" href="#" class="p-3 rounded-xl bg-slate-800 text-slate-500 opacity-40 pointer-events-none transition">
+            <i class="fa-solid fa-download"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Past Simple Verb Reference Sheet -->
+      <div class="glass-panel p-5 rounded-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
+            <i class="fa-solid fa-book-bookmark"></i> Verb Validator Cheat Sheet
+          </h3>
+          <span class="text-[10px] text-slate-400 font-medium">Regular & Irregular</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-indigo-400 font-bold text-[10px]">REGULAR (+ed)</div>
+            <div class="text-slate-300">play &rarr; <strong>played</strong></div>
+            <div class="text-slate-300">watch &rarr; <strong>watched</strong></div>
+            <div class="text-slate-300">like &rarr; <strong>liked</strong></div>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-amber-400 font-bold text-[10px]">IRREGULAR</div>
+            <div class="text-slate-300">go &rarr; <strong>went</strong></div>
+            <div class="text-slate-300">have &rarr; <strong>had</strong></div>
+            <div class="text-slate-300">buy &rarr; <strong>bought</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peer Grammar Checklist & Verification -->
+      <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col justify-between">
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-check-double text-indigo-400"></i> Detective Peer Validation
+          </h3>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-indigo-500 w-4 h-4">
+              <span>Used 2+ Simple Past verbs (e.g., <em>went, had</em>)</span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-indigo-500 w-4 h-4">
+              <span>Asked a past question with <em>"Did you...?"</em></span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-indigo-500 w-4 h-4">
+              <span>Answered follow-up questions clearly</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="finishValidation()" class="mt-4 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-certificate"></i> Validate & Generate Badge
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Peer Validation Modal -->
+  <div id="badgeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
+    <div class="glass-panel max-w-md w-full p-6 rounded-3xl border border-indigo-500/40 text-center relative shadow-2xl">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-indigo-500 mx-auto flex items-center justify-center text-slate-950 font-black text-3xl mb-4 shadow-lg shadow-amber-500/30">
+        <i class="fa-solid fa-award"></i>
+      </div>
+
+      <h3 class="text-xl font-extrabold text-slate-100 mb-1">Master Memory Investigator</h3>
+      <p class="text-xs text-indigo-300 mb-4">Past Tense Childhood Validation Complete!</p>
+
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-700/60 mb-5 text-left text-xs space-y-2">
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Target Level:</span>
+          <span class="font-bold text-amber-400">A2 Elementary</span>
+        </div>
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Grammar Checked:</span>
+          <span class="font-bold text-teal-400">Simple Past Tense</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Verification Status:</span>
+          <span id="badgeScore" class="font-bold text-indigo-400">3/3 Validated</span>
+        </div>
+      </div>
+
+      <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">
+        Continue Detective Work
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 20 Outcome Prompts Data
+    const prompts = [
+      { cat: "School & Friends", title: "Who was your favorite primary school teacher and what did they teach?", details: "Mention their name, subject, and why you liked them using Simple Past." },
+      { cat: "School & Friends", title: "What did you wear or bring on your first day of school?", details: "Describe your school bag, uniform, or clothes using 'I had...', 'I wore...'." },
+      { cat: "School & Friends", title: "What playground game did you play with friends during recess?", details: "Explain the rules briefly and who you played with." },
+      { cat: "School & Friends", title: "What food did you hate eating at school lunch when you were a kid?", details: "Talk about school food you didn't like and what you preferred instead." },
+      { cat: "School & Friends", title: "Where did you go on a memorable school field trip?", details: "Describe where your class went, how you traveled, and what you saw." },
+
+      { cat: "Home & Family", title: "What color was your bedroom wall when you were 8 years old?", details: "Describe your childhood room, bed, toys, or posters." },
+      { cat: "Home & Family", title: "What job or chore did your parents ask you to do at home?", details: "Talk about chores you did like making the bed or washing dishes." },
+      { cat: "Home & Family", title: "How did your family celebrate birthdays or special holidays?", details: "Share family traditions, food, and gifts from childhood celebrations." },
+      { cat: "Home & Family", title: "What pet did you have (or wish you had) when you were growing up?", details: "Describe your pet's name, color, and what you did together." },
+      { cat: "Home & Family", title: "What was your favorite thing to do when visiting your grandparents?", details: "Talk about their home, meals, or stories they told you." },
+
+      { cat: "Toys & Games", title: "What was your absolute favorite toy or action figure as a child?", details: "Explain who gave it to you and how you played with it." },
+      { cat: "Toys & Games", title: "What TV show or cartoon did you watch every weekend morning?", details: "Describe the characters and why you loved watching it." },
+      { cat: "Toys & Games", title: "Who taught you to ride a bike or play your first sport?", details: "Mention where you were and how old you were when you learned." },
+      { cat: "Toys & Games", title: "What song did you love listening to when you were 10 years old?", details: "Talk about your favorite singer or song from that time." },
+      { cat: "Toys & Games", title: "Did your parents read bedtime stories to you? Which was your favorite?", details: "Share book titles or stories you remembered hearing." },
+
+      { cat: "Milestones & Mishaps", title: "What job did you dream of having when you grew up?", details: "Explain why you wanted that job as a young child." },
+      { cat: "Milestones & Mishaps", title: "What was the best birthday present you ever opened as a kid?", details: "Describe who gave it to you and how you felt." },
+      { cat: "Milestones & Mishaps", title: "Did you ever scrape your knee or fall off a bike? What happened?", details: "Tell a short story about a minor bump or accident while playing." },
+      { cat: "Milestones & Mishaps", title: "What was a funny costume or outfit you wore for a party as a kid?", details: "Describe what you looked like and the event you attended." },
+      { cat: "Milestones & Mishaps", title: "What was the first big vacation or city trip you remember taking?", details: "Describe how you traveled (car, plane, train) and what you did there." }
+    ];
+
+    let currentPromptIdx = 0;
+
+    function renderPrompt() {
+      const p = prompts[currentPromptIdx];
+      document.getElementById('promptCategory').innerText = p.cat;
+      document.getElementById('promptCounter').innerText = `Card ${currentPromptIdx + 1} of ${prompts.length}`;
+      document.getElementById('promptTitle').innerText = p.title;
+      document.getElementById('promptDetails').innerText = p.details;
+    }
+
+    function nextPrompt() {
+      currentPromptIdx = (currentPromptIdx + 1) % prompts.length;
+      renderPrompt();
+    }
+
+    function prevPrompt() {
+      currentPromptIdx = (currentPromptIdx - 1 + prompts.length) % prompts.length;
+      renderPrompt();
+    }
+
+    function randomPrompt() {
+      currentPromptIdx = Math.floor(Math.random() * prompts.length);
+      renderPrompt();
+    }
+
+    // Role Switching
+    function setRole(role) {
+      const btnA = document.getElementById('roleBtnA');
+      const btnB = document.getElementById('roleBtnB');
+      const info = document.getElementById('roleInfo');
+
+      if (role === 'A') {
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-indigo-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-shield-halved"></i> Role A: The Memory Detective
+          </div>
+          <p class="text-xs md:text-sm text-slate-300">
+            Pick a prompt, ask follow-up questions in the past tense (e.g., <em>"Did you enjoy it?"</em>, <em>"Who was there?"</em>), and validate whether your partner uses regular and irregular past verbs correctly!
+          </p>
+        `;
+      } else {
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-600 text-white shadow-lg shadow-amber-600/30";
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-amber-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-user-astronaut"></i> Role B: The Childhood Witness
+          </div>
+          <p class="text-xs md:text-sm text-slate-300">
+            Tell a 1-minute story about your past experience using Simple Past tense. Try to include regular (-ed) and irregular past verbs, and answer Detective questions!
+          </p>
+        `;
+      }
+    }
+
+    // Timer Logic
+    let timerSeconds = 600; // 10 minutes
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timerSeconds / 60);
+      const secs = timerSeconds % 60;
+      document.getElementById('timerDisplay').innerText = 
+        `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+      const playIcon = document.getElementById('playIcon');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        playIcon.className = "fa-solid fa-play text-xs";
+      } else {
+        isTimerRunning = true;
+        playIcon.className = "fa-solid fa-pause text-xs";
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            alert("10-Minute Investigation Time Up!");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSeconds = 600;
+      document.getElementById('playIcon').className = "fa-solid fa-play text-xs";
+      updateTimerDisplay();
+    }
+
+    // Audio Recorder & Visualizer
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let audioElem = null;
+    let isRecording = false;
+    let recTimerInterval = null;
+    let recSeconds = 0;
+    let audioContext = null;
+    let analyser = null;
+    let animFrame = null;
+
+    async function toggleRecord() {
+      const recordText = document.getElementById('recordText');
+      const recordIcon = document.getElementById('recordIcon');
+      const recordBtn = document.getElementById('recordBtn');
+      const placeholder = document.getElementById('visualizerPlaceholder');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          // Visualizer Setup
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 64;
+          source.connect(analyser);
+          drawVisualizer();
+
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioUrl = URL.createObjectURL(audioBlob);
+            audioElem = new Audio(audioUrl);
+
+            document.getElementById('playAudioBtn').disabled = false;
+            document.getElementById('playAudioBtn').classList.remove('text-slate-500');
+            document.getElementById('playAudioBtn').classList.add('text-teal-400');
+
+            const dlBtn = document.getElementById('downloadAudioBtn');
+            dlBtn.href = audioUrl;
+            dlBtn.download = `childhood-memory-record.webm`;
+            dlBtn.classList.remove('opacity-40', 'pointer-events-none');
+            dlBtn.classList.add('text-teal-400');
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          recordText.innerText = "Stop Recording";
+          recordIcon.className = "fa-solid fa-square text-xs text-red-400";
+          recordBtn.classList.add('recording-red');
+          placeholder.style.display = 'none';
+
+          recSeconds = 0;
+          recTimerInterval = setInterval(() => {
+            recSeconds++;
+            const m = Math.floor(recSeconds / 60).toString().padStart(2, '0');
+            const s = (recSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('recordTimer').innerText = `${m}:${s} / 01:00`;
+            if (recSeconds >= 60) toggleRecord();
+          }, 1000);
+
+        } catch (err) {
+          alert("Microphone access is required for recording audio.");
+        }
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        clearInterval(recTimerInterval);
+        cancelAnimationFrame(animFrame);
+        isRecording = false;
+
+        recordText.innerText = "Record Memory";
+        recordIcon.className = "fa-solid fa-circle text-xs";
+        recordBtn.classList.remove('recording-red');
+      }
+    }
+
+    function drawVisualizer() {
+      const canvas = document.getElementById('visualizer');
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function render() {
+        animFrame = requestAnimationFrame(render);
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 2;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          ctx.fillStyle = `rgb(45, 212, 191)`;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+          x += barWidth;
+        }
+      }
+      render();
+    }
+
+    function playAudio() {
+      if (audioElem) audioElem.play();
+    }
+
+    // Modal & Validation Check
+    function finishValidation() {
+      const checkboxes = document.querySelectorAll('.peerCheck');
+      let checkedCount = 0;
+      checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+
+      document.getElementById('badgeScore').innerText = `${checkedCount} / ${checkboxes.length} Checks Validated`;
+      document.getElementById('badgeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('badgeModal').classList.add('hidden');
+    }
+
+    // Initialize Card
+    renderPrompt();
+  </script>
+</body>
+</html>
