@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✏️ A2 Knowledge Validation: Stories & Recent Activities</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        },
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+
+        .tab-btn.active {
+            background-color: #7c3aed;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+        }
+
+        .highlight-story {
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .highlight-recent {
+            background-color: #ccfbf1;
+            color: #115e59;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .classifier-card {
+            touch-action: manipulation;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .classifier-card:active {
+            transform: scale(0.97);
+        }
+
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.95; transform: scale(1.02); }
+        }
+
+        .badge-live {
+            animation: pulse-subtle 2s infinite ease-in-out;
+        }
+
+        /* Certificate Printable View Rules */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-certificate-container, #printable-certificate-container * { visibility: visible; }
+            #printable-certificate-container { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 bg-slate-50">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Title & Brand Icon -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white flex items-center justify-center font-black text-lg shadow-md">
+                        <i class="fa-solid fa-pen-nib"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                            ✏️ A2 Knowledge Validation: Stories & Recent Activities
+                        </h1>
+                        <p class="text-xs font-semibold text-brand-600">CEFR A2 Grammar & Storytelling Studio</p>
+                    </div>
+                </div>
+
+                <!-- Speech Audio Speed Controls & Toggle -->
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <div class="flex items-center space-x-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                        <i class="fa-solid fa-gauge-high text-brand-600 text-xs"></i>
+                        <span class="text-[11px] font-bold text-slate-600 uppercase">TTS Speed:</span>
+                        <select id="tts-rate-select" onchange="updateTTSRate()" class="bg-transparent text-xs text-slate-800 font-bold focus:outline-none cursor-pointer">
+                            <option value="0.75">0.75x</option>
+                            <option value="0.9" selected>0.9x</option>
+                            <option value="1.0">1.0x</option>
+                        </select>
+                    </div>
+                    <button id="sound-effect-toggle" onclick="toggleSoundEffects()" class="p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-brand-600 transition-colors" title="Toggle Sound Effects">
+                        <i id="sound-icon" class="fa-solid fa-volume-high text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto py-2 border-t border-slate-100 scrollbar-none" id="main-nav-tabs">
+                <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>1. Knowledge Matrix</span>
+                </button>
+                <button onclick="switchTab('classifier')" id="tab-classifier" class="tab-btn text-slate-600 hover:bg-slate-100 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>2. Time Expression Classifier</span>
+                </button>
+                <button onclick="switchTab('builder')" id="tab-builder" class="tab-btn text-slate-600 hover:bg-slate-100 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>3. Dual Mode Constructor</span>
+                </button>
+                <button onclick="switchTab('inspector')" id="tab-inspector" class="tab-btn text-slate-600 hover:bg-slate-100 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    <span>4. Diagnostic Inspector</span>
+                </button>
+                <button onclick="switchTab('report')" id="tab-report" class="tab-btn text-slate-600 hover:bg-slate-100 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-award"></i>
+                    <span>5. Validation & Certificate</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: KNOWLEDGE MATRIX (COMPARE STORIES VS RECENT ACTIVITIES)    -->
+        <!-- ================================================================= -->
+        <section id="sec-matrix" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-brand-800">
+                <div class="relative z-10 max-w-3xl">
+                    <span class="bg-brand-500/30 text-brand-200 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full inline-block mb-3 border border-brand-400/30">
+                        Grammar Core Comparison
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-black mb-2">Telling Past Stories vs. Sharing Recent Activities</h2>
+                    <p class="text-slate-200 text-sm sm:text-base leading-relaxed">
+                        To master A2 English communication, you must know when to use <strong class="text-amber-300">Past Simple</strong> for sequenced finished stories versus <strong class="text-teal-300">Present Perfect</strong> for recent life updates.
+                    </p>
+                </div>
+                <div class="absolute -right-6 -bottom-6 opacity-10 text-9xl text-white pointer-events-none">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Storytelling Card (Past Simple) -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-book-bookmark text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-slate-800">1. Telling Stories</h3>
+                                <p class="text-xs text-slate-500">Past Simple + Time Connectors</p>
+                            </div>
+                        </div>
+                        <span class="text-xs bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-full">Verb-ed / V2</span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Use for finished past actions at a specific time. Stories use <strong>Time Connectors</strong> to show the sequence of events.
+                    </p>
+
+                    <!-- Key Connectors & Time Anchors -->
+                    <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/60 space-y-2">
+                        <span class="text-[11px] font-extrabold text-amber-900 uppercase tracking-wide block">Essential Story Connectors:</span>
+                        <div class="flex flex-wrap gap-1.5 text-xs font-semibold text-amber-800">
+                            <span class="bg-white px-2 py-1 rounded border border-amber-200">First</span>
+                            <span class="bg-white px-2 py-1 rounded border border-amber-200">Next / Then</span>
+                            <span class="bg-white px-2 py-1 rounded border border-amber-200">Suddenly</span>
+                            <span class="bg-white px-2 py-1 rounded border border-amber-200">After that</span>
+                            <span class="bg-white px-2 py-1 rounded border border-amber-200">In the end</span>
+                        </div>
+                    </div>
+
+                    <!-- Examples List with Audio Button -->
+                    <div class="space-y-2.5">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "<span class="highlight-story">First</span>, I lost my keys <span class="font-bold text-amber-800">yesterday</span>."
+                            </p>
+                            <button onclick="speakText('First, I lost my keys yesterday.')" class="text-amber-700 hover:text-amber-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "<span class="highlight-story">Suddenly</span>, a small cat jumped out!"
+                            </p>
+                            <button onclick="speakText('Suddenly, a small cat jumped out!')" class="text-amber-700 hover:text-amber-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "<span class="highlight-story">In the end</span>, we arrived safely <span class="font-bold text-amber-800">two days ago</span>."
+                            </p>
+                            <button onclick="speakText('In the end, we arrived safely two days ago.')" class="text-amber-700 hover:text-amber-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Life Activities Card (Present Perfect) -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-extrabold text-slate-800">2. Recent Life Activities</h3>
+                                <p class="text-xs text-slate-500">Present Perfect + Signal Words</p>
+                            </div>
+                        </div>
+                        <span class="text-xs bg-teal-100 text-teal-900 font-bold px-2.5 py-1 rounded-full">Have/Has + V3</span>
+                    </div>
+
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Use for recent events connected to NOW without specifying a finished past time. Uses <strong>Signal Words</strong>.
+                    </p>
+
+                    <!-- Key Signal Words -->
+                    <div class="p-3.5 bg-teal-50/70 rounded-xl border border-teal-200/60 space-y-2">
+                        <span class="text-[11px] font-extrabold text-teal-900 uppercase tracking-wide block">Essential Signal Words:</span>
+                        <div class="flex flex-wrap gap-1.5 text-xs font-semibold text-teal-800">
+                            <span class="bg-white px-2 py-1 rounded border border-teal-200">Just (short time ago)</span>
+                            <span class="bg-white px-2 py-1 rounded border border-teal-200">Already (earlier)</span>
+                            <span class="bg-white px-2 py-1 rounded border border-teal-200">Yet (negative/q's)</span>
+                            <span class="bg-white px-2 py-1 rounded border border-teal-200">Recently / Lately</span>
+                        </div>
+                    </div>
+
+                    <!-- Examples List with Audio Button -->
+                    <div class="space-y-2.5">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "I have <span class="highlight-recent">just</span> completed my English exam."
+                            </p>
+                            <button onclick="speakText('I have just completed my English exam.')" class="text-teal-700 hover:text-teal-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "She has <span class="highlight-recent">already</span> cleaned her apartment."
+                            </p>
+                            <button onclick="speakText('She has already cleaned her apartment.')" class="text-teal-700 hover:text-teal-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                            <p class="text-xs text-slate-800 font-medium">
+                                "We haven't ordered our dinner <span class="highlight-recent">yet</span>."
+                            </p>
+                            <button onclick="speakText('We haven\'t ordered our dinner yet.')" class="text-teal-700 hover:text-teal-900 p-1.5" title="Listen Example">
+                                <i class="fa-solid fa-volume-high text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wide flex items-center space-x-2">
+                    <i class="fa-solid fa-scale-balanced text-brand-600"></i>
+                    <span>Grammar Anchor Rule Reference Table</span>
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-slate-800 text-xs font-bold uppercase">
+                            <tr>
+                                <th class="p-3 rounded-l-xl">Feature</th>
+                                <th class="p-3 text-amber-800">Telling Stories (Past Simple)</th>
+                                <th class="p-3 text-teal-800 rounded-r-xl">Recent Activities (Present Perfect)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-semibold text-slate-800">Time Reference</td>
+                                <td class="p-3 text-amber-800 font-medium">Specific finished time (yesterday, last week, in 2021)</td>
+                                <td class="p-3 text-teal-800 font-medium">Unspecified recent time or result connected to present</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-semibold text-slate-800">Key Markers</td>
+                                <td class="p-3">First, then, suddenly, after that, 2 days ago</td>
+                                <td class="p-3">Just, already, yet, recently, lately, ever, never</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-semibold text-slate-800">Verb Formula</td>
+                                <td class="p-3 font-mono font-bold text-amber-700">Subject + Verb-ed (V2)</td>
+                                <td class="p-3 font-mono font-bold text-teal-700">Subject + have/has + V3</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="p-3 font-semibold text-slate-800">Common Mistake</td>
+                                <td class="p-3 text-rose-600">❌ "I have seen him yesterday."</td>
+                                <td class="p-3 text-rose-600">❌ "I didn't finish yet." (Better: I haven't finished yet)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 2: TIME EXPRESSION CLASSIFIER (INTERACTIVE SORTING GAME)     -->
+        <!-- ================================================================= -->
+        <section id="sec-classifier" class="space-y-6 hidden">
+            <!-- Header Bar -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <span class="text-xs font-extrabold text-brand-600 uppercase tracking-wider">Interactive Sorting Studio</span>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-900">Time Expression Classifier</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">Categorize each time phrase into its proper context!</p>
+                </div>
+                <div class="flex items-center space-x-4 bg-slate-100 px-4 py-2.5 rounded-xl border border-slate-200">
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase block">Score</span>
+                        <span id="classifier-score" class="text-lg font-black text-brand-600">0 / 12</span>
+                    </div>
+                    <button onclick="resetClassifierGame()" class="text-xs font-bold text-slate-600 hover:text-brand-600 p-2" title="Reset Classifier Game">
+                        <i class="fa-solid fa-rotate-left text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Unclassified Items Pool -->
+                <div class="lg:col-span-12 bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-lg border border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-brand-300 flex items-center space-x-2">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                            <span>Select a Phrase to Classify:</span>
+                        </span>
+                        <span class="text-xs text-slate-400" id="remaining-classifier-count">12 remaining</span>
+                    </div>
+                    
+                    <!-- Dynamic Badges Pool -->
+                    <div id="classifier-pool" class="flex flex-wrap gap-2.5 min-h-[90px] items-center p-3 bg-slate-800/80 rounded-xl border border-slate-700/80">
+                        <!-- Dynamic cards inserted here -->
+                    </div>
+                </div>
+
+                <!-- Bucket 1: Storytelling (Past Simple) -->
+                <div class="lg:col-span-6 bg-amber-50/60 rounded-2xl border-2 border-dashed border-amber-300 p-6 space-y-4 flex flex-col justify-between min-h-[280px]">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-amber-200">
+                            <div class="flex items-center space-x-2 text-amber-900 font-extrabold text-base">
+                                <i class="fa-solid fa-book-open"></i>
+                                <span>Storytelling (Past Simple)</span>
+                            </div>
+                            <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full" id="bucket-story-count">0 items</span>
+                        </div>
+                        <p class="text-xs text-amber-800/80 mt-2 mb-4">Specific finished times & sequence connectors.</p>
+                        
+                        <div id="bucket-story" class="flex flex-wrap gap-2 min-h-[120px]">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                    <button onclick="classifyCurrentSelected('story')" id="btn-classify-story" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-arrow-down-long"></i>
+                        <span>Place in Storytelling</span>
+                    </button>
+                </div>
+
+                <!-- Bucket 2: Recent Activities (Present Perfect) -->
+                <div class="lg:col-span-6 bg-teal-50/60 rounded-2xl border-2 border-dashed border-teal-300 p-6 space-y-4 flex flex-col justify-between min-h-[280px]">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-teal-200">
+                            <div class="flex items-center space-x-2 text-teal-900 font-extrabold text-base">
+                                <i class="fa-solid fa-bolt"></i>
+                                <span>Recent Activities (Present Perfect)</span>
+                            </div>
+                            <span class="text-xs bg-teal-200 text-teal-900 font-bold px-2 py-0.5 rounded-full" id="bucket-recent-count">0 items</span>
+                        </div>
+                        <p class="text-xs text-teal-800/80 mt-2 mb-4">Unspecified time signal words & present results.</p>
+                        
+                        <div id="bucket-recent" class="flex flex-wrap gap-2 min-h-[120px]">
+                            <!-- Dropped items -->
+                        </div>
+                    </div>
+
+                    <button onclick="classifyCurrentSelected('recent')" id="btn-classify-recent" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-arrow-down-long"></i>
+                        <span>Place in Recent Activities</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback Modal Banner -->
+            <div id="classifier-feedback-banner" class="hidden p-4 rounded-2xl border space-y-2">
+                <div class="flex items-center space-x-2 font-bold text-sm" id="classifier-feedback-title">
+                    <!-- Status -->
+                </div>
+                <p class="text-xs leading-relaxed" id="classifier-feedback-text">
+                    <!-- Text explanation -->
+                </p>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 3: DUAL MODE CONSTRUCTOR (STORIES VS RECENT ACTIVITIES)       -->
+        <!-- ================================================================= -->
+        <section id="sec-builder" class="space-y-6 hidden">
+            <!-- Mode Switcher Header -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <span class="text-xs font-extrabold text-brand-600 uppercase tracking-wider">Grammar Constructor Studio</span>
+                    <h2 class="text-2xl font-black text-slate-900">Story & Activity Sentence Builder</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">Select components to build accurate English updates and stories.</p>
+                </div>
+
+                <!-- Mode Switcher Buttons -->
+                <div class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-start md:self-auto">
+                    <button onclick="setBuilderMode('story')" id="mode-btn-story" class="px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all bg-amber-500 text-white shadow-md">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Tell a Past Story</span>
+                    </button>
+                    <button onclick="setBuilderMode('recent')" id="mode-btn-recent" class="px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Share Recent Activity</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Selectors Control Box -->
+                <div class="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+                    
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wide flex items-center space-x-2" id="builder-mode-title">
+                            <!-- Dynamic title -->
+                        </h3>
+                        <span class="text-[11px] font-bold text-slate-400 font-mono" id="builder-mode-badge">Mode A</span>
+                    </div>
+
+                    <!-- Dropdown Selectors Grid -->
+                    <div class="space-y-4">
+                        <!-- Subject Picker -->
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">1. Subject / Person</label>
+                            <select id="bld-subject" onchange="generateBuilderNarrative()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <option value="I">I (First Person)</option>
+                                <option value="My friend Alex">My friend Alex</option>
+                                <option value="Our team">Our team</option>
+                                <option value="Sarah and Tom">Sarah and Tom</option>
+                            </select>
+                        </div>
+
+                        <!-- Connector / Signal Word Picker -->
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1" id="bld-connector-label">2. Time Connector / Signal Word</label>
+                            <select id="bld-connector" onchange="generateBuilderNarrative()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+
+                        <!-- Action Verb Phrase -->
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">3. Action Verb Phrase</label>
+                            <select id="bld-action" onchange="generateBuilderNarrative()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+
+                        <!-- Time Anchor / Context Finish -->
+                        <div>
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1" id="bld-time-label">4. Time Anchor / Context Detail</label>
+                            <select id="bld-time" onchange="generateBuilderNarrative()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Sentence Preview & Live Grammar Validator -->
+                <div class="lg:col-span-5 bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col justify-between border border-slate-800 space-y-6">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <span class="badge-live text-[10px] font-black uppercase tracking-widest text-brand-400 bg-brand-950 px-2.5 py-1 rounded-full border border-brand-800">
+                                Live Sentence Output
+                            </span>
+                            <span class="text-xs text-slate-400 font-mono">A2 Sentence Check</span>
+                        </div>
+
+                        <!-- Sentence Box Display -->
+                        <div class="mt-4 p-5 bg-slate-800/90 rounded-2xl border border-slate-700 min-h-[140px] flex items-center justify-center text-center">
+                            <p class="text-base sm:text-lg leading-relaxed text-slate-100 font-medium" id="builder-output-text">
+                                <!-- Dynamic output sentence -->
+                            </p>
+                        </div>
+
+                        <!-- Real-Time Grammar Validation Flag -->
+                        <div id="builder-validation-box" class="mt-4 p-3.5 rounded-xl border space-y-1">
+                            <!-- Validation status badge -->
+                        </div>
+                    </div>
+
+                    <!-- Action Toolbar -->
+                    <div class="space-y-2.5">
+                        <button onclick="readBuilderSentence()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-brand-900/40 flex items-center justify-center space-x-2 transition-all">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Read Sentence Aloud</span>
+                        </button>
+                        <button onclick="copyBuilderSentence()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2.5 px-4 rounded-xl border border-slate-700 flex items-center justify-center space-x-2 transition-colors">
+                            <i class="fa-solid fa-copy"></i>
+                            <span>Copy to Clipboard</span>
+                        </button>
+                        <p id="builder-toast" class="text-xs text-teal-400 font-bold text-center hidden">
+                            Copied to clipboard!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 4: DIAGNOSTIC INSPECTOR (INTERACTIVE CHALLENGE GAME)         -->
+        <!-- ================================================================= -->
+        <section id="sec-inspector" class="space-y-6 hidden">
+            <!-- Inspector Stats Dashboard -->
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl flex flex-wrap items-center justify-between gap-4 border border-slate-800">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center text-2xl font-black">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-black">Diagnostic Inspector Game</h2>
+                        <p class="text-xs text-slate-400">Spot grammar mistakes & select correct story connectors!</p>
+                    </div>
+                </div>
+
+                <!-- Stats Badges -->
+                <div class="flex items-center space-x-6 bg-slate-800 px-5 py-2.5 rounded-xl border border-slate-700">
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Score</span>
+                        <span id="inspector-score" class="text-xl font-black text-brand-400">0</span>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Streak</span>
+                        <div class="flex items-center space-x-1">
+                            <i class="fa-solid fa-fire text-amber-500 text-xs"></i>
+                            <span id="inspector-streak" class="text-xl font-black text-amber-400">0</span>
+                        </div>
+                    </div>
+                    <div class="w-px h-8 bg-slate-700"></div>
+                    <div class="text-center">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Question</span>
+                        <span id="inspector-progress" class="text-xl font-black text-slate-200">1/6</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6" id="inspector-card">
+                
+                <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-brand-600 uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fa-solid fa-file-circle-check"></i>
+                            <span>Diagnostic Question #<span id="insp-q-num">1</span></span>
+                        </span>
+                        <button onclick="readInspectorPrompt()" class="text-xs bg-brand-100 text-brand-800 hover:bg-brand-200 font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-colors">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Listen Question</span>
+                        </button>
+                    </div>
+                    
+                    <div class="text-slate-900 font-bold text-base sm:text-lg leading-snug" id="insp-scenario-text">
+                        <!-- Dynamic Question Prompt -->
+                    </div>
+                </div>
+
+                <!-- Multiple Choice Options -->
+                <div class="space-y-3" id="insp-options-container">
+                    <!-- Dynamic option buttons -->
+                </div>
+
+                <!-- Explanation Banner Modal -->
+                <div id="insp-feedback-banner" class="hidden p-4 rounded-2xl border space-y-2">
+                    <div class="flex items-center space-x-2 font-bold text-sm" id="insp-feedback-title">
+                        <!-- Status -->
+                    </div>
+                    <p class="text-xs leading-relaxed text-slate-700" id="insp-feedback-text">
+                        <!-- Explanation -->
+                    </p>
+                    <button onclick="nextInspectorQuestion()" id="insp-next-btn" class="mt-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors inline-flex items-center space-x-2">
+                        <span>Next Challenge</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- TAB 5: VALIDATION CHECKLIST & PRINTABLE CERTIFICATE               -->
+        <!-- ================================================================= -->
+        <section id="sec-report" class="space-y-6 hidden">
+            <!-- Student Assessment Header -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-extrabold text-brand-600 uppercase tracking-wider">Final Assessment</span>
+                        <h2 class="text-2xl font-black text-slate-900">A2 Competency Validation & Certificate</h2>
+                        <p class="text-xs sm:text-sm text-slate-500">Verify your skills and generate your official learning certificate!</p>
+                    </div>
+                    
+                    <!-- Accumulated Score Readout -->
+                    <div class="bg-brand-50 border border-brand-200 p-3.5 rounded-2xl flex items-center space-x-3">
+                        <i class="fa-solid fa-trophy text-brand-600 text-3xl"></i>
+                        <div>
+                            <span class="text-[10px] font-bold text-brand-800 uppercase block">Diagnostic Score</span>
+                            <span id="cert-total-score" class="text-lg font-black text-brand-900">0 Points</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                    <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-brand-600"></i>
+                        <span>A2 Self-Assessment Skill Checklist</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5" id="self-assessment-checklist">
+                        <label class="flex items-center space-x-2.5 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-400 transition-colors">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="rounded text-brand-600 focus:ring-brand-500 h-4 w-4">
+                            <span class="text-xs text-slate-700 font-medium">I can sequence past stories using connectors (*First, Suddenly, In the end*).</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-400 transition-colors">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="rounded text-brand-600 focus:ring-brand-500 h-4 w-4">
+                            <span class="text-xs text-slate-700 font-medium">I know when to use *just*, *already*, and *yet* for recent activities.</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-400 transition-colors">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="rounded text-brand-600 focus:ring-brand-500 h-4 w-4">
+                            <span class="text-xs text-slate-700 font-medium">I can distinguish finished past time anchors (*yesterday*) from Present Perfect.</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-brand-400 transition-colors">
+                            <input type="checkbox" onchange="updateChecklistProgress()" class="rounded text-brand-600 focus:ring-brand-500 h-4 w-4">
+                            <span class="text-xs text-slate-700 font-medium">I can explain my recent personal updates clearly in English.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Name Input & Unlock Button -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                    <input type="text" id="student-name-input" placeholder="Enter Your Full Name for Certificate" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="updateCertDisplayName()">
+                    <button onclick="generateCertificate()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-extrabold px-6 py-3 rounded-xl shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center space-x-2 whitespace-nowrap">
+                        <i class="fa-solid fa-certificate"></i>
+                        <span>Validate & Issue Certificate</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="printable-certificate-container" class="hidden bg-white border-8 border-brand-800 p-8 sm:p-12 rounded-3xl shadow-2xl text-center space-y-6 relative overflow-hidden max-w-4xl mx-auto">
+                <!-- Background Decorative Circles -->
+                <div class="absolute -top-16 -left-16 w-36 h-36 bg-brand-100 rounded-full opacity-60 pointer-events-none"></div>
+                <div class="absolute -bottom-16 -right-16 w-36 h-36 bg-teal-100 rounded-full opacity-60 pointer-events-none"></div>
+
+                <!-- Seal Banner -->
+                <div class="flex justify-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-brand-600 to-brand-800 text-amber-300 rounded-full flex items-center justify-center text-3xl shadow-lg border-2 border-amber-300">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-xs font-black uppercase tracking-widest text-brand-700">Official CEFR Knowledge Validation</span>
+                    <h2 class="text-3xl sm:text-4xl font-black text-slate-900 mt-1 font-serif">Certificate of Competency</h2>
+                    <p class="text-xs text-slate-500 mt-1">A2 Storytelling & Recent Activities Studio</p>
+                </div>
+
+                <div class="py-4 border-y border-slate-200 max-w-xl mx-auto space-y-2">
+                    <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">This is awarded to</p>
+                    <h3 class="text-2xl sm:text-3xl font-black text-brand-900 font-serif" id="cert-display-name">
+                        [ Learner Name ]
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed pt-2">
+                        for successfully validating mastery in using <strong>Past Simple with story connectors</strong> (*First, Suddenly, In the end*) and <strong>Present Perfect with signal words</strong> (*just, already, yet*) at the CEFR A2 standard.
+                    </p>
+                </div>
+
+                <!-- Certificate Metadata & Print Button -->
+                <div class="flex flex-col sm:flex-row items-center justify-between text-left pt-2 max-w-xl mx-auto text-xs text-slate-600 gap-4">
+                    <div>
+                        <span class="block font-bold text-slate-800">Date Issued:</span>
+                        <span id="cert-date-stamp">October 6, 2026</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-slate-800">Validation Status:</span>
+                        <span class="text-emerald-600 font-extrabold flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>VERIFIED PASSED</span>
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <button onclick="window.print()" class="no-print bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition-all flex items-center space-x-1.5">
+                            <i class="fa-solid fa-print"></i>
+                            <span>Print / Save PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Global Application State Variables
+        let soundEffectsEnabled = true;
+        let activeTab = 'matrix';
+        let speechSynth = window.speechSynthesis;
+        let globalTTSRate = 0.9;
+
+        // Web Audio API Context
+        let audioCtx = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSoundEffect(type) {
+            if (!soundEffectsEnabled) return;
+            initAudioContext();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(250, now + 0.04);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } else if (type === 'correct') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'wrong') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(164.81, now + 0.1);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'fanfare') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.2);
+                });
+            }
+        }
+
+        function toggleSoundEffects() {
+            soundEffectsEnabled = !soundEffectsEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (soundEffectsEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-base text-brand-600';
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-base text-slate-400';
+            }
+        }
+
+        // Speech Synthesis Implementation
+        function updateTTSRate() {
+            const val = parseFloat(document.getElementById('tts-rate-select').value);
+            globalTTSRate = val;
+            playSoundEffect('click');
+        }
+
+        function speakText(text) {
+            if (!speechSynth) return;
+            speechSynth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = globalTTSRate;
+            utterance.lang = 'en-US';
+
+            speechSynth.speak(utterance);
+        }
+
+        function switchTab(tabId) {
+            playSoundEffect('click');
+            activeTab = tabId;
+
+            ['matrix', 'classifier', 'builder', 'inspector', 'report'].forEach(id => {
+                const sec = document.getElementById(`sec-${id}`);
+                const tabBtn = document.getElementById(`tab-${id}`);
+                if (sec) sec.classList.add('hidden');
+                if (tabBtn) {
+                    tabBtn.classList.remove('active', 'bg-brand-600', 'text-white');
+                    tabBtn.classList.add('text-slate-600');
+                }
+            });
+
+            const targetSec = document.getElementById(`sec-${tabId}`);
+            const targetBtn = document.getElementById(`tab-${tabId}`);
+            if (targetSec) targetSec.classList.remove('hidden');
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+                targetBtn.classList.remove('text-slate-600');
+            }
+        }
+
+        // =================================================================
+        // TAB 2: TIME EXPRESSION CLASSIFIER GAME LOGIC
+        // =================================================================
+        const classifierItemsData = [
+            { id: 1, text: "two days ago", category: "story", hint: "Points to a specific finished past time." },
+            { id: 2, text: "just", category: "recent", hint: "Signal word for a very short time ago (Present Perfect)." },
+            { id: 3, text: "last summer", category: "story", hint: "Past time anchor used for completed stories." },
+            { id: 4, text: "recently", category: "recent", hint: "Signal word for recent life updates." },
+            { id: 5, text: "yesterday", category: "story", hint: "Requires Past Simple verb tense." },
+            { id: 6, text: "already", category: "recent", hint: "Indicates action done sooner than expected." },
+            { id: 7, text: "in 2021", category: "story", hint: "Finished year anchor in the past." },
+            { id: 8, text: "yet", category: "recent", hint: "Used in negative sentences and questions with Present Perfect." },
+            { id: 9, text: "suddenly", category: "story", hint: "Sequencing connector to introduce unexpected story events." },
+            { id: 10, text: "then / after that", category: "story", hint: "Story connector used to step to the next event." },
+            { id: 11, text: "lately", category: "recent", hint: "Signal word for continuous recent state." },
+            { id: 12, text: "in the end", category: "story", hint: "Conclusion story connector." }
+        ];
+
+        let selectedClassifierItemId = null;
+        let classifierScoreCount = 0;
+        let sortedClassifierState = { story: [], recent: [] };
+
+        function renderClassifierGame() {
+            const poolEl = document.getElementById('classifier-pool');
+            poolEl.innerHTML = '';
+
+            const remaining = classifierItemsData.filter(item => 
+                !sortedClassifierState.story.includes(item.id) && 
+                !sortedClassifierState.recent.includes(item.id)
+            );
+
+            document.getElementById('remaining-classifier-count').textContent = `${remaining.length} remaining`;
+
+            if (remaining.length === 0) {
+                poolEl.innerHTML = `<span class="text-xs text-emerald-400 font-bold flex items-center space-x-1"><i class="fa-solid fa-circle-check"></i> <span>All phrases successfully classified! Excellent work.</span></span>`;
+            } else {
+                remaining.forEach(item => {
+                    const badge = document.createElement('button');
+                    const isSelected = selectedClassifierItemId === item.id;
+                    badge.className = `classifier-card font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 ${
+                        isSelected 
+                            ? 'bg-brand-500 text-white ring-2 ring-white scale-105 shadow-md' 
+                            : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
+                    }`;
+                    badge.innerHTML = `<span>${item.text}</span>`;
+                    badge.onclick = () => selectClassifierItem(item.id);
+                    poolEl.appendChild(badge);
+                });
+            }
+
+            // Update Bucket Views
+            const storyBucket = document.getElementById('bucket-story');
+            storyBucket.innerHTML = sortedClassifierState.story.map(id => {
+                const item = classifierItemsData.find(i => i.id === id);
+                return `<span class="bg-white border border-amber-300 text-amber-900 font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center space-x-1"><i class="fa-solid fa-check text-amber-600"></i><span>${item.text}</span></span>`;
+            }).join('');
+            document.getElementById('bucket-story-count').textContent = `${sortedClassifierState.story.length} items`;
+
+            const recentBucket = document.getElementById('bucket-recent');
+            recentBucket.innerHTML = sortedClassifierState.recent.map(id => {
+                const item = classifierItemsData.find(i => i.id === id);
+                return `<span class="bg-white border border-teal-300 text-teal-900 font-bold text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center space-x-1"><i class="fa-solid fa-check text-teal-600"></i><span>${item.text}</span></span>`;
+            }).join('');
+            document.getElementById('bucket-recent-count').textContent = `${sortedClassifierState.recent.length} items`;
+
+            // Enable/disable classification buttons
+            document.getElementById('btn-classify-story').disabled = !selectedClassifierItemId;
+            document.getElementById('btn-classify-recent').disabled = !selectedClassifierItemId;
+        }
+
+        function selectClassifierItem(id) {
+            playSoundEffect('click');
+            selectedClassifierItemId = id;
+            renderClassifierGame();
+        }
+
+        function classifyCurrentSelected(targetCategory) {
+            if (!selectedClassifierItemId) return;
+
+            const item = classifierItemsData.find(i => i.id === selectedClassifierItemId);
+            const feedbackEl = document.getElementById('classifier-feedback-banner');
+            const titleEl = document.getElementById('classifier-feedback-title');
+            const textEl = document.getElementById('classifier-feedback-text');
+
+            feedbackEl.classList.remove('hidden');
+
+            if (item.category === targetCategory) {
+                playSoundEffect('correct');
+                sortedClassifierState[targetCategory].push(item.id);
+                classifierScoreCount++;
+
+                feedbackEl.className = "p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-950 space-y-1 block";
+                titleEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i><span>Correct Classification!</span>`;
+                textEl.textContent = `"${item.text}" is correct! ${item.hint}`;
+            } else {
+                playSoundEffect('wrong');
+                feedbackEl.className = "p-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-950 space-y-1 block";
+                titleEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 text-base"></i><span>Try Again</span>`;
+                textEl.textContent = `Incorrect bucket for "${item.text}". ${item.hint}`;
+            }
+
+            selectedClassifierItemId = null;
+            document.getElementById('classifier-score').textContent = `${classifierScoreCount} / ${classifierItemsData.length}`;
+            renderClassifierGame();
+            updateTotalReportScore();
+        }
+
+        function resetClassifierGame() {
+            playSoundEffect('click');
+            selectedClassifierItemId = null;
+            classifierScoreCount = 0;
+            sortedClassifierState = { story: [], recent: [] };
+            document.getElementById('classifier-feedback-banner').className = 'hidden';
+            document.getElementById('classifier-score').textContent = `0 / ${classifierItemsData.length}`;
+            renderClassifierGame();
+            updateTotalReportScore();
+        }
+
+        // =================================================================
+        // TAB 3: DUAL MODE CONSTRUCTOR LOGIC & REAL-TIME VALIDATION
+        // =================================================================
+        let currentBuilderMode = 'story'; // 'story' or 'recent'
+
+        const builderData = {
+            story: {
+                connectors: ["First", "Suddenly", "Then", "After that", "In the end"],
+                actions: [
+                    { label: "lost my house keys", verb: "lost my house keys", tense: "past" },
+                    { label: "heard a strange noise outside", verb: "heard a strange noise outside", tense: "past" },
+                    { label: "met an old high school friend", verb: "met an old high school friend", tense: "past" },
+                    { label: "found a small lost puppy", verb: "found a small lost puppy", tense: "past" }
+                ],
+                times: ["yesterday", "two days ago", "last night", "in 2021"]
+            },
+            recent: {
+                connectors: ["just", "already", "recently", "lately"],
+                actions: [
+                    { label: "completed the weekly English module", verb: "completed the weekly English module", v3: "completed" },
+                    { label: "cleaned the entire apartment", verb: "cleaned the entire apartment", v3: "cleaned" },
+                    { label: "bought fresh vegetables from the market", verb: "bought fresh vegetables from the market", v3: "bought" },
+                    { label: "finished my work presentation", verb: "finished my work presentation", v3: "finished" }
+                ],
+                times: ["(No specific finished time - connected to NOW)", "yet (in negative context)", "this morning"]
+            }
+        };
+
+        function setBuilderMode(mode) {
+            playSoundEffect('click');
+            currentBuilderMode = mode;
+
+            const storyBtn = document.getElementById('mode-btn-story');
+            const recentBtn = document.getElementById('mode-btn-recent');
+
+            if (mode === 'story') {
+                storyBtn.className = "px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all bg-amber-500 text-white shadow-md";
+                recentBtn.className = "px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all text-slate-600 hover:text-slate-900";
+                
+                document.getElementById('builder-mode-title').innerHTML = `<i class="fa-solid fa-book-open text-amber-600"></i><span>Story Builder (Past Simple)</span>`;
+                document.getElementById('builder-mode-badge').textContent = "Mode A: Past Story";
+            } else {
+                recentBtn.className = "px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all bg-teal-600 text-white shadow-md";
+                storyBtn.className = "px-4 py-2 rounded-lg text-xs font-extrabold flex items-center space-x-2 transition-all text-slate-600 hover:text-slate-900";
+                
+                document.getElementById('builder-mode-title').innerHTML = `<i class="fa-solid fa-clock-rotate-left text-teal-600"></i><span>Recent Activity Builder (Present Perfect)</span>`;
+                document.getElementById('builder-mode-badge').textContent = "Mode B: Recent Life";
+            }
+
+            populateBuilderDropdowns();
+            generateBuilderNarrative();
+        }
+
+        function populateBuilderDropdowns() {
+            const data = builderData[currentBuilderMode];
+
+            const connSelect = document.getElementById('bld-connector');
+            const actSelect = document.getElementById('bld-action');
+            const timeSelect = document.getElementById('bld-time');
+
+            connSelect.innerHTML = data.connectors.map(c => `<option value="${c}">${c}</option>`).join('');
+            actSelect.innerHTML = data.actions.map(a => `<option value="${a.verb}">${a.label}</option>`).join('');
+            timeSelect.innerHTML = data.times.map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+
+        function generateBuilderNarrative() {
+            const subj = document.getElementById('bld-subject').value;
+            const conn = document.getElementById('bld-connector').value;
+            const act = document.getElementById('bld-action').value;
+            const time = document.getElementById('bld-time').value;
+
+            let finalSentence = "";
+            let isValid = true;
+            let validationMsg = "";
+
+            if (currentBuilderMode === 'story') {
+                finalSentence = `${conn}, ${subj} ${act} ${time}.`;
+                isValid = true;
+                validationMsg = `✓ Valid A2 Past Story! Uses connector "${conn}" + Past Simple verb + time anchor "${time}".`;
+            } else {
+                const aux = (subj === "I" || subj === "Our team" || subj === "Sarah and Tom") ? "have" : "has";
+                if (conn === "lately" || conn === "recently") {
+                    finalSentence = `${subj} ${aux} ${conn} ${act}.`;
+                } else {
+                    finalSentence = `${subj} ${aux} ${conn} ${act}.`;
+                }
+
+                if (time.includes("yesterday") || time.includes("two days ago")) {
+                    isValid = false;
+                    validationMsg = `❌ Grammar Error: Do not use finished time anchors like "${time}" with Present Perfect! Switch to Past Simple.`;
+                } else {
+                    isValid = true;
+                    validationMsg = `✓ Valid Present Perfect! Signal word "${conn}" correctly pairs with ${aux} + V3.`;
+                }
+            }
+
+            document.getElementById('builder-output-text').textContent = finalSentence;
+
+            const valBox = document.getElementById('builder-validation-box');
+            if (isValid) {
+                valBox.className = "mt-4 p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/60 text-emerald-300 text-xs font-semibold flex items-center space-x-2";
+                valBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i><span>${validationMsg}</span>`;
+            } else {
+                valBox.className = "mt-4 p-3.5 rounded-xl border border-rose-500/40 bg-rose-950/60 text-rose-300 text-xs font-semibold flex items-center space-x-2";
+                valBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i><span>${validationMsg}</span>`;
+            }
+        }
+
+        function readBuilderSentence() {
+            const text = document.getElementById('builder-output-text').textContent;
+            playSoundEffect('click');
+            speakText(text);
+        }
+
+        function copyBuilderSentence() {
+            const text = document.getElementById('builder-output-text').textContent;
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            playSoundEffect('click');
+            const toast = document.getElementById('builder-toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        // =================================================================
+        // TAB 4: DIAGNOSTIC INSPECTOR GAME LOGIC
+        // =================================================================
+        const inspectorQuestions = [
+            {
+                scenario: "Last night, while walking home from the station, ________ I heard a strange noise in the bushes.",
+                prompt: "Select the correct story connector to introduce this sudden event:",
+                options: [
+                    { text: "Suddenly", correct: true, explain: "Correct! 'Suddenly' introduces an unexpected event in a past story." },
+                    { text: "Already", correct: false, explain: "Incorrect. 'Already' is a Present Perfect signal word." },
+                    { text: "In the end", correct: false, explain: "Incorrect. 'In the end' is used to finish or summarize a story." }
+                ]
+            },
+            {
+                scenario: "Have you finished your English project ________? The deadline is in one hour!",
+                prompt: "Which word completes this question correctly?",
+                options: [
+                    { text: "yesterday", correct: false, explain: "Incorrect. 'Yesterday' requires Past Simple ('Did you finish... yesterday?')." },
+                    { text: "yet", correct: true, explain: "Spot on! 'Yet' is used at the end of Present Perfect questions." },
+                    { text: "ago", correct: false, explain: "Incorrect. 'Ago' follows time durations in Past Simple (e.g. 'two hours ago')." }
+                ]
+            },
+            {
+                scenario: "Which sentence is grammatically CORRECT to tell a past story about last week?",
+                prompt: "Identify the correct sentence structure:",
+                options: [
+                    { text: "I have visited my grandparents last week.", correct: false, explain: "Incorrect. Do not use Present Perfect ('have visited') with 'last week'." },
+                    { text: "I visited my grandparents last week.", correct: true, explain: "Perfect! Specific finished past times require Past Simple ('visited')." },
+                    { text: "I visit my grandparents last week.", correct: false, explain: "Incorrect. Use past tense V2 'visited', not present V1." }
+                ]
+            },
+            {
+                scenario: "I've ________ eaten lunch, so I'm not hungry right now.",
+                prompt: "Choose the correct signal word for an action completed earlier than expected:",
+                options: [
+                    { text: "already", correct: true, explain: "Correct! 'Already' goes between have/has and the past participle." },
+                    { text: "yet", correct: false, explain: "Incorrect. 'Yet' goes at the end of negative sentences or questions." },
+                    { text: "last night", correct: false, explain: "Incorrect. 'Last night' cannot go inside the Present Perfect formula." }
+                ]
+            },
+            {
+                scenario: "First, we arrived at the camping site. ________, we pitched our tent near the lake.",
+                prompt: "Which connector moves the story forward in chronological order?",
+                options: [
+                    { text: "Then", correct: true, explain: "Correct! 'Then' or 'Next' sequence actions in past storytelling." },
+                    { text: "Recently", correct: false, explain: "Incorrect. 'Recently' is a Present Perfect time marker." },
+                    { text: "Just", correct: false, explain: "Incorrect. 'Just' expresses very recent events." }
+                ]
+            },
+            {
+                scenario: "Spot the error: 'Sarah has bought a new car two days ago.'",
+                prompt: "How should this sentence be corrected?",
+                options: [
+                    { text: "Change 'has bought' to 'bought' because 'two days ago' is a specific past time anchor.", correct: true, explain: "Exact! 'Two days ago' requires Past Simple 'bought'." },
+                    { text: "Change 'two days ago' to 'yet'.", correct: false, explain: "Incorrect. The sentence is affirmative." },
+                    { text: "No mistake, the sentence is perfect.", correct: false, explain: "Incorrect. Mixing Present Perfect with 'two days ago' is a common error." }
+                ]
+            }
+        ];
+
+        let currentInspectorIdx = 0;
+        let inspectorScore = 0;
+        let inspectorStreak = 0;
+
+        function renderInspectorQuestion() {
+            const q = inspectorQuestions[currentInspectorIdx];
+            document.getElementById('insp-q-num').textContent = currentInspectorIdx + 1;
+            document.getElementById('inspector-progress').textContent = `${currentInspectorIdx + 1}/${inspectorQuestions.length}`;
+            document.getElementById('insp-scenario-text').innerHTML = `<p class="mb-1 text-slate-800">${q.scenario}</p><p class="text-xs text-brand-700 font-extrabold uppercase tracking-wide mt-2">${q.prompt}</p>`;
+
+            const optsContainer = document.getElementById('insp-options-container');
+            optsContainer.innerHTML = '';
+            document.getElementById('insp-feedback-banner').className = 'hidden';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border-2 border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 font-semibold text-slate-800 text-xs sm:text-sm transition-all flex items-start space-x-3";
+                btn.innerHTML = `
+                    <span class="w-6 h-6 rounded-full bg-slate-100 border border-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">${String.fromCharCode(65 + idx)}</span>
+                    <span class="flex-1">${opt.text}</span>
+                `;
+                btn.onclick = () => checkInspectorAnswer(opt, btn);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function checkInspectorAnswer(option, selectedBtn) {
+            const feedbackEl = document.getElementById('insp-feedback-banner');
+            const titleEl = document.getElementById('insp-feedback-title');
+            const textEl = document.getElementById('insp-feedback-text');
+
+            document.querySelectorAll('#insp-options-container button').forEach(b => b.disabled = true);
+
+            if (option.correct) {
+                playSoundEffect('correct');
+                inspectorScore += 100 + (inspectorStreak * 25);
+                inspectorStreak++;
+                selectedBtn.className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 text-xs sm:text-sm transition-all flex items-start space-x-3";
+
+                feedbackEl.className = "p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-950 space-y-1 block";
+                titleEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i><span>Diagnostic Correct!</span>`;
+            } else {
+                playSoundEffect('wrong');
+                inspectorStreak = 0;
+                selectedBtn.className = "w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 text-xs sm:text-sm transition-all flex items-start space-x-3";
+
+                feedbackEl.className = "p-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-950 space-y-1 block";
+                titleEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 text-base"></i><span>Incorrect Selection</span>`;
+            }
+
+            textEl.textContent = option.explain;
+            document.getElementById('inspector-score').textContent = inspectorScore;
+            document.getElementById('inspector-streak').textContent = inspectorStreak;
+
+            updateTotalReportScore();
+        }
+
+        function nextInspectorQuestion() {
+            playSoundEffect('click');
+            currentInspectorIdx++;
+            if (currentInspectorIdx >= inspectorQuestions.length) {
+                currentInspectorIdx = 0;
+            }
+            renderInspectorQuestion();
+        }
+
+        function readInspectorPrompt() {
+            const q = inspectorQuestions[currentInspectorIdx];
+            speakText(`${q.scenario} ${q.prompt}`);
+        }
+
+        // =================================================================
+        // TAB 5: VALIDATION & CERTIFICATE LOGIC
+        // =================================================================
+        function updateChecklistProgress() {
+            playSoundEffect('click');
+            updateTotalReportScore();
+        }
+
+        function updateTotalReportScore() {
+            const checkboxes = document.querySelectorAll('#self-assessment-checklist input[type="checkbox"]:checked');
+            const checklistPoints = checkboxes.length * 50;
+            const total = (classifierScoreCount * 25) + inspectorScore + checklistPoints;
+
+            document.getElementById('cert-total-score').textContent = `${total} Points`;
+        }
+
+        function updateCertDisplayName() {
+            const name = document.getElementById('student-name-input').value.trim();
+            document.getElementById('cert-display-name').textContent = name !== '' ? name : '[ Learner Name ]';
+        }
+
+        function generateCertificate() {
+            const name = document.getElementById('student-name-input').value.trim();
+            if (name === '') {
+                document.getElementById('student-name-input').focus();
+                return;
+            }
+
+            playSoundEffect('fanfare');
+            const certContainer = document.getElementById('printable-certificate-container');
+            certContainer.classList.remove('hidden');
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            certContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        window.onload = function() {
+            renderClassifierGame();
+            setBuilderMode('story');
+            renderInspectorQuestion();
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('cert-date-stamp').textContent = dateStr;
+        };
+    </script>
+</body>
+</html>
