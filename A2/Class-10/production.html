@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dream Home Finder - Comparing Houses & Apartments</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #022c22;
+      color: #f0fdf4;
+    }
+    .glass-panel {
+      background: rgba(6, 78, 59, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(52, 211, 153, 0.15);
+    }
+    .rec-pulse {
+      animation: pulseRed 1.2s infinite;
+    }
+    @keyframes pulseRed {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.04); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+  <!-- Header -->
+  <header class="max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-emerald-800/50 pb-5">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-400 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-building-user"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-200">
+          Dream Home Finder
+        </h1>
+        <p class="text-xs md:text-sm text-emerald-200/70 font-medium">A2 English: Evaluating & Comparing Houses and Apartments</p>
+      </div>
+    </div>
+
+    <!-- Master Session Timer -->
+    <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-4 border border-emerald-500/30">
+      <div class="flex items-center gap-2">
+        <i class="fa-regular fa-clock text-emerald-400 text-lg"></i>
+        <div class="text-xs uppercase tracking-wider text-emerald-200/60 font-bold">Session Time</div>
+      </div>
+      <div id="timerDisplay" class="text-2xl font-mono font-black text-emerald-400">10:00</div>
+      <div class="flex gap-1">
+        <button id="startTimerBtn" onclick="toggleTimer()" class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition">
+          <i id="playIcon" class="fa-solid fa-play text-xs"></i>
+        </button>
+        <button onclick="resetTimer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- Left Column: Role Selector & Prompt Deck (7 Cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- Active Role Mode -->
+      <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-200/60">Active Role Mode:</span>
+        <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
+          <button id="roleBtnA" onclick="setRole('A')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-lg shadow-emerald-600/30">
+            <i class="fa-solid fa-user-tie"></i> Role A: Advisor
+          </button>
+          <button id="roleBtnB" onclick="setRole('B')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-house-user"></i> Role B: House Hunter
+          </button>
+        </div>
+      </div>
+
+      <!-- Role Instructions -->
+      <div id="roleInfo" class="glass-panel p-5 rounded-2xl border-l-4 border-emerald-500">
+        <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm mb-1">
+          <i class="fa-solid fa-user-check"></i> Role A: Real Estate Advisor
+        </div>
+        <p class="text-xs md:text-sm text-emerald-100/80">
+          Draw a housing prompt card. Present the House and Apartment options to your client. Ask questions comparing features like size, price, location, and noise using comparatives (<em>"Which one is bigger?"</em>, <em>"Is the apartment cheaper than the house?"</em>).
+        </p>
+      </div>
+
+      <!-- Interactive Prompt Deck -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between flex-grow min-h-[320px] relative overflow-hidden">
+        <div class="flex justify-between items-center mb-4">
+          <span id="promptCategory" class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Space & Layout
+          </span>
+          <span id="promptCounter" class="text-xs font-bold text-emerald-200/60">
+            Card 1 of 20
+          </span>
+        </div>
+
+        <div class="my-auto py-4">
+          <h2 id="promptTitle" class="text-xl md:text-2xl font-bold text-slate-100 mb-3 leading-snug">
+            Single Professional: Compare a compact city-center studio apartment with a 2-bedroom suburban house. Evaluate commute time versus living space.
+          </h2>
+          <p id="promptDetails" class="text-sm text-emerald-200/70 leading-relaxed">
+            Advisor: Present both options. Client: Compare living space vs. travel time using comparatives ("The studio is smaller, but it is closer to my office").
+          </p>
+        </div>
+
+        <!-- Language Scaffolding Box -->
+        <div class="bg-slate-900/90 rounded-xl p-3 border border-emerald-900/50 mb-4">
+          <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-lightbulb"></i> Comparative Grammar Helper
+          </div>
+          <div class="text-xs text-slate-300 italic flex flex-wrap gap-2">
+            <span class="bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50">"The house is bigger than..."</span>
+            <span class="bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50">"The apartment is cheaper than..."</span>
+            <span class="bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50">"...is more modern than..."</span>
+            <span class="bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50">"I prefer X because..."</span>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-3">
+          <button onclick="prevPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button onclick="randomPrompt()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs md:text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-shuffle"></i> Draw New Housing Card
+          </button>
+          <button onclick="nextPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Audio Recorder & Checklist (5 Cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-6">
+
+      <!-- Audio Studio Panel -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between border border-emerald-500/20">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <i class="fa-solid fa-microphone"></i> Consultation Audio Recorder
+          </div>
+          <span id="recordTimer" class="font-mono text-sm font-bold text-emerald-200/60">00:00 / 01:00</span>
+        </div>
+
+        <!-- Audio Canvas Visualizer -->
+        <div class="w-full h-16 bg-slate-900/90 rounded-2xl border border-emerald-900/50 overflow-hidden relative flex items-center justify-center mb-4">
+          <canvas id="visualizer" class="w-full h-full"></canvas>
+          <span id="visualizerPlaceholder" class="text-xs text-emerald-200/50 absolute">Click record to practice your home comparison</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-3">
+          <button id="recordBtn" onclick="toggleRecord()" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20">
+            <i id="recordIcon" class="fa-solid fa-circle text-xs"></i>
+            <span id="recordText">Record Conversation</span>
+          </button>
+          <button id="playAudioBtn" onclick="playAudio()" disabled class="p-3 rounded-xl bg-slate-800 text-slate-500 disabled:opacity-40 transition">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <a id="downloadAudioBtn" href="#" class="p-3 rounded-xl bg-slate-800 text-slate-500 opacity-40 pointer-events-none transition">
+            <i class="fa-solid fa-download"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Grammar & Vocabulary Cheat Sheet -->
+      <div class="glass-panel p-5 rounded-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-teal-300 flex items-center gap-2">
+            <i class="fa-solid fa-book-bookmark"></i> A2 Housing Vocabulary & Comparatives
+          </h3>
+          <span class="text-[10px] text-emerald-200/60">Quick Reference</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-emerald-400 font-bold text-[10px]">COMPARATIVES</div>
+            <div class="text-slate-300">Big &rarr; <strong>Bigger</strong></div>
+            <div class="text-slate-300">Cheap &rarr; <strong>Cheaper</strong></div>
+            <div class="text-slate-300">Modern &rarr; <strong>More modern</strong></div>
+            <div class="text-slate-300">Quiet &rarr; <strong>Quieter</strong></div>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-teal-400 font-bold text-[10px]">HOUSING TERMS</div>
+            <div class="text-slate-300">Balcony / Garden / Yard</div>
+            <div class="text-slate-300">Elevator / Staircase</div>
+            <div class="text-slate-300">Maintenance fee / Rent</div>
+            <div class="text-slate-300">Noise / Neighborhood</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peer Checklist -->
+      <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col justify-between">
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i> Peer Evaluation Checklist
+          </h3>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-emerald-500 w-4 h-4">
+              <span>Used comparative adjectives correctly (-er / more + adj)</span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-emerald-500 w-4 h-4">
+              <span>Compared at least 3 features (size, cost, noise, yard, location)</span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-emerald-500 w-4 h-4">
+              <span>Justified final home choice using "because"</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="finishCall()" class="mt-4 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-award"></i> Validate & Award Housing Expert Badge
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Award Modal -->
+  <div id="badgeModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
+    <div class="glass-panel max-w-md w-full p-6 rounded-3xl border border-emerald-500/40 text-center relative shadow-2xl">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-400 to-teal-500 mx-auto flex items-center justify-center text-slate-950 font-black text-3xl mb-4 shadow-lg shadow-emerald-500/30">
+        <i class="fa-solid fa-house-flag"></i>
+      </div>
+
+      <h3 class="text-xl font-extrabold text-slate-100 mb-1">Housing Expert Badge</h3>
+      <p class="text-xs text-emerald-300 mb-4">House vs. Apartment Evaluation Validated</p>
+
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-emerald-900/50 mb-5 text-left text-xs space-y-2">
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Target Level:</span>
+          <span class="font-bold text-emerald-400">A2 Elementary</span>
+        </div>
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Grammar Focus:</span>
+          <span class="font-bold text-teal-400">Comparatives (-er / more)</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Validation Status:</span>
+          <span id="badgeScore" class="font-bold text-emerald-300">3/3 Checks Validated</span>
+        </div>
+      </div>
+
+      <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition">
+        Evaluate Next Housing Card
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 20 Outcome Prompts for Evaluating & Comparing Houses and Apartments
+    const prompts = [
+      { cat: "Space & Layout", title: "Single Professional: Compare a compact city-center studio apartment with a 2-bedroom suburban house. Evaluate commute time versus living space.", details: "Advisor: Present both options. Client: Compare living space vs. travel time using comparatives (\"The studio is smaller, but it is closer to my office\")." },
+      { cat: "Space & Layout", title: "Pet Owners: Compare a 2-bedroom apartment with a sunny balcony to a 2-bedroom house with a fenced backyard for a couple with a large dog.", details: "Advisor: Ask about pet needs. Client: Compare outdoor space for the dog (\"The house yard is bigger and safer than the balcony\")." },
+      { cat: "Space & Layout", title: "Elderly Grandparents: Compare a 3rd-floor apartment in a building with no elevator to a single-story ground-floor ranch house with a garden.", details: "Advisor: Focus on accessibility. Client: Compare stairs vs. ground floor access (\"The ranch house is easier for walking\")." },
+      { cat: "Space & Layout", title: "Growing Family with Kids: Compare a 4-bedroom house far from the city to a 3-bedroom apartment near parks and top elementary schools.", details: "Advisor: Discuss family needs. Client: Weigh bedrooms vs. school distance (\"The house has more rooms, but the apartment is closer to school\")." },
+      { cat: "Space & Layout", title: "Storage & Parking: Compare a house with a private driveway and 2-car garage to an apartment with assigned underground parking.", details: "Advisor: Ask about car and storage space. Client: Compare garage convenience (\"The house garage is wider and better for tools\")." },
+
+      { cat: "Cost & Maintenance", title: "Monthly Budget: Compare a modern apartment with high monthly maintenance fees to an older house with cheap mortgage payments but roof repairs.", details: "Advisor: Explain monthly costs. Client: Compare maintenance effort vs. fixed condo fees." },
+      { cat: "Cost & Maintenance", title: "Fuel & Transportation Savings: Compare a downtown apartment where you can walk to work versus a countryside house requiring daily car commuting.", details: "Advisor: Ask about travel costs. Client: Compare gas expenses vs. downtown rent." },
+      { cat: "Cost & Maintenance", title: "Furnished vs. Unfurnished: Compare a fully furnished 1-bedroom rental apartment to an unfurnished house where you must buy all appliances.", details: "Advisor: Present upfront moving costs. Client: Contrast buying furniture vs. moving in immediately." },
+      { cat: "Cost & Maintenance", title: "Utility Costs & Solar Power: Compare an apartment with shared central heating to a house equipped with private solar panels.", details: "Advisor: Discuss energy bills. Client: Compare solar savings vs. building heating charges." },
+      { cat: "Cost & Maintenance", title: "Amenities vs. Private Cost: Compare an apartment complex with an included swimming pool and gym to a private house with gym memberships.", details: "Advisor: Highlight building perks. Client: Compare monthly gym costs vs. free building amenities." },
+
+      { cat: "Location & Noise", title: "Nightlife vs. Quiet Nights: Compare a downtown apartment located above busy restaurants to a peaceful suburban house in a quiet cul-de-sac.", details: "Advisor: Discuss noise levels. Client: Compare evening noise (\"The suburban house is much quieter at night\")." },
+      { cat: "Location & Noise", title: "Transit Accessibility: Compare an apartment located 2 minutes from a subway station to a rural house surrounded by fields.", details: "Advisor: Ask about public transport. Client: Compare train access vs. countryside peacefulness." },
+      { cat: "Location & Noise", title: "Views vs. Privacy: Compare a top-floor penthouse apartment with panoramic city skyline views to a private house surrounded by tall trees.", details: "Advisor: Present views vs. privacy. Client: Compare high-rise views with backyard privacy." },
+      { cat: "Location & Noise", title: "Gated Security: Compare an apartment in a gated building with 24/7 security guards to an independent house with private security cameras.", details: "Advisor: Highlight safety features. Client: Compare building security guards with private alarms." },
+      { cat: "Location & Noise", title: "University & Work Proximity: Compare a small apartment 5 minutes from campus to a spacious house 45 minutes away by bus.", details: "Advisor: Ask about daily student commute. Client: Compare travel convenience vs. study space." },
+
+      { cat: "Lifestyle & Features", title: "Pet Policy Restrictions: Compare an apartment with strict \"no dogs over 10kg\" building rules to an unrestricted private house.", details: "Advisor: Explain building rules. Client: Discuss pet freedoms in a private house." },
+      { cat: "Lifestyle & Features", title: "Stairs & Accessibility: Compare a 3-story townhouse with many narrow staircases to a modern high-rise apartment with 2 fast elevators.", details: "Advisor: Present building layouts. Client: Compare carrying groceries up stairs vs. using an elevator." },
+      { cat: "Lifestyle & Features", title: "Shared vs. Private Laundry: Compare an apartment building with a basement coin laundry room to a house with a private utility room.", details: "Advisor: Discuss laundry facilities. Client: Compare private washing machine space vs. shared laundry." },
+      { cat: "Lifestyle & Features", title: "BBQ & Outdoor Parties: Compare a compact apartment balcony with space for two chairs to a large house patio ideal for family BBQs.", details: "Advisor: Ask about weekend hosting. Client: Compare balcony size with patio hosting space." },
+      { cat: "Lifestyle & Features", title: "Natural Light & Windows: Compare a sunny corner-unit apartment with large floor-to-ceiling windows to a traditional house with small windows.", details: "Advisor: Describe natural light. Client: Compare room brightness and window views." }
+    ];
+
+    let currentIdx = 0;
+
+    function renderPrompt() {
+      const p = prompts[currentIdx];
+      document.getElementById('promptCategory').innerText = p.cat;
+      document.getElementById('promptCounter').innerText = `Card ${currentIdx + 1} of ${prompts.length}`;
+      document.getElementById('promptTitle').innerText = p.title;
+      document.getElementById('promptDetails').innerText = p.details;
+    }
+
+    function nextPrompt() {
+      currentIdx = (currentIdx + 1) % prompts.length;
+      renderPrompt();
+    }
+
+    function prevPrompt() {
+      currentIdx = (currentIdx - 1 + prompts.length) % prompts.length;
+      renderPrompt();
+    }
+
+    function randomPrompt() {
+      currentIdx = Math.floor(Math.random() * prompts.length);
+      renderPrompt();
+    }
+
+    // Role Switcher
+    function setRole(role) {
+      const btnA = document.getElementById('roleBtnA');
+      const btnB = document.getElementById('roleBtnB');
+      const info = document.getElementById('roleInfo');
+
+      if (role === 'A') {
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-emerald-600 text-white shadow-lg shadow-emerald-600/30";
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-user-check"></i> Role A: Real Estate Advisor
+          </div>
+          <p class="text-xs md:text-sm text-emerald-100/80">
+            Draw a housing prompt card. Present the House and Apartment options to your client. Ask questions comparing features like size, price, location, and noise using comparatives (<em>"Which one is bigger?"</em>, <em>"Is the apartment cheaper than the house?"</em>).
+          </p>
+        `;
+      } else {
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-teal-600 text-white shadow-lg shadow-teal-600/30";
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-teal-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-house-user"></i> Role B: House Hunter / Client
+          </div>
+          <p class="text-xs md:text-sm text-emerald-100/80">
+            Listen to your agent's suggestions. Evaluate both properties using comparative sentences (<em>"The apartment is cheaper, but the house is bigger"</em>) and pick your favorite home using <em>"because"</em>.
+          </p>
+        `;
+      }
+    }
+
+    // Timer
+    let timerSeconds = 600;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+    }
+
+    function toggleTimer() {
+      const playIcon = document.getElementById('playIcon');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        playIcon.className = "fa-solid fa-play text-xs";
+      } else {
+        isTimerRunning = true;
+        playIcon.className = "fa-solid fa-pause text-xs";
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            alert("10-Minute Dream Home Session Completed!");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSeconds = 600;
+      document.getElementById('playIcon').className = "fa-solid fa-play text-xs";
+      updateTimerDisplay();
+    }
+
+    // Audio Recorder & Visualizer
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let audioElem = null;
+    let isRecording = false;
+    let recInterval = null;
+    let recSecs = 0;
+    let audioCtx = null;
+    let analyser = null;
+    let animFrame = null;
+
+    async function toggleRecord() {
+      const recordText = document.getElementById('recordText');
+      const recordIcon = document.getElementById('recordIcon');
+      const recordBtn = document.getElementById('recordBtn');
+      const placeholder = document.getElementById('visualizerPlaceholder');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(stream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          src.connect(analyser);
+          drawVisualizer();
+
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioUrl = URL.createObjectURL(audioBlob);
+            audioElem = new Audio(audioUrl);
+
+            document.getElementById('playAudioBtn').disabled = false;
+            document.getElementById('playAudioBtn').classList.remove('text-slate-500');
+            document.getElementById('playAudioBtn').classList.add('text-emerald-400');
+
+            const dl = document.getElementById('downloadAudioBtn');
+            dl.href = audioUrl;
+            dl.download = `home-finder-consultation.webm`;
+            dl.classList.remove('opacity-40', 'pointer-events-none');
+            dl.classList.add('text-emerald-400');
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          recordText.innerText = "Stop Recording";
+          recordIcon.className = "fa-solid fa-square text-xs text-red-400";
+          recordBtn.classList.add('rec-pulse');
+          placeholder.style.display = 'none';
+
+          recSecs = 0;
+          recInterval = setInterval(() => {
+            recSecs++;
+            const m = Math.floor(recSecs / 60).toString().padStart(2, '0');
+            const s = (recSecs % 60).toString().padStart(2, '0');
+            document.getElementById('recordTimer').innerText = `${m}:${s} / 01:00`;
+            if (recSecs >= 60) toggleRecord();
+          }, 1000);
+
+        } catch (err) {
+          alert("Microphone access is required to record housing consultations.");
+        }
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        clearInterval(recInterval);
+        cancelAnimationFrame(animFrame);
+        isRecording = false;
+
+        recordText.innerText = "Record Conversation";
+        recordIcon.className = "fa-solid fa-circle text-xs";
+        recordBtn.classList.remove('rec-pulse');
+      }
+    }
+
+    function drawVisualizer() {
+      const canvas = document.getElementById('visualizer');
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function render() {
+        animFrame = requestAnimationFrame(render);
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 2;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          ctx.fillStyle = `rgb(52, 211, 153)`;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+          x += barWidth;
+        }
+      }
+      render();
+    }
+
+    function playAudio() {
+      if (audioElem) audioElem.play();
+    }
+
+    // Modal
+    function finishCall() {
+      const checkboxes = document.querySelectorAll('.peerCheck');
+      let count = 0;
+      checkboxes.forEach(cb => { if (cb.checked) count++; });
+
+      document.getElementById('badgeScore').innerText = `${count} / ${checkboxes.length} Checks Validated`;
+      document.getElementById('badgeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('badgeModal').classList.add('hidden');
+    }
+
+    // Init
+    renderPrompt();
+  </script>
+</body>
+</html>
