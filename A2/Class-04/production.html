@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Friending Studio - A2 Speaking & Profiler App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .recording-pulse {
+      animation: recPulse 1.2s infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.04); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+  <!-- Header -->
+  <header class="max-w-6xl w-full mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-800 pb-5">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-purple-500/20">
+        <i class="fa-solid fa-comments"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-300">
+          Speed Friending Studio
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400 font-medium">A2 Speaking: Find Out & Talk About Yourself</p>
+      </div>
+    </div>
+
+    <!-- 10-Min Master Timer -->
+    <div class="glass-panel px-5 py-2.5 rounded-2xl flex items-center gap-4 border border-purple-500/30">
+      <div class="flex items-center gap-2">
+        <i class="fa-regular fa-clock text-purple-400 text-lg"></i>
+        <div class="text-xs uppercase tracking-wider text-slate-400 font-bold">Session Time</div>
+      </div>
+      <div id="timerDisplay" class="text-2xl font-mono font-black text-pink-400">10:00</div>
+      <div class="flex gap-1">
+        <button id="startTimerBtn" onclick="toggleTimer()" class="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center transition">
+          <i id="playIcon" class="fa-solid fa-play text-xs"></i>
+        </button>
+        <button onclick="resetTimer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Container -->
+  <main class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- Left Column: Role & Interactive Prompts (7 Cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-6">
+
+      <!-- Role Selector -->
+      <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Role Mode:</span>
+        <div class="grid grid-cols-2 gap-2 w-full sm:w-auto">
+          <button id="roleBtnA" onclick="setRole('A')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-lg shadow-purple-600/30">
+            <i class="fa-solid fa-clipboard-question"></i> Role A: Profiler
+          </button>
+          <button id="roleBtnB" onclick="setRole('B')" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-id-card"></i> Role B: VIP Guest
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Role Instructions -->
+      <div id="roleInfo" class="glass-panel p-5 rounded-2xl border-l-4 border-purple-500">
+        <div class="flex items-center gap-2 text-purple-300 font-bold text-sm mb-1">
+          <i class="fa-solid fa-user-gear"></i> Role A: The Profiler (Interviewer)
+        </div>
+        <p class="text-xs md:text-sm text-slate-300">
+          Draw a card, ask your partner questions using Present Simple (e.g., <em>"Where do you...?", "What is your...?"</em>), and ask 2 follow-up questions to find out more details!
+        </p>
+      </div>
+
+      <!-- Prompt Deck -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between flex-grow min-h-[320px] relative overflow-hidden">
+        <div class="flex justify-between items-center mb-4">
+          <span id="promptCategory" class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-pink-500/20 text-pink-300 border border-pink-500/30">
+            Background & Profile
+          </span>
+          <span id="promptCounter" class="text-xs font-bold text-slate-400">
+            Card 1 of 20
+          </span>
+        </div>
+
+        <div class="my-auto py-4">
+          <h2 id="promptTitle" class="text-xl md:text-2xl font-bold text-slate-100 mb-3 leading-snug">
+            Where are you from originally, and what is your neighborhood like?
+          </h2>
+          <p id="promptDetails" class="text-sm text-slate-400 leading-relaxed">
+            Talk about where you live, what you like about your neighborhood, and who lives with you using Present Simple verbs!
+          </p>
+        </div>
+
+        <!-- Sentence Starter Helper Box -->
+        <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-4">
+          <div class="text-[11px] font-bold text-pink-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-comment-dots"></i> Sentence Starters for A2
+          </div>
+          <div class="text-xs text-slate-300 italic flex flex-wrap gap-2">
+            <span class="bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/50">"I live in..."</span>
+            <span class="bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/50">"In my free time, I usually..."</span>
+            <span class="bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/50">"How about you?"</span>
+          </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="flex items-center gap-3">
+          <button onclick="prevPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button onclick="randomPrompt()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs md:text-sm shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-shuffle"></i> Next Profile Prompt
+          </button>
+          <button onclick="nextPrompt()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Audio Recorder & Peer Checklist (5 Cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-6">
+
+      <!-- Audio Recorder Panel -->
+      <div class="glass-panel p-6 rounded-3xl flex flex-col justify-between border border-pink-500/20">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-pink-400">
+            <i class="fa-solid fa-microphone"></i> 1-Min Speaking Audio
+          </div>
+          <span id="recordTimer" class="font-mono text-sm font-bold text-slate-400">00:00 / 01:00</span>
+        </div>
+
+        <!-- Canvas Audio Visualizer -->
+        <div class="w-full h-16 bg-slate-900/90 rounded-2xl border border-slate-800 overflow-hidden relative flex items-center justify-center mb-4">
+          <canvas id="visualizer" class="w-full h-full"></canvas>
+          <span id="visualizerPlaceholder" class="text-xs text-slate-500 absolute">Click record to speak</span>
+        </div>
+
+        <!-- Audio Controls -->
+        <div class="flex items-center gap-3">
+          <button id="recordBtn" onclick="toggleRecord()" class="flex-1 py-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-pink-500/20">
+            <i id="recordIcon" class="fa-solid fa-circle text-xs"></i>
+            <span id="recordText">Record Profile</span>
+          </button>
+          <button id="playAudioBtn" onclick="playAudio()" disabled class="p-3 rounded-xl bg-slate-800 text-slate-500 disabled:opacity-40 transition">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <a id="downloadAudioBtn" href="#" class="p-3 rounded-xl bg-slate-800 text-slate-500 opacity-40 pointer-events-none transition">
+            <i class="fa-solid fa-download"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Grammar Reference Cheat Sheet -->
+      <div class="glass-panel p-5 rounded-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-2">
+            <i class="fa-solid fa-lightbulb"></i> Present Simple Scaffold
+          </h3>
+          <span class="text-[10px] text-slate-400">Grammar Focus</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-pink-400 font-bold text-[10px]">QUESTIONS</div>
+            <div class="text-slate-300">Where <strong>do</strong> you live?</div>
+            <div class="text-slate-300">What <strong>do</strong> you like?</div>
+            <div class="text-slate-300"><strong>Do</strong> you have pets?</div>
+          </div>
+          <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+            <div class="text-purple-400 font-bold text-[10px]">STATEMENTS</div>
+            <div class="text-slate-300">I <strong>live</strong> in...</div>
+            <div class="text-slate-300">I <strong>work</strong> as...</div>
+            <div class="text-slate-300">I <strong>usually play</strong>...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Peer Match Checklist -->
+      <div class="glass-panel p-5 rounded-2xl flex-grow flex flex-col justify-between">
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-user-check text-purple-400"></i> Speed Match Verification
+          </h3>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-purple-500 w-4 h-4">
+              <span>Answered using complete sentences</span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-purple-500 w-4 h-4">
+              <span>Asked 1+ follow-up question ("Why?", "Where?")</span>
+            </label>
+            <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+              <input type="checkbox" class="peerCheck rounded accent-purple-500 w-4 h-4">
+              <span>Found at least 1 common interest!</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="finishMatch()" class="mt-4 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 font-bold text-xs transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-address-card"></i> Verify Match & Generate Badge
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Match Badge Modal -->
+  <div id="badgeModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden z-50">
+    <div class="glass-panel max-w-md w-full p-6 rounded-3xl border border-purple-500/40 text-center relative shadow-2xl">
+      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 mx-auto flex items-center justify-center text-white font-black text-3xl mb-4 shadow-lg shadow-pink-500/30">
+        <i class="fa-solid fa-handshake font-black"></i>
+      </div>
+
+      <h3 class="text-xl font-extrabold text-slate-100 mb-1">Official Friending Match!</h3>
+      <p class="text-xs text-purple-300 mb-4">A2 Personal Exchange Complete</p>
+
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 mb-5 text-left text-xs space-y-2">
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Target Level:</span>
+          <span class="font-bold text-pink-400">A2 Elementary</span>
+        </div>
+        <div class="flex justify-between border-b border-slate-800 pb-2">
+          <span class="text-slate-400">Grammar Checked:</span>
+          <span class="font-bold text-purple-400">Present Simple & Questions</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-400">Match Check:</span>
+          <span id="badgeScore" class="font-bold text-emerald-400">3/3 Validated</span>
+        </div>
+      </div>
+
+      <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition">
+        Start Next Speed Friending Round
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 20 Outcome Prompts Data
+    const prompts = [
+      { cat: "Background & Profile", title: "Where are you from originally, and what is your neighborhood like?", details: "Talk about where you live, what you like about your neighborhood, and who lives with you using Present Simple!" },
+      { cat: "Background & Profile", title: "Who do you live with, and do you have a big or small family?", details: "Mention your parents, siblings, or roommates, and describe your family setup." },
+      { cat: "Background & Profile", title: "What do you do every day (work or study), and do you enjoy it?", details: "Describe your job, school, or daily routine and why you like or dislike it." },
+      { cat: "Background & Profile", title: "What languages do you speak, and why are you learning English?", details: "Explain your native language and your main motivation for studying English." },
+      { cat: "Background & Profile", title: "Do you have any pets at home, or what is your favorite animal?", details: "Talk about your pet's name or your favorite animal and why you like them." },
+
+      { cat: "Hobbies & Free Time", title: "What is your favorite thing to do on a Saturday morning or afternoon?", details: "Describe your favorite weekend activities and who you spend time with." },
+      { cat: "Hobbies & Free Time", title: "What kind of music do you listen to when you want to relax?", details: "Mention your favorite bands, singers, or music genres." },
+      { cat: "Hobbies & Free Time", title: "What is your favorite dish to eat or cook at home?", details: "Talk about food you enjoy, how often you cook, or your favorite restaurant." },
+      { cat: "Hobbies & Free Time", title: "What sports or physical activities do you like playing or watching?", details: "Mention sports you enjoy, how often you exercise, or teams you support." },
+      { cat: "Hobbies & Free Time", title: "What TV shows or movies do you usually watch in your free time?", details: "Describe your favorite movie genre or show you are watching right now." },
+
+      { cat: "Daily Habits & Routines", title: "What time do you wake up, and what is the first thing you do?", details: "Explain your morning routine step-by-step using frequency adverbs (usually, always)." },
+      { cat: "Daily Habits & Routines", title: "How do you usually travel to work, school, or around your city?", details: "Talk about taking the bus, driving, walking, or riding a bike." },
+      { cat: "Daily Habits & Routines", title: "Are you a coffee or tea person? When and where do you drink it?", details: "Share your daily drink preferences and favorite times to enjoy them." },
+      { cat: "Daily Habits & Routines", title: "What do you usually do after work or study to relax in the evening?", details: "Explain how you unwind after a long day at home or with friends." },
+      { cat: "Daily Habits & Routines", title: "Where do you prefer to go shopping for clothes or groceries?", details: "Mention whether you like shopping online or in local stores." },
+
+      { cat: "Future Dreams & Preferences", title: "If you could travel to any city next month, where would you go and why?", details: "Share your dream destination and what you want to see or do there." },
+      { cat: "Future Dreams & Preferences", title: "What is one new skill or hobby you want to learn this year?", details: "Talk about a skill (e.g. playing guitar, cooking, driving) you want to start." },
+      { cat: "Future Dreams & Preferences", title: "What does a perfect, relaxing Sunday look like for you?", details: "Describe your ideal Sunday weather, food, activities, and company." },
+      { cat: "Future Dreams & Preferences", title: "How would your best friend describe your personality in three words?", details: "Use simple adjectives (e.g., friendly, funny, quiet, hardworking)." },
+      { cat: "Future Dreams & Preferences", title: "What is one personal goal you want to achieve in the next six months?", details: "Explain a simple life, study, or work goal you are aiming for." }
+    ];
+
+    let currentIdx = 0;
+
+    function renderPrompt() {
+      const p = prompts[currentIdx];
+      document.getElementById('promptCategory').innerText = p.cat;
+      document.getElementById('promptCounter').innerText = `Card ${currentIdx + 1} of ${prompts.length}`;
+      document.getElementById('promptTitle').innerText = p.title;
+      document.getElementById('promptDetails').innerText = p.details;
+    }
+
+    function nextPrompt() {
+      currentIdx = (currentIdx + 1) % prompts.length;
+      renderPrompt();
+    }
+
+    function prevPrompt() {
+      currentIdx = (currentIdx - 1 + prompts.length) % prompts.length;
+      renderPrompt();
+    }
+
+    function randomPrompt() {
+      currentIdx = Math.floor(Math.random() * prompts.length);
+      renderPrompt();
+    }
+
+    // Role Switcher
+    function setRole(role) {
+      const btnA = document.getElementById('roleBtnA');
+      const btnB = document.getElementById('roleBtnB');
+      const info = document.getElementById('roleInfo');
+
+      if (role === 'A') {
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-purple-600 text-white shadow-lg shadow-purple-600/30";
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-purple-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-user-gear"></i> Role A: The Profiler (Interviewer)
+          </div>
+          <p class="text-xs md:text-sm text-slate-300">
+            Draw a card, ask your partner questions using Present Simple (e.g., <em>"Where do you...?", "What is your...?"</em>), and ask 2 follow-up questions to find out more details!
+          </p>
+        `;
+      } else {
+        btnB.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-pink-600 text-white shadow-lg shadow-pink-600/30";
+        btnA.className = "px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 bg-slate-800 text-slate-400 hover:text-white";
+        info.innerHTML = `
+          <div class="flex items-center gap-2 text-pink-300 font-bold text-sm mb-1">
+            <i class="fa-solid fa-id-card"></i> Role B: The VIP Guest (Storyteller)
+          </div>
+          <p class="text-xs md:text-sm text-slate-300">
+            Speak about yourself for 1 minute using Present Simple! Share your habits, hobbies, and living setup, then ask: <em>"How about you?"</em>
+          </p>
+        `;
+      }
+    }
+
+    // Master Timer
+    let timerSeconds = 600;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+      const s = (timerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+    }
+
+    function toggleTimer() {
+      const playIcon = document.getElementById('playIcon');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        playIcon.className = "fa-solid fa-play text-xs";
+      } else {
+        isTimerRunning = true;
+        playIcon.className = "fa-solid fa-pause text-xs";
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            alert("10-Minute Speed Friending Time Up!");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSeconds = 600;
+      document.getElementById('playIcon').className = "fa-solid fa-play text-xs";
+      updateTimerDisplay();
+    }
+
+    // Audio Recorder
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioBlob = null;
+    let audioUrl = null;
+    let audioElem = null;
+    let isRecording = false;
+    let recInterval = null;
+    let recSecs = 0;
+    let audioCtx = null;
+    let analyser = null;
+    let animFrame = null;
+
+    async function toggleRecord() {
+      const recordText = document.getElementById('recordText');
+      const recordIcon = document.getElementById('recordIcon');
+      const recordBtn = document.getElementById('recordBtn');
+      const placeholder = document.getElementById('visualizerPlaceholder');
+
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(stream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 64;
+          src.connect(analyser);
+          drawVisualizer();
+
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            audioUrl = URL.createObjectURL(audioBlob);
+            audioElem = new Audio(audioUrl);
+
+            document.getElementById('playAudioBtn').disabled = false;
+            document.getElementById('playAudioBtn').classList.remove('text-slate-500');
+            document.getElementById('playAudioBtn').classList.add('text-pink-400');
+
+            const dl = document.getElementById('downloadAudioBtn');
+            dl.href = audioUrl;
+            dl.download = `personal-profile-speech.webm`;
+            dl.classList.remove('opacity-40', 'pointer-events-none');
+            dl.classList.add('text-pink-400');
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          recordText.innerText = "Stop Recording";
+          recordIcon.className = "fa-solid fa-square text-xs text-red-400";
+          recordBtn.classList.add('recording-pulse');
+          placeholder.style.display = 'none';
+
+          recSecs = 0;
+          recInterval = setInterval(() => {
+            recSecs++;
+            const m = Math.floor(recSecs / 60).toString().padStart(2, '0');
+            const s = (recSecs % 60).toString().padStart(2, '0');
+            document.getElementById('recordTimer').innerText = `${m}:${s} / 01:00`;
+            if (recSecs >= 60) toggleRecord();
+          }, 1000);
+
+        } catch (err) {
+          alert("Microphone permission required for audio recording.");
+        }
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        clearInterval(recInterval);
+        cancelAnimationFrame(animFrame);
+        isRecording = false;
+
+        recordText.innerText = "Record Profile";
+        recordIcon.className = "fa-solid fa-circle text-xs";
+        recordBtn.classList.remove('recording-pulse');
+      }
+    }
+
+    function drawVisualizer() {
+      const canvas = document.getElementById('visualizer');
+      const ctx = canvas.getContext('2d');
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function render() {
+        animFrame = requestAnimationFrame(render);
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / bufferLength) * 2;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          ctx.fillStyle = `rgb(236, 72, 153)`;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+          x += barWidth;
+        }
+      }
+      render();
+    }
+
+    function playAudio() {
+      if (audioElem) audioElem.play();
+    }
+
+    // Modal
+    function finishMatch() {
+      const checkboxes = document.querySelectorAll('.peerCheck');
+      let count = 0;
+      checkboxes.forEach(cb => { if (cb.checked) count++; });
+
+      document.getElementById('badgeScore').innerText = `${count} / ${checkboxes.length} Checks Validated`;
+      document.getElementById('badgeModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('badgeModal').classList.add('hidden');
+    }
+
+    // Init
+    renderPrompt();
+  </script>
+</body>
+</html>
