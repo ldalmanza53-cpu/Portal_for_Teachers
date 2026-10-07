@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Suggestion Studio: Making & Responding to Suggestions</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: { 450: '#6366f1' },
+                        amber: { 450: '#f59e0b' },
+                        emerald: { 450: '#10b981' },
+                        sky: { 450: '#38bdf8' }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.22);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* 3D Flip Card Perspective */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Glowing Accent Effects */
+        .indigo-glow {
+            box-shadow: 0 0 35px -5px rgba(99, 102, 241, 0.35);
+        }
+
+        .amber-glow {
+            box-shadow: 0 0 35px -5px rgba(245, 158, 11, 0.35);
+        }
+
+        /* Pulse visual animation for live recording */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+        .recording-pulse {
+            animation: pulseGlow 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white flex flex-col justify-between">
+
+    <!-- Top Navigation & Master 10-Min Session Clock Header Bar -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-indigo-500/20 px-4 py-3 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo, Badge & Main Title -->
+            <div class="flex items-center space-x-3 text-center md:text-left">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-500 via-amber-400 to-sky-400 flex items-center justify-center text-slate-950 shadow-lg shadow-indigo-500/25">
+                    <i class="fa-solid fa-lightbulb text-2xl text-slate-950"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-amber-200 to-sky-400 bg-clip-text text-transparent">
+                            Smart Suggestion Studio
+                        </h1>
+                        <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-extrabold px-2 py-0.5 rounded-full">CEFR A2</span>
+                    </div>
+                    <p class="text-xs text-indigo-200/90 font-medium">Making Suggestions, Accepting, Declining & Counter-Proposals</p>
+                </div>
+            </div>
+
+            <!-- Master 10-Minute Activity Timer Clock -->
+            <div class="flex items-center space-x-4 bg-slate-900/90 border border-indigo-500/30 px-4 py-2 rounded-2xl shadow-inner">
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-400/90">Session Clock</span>
+                    <span id="timerDisplay" class="font-mono text-2xl font-black tracking-wider text-amber-400">10:00</span>
+                </div>
+                <div class="flex items-center space-x-1.5 border-l border-slate-700 pl-3">
+                    <button id="startTimerBtn" onclick="toggleTimer()" title="Play / Pause Clock" class="w-9 h-9 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold transition flex items-center justify-center shadow-md">
+                        <i id="timerIcon" class="fa-solid fa-play text-sm"></i>
+                    </button>
+                    <button onclick="resetTimer()" title="Reset Timer" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center justify-center border border-slate-700">
+                        <i class="fa-solid fa-rotate-left text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Header Action Modal Buttons -->
+            <div class="flex items-center space-x-2">
+                <button onclick="openGrammarModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-2 transition">
+                    <i class="fa-solid fa-book-bookmark text-amber-400"></i>
+                    <span>Grammar Rules</span>
+                </button>
+                <button onclick="openReviewModal()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-amber-600 hover:from-indigo-500 hover:to-amber-500 text-white text-xs font-bold flex items-center gap-2 transition shadow-md shadow-indigo-950/40">
+                    <i class="fa-solid fa-award text-amber-300"></i>
+                    <span>Peer Review & Badge</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 10-Minute Activity Timeline Bar -->
+        <div class="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/80">
+            <div class="flex items-center justify-between text-[11px] font-semibold mb-1 text-slate-400">
+                <span id="phase0" class="text-indigo-400 transition-colors">Stage 1: Setup (0-1m)</span>
+                <span id="phase1" class="transition-colors">Stage 2: Consultation 1 (1-4.5m)</span>
+                <span id="phase2" class="transition-colors">Stage 3: Consultation 2 - Role Swap (4.5-8m)</span>
+                <span id="phase3" class="transition-colors">Stage 4: Peer Review (8-10m)</span>
+            </div>
+            <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+                <div id="timelineBar" class="h-full bg-gradient-to-r from-indigo-500 via-amber-400 to-sky-400 rounded-full transition-all duration-500 w-0"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full grow flex flex-col gap-6">
+
+        <!-- Activity Context & Role Switcher Banner -->
+        <section class="glass-panel rounded-2xl p-5 border border-indigo-500/20 shadow-xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div class="space-y-1 max-w-2xl">
+                    <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold border border-indigo-500/20">
+                        <i class="fa-solid fa-people-arrows text-xs"></i>
+                        <span>Pair Communication Activity • Real Context Suggestions</span>
+                    </div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>"The Suggestion & Event Planning Studio"</span>
+                    </h2>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        One student acts as the <strong class="text-indigo-300">Suggestion Consultant / Event Planner</strong> proposing creative plans, while the other is the <strong class="text-amber-300">Client / Decision Maker</strong> accepting, politely declining, or giving counter-suggestions.
+                    </p>
+                </div>
+
+                <!-- Active Role Selector Toggle -->
+                <div class="flex items-center bg-slate-900/90 p-1.5 rounded-xl border border-slate-700/80 w-full lg:w-auto">
+                    <button id="roleBtnA" onclick="setRole('A')" class="flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-500 text-slate-950 shadow-md">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Role A: Suggestion Consultant</span>
+                    </button>
+                    <button id="roleBtnB" onclick="setRole('B')" class="flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-user-check"></i>
+                        <span>Role B: Client / Decision Maker</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Role Instructions Display -->
+            <div id="roleInstructionsBox" class="mt-4 p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-500/30 text-xs text-indigo-200/90 flex items-start gap-3">
+                <i class="fa-solid fa-circle-info text-indigo-400 text-base mt-0.5"></i>
+                <div id="roleInstructionText">
+                    <strong>Suggestion Consultant Instructions:</strong> Draw a scenario card from the deck below. Offer 2 or 3 distinct activity suggestions using formulas like <em>"Why don't we..."</em>, <em>"How about + -ing..."</em>, or <em>"Let's..."</em>.
+                </div>
+            </div>
+        </section>
+
+        <!-- Two-Column Interactive Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Column: 3-Step Language Builder Matrix & Session Log (7 cols) -->
+            <div class="lg:col-span-7 space-y-6 flex flex-col">
+                
+                <!-- 3-Step Language Builder Matrix Box -->
+                <div class="glass-panel rounded-2xl p-5 border border-indigo-500/20 shadow-xl flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>3-Step Interactive Language Builder</span>
+                        </h3>
+                        <span class="text-[10px] bg-slate-800 text-indigo-300 px-2 py-0.5 rounded font-mono">Suggestions & Responses</span>
+                    </div>
+
+                    <!-- Step Inputs Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        
+                        <!-- Step 1: Suggestion Starter -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                                <span>1. Suggestion Starter</span>
+                                <span class="text-[10px] text-indigo-400">Formulas</span>
+                            </label>
+                            <select id="step1Select" onchange="updateBuiltSentence()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
+                                <option value="Why don't we">Why don't we...</option>
+                                <option value="How about">How about (-ing)...</option>
+                                <option value="We could">We could...</option>
+                                <option value="Let's">Let's...</option>
+                                <option value="What about">What about (-ing)...</option>
+                                <option value="Why don't you">Why don't you...</option>
+                                <option value="Shall we">Shall we...</option>
+                            </select>
+                        </div>
+
+                        <!-- Step 2: Action & Context -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                                <span>2. Action & Context</span>
+                                <span class="text-[10px] text-amber-400">Activity</span>
+                            </label>
+                            <select id="step2Select" onchange="updateBuiltSentence()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
+                                <option value="go to the cinema this Saturday evening">go to the cinema this Saturday evening?</option>
+                                <option value="try that new Italian restaurant downtown">try that new Italian restaurant downtown?</option>
+                                <option value="visit the art museum while entry is free">visit the art museum while entry is free?</option>
+                                <option value="take a relaxing walk in the central park">take a relaxing walk in the central park?</option>
+                                <option value="book the train tickets online in advance">book the train tickets online in advance?</option>
+                                <option value="cook a delicious homemade dinner together">cook a delicious homemade dinner together?</option>
+                                <option value="take a short 15-minute coffee break right now">take a short 15-minute coffee break right now?</option>
+                            </select>
+                        </div>
+
+                        <!-- Step 3: Response & Follow-up -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                                <span>3. Response / Counter</span>
+                                <span class="text-[10px] text-sky-400">Client Reply</span>
+                            </label>
+                            <select id="step3Select" onchange="updateBuiltSentence()" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-2.5 text-slate-200 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition">
+                                <option value="That sounds like a great idea! I'd love to join.">That sounds like a great idea!</option>
+                                <option value="I'd love to, but I'm busy studying for my exam.">I'd love to, but I'm busy.</option>
+                                <option value="That works for me! What time should we meet?">That works for me!</option>
+                                <option value="How about doing it tomorrow afternoon instead?">How about doing it tomorrow instead?</option>
+                                <option value="That sounds nice, but it's a bit too expensive for me.">That sounds nice but it's expensive.</option>
+                                <option value="I'm not sure. Why don't we do something else?">I'm not sure. Why don't we...</option>
+                                <option value="Perfect! Let's call our friends and ask them too.">Perfect! Let's call our friends.</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Custom Sentence Text Override Input -->
+                    <div class="pt-1">
+                        <input type="text" id="customSentenceInput" oninput="handleCustomSentenceInput()" placeholder="Or type your custom suggestion & response sentence here..." class="w-full bg-slate-900/80 border border-slate-800 text-xs rounded-xl p-2.5 text-indigo-200 placeholder-slate-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+
+                    <!-- Formatted Live Sentence Output Panel -->
+                    <div class="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/30 space-y-3">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-indigo-400/90">
+                            <span><i class="fa-solid fa-quote-left mr-1"></i> Formatted Dialogue Exchange</span>
+                            <span class="text-slate-400 text-[10px]">A2 Target Structure</span>
+                        </div>
+                        <p id="builtSentenceDisplay" class="text-base font-semibold text-white leading-relaxed tracking-wide min-h-[48px] flex items-center">
+                            Why don't we go to the cinema this Saturday evening? — That sounds like a great idea! I'd love to join.
+                        </p>
+                        
+                        <!-- Toolbar Actions -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="speakBuiltSentence()" class="px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                    <span>Listen & Practice</span>
+                                </button>
+                                <button onclick="copyBuiltSentence()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-copy text-indigo-400"></i>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <button onclick="addToSessionScript()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-md shadow-amber-950/40">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Log to Session Script</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accumulated Session Script Log -->
+                <div class="glass-panel rounded-2xl p-5 border border-indigo-500/20 shadow-xl flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>Session Dialogue Script Log</span>
+                        </h3>
+                        <span id="scriptCountBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            0 Exchanges
+                        </span>
+                    </div>
+
+                    <div id="sessionScriptContainer" class="flex-1 min-h-[120px] max-h-[220px] overflow-y-auto space-y-2 pr-1">
+                        <p id="emptyScriptText" class="text-xs text-slate-500 italic text-center py-8">
+                            No dialogue exchanges logged yet. Select or build a sentence above and click "Log to Session Script".
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: 20 Outcome Scenario 3D Flashcard Deck (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col space-y-6">
+                
+                <div class="glass-panel rounded-2xl p-5 border border-indigo-500/20 shadow-xl flex-1 flex flex-col justify-between">
+                    
+                    <!-- Deck Header & Category Filters -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span>20 Scenario Cards Deck</span>
+                            </h3>
+                            <span id="cardCounter" class="text-xs font-bold font-mono text-indigo-300 bg-indigo-950/50 border border-indigo-500/30 px-2 py-0.5 rounded-lg">
+                                Card 1 of 20
+                            </span>
+                        </div>
+
+                        <!-- Category Selector Pills -->
+                        <div class="flex flex-wrap gap-1.5 text-[11px]">
+                            <button onclick="filterCards('ALL')" class="cat-filter-btn active-cat border px-2.5 py-1 rounded-lg font-bold transition bg-indigo-500 text-slate-950 border-indigo-400">All (20)</button>
+                            <button onclick="filterCards('Weekend')" class="cat-filter-btn border px-2.5 py-1 rounded-lg font-bold transition bg-slate-900 text-slate-400 border-slate-700 hover:text-white">Leisure</button>
+                            <button onclick="filterCards('Travel')" class="cat-filter-btn border px-2.5 py-1 rounded-lg font-bold transition bg-slate-900 text-slate-400 border-slate-700 hover:text-white">Trips</button>
+                            <button onclick="filterCards('Health')" class="cat-filter-btn border px-2.5 py-1 rounded-lg font-bold transition bg-slate-900 text-slate-400 border-slate-700 hover:text-white">Health</button>
+                            <button onclick="filterCards('Work')" class="cat-filter-btn border px-2.5 py-1 rounded-lg font-bold transition bg-slate-900 text-slate-400 border-slate-700 hover:text-white">Work/Study</button>
+                        </div>
+                    </div>
+
+                    <!-- Interactive 3D Flip Card Container -->
+                    <div class="my-4 perspective-1000 w-full h-[290px] cursor-pointer" onclick="flipCurrentCard()">
+                        <div id="flashcardInner" class="transform-style-3d relative w-full h-full rounded-2xl transition-all duration-500 shadow-2xl">
+                            
+                            <!-- Card Front -->
+                            <div class="backface-hidden absolute inset-0 w-full h-full glass-card rounded-2xl p-6 border-2 border-indigo-500/30 flex flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40">
+                                <div class="flex items-center justify-between">
+                                    <span id="cardCategoryBadge" class="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                        Weekend Leisure
+                                    </span>
+                                    <i class="fa-solid fa-rotate text-slate-500 text-xs" title="Click to flip"></i>
+                                </div>
+
+                                <div class="space-y-3 my-auto">
+                                    <h4 id="cardQuestionText" class="text-lg font-extrabold text-white leading-snug">
+                                        "Rainy Saturday Afternoon: What can you suggest doing indoors with a friend?"
+                                    </h4>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase">Target Formulas:</span>
+                                        <div id="cardTargetVerbs" class="flex flex-wrap gap-1">
+                                            <span class="text-[10px] bg-indigo-950/80 text-indigo-300 font-mono px-2 py-0.5 rounded border border-indigo-500/30">Why don't we...</span>
+                                            <span class="text-[10px] bg-amber-950/80 text-amber-300 font-mono px-2 py-0.5 rounded border border-amber-500/30">How about (-ing)...</span>
+                                            <span class="text-[10px] bg-sky-950/80 text-sky-300 font-mono px-2 py-0.5 rounded border border-sky-500/30">Let's...</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-center text-[11px] text-indigo-400/90 font-semibold flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-hand-pointer text-xs animate-bounce"></i>
+                                    <span>Click card to flip for Model Dialogue Script</span>
+                                </div>
+                            </div>
+
+                            <!-- Card Back -->
+                            <div class="backface-hidden rotate-y-180 absolute inset-0 w-full h-full glass-card rounded-2xl p-5 border-2 border-amber-500/30 flex flex-col justify-between bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                        Model Dialogue Script
+                                    </span>
+                                    <i class="fa-solid fa-rotate text-slate-500 text-xs"></i>
+                                </div>
+
+                                <div class="space-y-2 text-xs my-auto">
+                                    <div class="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5">
+                                        <p class="font-bold text-indigo-300">Consultant: <span id="cardBackAdvisorText" class="font-normal text-slate-200">Why don't we go to the indoor board game cafe or watch a movie at home?</span></p>
+                                        <p class="font-bold text-amber-300">Client: <span id="cardBackClientText" class="font-normal text-slate-200">The board game cafe sounds awesome! How about inviting Sarah and Mark too?</span></p>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-slate-300 text-[11px]">
+                                        <i class="fa-solid fa-lightbulb text-indigo-400 mr-1"></i>
+                                        <span id="cardHintText">Key Grammar: 'Why don't we + base verb' for primary suggestion, 'How about + -ing' for counter-proposal.</span>
+                                    </div>
+                                </div>
+
+                                <div class="text-center text-[11px] text-amber-400 font-semibold">
+                                    <span>Click to return to front</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Deck Control Buttons -->
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                        <button onclick="prevCard()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>Prev</span>
+                        </button>
+                        
+                        <button onclick="readCardQuestion()" class="px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Read Card</span>
+                        </button>
+
+                        <button onclick="randomCard()" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-shuffle"></i>
+                            <span>Random</span>
+                        </button>
+
+                        <button onclick="nextCard()" class="px-3.5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow">
+                            <span>Next</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Bottom Section: 60-Second Audio Recording Studio -->
+        <section class="glass-panel rounded-2xl p-6 border border-indigo-500/20 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h3 class="text-base font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-microphone-lines text-indigo-400"></i>
+                        <span>60-Second Voice Recording Studio</span>
+                    </h3>
+                    <p class="text-xs text-slate-300">Record your 60-second roleplay suggestion dialogue or pitch. Focus on intonation and confident expression!</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="recStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span>Studio Ready</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Voice Recorder Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                
+                <!-- Countdown Visualizer Ring (4 cols) -->
+                <div class="md:col-span-4 flex flex-col items-center justify-center p-4 bg-slate-900/80 rounded-2xl border border-slate-800">
+                    <div class="relative w-36 h-36 flex items-center justify-center">
+                        <!-- SVG Ring -->
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-slate-800" fill="transparent" />
+                            <circle id="recordingProgressRing" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-indigo-500 transition-all duration-300" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" />
+                        </svg>
+                        <!-- Center Timer Display -->
+                        <div class="absolute flex flex-col items-center">
+                            <span id="recCountdownText" class="font-mono text-3xl font-black text-amber-400">60s</span>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Remaining</span>
+                        </div>
+                    </div>
+
+                    <!-- Recorder Control Buttons -->
+                    <div class="flex items-center space-x-3 mt-4">
+                        <button id="recordBtn" onclick="toggleRecording()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-rose-950/40 transition">
+                            <i id="recBtnIcon" class="fa-solid fa-microphone"></i>
+                            <span id="recBtnText">Start Recording</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Frequency Visualizer & Playback (8 cols) -->
+                <div class="md:col-span-8 flex flex-col justify-between space-y-4 h-full">
+                    
+                    <!-- Audio Spectrum Canvas -->
+                    <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 relative overflow-hidden h-32 flex flex-col justify-center">
+                        <canvas id="audioVisualizer" class="w-full h-full rounded-lg"></canvas>
+                        <div id="visualizerOverlayText" class="absolute inset-0 flex items-center justify-center text-xs text-slate-500 font-medium pointer-events-none">
+                            Live Audio Spectrum Frequency Visualizer
+                        </div>
+                    </div>
+
+                    <!-- Audio Playback & Download Bar -->
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="w-full sm:w-auto flex-1">
+                            <audio id="audioPlayback" controls class="w-full h-10 rounded-lg hidden"></audio>
+                            <p id="noAudioNotice" class="text-xs text-slate-400 italic">No recording available yet. Click "Start Recording" to begin.</p>
+                        </div>
+                        <a id="downloadAudioBtn" class="hidden px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 transition shadow">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Save Audio (.webm)</span>
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Grammar Reference Cheat Sheet Modal -->
+    <div id="grammarModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-3xl w-full rounded-2xl border border-indigo-500/30 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-book-bookmark text-amber-400 text-xl"></i>
+                    <h3 class="text-lg font-bold text-white">A2 Grammar: Making & Responding to Suggestions</h3>
+                </div>
+                <button onclick="closeGrammarModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Grammar Structures Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                
+                <!-- Making Suggestions Formulas -->
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-indigo-400 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-paper-plane"></i> Making Suggestions Formulas
+                    </h4>
+                    <p class="text-slate-300">Use these common structures depending on verb form:</p>
+                    <div class="p-2.5 rounded bg-slate-950 font-mono text-[11px] text-slate-300 space-y-1.5 border border-slate-800">
+                        <p>• <strong>Why don't we</strong> + base verb?<br><span class="text-slate-400">e.g. Why don't we go to the museum?</span></p>
+                        <p>• <strong>How about / What about</strong> + verb-ing?<br><span class="text-slate-400">e.g. How about going to the beach?</span></p>
+                        <p>• <strong>Let's</strong> + base verb.<br><span class="text-slate-400">e.g. Let's cook pasta tonight.</span></p>
+                        <p>• <strong>We could</strong> + base verb.<br><span class="text-slate-400">e.g. We could take the early train.</span></p>
+                    </div>
+                </div>
+
+                <!-- Accepting Suggestions -->
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-emerald-400 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-thumbs-up"></i> Accepting Suggestions
+                    </h4>
+                    <p class="text-slate-300">Enthusiastic responses when agreeing:</p>
+                    <div class="p-2.5 rounded bg-slate-950 font-mono text-[11px] text-slate-300 space-y-1 border border-slate-800">
+                        <p>• That sounds like a great / fantastic idea!</p>
+                        <p>• That works really well for me.</p>
+                        <p>• I'd love to! What time shall we meet?</p>
+                        <p>• Perfect! Let me book the tickets.</p>
+                    </div>
+                </div>
+
+                <!-- Declining & Counter-Proposals -->
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-amber-400 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-hand text-amber-400"></i> Declining & Counter-Proposals
+                    </h4>
+                    <p class="text-slate-300">Polite ways to decline and offer alternative ideas:</p>
+                    <div class="p-2.5 rounded bg-slate-950 font-mono text-[11px] text-slate-300 space-y-1 border border-slate-800">
+                        <p>• I'd love to, but I'm busy / short on money.</p>
+                        <p>• That sounds nice, but it's a bit too far.</p>
+                        <p>• How about doing it tomorrow instead?</p>
+                        <p>• Why don't we try another place instead?</p>
+                    </div>
+                </div>
+
+                <!-- Key Communication Tips -->
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <h4 class="font-bold text-sky-400 flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-comment-dots"></i> Pro Tips for A2 Speakers
+                    </h4>
+                    <p class="text-slate-300">Keep conversations natural and friendly:</p>
+                    <ul class="space-y-1 text-slate-300 font-mono text-[11px]">
+                        <li>• Always give a polite reason when declining.</li>
+                        <li>• Use rising tone for questions (e.g. <em>Shall we?</em>).</li>
+                        <li>• Follow up declining with a counter-suggestion.</li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="text-right pt-2 border-t border-slate-800">
+                <button onclick="closeGrammarModal()" class="px-5 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-extrabold text-xs">
+                    Got It, Ready to Practice!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Peer Evaluation Checklist Modal -->
+    <div id="reviewModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-xl w-full rounded-2xl border border-indigo-500/30 shadow-2xl p-6 space-y-5">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-clipboard-check text-indigo-400 text-xl"></i>
+                    <h3 class="text-lg font-bold text-white">Peer Evaluation Checklist</h3>
+                </div>
+                <button onclick="closeReviewModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300">
+                Evaluate your partner's performance! Check all criteria that your partner successfully demonstrated:
+            </p>
+
+            <!-- Peer Criteria Checkboxes -->
+            <div class="space-y-3">
+                <label class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/50 transition">
+                    <input type="checkbox" id="check1" onchange="evaluatePeerChecklist()" class="mt-0.5 w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 bg-slate-950 border-slate-700">
+                    <div class="text-xs">
+                        <span class="font-bold text-indigo-300 block">1. Accurate Suggestion Formula</span>
+                        <span class="text-slate-400">Used target phrases correctly (e.g. "Why don't we...", "How about + -ing...", "Let's...").</span>
+                    </div>
+                </label>
+
+                <label class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/50 transition">
+                    <input type="checkbox" id="check2" onchange="evaluatePeerChecklist()" class="mt-0.5 w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 bg-slate-950 border-slate-700">
+                    <div class="text-xs">
+                        <span class="font-bold text-emerald-300 block">2. Natural Response (Accept or Decline)</span>
+                        <span class="text-slate-400">Accepted enthusiastically or politely declined with a valid reason.</span>
+                    </div>
+                </label>
+
+                <label class="flex items-start space-x-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/50 transition">
+                    <input type="checkbox" id="check3" onchange="evaluatePeerChecklist()" class="mt-0.5 w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 bg-slate-950 border-slate-700">
+                    <div class="text-xs">
+                        <span class="font-bold text-amber-300 block">3. Counter-Proposal / Follow-up</span>
+                        <span class="text-slate-400">Offered an alternative idea or asked follow-up details (e.g. "How about doing it tomorrow?").</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Student Name Input for Certificate -->
+            <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-300">Student Name for Certificate:</label>
+                <input type="text" id="studentNameInput" placeholder="Enter student name..." class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-2.5 text-white focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Score Summary & Unlock Certificate Button -->
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Evaluation Score</span>
+                    <span id="evalScoreText" class="text-lg font-black text-amber-400">0 / 3 Criteria Checked</span>
+                </div>
+                <button id="generateCertBtn" disabled onclick="generateCertificate()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-extrabold text-xs transition cursor-not-allowed flex items-center gap-2">
+                    <i class="fa-solid fa-award"></i>
+                    <span>Unlock Badge Certificate</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Master Suggestion Consultant Certificate Popup Modal -->
+    <div id="certModal" class="fixed inset-0 z-50 hidden bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-xl w-full rounded-2xl border-2 border-indigo-500/60 shadow-2xl p-8 space-y-6 text-center relative overflow-hidden indigo-glow">
+            <div class="absolute -top-10 -right-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <button onclick="closeCertModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Certificate Header -->
+            <div class="space-y-2">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-500 to-amber-300 text-slate-950 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <span class="text-xs uppercase tracking-widest font-extrabold text-indigo-400">Official Certificate of Achievement</span>
+                <h3 class="text-2xl font-black text-white">Master Suggestion Consultant</h3>
+                <p id="certStudentName" class="text-lg font-bold text-amber-300">Presented to: Student</p>
+            </div>
+
+            <!-- Stars Rating Display -->
+            <div class="flex items-center justify-center space-x-1 text-amber-400 text-2xl">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+            </div>
+
+            <p class="text-sm text-slate-200 leading-relaxed px-4">
+                This certificate verifies that the student has demonstrated proficiency in making activity suggestions (<strong class="text-indigo-300">Why don't we / How about</strong>), accepting enthusiastically, and crafting polite counter-proposals in CEFR A2 English.
+            </p>
+
+            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-indigo-300 font-mono">
+                Awarded on: <span id="certDate">October 2026</span> • Smart Suggestion Studio
+            </div>
+
+            <div class="flex items-center justify-center gap-3">
+                <button onclick="closeCertModal()" class="px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-extrabold text-xs shadow-lg transition">
+                    Done & Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-900 py-4 px-4 text-center text-xs text-slate-500">
+        <p>Smart Suggestion Studio • Interactive CEFR A2 English Communication Application</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 20 Outcome Scenario Cards Data (4 Categories x 5 Cards)
+        const flashcardsData = [
+            // Weekend Leisure & Entertainment (1-5)
+            {
+                id: 1,
+                category: "Weekend",
+                categoryBadge: "Weekend Leisure",
+                question: "Rainy Saturday Afternoon: What can you suggest doing indoors with a friend?",
+                verbs: ["Why don't we...", "How about (-ing)...", "Let's..."],
+                hint: "Combine indoor board games or watching a movie with a warm drink.",
+                advisorText: "Why don't we go to the indoor board game cafe or watch a movie at home?",
+                clientText: "The board game cafe sounds awesome! How about inviting Sarah and Mark too?"
+            },
+            {
+                id: 2,
+                category: "Weekend",
+                categoryBadge: "Weekend Leisure",
+                question: "Planning a Birthday Party: Suggest a fun surprise activity for a friend's birthday.",
+                verbs: ["How about...", "We could...", "Shall we..."],
+                hint: "Suggest escape room or bowling, followed by cake.",
+                advisorText: "We could book an escape room game and then go for ice cream afterwards!",
+                clientText: "That sounds like a fantastic idea! Shall we make reservations for 6 PM?"
+            },
+            {
+                id: 3,
+                category: "Weekend",
+                categoryBadge: "Weekend Leisure",
+                question: "Friday Night Dinner: Suggest where to eat dinner after a busy week.",
+                verbs: ["Why don't we...", "Let's...", "What about..."],
+                hint: "Suggest trying new tacos or sushi.",
+                advisorText: "Why don't we try that new Mexican taco place down the street tonight?",
+                clientText: "I'd love to, but I'm short on cash. How about cooking tacos at home instead?"
+            },
+            {
+                id: 4,
+                category: "Weekend",
+                categoryBadge: "Weekend Leisure",
+                question: "Sunday Cinema & Movies: Suggest watching a new blockbuster movie at the cinema.",
+                verbs: ["Let's...", "Why don't you...", "How about..."],
+                hint: "Focus on movie genre and ticket booking.",
+                advisorText: "Let me buy two tickets for the new action movie at 7:30 PM. What do you think?",
+                clientText: "That works for me! How about grabbing some popcorn before the show starts?"
+            },
+            {
+                id: 5,
+                category: "Weekend",
+                categoryBadge: "Weekend Leisure",
+                question: "Outdoor Concert Night: Suggest going to an open-air music festival in the park.",
+                verbs: ["Shall we...", "We could...", "Why don't we..."],
+                hint: "Propose taking a blanket and snacks.",
+                advisorText: "Shall we bring a picnic blanket and go to the jazz concert in the park?",
+                clientText: "That sounds very relaxing! We could also bring fresh lemonade and sandwiches."
+            },
+
+            // Travel & Day Trips (6-10)
+            {
+                id: 6,
+                category: "Travel",
+                categoryBadge: "Travel & Day Trips",
+                question: "Day Trip to the Beach: Suggest how to spend a sunny summer day.",
+                verbs: ["How about...", "Why don't we...", "We could..."],
+                hint: "Propose taking an early train to the coast.",
+                advisorText: "How about taking the early morning train to the seaside beach this Sunday?",
+                clientText: "That sounds great! Why don't we rent bicycles when we arrive at the coastal town?"
+            },
+            {
+                id: 7,
+                category: "Travel",
+                categoryBadge: "Travel & Day Trips",
+                question: "Weekend Camping Trip: Suggest going on a camping adventure in the forest.",
+                verbs: ["Let's...", "Why don't we...", "Shall we..."],
+                hint: "Propose packing a tent and sleeping bags.",
+                advisorText: "Let's pack our tents and go camping near the lake this weekend!",
+                clientText: "I'd love to, but it might rain. How about renting a wooden cabin instead?"
+            },
+            {
+                id: 8,
+                category: "Travel",
+                categoryBadge: "Travel & Day Trips",
+                question: "Historic Town Visit: Suggest exploring an old castle in a nearby town.",
+                verbs: ["We could...", "What about...", "Why don't we..."],
+                hint: "Suggest a guided tour and photography.",
+                advisorText: "We could take a weekend road trip to visit the medieval castle ruins.",
+                clientText: "That sounds fascinating! What about booking a local tour guide online?"
+            },
+            {
+                id: 9,
+                category: "Travel",
+                categoryBadge: "Travel & Day Trips",
+                question: "National Park Expedition: Suggest hiking along a scenic mountain trail.",
+                verbs: ["Why don't we...", "How about...", "Let's..."],
+                hint: "Focus on comfortable shoes and water.",
+                advisorText: "Why don't we go hiking up the panoramic mountain trail on Saturday morning?",
+                clientText: "That sounds nice, but I don't have hiking boots. How about a flat walk around the lake?"
+            },
+            {
+                id: 10,
+                category: "Travel",
+                categoryBadge: "Travel & Day Trips",
+                question: "Road Trip Snacks & Route: Suggest planning the route for a long drive.",
+                verbs: ["Shall we...", "We could...", "Let's..."],
+                hint: "Suggest downloading offline maps and stopping for coffee.",
+                advisorText: "Shall we download the GPS map and stop at the famous bakery halfway?",
+                clientText: "Perfect idea! Let me prepare a music playlist for the car ride too."
+            },
+
+            // Health & Free Time (11-15)
+            {
+                id: 11,
+                category: "Health",
+                categoryBadge: "Health & Free Time",
+                question: "Getting Fit Together: Suggest starting a weekly jogging group.",
+                verbs: ["Why don't we...", "How about...", "We could..."],
+                hint: "Suggest running 20 minutes every Tuesday.",
+                advisorText: "Why don't we go for a 20-minute jog in the park every Tuesday morning?",
+                clientText: "I'd like to stay healthy! How about starting with a brisk walk first?"
+            },
+            {
+                id: 12,
+                category: "Health",
+                categoryBadge: "Health & Free Time",
+                question: "Tired & Overworked: Suggest a relaxing activity for a stressed friend.",
+                verbs: ["You could...", "How about...", "Let's..."],
+                hint: "Propose a spa day or yoga class.",
+                advisorText: "You look exhausted! How about going to a gentle evening yoga class with me?",
+                clientText: "That sounds very relaxing! Let me check if I can finish my homework first."
+            },
+            {
+                id: 13,
+                category: "Health",
+                categoryBadge: "Health & Free Time",
+                question: "Cooking a Healthy Meal: Suggest making a nutritious salad or soup together.",
+                verbs: ["Let's...", "Why don't we...", "What about..."],
+                hint: "Suggest buying fresh vegetables at the market.",
+                advisorText: "Let's buy fresh vegetables at the farmers market and make homemade soup!",
+                clientText: "That works for me! What about making some garlic bread to go with it?"
+            },
+            {
+                id: 14,
+                category: "Health",
+                categoryBadge: "Health & Free Time",
+                question: "Learning a New Hobby: Suggest taking up guitar or photography lessons.",
+                verbs: ["Why don't you...", "We could...", "How about..."],
+                hint: "Suggest joining an evening community workshop.",
+                advisorText: "Why don't you join the community guitar class with me on Thursdays?",
+                clientText: "That sounds fun! We could also practice together at home on weekends."
+            },
+            {
+                id: 15,
+                category: "Health",
+                categoryBadge: "Health & Free Time",
+                question: "Morning Exercise Routine: Suggest stretching or cycling before work.",
+                verbs: ["Shall we...", "How about...", "Let's..."],
+                hint: "Propose cycling to work instead of taking the bus.",
+                advisorText: "Shall we ride our bikes to work tomorrow instead of taking the crowded bus?",
+                clientText: "That's a great suggestion! Let's meet at the corner cafe at 8:00 AM."
+            },
+
+            // Work & Study Problems (16-20)
+            {
+                id: 16,
+                category: "Work",
+                categoryBadge: "Work & Study",
+                question: "Exam Preparation: Suggest a productive study group session.",
+                verbs: ["Why don't we...", "Let's...", "How about..."],
+                hint: "Suggest studying at the quiet library.",
+                advisorText: "Why don't we meet at the city library after class to revise English grammar?",
+                clientText: "That's very helpful! How about practicing speaking questions together for 30 minutes?"
+            },
+            {
+                id: 17,
+                category: "Work",
+                categoryBadge: "Work & Study",
+                question: "Deadline Stress: Suggest taking a brain break during long study hours.",
+                verbs: ["Let me suggest...", "We could...", "Why don't we..."],
+                hint: "Suggest a 15-minute coffee break.",
+                advisorText: "We have been studying for 3 hours! Why don't we take a 15-minute coffee break?",
+                clientText: "That sounds like a relief! Let me get us some fresh fruit and water."
+            },
+            {
+                id: 18,
+                category: "Work",
+                categoryBadge: "Work & Study",
+                question: "Improving Speaking: Suggest ways to build confidence in English speaking.",
+                verbs: ["How about...", "Why don't you...", "We could..."],
+                hint: "Propose recording voice notes or joining a club.",
+                advisorText: "How about recording 60-second voice memos every day to track our speaking progress?",
+                clientText: "That's a smart idea! We could also listen to each other's recordings and give feedback."
+            },
+            {
+                id: 19,
+                category: "Work",
+                categoryBadge: "Work & Study",
+                question: "Organising a Team Project: Suggest dividing tasks for a group project.",
+                verbs: ["Let me propose...", "Shall we...", "Why don't we..."],
+                hint: "Suggest assigning slides and research roles.",
+                advisorText: "Shall we divide the presentation slides? I can write the introduction.",
+                clientText: "That works for me! Why don't I design the visual slides and summarize conclusions?"
+            },
+            {
+                id: 20,
+                category: "Work",
+                categoryBadge: "Work & Study",
+                question: "Managing Time: Suggest using a digital calendar or planner tool.",
+                verbs: ["Why don't you...", "How about...", "We could..."],
+                hint: "Propose using calendar reminders for assignment dates.",
+                advisorText: "Why don't you set calendar alerts on your phone for all project deadlines?",
+                clientText: "That sounds like a great solution! How about setting a reminder 2 days before as well?"
+            }
+        ];
+
+        let currentCardIndex = 0;
+        let filteredCards = [...flashcardsData];
+        let isCardFlipped = false;
+        
+        // Master Session Clock (10 Minutes = 600 seconds)
+        let masterSecondsLeft = 600;
+        let masterTimerInterval = null;
+        let isTimerRunning = false;
+
+        // Session Script Log Array
+        let sessionScriptEntries = [];
+
+        // Voice Recorder State
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recTimerInterval = null;
+        let recSecondsLeft = 60;
+        let isRecording = false;
+        let audioContext = null;
+        let analyser = null;
+        let visualizerAnimFrame = null;
+
+        // Synthesized Audio Web Audio API Sound Effects (Zero External Audio Files)
+        function playClickSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.04);
+            } catch (e) { console.log(e); }
+        }
+
+        function playChimeSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'triangle';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                gain1.gain.setValueAtTime(0.2, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                gain2.gain.setValueAtTime(0.2, now + 0.08);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+
+                osc1.start(now);
+                osc1.stop(now + 0.45);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.55);
+            } catch (e) { console.log(e); }
+        }
+
+        function playFanfareSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 Major Chord
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const startTime = ctx.currentTime + (idx * 0.12);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    gain.gain.setValueAtTime(0.25, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.5);
+                });
+            } catch (e) { console.log(e); }
+        }
+
+        // Master Session Clock Functions
+        function toggleTimer() {
+            playClickSound();
+            if (isTimerRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (isTimerRunning) return;
+            isTimerRunning = true;
+            document.getElementById('timerIcon').className = "fa-solid fa-pause text-sm";
+            masterTimerInterval = setInterval(() => {
+                if (masterSecondsLeft > 0) {
+                    masterSecondsLeft--;
+                    updateTimerUI();
+                } else {
+                    pauseTimer();
+                    playChimeSound();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isTimerRunning = false;
+            clearInterval(masterTimerInterval);
+            document.getElementById('timerIcon').className = "fa-solid fa-play text-sm";
+        }
+
+        function resetTimer() {
+            playClickSound();
+            pauseTimer();
+            masterSecondsLeft = 600;
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            const mins = Math.floor(masterSecondsLeft / 60);
+            const secs = masterSecondsLeft % 60;
+            const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('timerDisplay').innerText = formatted;
+
+            // Timeline Bar Progress Calculation (Total = 600s)
+            const elapsed = 600 - masterSecondsLeft;
+            const pct = Math.min(100, Math.max(0, (elapsed / 600) * 100));
+            document.getElementById('timelineBar').style.width = `${pct}%`;
+
+            // Timeline Stage Highlighting
+            const p0 = document.getElementById('phase0');
+            const p1 = document.getElementById('phase1');
+            const p2 = document.getElementById('phase2');
+            const p3 = document.getElementById('phase3');
+
+            p0.className = "transition-colors " + (elapsed < 60 ? "text-indigo-400 font-bold" : "text-slate-500");
+            p1.className = "transition-colors " + (elapsed >= 60 && elapsed < 270 ? "text-indigo-400 font-bold" : "text-slate-500");
+            p2.className = "transition-colors " + (elapsed >= 270 && elapsed < 480 ? "text-indigo-400 font-bold" : "text-slate-500");
+            p3.className = "transition-colors " + (elapsed >= 480 ? "text-indigo-400 font-bold" : "text-slate-500");
+        }
+
+        // Active Role Switcher Logic
+        function setRole(role) {
+            playClickSound();
+            const btnA = document.getElementById('roleBtnA');
+            const btnB = document.getElementById('roleBtnB');
+            const box = document.getElementById('roleInstructionText');
+
+            if (role === 'A') {
+                btnA.className = "flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-500 text-slate-950 shadow-md";
+                btnB.className = "flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+                box.innerHTML = `<strong>Role A (Suggestion Consultant) Instructions:</strong> Draw a scenario card from the deck below. Offer 2 or 3 distinct activity suggestions using formulas like <em>"Why don't we..."</em>, <em>"How about + -ing..."</em>, or <em>"Let's..."</em>.`;
+            } else {
+                btnB.className = "flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-amber-500 text-slate-950 shadow-md";
+                btnA.className = "flex-1 lg:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+                box.innerHTML = `<strong>Role B (Client / Decision Maker) Instructions:</strong> Listen to the Consultant's suggestions. React naturally: accept enthusiastically, decline politely with a reason, or propose a counter-suggestion using <em>"How about... instead?"</em>.`;
+            }
+        }
+
+        // 3-Step Language Builder Matrix Functions
+        function updateBuiltSentence() {
+            const customVal = document.getElementById('customSentenceInput').value.trim();
+            const display = document.getElementById('builtSentenceDisplay');
+
+            if (customVal.length > 0) {
+                display.innerText = customVal;
+                return;
+            }
+
+            const step1 = document.getElementById('step1Select').value;
+            const step2 = document.getElementById('step2Select').value;
+            const step3 = document.getElementById('step3Select').value;
+
+            display.innerText = `${step1} ${step2}? — ${step3}`;
+        }
+
+        function handleCustomSentenceInput() {
+            updateBuiltSentence();
+        }
+
+        function speakBuiltSentence() {
+            playClickSound();
+            const sentence = document.getElementById('builtSentenceDisplay').innerText;
+            if (!sentence) return;
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(sentence);
+                utterance.rate = 0.9; // Ideal pace for A2 learners
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function copyBuiltSentence() {
+            playClickSound();
+            const sentence = document.getElementById('builtSentenceDisplay').innerText;
+            if (!sentence) return;
+
+            // ExecCommand fallback for iframe sandboxing compatibility
+            const tempInput = document.createElement('textarea');
+            tempInput.value = sentence;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast("Sentence copied to clipboard!");
+        }
+
+        function addToSessionScript() {
+            playChimeSound();
+            const sentence = document.getElementById('builtSentenceDisplay').innerText.trim();
+            if (!sentence) return;
+
+            sessionScriptEntries.push(sentence);
+            renderSessionScript();
+        }
+
+        function renderSessionScript() {
+            const container = document.getElementById('sessionScriptContainer');
+            const badge = document.getElementById('scriptCountBadge');
+            
+            badge.innerText = `${sessionScriptEntries.length} ${sessionScriptEntries.length === 1 ? 'Exchange' : 'Exchanges'}`;
+
+            if (sessionScriptEntries.length === 0) {
+                container.innerHTML = `<p id="emptyScriptText" class="text-xs text-slate-500 italic text-center py-8">No dialogue exchanges logged yet. Select or build a sentence above and click "Log to Session Script".</p>`;
+                return;
+            }
+
+            container.innerHTML = sessionScriptEntries.map((entry, index) => `
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800/80 flex items-start justify-between gap-2 text-xs">
+                    <p class="text-slate-200 font-medium leading-relaxed">
+                        <span class="text-indigo-400 font-bold mr-1">#${index + 1}</span> ${entry}
+                    </p>
+                    <button onclick="removeScriptEntry(${index})" class="text-slate-500 hover:text-rose-400 transition p-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeScriptEntry(idx) {
+            playClickSound();
+            sessionScriptEntries.splice(idx, 1);
+            renderSessionScript();
+        }
+
+        // 3D Question Flashcard Deck Functions
+        function filterCards(category) {
+            playClickSound();
+            const filterBtns = document.querySelectorAll('.cat-filter-btn');
+            filterBtns.forEach(btn => {
+                btn.className = "cat-filter-btn border px-2.5 py-1 rounded-lg font-bold transition bg-slate-900 text-slate-400 border-slate-700 hover:text-white";
+            });
+            event.target.className = "cat-filter-btn active-cat border px-2.5 py-1 rounded-lg font-bold transition bg-indigo-500 text-slate-950 border-indigo-400";
+
+            if (category === 'ALL') {
+                filteredCards = [...flashcardsData];
+            } else {
+                filteredCards = flashcardsData.filter(c => c.category === category);
+            }
+
+            currentCardIndex = 0;
+            isCardFlipped = false;
+            updateCardUI();
+        }
+
+        function flipCurrentCard() {
+            playClickSound();
+            isCardFlipped = !isCardFlipped;
+            const inner = document.getElementById('flashcardInner');
+            if (isCardFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function updateCardUI() {
+            if (filteredCards.length === 0) return;
+
+            isCardFlipped = false;
+            document.getElementById('flashcardInner').classList.remove('rotate-y-180');
+
+            const card = filteredCards[currentCardIndex];
+
+            document.getElementById('cardCounter').innerText = `Card ${currentCardIndex + 1} of ${filteredCards.length}`;
+            document.getElementById('cardCategoryBadge').innerText = card.categoryBadge;
+            document.getElementById('cardQuestionText').innerText = `"${card.question}"`;
+
+            // Verbs Pills
+            const verbsContainer = document.getElementById('cardTargetVerbs');
+            verbsContainer.innerHTML = card.verbs.map((v, i) => `
+                <span class="text-[10px] ${i === 0 ? 'bg-indigo-950/80 text-indigo-300 border-indigo-500/30' : i === 1 ? 'bg-amber-950/80 text-amber-300 border-amber-500/30' : 'bg-sky-950/80 text-sky-300 border-sky-500/30'} font-mono px-2 py-0.5 rounded border">${v}</span>
+            `).join('');
+
+            // Card Back Content
+            document.getElementById('cardBackAdvisorText').innerText = card.advisorText;
+            document.getElementById('cardBackClientText').innerText = card.clientText;
+            document.getElementById('cardHintText').innerText = `Hint: ${card.hint}`;
+        }
+
+        function nextCard() {
+            playClickSound();
+            if (currentCardIndex < filteredCards.length - 1) {
+                currentCardIndex++;
+            } else {
+                currentCardIndex = 0;
+            }
+            updateCardUI();
+        }
+
+        function prevCard() {
+            playClickSound();
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+            } else {
+                currentCardIndex = filteredCards.length - 1;
+            }
+            updateCardUI();
+        }
+
+        function randomCard() {
+            playClickSound();
+            currentCardIndex = Math.floor(Math.random() * filteredCards.length);
+            updateCardUI();
+        }
+
+        function readCardQuestion() {
+            playClickSound();
+            const card = filteredCards[currentCardIndex];
+            if (!card) return;
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(card.question);
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Voice Recorder Logic
+        async function toggleRecording() {
+            playClickSound();
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    const playback = document.getElementById('audioPlayback');
+                    playback.src = audioUrl;
+                    playback.classList.remove('hidden');
+                    document.getElementById('noAudioNotice').classList.add('hidden');
+
+                    const downloadBtn = document.getElementById('downloadAudioBtn');
+                    downloadBtn.href = audioUrl;
+                    downloadBtn.download = `SmartSuggestion_Roleplay_${Date.now()}.webm`;
+                    downloadBtn.classList.remove('hidden');
+
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recSecondsLeft = 60;
+
+                // UI Updates
+                document.getElementById('recBtnText').innerText = "Stop Recording";
+                document.getElementById('recBtnIcon').className = "fa-solid fa-square text-rose-200";
+                document.getElementById('recStatusBadge').className = "text-xs font-bold px-3 py-1 rounded-full bg-rose-950 text-rose-400 border border-rose-500/30 flex items-center gap-2 recording-pulse";
+                document.getElementById('recStatusBadge').innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span><span>Recording Live</span>`;
+                document.getElementById('visualizerOverlayText').classList.add('hidden');
+
+                // Canvas Spectrum Visualizer Setup
+                setupVisualizer(stream);
+
+                // 60-Second Ring & Countdown Timer
+                recTimerInterval = setInterval(() => {
+                    if (recSecondsLeft > 0) {
+                        recSecondsLeft--;
+                        updateRecRingUI();
+                    } else {
+                        stopRecording();
+                    }
+                }, 1000);
+
+            } catch (err) {
+                showToast("Microphone access denied or unsupported.");
+                console.error(err);
+            }
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+            isRecording = false;
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            clearInterval(recTimerInterval);
+
+            if (visualizerAnimFrame) {
+                cancelAnimationFrame(visualizerAnimFrame);
+            }
+
+            document.getElementById('recBtnText').innerText = "Start Recording";
+            document.getElementById('recBtnIcon').className = "fa-solid fa-microphone";
+            document.getElementById('recStatusBadge').className = "text-xs font-bold px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-2";
+            document.getElementById('recStatusBadge').innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Recording Saved</span>`;
+            
+            playChimeSound();
+        }
+
+        function updateRecRingUI() {
+            document.getElementById('recCountdownText').innerText = `${recSecondsLeft}s`;
+            
+            // Circumference of r=42 is 263.89
+            const fullCircle = 263.89;
+            const offset = fullCircle - (recSecondsLeft / 60) * fullCircle;
+            document.getElementById('recordingProgressRing').style.strokeDashoffset = offset;
+        }
+
+        function setupVisualizer(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            analyser.fftSize = 64;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const canvas = document.getElementById('audioVisualizer');
+            const ctx = canvas.getContext('2d');
+
+            function draw() {
+                if (!isRecording) return;
+                visualizerAnimFrame = requestAnimationFrame(draw);
+
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 2;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+
+                    const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                    gradient.addColorStop(0, '#6366f1');
+                    gradient.addColorStop(0.5, '#f59e0b');
+                    gradient.addColorStop(1, '#38bdf8');
+
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+                    x += barWidth;
+                }
+            }
+
+            draw();
+        }
+
+        // Grammar Modal Handlers
+        function openGrammarModal() {
+            playClickSound();
+            document.getElementById('grammarModal').classList.remove('hidden');
+        }
+
+        function closeGrammarModal() {
+            playClickSound();
+            document.getElementById('grammarModal').classList.add('hidden');
+        }
+
+        // Peer Review Modal Handlers
+        function openReviewModal() {
+            playClickSound();
+            document.getElementById('reviewModal').classList.remove('hidden');
+        }
+
+        function closeReviewModal() {
+            playClickSound();
+            document.getElementById('reviewModal').classList.add('hidden');
+        }
+
+        function evaluatePeerChecklist() {
+            playClickSound();
+            const c1 = document.getElementById('check1').checked;
+            const c2 = document.getElementById('check2').checked;
+            const c3 = document.getElementById('check3').checked;
+
+            const count = (c1 ? 1 : 0) + (c2 ? 1 : 0) + (c3 ? 1 : 0);
+            document.getElementById('evalScoreText').innerText = `${count} / 3 Criteria Checked`;
+
+            const btn = document.getElementById('generateCertBtn');
+            if (count === 3) {
+                btn.disabled = false;
+                btn.className = "px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-amber-400 hover:from-indigo-400 hover:to-amber-300 text-slate-950 font-extrabold text-xs transition cursor-pointer shadow-lg shadow-indigo-500/20 flex items-center gap-2";
+            } else {
+                btn.disabled = true;
+                btn.className = "px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-extrabold text-xs transition cursor-not-allowed flex items-center gap-2";
+            }
+        }
+
+        function generateCertificate() {
+            playFanfareSound();
+            closeReviewModal();
+
+            const nameInput = document.getElementById('studentNameInput').value.trim();
+            document.getElementById('certStudentName').innerText = nameInput ? `Presented to: ${nameInput}` : "Presented to: Student";
+
+            // Set current date on certificate
+            const now = new Date();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('certDate').innerText = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+
+            document.getElementById('certModal').classList.remove('hidden');
+        }
+
+        function closeCertModal() {
+            playClickSound();
+            document.getElementById('certModal').classList.add('hidden');
+        }
+
+        // Custom Toast Notification System
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 right-6 z-50 bg-indigo-500 text-slate-950 text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 border border-indigo-300 transition-all duration-300 transform translate-y-4 opacity-0';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 2500);
+        }
+
+        // Window Initialization Handler
+        window.onload = function() {
+            updateBuiltSentence();
+            updateCardUI();
+            updateTimerUI();
+        };
+    </script>
+</body>
+</html>
