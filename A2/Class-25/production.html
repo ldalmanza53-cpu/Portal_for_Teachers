@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command & Request Studio: Orders, Requests & Responses</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#111827',
+                            950: '#030712',
+                        }
+                    },
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-hover:hover {
+            background: rgba(30, 41, 59, 0.88);
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 3D Card Flip Styling */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .flip-card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flip-card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(129, 140, 248, 0.35);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(129, 140, 248, 0.65);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white flex flex-col justify-between">
+
+    <div>
+        <!-- Top Sticky Header -->
+        <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-amber-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-bullhorn text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-outfit text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-amber-300">
+                            Command & Request Studio
+                        </h1>
+                        <p class="text-xs text-slate-400 font-medium">Validating Common Orders, Requests & Responses • CEFR A2</p>
+                    </div>
+                </div>
+
+                <!-- Timer Panel -->
+                <div class="flex items-center gap-4 bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-2xl shadow-inner">
+                    <!-- Stage Badge -->
+                    <div class="text-right hidden sm:block">
+                        <span id="stage-badge" class="block text-[10px] font-bold uppercase tracking-wider text-indigo-400">Stage 1: Setup</span>
+                        <span id="stage-desc" class="block text-xs text-slate-400">Setup Roles & Scenarios (0-1m)</span>
+                    </div>
+
+                    <div class="h-8 w-px bg-slate-800 hidden sm:block"></div>
+
+                    <!-- Clock Display -->
+                    <div class="flex items-center gap-2 font-mono text-2xl font-bold text-indigo-400 min-w-[90px]">
+                        <i class="fa-regular fa-clock text-base text-slate-400"></i>
+                        <span id="timer-display">10:00</span>
+                    </div>
+
+                    <!-- Timer Buttons -->
+                    <div class="flex items-center gap-1">
+                        <button id="btn-timer-start" onclick="toggleTimer()" class="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-all shadow-md shadow-indigo-600/30">
+                            <i class="fa-solid fa-play text-xs" id="timer-icon"></i>
+                        </button>
+                        <button onclick="resetTimer()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all">
+                            <i class="fa-solid fa-rotate-left text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Action Modals Triggers -->
+                    <div class="flex items-center gap-2 ml-2">
+                        <button onclick="openModal('cheat-sheet-modal')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/20 text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-book-open"></i>
+                            <span class="hidden md:inline">Grammar Rules</span>
+                        </button>
+                        <button onclick="openModal('peer-review-modal')" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-900/30 transition">
+                            <i class="fa-solid fa-award"></i>
+                            <span class="hidden md:inline">Peer Certificate</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage Progress Bar -->
+            <div class="max-w-7xl mx-auto mt-2">
+                <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden flex">
+                    <div id="bar-stage-1" class="h-full bg-indigo-500 transition-all duration-300" style="width: 10%"></div>
+                    <div id="bar-stage-2" class="h-full bg-slate-800 transition-all duration-300" style="width: 35%"></div>
+                    <div id="bar-stage-3" class="h-full bg-slate-800 transition-all duration-300" style="width: 35%"></div>
+                    <div id="bar-stage-4" class="h-full bg-slate-800 transition-all duration-300" style="width: 20%"></div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+            <!-- Context & Role Switcher Banner -->
+            <section class="glass-panel rounded-2xl p-5 border border-slate-800 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
+                    <div class="space-y-1 max-w-2xl">
+                        <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
+                            <i class="fa-solid fa-comments"></i>
+                            <span>Real Context: Daily Operations & Life Coaching Studio</span>
+                        </div>
+                        <h2 class="text-lg font-outfit font-bold text-white">Select Your Role for This Consultation</h2>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Validate previous knowledge of direct commands and reported orders, then practice rephrasing strict orders into polite formal or informal requests with natural responses!
+                        </p>
+                    </div>
+
+                    <!-- Role Switcher Toggle Pills -->
+                    <div class="flex items-center bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto">
+                        <button id="role-btn-a" onclick="setRole('A')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+                            <i class="fa-solid fa-user-tie"></i>
+                            <span>Role A: Operations Advisor</span>
+                        </button>
+                        <button id="role-btn-b" onclick="setRole('B')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-user-pen"></i>
+                            <span>Role B: Client / Resident</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Role Instruction Box -->
+                <div id="role-instructions" class="mt-4 p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs text-slate-300 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info text-indigo-400 text-base mt-0.5"></i>
+                    <div>
+                        <span class="font-bold text-indigo-200 block mb-0.5" id="role-title-text">Role A (Operations Advisor) Instructions:</span>
+                        <p id="role-desc-text">
+                            Interview your client about common orders they receive at work or home (e.g., <em>"What orders do your parents or manager give you?"</em>). Challenge them to transform direct orders into polite requests!
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Workspace Layout: Grid Split -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Column: Language Builder & Recording Studio (5 Cols) -->
+                <div class="lg:col-span-5 space-y-6">
+                    
+                    <!-- 3-Step Interactive Language Builder -->
+                    <section class="glass-panel rounded-2xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">1</div>
+                                <h3 class="font-outfit font-bold text-white text-base">3-Step Order & Request Builder</h3>
+                            </div>
+                            <span class="text-[10px] font-semibold bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800/50">A2 Scaffold</span>
+                        </div>
+
+                        <!-- Step 1: Direct Order / Reported Order Selection -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                                <span>Step 1: Direct Command / Reported Order</span>
+                                <span class="text-[10px] text-amber-400 font-mono"><i class="fa-solid fa-bolt mr-1"></i>Imperative</span>
+                            </label>
+                            <select id="builder-order" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <optgroup label="Home & Family Orders">
+                                    <option value="Clean your room right now!|My parents told me to clean my room|clean my room">"Clean your room right now!"</option>
+                                    <option value="Take out the garbage immediately!|My dad ordered me to take out the garbage|take out the garbage">"Take out the garbage immediately!"</option>
+                                    <option value="Do the dishes after dinner!|My mom told me to do the dishes|do the dishes">"Do the dishes after dinner!"</option>
+                                    <option value="Turn down that loud music!|My parents ordered me to turn down the music|turn down the music">"Turn down that loud music!"</option>
+                                    <option value="Put away your phone at the table!|My family told me not to use my phone at dinner|put away my phone">"Put away your phone at the table!"</option>
+                                </optgroup>
+                                <optgroup label="Workplace & Office Directives">
+                                    <option value="Print 20 copies of this report now!|My manager told me to print the files|print 20 copies of the report">"Print 20 copies of this report now!"</option>
+                                    <option value="Cover the reception desk for 30 mins!|My supervisor told me to cover reception|cover the reception desk">"Cover the reception desk!"</option>
+                                    <option value="Send me the sales figures before noon!|My boss ordered me to send the figures|send the sales figures">"Send me the sales figures before noon!"</option>
+                                    <option value="Stop making noise in the hallway!|The manager ordered us to be quiet in the hallway|keep quiet in the hallway">"Stop making noise in the hallway!"</option>
+                                </optgroup>
+                                <optgroup label="Public Places & Rules">
+                                    <option value="Vacate the room by 11:00 AM!|The hotel clerk told us to check out by 11 AM|extend my checkout time">"Vacate the room by 11:00 AM!"</option>
+                                    <option value="Silence your mobile phones!|The librarian ordered us to silence our phones|turn off your phone">"Silence your mobile phones!"</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Step 2: Polite Request Transformation -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                                <span>Step 2: Transform into Polite Request</span>
+                                <span id="builder-register-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">FORMAL</span>
+                            </label>
+                            <select id="builder-formula" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <optgroup label="Formal Request Formulas (Managers, Officials, Strangers)">
+                                    <option value="Could you please {action}?">Could you please [verb]?</option>
+                                    <option value="Would you mind {action_ing}?">Would you mind [verb-ing]?</option>
+                                    <option value="I was wondering if you could {action}?">I was wondering if you could [verb]?</option>
+                                    <option value="Would it be possible to {action}?">Would it be possible to [verb]?</option>
+                                </optgroup>
+                                <optgroup label="Informal Request Formulas (Friends, Roommates, Family)">
+                                    <option value="Can you {action}?">Can you [verb]?</option>
+                                    <option value="Could you {action}?">Could you [verb]?</option>
+                                    <option value="Do me a favor and {action}?">Do me a favor and [verb]?</option>
+                                    <option value="Hey, can you help me {action}?">Hey, can you help me [verb]?</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Step 3: Response Selection -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300">Step 3: Response Strategy</label>
+                            <select id="builder-response" onchange="updateBuilderPreview()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <optgroup label="Accepting (Formal)">
+                                    <option value="Certainly, I would be happy to assist you right away.">"Certainly, I would be happy to assist you right away."</option>
+                                    <option value="Of course, no problem at all. I will handle it immediately.">"Of course, no problem at all. I will handle it immediately."</option>
+                                </optgroup>
+                                <optgroup label="Declining Politely (Formal)">
+                                    <option value="I do apologize, but I am currently busy with another task.">"I do apologize, but I am currently busy with another task."</option>
+                                    <option value="I would love to help, but unfortunately I cannot right now.">"I would love to help, but unfortunately I cannot right now."</option>
+                                </optgroup>
+                                <optgroup label="Accepting (Informal)">
+                                    <option value="Sure thing! Give me one second and I'll do it.">"Sure thing! Give me one second and I'll do it."</option>
+                                    <option value="Yeah, no problem at all! Happy to help.">"Yeah, no problem at all! Happy to help."</option>
+                                </optgroup>
+                                <optgroup label="Declining (Informal)">
+                                    <option value="Sorry, I really can't right now, I'm super busy!">"Sorry, I really can't right now, I'm super busy!"</option>
+                                    <option value="I'd love to help, but I have to finish my study homework first.">"I'd love to help, but I have to finish my study homework first."</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Dynamic Output Preview Box -->
+                        <div class="p-3.5 rounded-xl bg-slate-900/90 border border-indigo-500/30 space-y-2">
+                            <div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold border-b border-slate-800 pb-1.5">
+                                <span><i class="fa-solid fa-comment-dots text-indigo-400 mr-1"></i> Formulated Dialogue Script:</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="speakBuilderScript()" class="hover:text-indigo-300 text-slate-400 transition" title="Listen with Text-to-Speech">
+                                        <i class="fa-solid fa-volume-high"></i>
+                                    </button>
+                                    <button onclick="copyBuilderScript()" class="hover:text-indigo-300 text-slate-400 transition" title="Copy text">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5 text-xs">
+                                <p class="text-amber-300"><span class="font-bold text-slate-400">Reported Order:</span> "<span id="preview-reported">My parents told me to clean my room.</span>"</p>
+                                <p class="text-indigo-200"><span class="font-bold text-slate-400">Polite Request:</span> "<span id="preview-request">Could you please clean my room?</span>"</p>
+                                <p class="text-emerald-300"><span class="font-bold text-slate-400">Response:</span> "<span id="preview-response">Certainly, I would be happy to assist you right away.</span>"</p>
+                            </div>
+                        </div>
+
+                        <!-- Add to Script Log Button -->
+                        <button onclick="addScriptToLog()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold text-xs border border-indigo-500/20 flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Dialogue to Session Script Log</span>
+                        </button>
+                    </section>
+
+                    <!-- 60-Second Audio Recording Studio -->
+                    <section class="glass-panel rounded-2xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">2</div>
+                                <h3 class="font-outfit font-bold text-white text-base">Voice Practice Studio</h3>
+                            </div>
+                            <span class="text-[10px] font-semibold bg-rose-950 text-rose-300 px-2 py-0.5 rounded border border-rose-800/50">60s Audio Clip</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <!-- Visual Ring & Canvas -->
+                            <div class="flex items-center gap-3">
+                                <div class="relative w-14 h-14 flex items-center justify-center">
+                                    <svg class="w-14 h-14 transform -rotate-90">
+                                        <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" class="text-slate-800" fill="transparent" />
+                                        <circle id="record-progress-ring" cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4" class="text-rose-500 transition-all duration-1000" fill="transparent" stroke-dasharray="150.79" stroke-dashoffset="150.79" />
+                                    </svg>
+                                    <span id="rec-time-display" class="absolute font-mono text-xs font-bold text-white">60s</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span id="rec-status-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                        <span id="rec-status-text" class="text-xs font-semibold text-slate-300">Ready to Record</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400">Record your request out loud!</p>
+                                </div>
+                            </div>
+
+                            <!-- Record Controls -->
+                            <div class="flex items-center gap-2">
+                                <button id="btn-record-toggle" onclick="toggleRecording()" class="w-10 h-10 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30">
+                                    <i class="fa-solid fa-microphone text-sm" id="rec-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Waveform Animation -->
+                        <div class="w-full h-12 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center relative">
+                            <canvas id="waveform-canvas" class="w-full h-full block"></canvas>
+                        </div>
+
+                        <!-- Audio Playback Container -->
+                        <div id="audio-playback-container" class="hidden space-y-2">
+                            <audio id="audio-playback" controls class="w-full h-8 rounded-lg"></audio>
+                            <a id="download-audio-link" href="#" download="command_request_practice.webm" class="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Download Audio Practice Clip (.webm)</span>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Column: 20 Outcome Scenario Deck & Script Log (7 Cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <!-- Scenario Flashcard Deck Section -->
+                    <section class="glass-panel rounded-2xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 class="font-outfit font-bold text-white text-base">20 Outcome Question Prompts</h3>
+                                <p class="text-xs text-slate-400">Select a prompt, report the order, transform it into a request, and flip for answers!</p>
+                            </div>
+                            <!-- Category Filter Tabs -->
+                            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
+                                <button onclick="filterCards('all')" class="cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition bg-indigo-600 text-white">All (20)</button>
+                                <button onclick="filterCards('home-family')" class="cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition text-slate-400 hover:text-white">Home</button>
+                                <button onclick="filterCards('workplace')" class="cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition text-slate-400 hover:text-white">Office</button>
+                                <button onclick="filterCards('public-service')" class="cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition text-slate-400 hover:text-white">Public</button>
+                                <button onclick="filterCards('school-friends')" class="cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition text-slate-400 hover:text-white">School</button>
+                            </div>
+                        </div>
+
+                        <!-- Card Deck Grid Container -->
+                        <div id="flashcards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
+                            <!-- Cards dynamically populated by JS -->
+                        </div>
+                    </section>
+
+                    <!-- Accumulating Session Script Log -->
+                    <section class="glass-panel rounded-2xl p-5 border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-indigo-400"></i>
+                                <h3 class="font-outfit font-bold text-white text-sm">Session Script Log</h3>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="copyLogToClipboard()" class="text-xs text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition">
+                                    <i class="fa-regular fa-copy"></i>
+                                    <span>Copy Log</span>
+                                </button>
+                                <button onclick="clearScriptLog()" class="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span>Clear</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="script-log-container" class="space-y-2 max-h-40 overflow-y-auto pr-1 text-xs text-slate-300">
+                            <p class="text-slate-500 italic text-center py-4" id="empty-log-msg">No dialogues added to log yet. Use the 3-Step Builder to generate and save your practice conversations!</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 glass-panel py-4 px-4 text-center text-xs text-slate-500 mt-8">
+        <p>GlobeTrotter ESL Studio • Command & Request Studio (CEFR A2) • Interactive Pairwork Application</p>
+    </footer>
+
+    <!-- MODAL 1: Grammar Reference Cheat Sheet Modal -->
+    <div id="cheat-sheet-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-slate-700 space-y-5 relative">
+            <button onclick="closeModal('cheat-sheet-modal')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div>
+                    <h3 class="font-outfit font-bold text-lg text-white">Grammar Cheat Sheet: Orders & Requests</h3>
+                    <p class="text-xs text-slate-400">CEFR A2 Reference Guide for Direct Orders, Reported Orders & Polite Requests</p>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <!-- Direct & Reported Orders Box -->
+                <div class="p-4 rounded-xl bg-amber-950/40 border border-amber-800/50 space-y-2">
+                    <div class="flex items-center gap-2 text-amber-300 font-bold">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Imperatives & Reported Orders</span>
+                    </div>
+                    <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+                        <li><strong>Direct Command:</strong><br><span class="text-slate-400 italic">"Clean your room right now!"</span></li>
+                        <li><strong>Reported Order (tell/order to):</strong><br><span class="text-slate-400 italic">"My mom told me to clean my room."</span></li>
+                        <li><strong>Negative Reported Order:</strong><br><span class="text-slate-400 italic">"My boss ordered us not to be late."</span></li>
+                    </ul>
+                </div>
+
+                <!-- Formal vs Informal Requests Box -->
+                <div class="p-4 rounded-xl bg-purple-950/40 border border-purple-800/50 space-y-2">
+                    <div class="flex items-center gap-2 text-purple-300 font-bold">
+                        <i class="fa-solid fa-handshake font-bold"></i>
+                        <span>Formal vs. Informal Requests</span>
+                    </div>
+                    <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+                        <li><strong>Formal: Could you please + verb?</strong><br><span class="text-slate-400 italic">"Could you please print these files?"</span></li>
+                        <li><strong>Formal: Would you mind + verb-ing?</strong><br><span class="text-slate-400 italic">"Would you mind holding the door?"</span></li>
+                        <li><strong>Informal: Can you / Could you + verb?</strong><br><span class="text-slate-400 italic">"Can you pass the salt, please?"</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Response Rules Matrix -->
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                <h4 class="font-bold text-indigo-300">Response Rules Matrix</h4>
+                <div class="grid grid-cols-2 gap-2 text-slate-300">
+                    <div>
+                        <span class="font-semibold text-emerald-400 block mb-1">Accepting:</span>
+                        <p>• Formal: "Certainly, right away!" / "Of course, happy to assist."</p>
+                        <p>• Informal: "Sure thing!" / "Yeah, no problem!"</p>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-rose-400 block mb-1">Declining (With Reason):</span>
+                        <p>• Formal: "I do apologize, but I am currently busy."</p>
+                        <p>• Informal: "Sorry, I can't right now, I'm studying."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Peer Evaluation Checklist & Certificate Modal -->
+    <div id="peer-review-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 border border-slate-700 space-y-5 relative">
+            <button onclick="closeModal('peer-review-modal')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <div>
+                    <h3 class="font-outfit font-bold text-lg text-white">Peer Review & Master Badge</h3>
+                    <p class="text-xs text-slate-400">Evaluate your partner to unlock the Certified Etiquette Master Badge!</p>
+                </div>
+            </div>
+
+            <!-- Peer Checklist -->
+            <div class="space-y-3 text-xs">
+                <p class="text-slate-300 font-semibold">Check all items completed by your partner during the 10-minute session:</p>
+                
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" id="check-1" onchange="checkCertificateEligibility()" class="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <div>
+                        <span class="font-bold text-slate-200 block">1. Validating Direct & Reported Orders</span>
+                        <span class="text-slate-400">Correctly reported orders using 'tell/order someone to do something'.</span>
+                    </div>
+                </label>
+
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" id="check-2" onchange="checkCertificateEligibility()" class="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <div>
+                        <span class="font-bold text-slate-200 block">2. Polite Request Transformation</span>
+                        <span class="text-slate-400">Transformed strict orders into appropriate Formal or Informal requests.</span>
+                    </div>
+                </label>
+
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700">
+                    <input type="checkbox" id="check-3" onchange="checkCertificateEligibility()" class="mt-0.5 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                    <div>
+                        <span class="font-bold text-slate-200 block">3. Polite Responses & Valid Excuses</span>
+                        <span class="text-slate-400">Accepted enthusiastically or declined politely with a believable excuse.</span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Certificate Name Input & Unlock Section -->
+            <div class="pt-2 space-y-3 border-t border-slate-800">
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-300">Enter Student Name for Certificate:</label>
+                    <input type="text" id="student-name-input" placeholder="e.g. Alex Rivera" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <button id="btn-unlock-cert" disabled onclick="generateCertificate()" class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed transition">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Complete All Checklist Items to Unlock</span>
+                </button>
+            </div>
+
+            <!-- Unlocked Certificate Badge Container -->
+            <div id="cert-display-card" class="hidden p-5 rounded-2xl bg-gradient-to-tr from-indigo-900 via-slate-900 to-amber-950 border-2 border-amber-400/50 text-center space-y-3 shadow-2xl">
+                <div class="w-12 h-12 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 flex items-center justify-center text-2xl mx-auto">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold tracking-widest text-amber-400 uppercase block">Official Certificate of Mastery</span>
+                    <h4 class="font-outfit font-extrabold text-xl text-white mt-1" id="cert-student-name">Alex Rivera</h4>
+                    <p class="text-xs text-indigo-200 mt-0.5">Has successfully mastered <strong>Orders, Requests & Responses (CEFR A2)</strong>.</p>
+                </div>
+                <div class="text-[10px] text-slate-400 border-t border-slate-800/80 pt-2 flex justify-between items-center">
+                    <span>Issued by GlobeTrotter Studio</span>
+                    <span>10-Min Session Verified</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerSeconds = 600; // 10 minutes total
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let currentRole = 'A';
+        
+        // Recording State
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordTimerInterval = null;
+        let recordSeconds = 60;
+        let isRecording = false;
+
+        // 20 Outcome Question Prompts Dataset across 4 Categories
+        const scenarioCards = [
+            // Category 1: Home & Family Commands (5 Cards)
+            {
+                id: 1,
+                category: 'home-family',
+                register: 'INFORMAL',
+                title: 'Room Cleaning Command',
+                context: 'Your parents tell you: "Clean your bedroom immediately!"',
+                prompt: 'Report this order to your advisor and transform it into a polite request for a roommate.',
+                verbs: ['clean room', 'tidy bedroom'],
+                direct: 'Clean your bedroom immediately!',
+                reported: 'My parents told me to clean my bedroom.',
+                req: 'Hey, could you please help me clean the room?',
+                res: 'Sure thing! Give me five minutes and I will help you.'
+            },
+            {
+                id: 2,
+                category: 'home-family',
+                register: 'INFORMAL',
+                title: 'Taking Out the Trash',
+                context: 'Your dad orders you: "Take out the garbage right now!"',
+                prompt: 'Report this command and ask a family member politely to take out the trash for you.',
+                verbs: ['take out trash', 'carry garbage'],
+                direct: 'Take out the garbage right now!',
+                reported: 'My dad ordered me to take out the garbage.',
+                req: 'Can you take out the garbage for me tonight?',
+                res: 'Yeah, no problem! I am going outside anyway.'
+            },
+            {
+                id: 3,
+                category: 'home-family',
+                register: 'INFORMAL',
+                title: 'Washing Dishes After Dinner',
+                context: 'Your parents say: "Do the dishes before watching TV!"',
+                prompt: 'Report this order and make an informal request to a sibling to split the work.',
+                verbs: ['do dishes', 'wash plates'],
+                direct: 'Do the dishes before watching TV!',
+                reported: 'My parents told me to do the dishes.',
+                req: 'Do me a favor and help me wash these dishes?',
+                res: 'I would love to help, but I have to finish my homework first!'
+            },
+            {
+                id: 4,
+                category: 'home-family',
+                register: 'INFORMAL',
+                title: 'Lowering Music Volume',
+                context: 'Your parents shout: "Turn down that loud music!"',
+                prompt: 'Report this order and rephrase it into a polite request for a neighbor or friend.',
+                verbs: ['turn down volume', 'lower music'],
+                direct: 'Turn down that loud music!',
+                reported: 'My parents ordered me to turn down my music.',
+                req: 'Could you please turn down the music a little bit?',
+                res: 'Oh, sorry! I did not realize it was so loud.'
+            },
+            {
+                id: 5,
+                category: 'home-family',
+                register: 'INFORMAL',
+                title: 'Mobile Phones at Dinner',
+                context: 'Your family rule is: "Put away your phones during dinner!"',
+                prompt: 'Report this command and ask a dinner guest politely to set their phone aside.',
+                verbs: ['put away phone', 'silence mobile'],
+                direct: 'Put away your phones during dinner!',
+                reported: 'My family ordered us not to use phones at dinner.',
+                req: 'Would you mind putting away your phone while we eat?',
+                res: 'Of course! My apologies.'
+            },
+
+            // Category 2: Workplace & Office Directives (5 Cards)
+            {
+                id: 6,
+                category: 'workplace',
+                register: 'FORMAL',
+                title: 'Printing Urgently',
+                context: 'Your manager orders: "Print 20 copies of this contract now!"',
+                prompt: 'Report this order and make a formal request to the office assistant.',
+                verbs: ['print document', 'make copies'],
+                direct: 'Print 20 copies of this contract now!',
+                reported: 'My manager told me to print 20 copies of the contract.',
+                req: 'Could you please print 20 copies of this document for me?',
+                res: 'Certainly! I will print them right away.'
+            },
+            {
+                id: 7,
+                category: 'workplace',
+                register: 'FORMAL',
+                title: 'Covering Reception Desk',
+                context: 'Your supervisor tells you: "Stand at reception for 30 minutes!"',
+                prompt: 'Report this order and formally ask a colleague to cover for you.',
+                verbs: ['cover desk', 'stand reception'],
+                direct: 'Stand at reception for 30 minutes!',
+                reported: 'My supervisor told me to cover the reception desk.',
+                req: 'Would you mind covering the reception desk for 30 minutes?',
+                res: 'I do apologize, but I am currently preparing an urgent report.'
+            },
+            {
+                id: 8,
+                category: 'workplace',
+                register: 'FORMAL',
+                title: 'Submitting Sales Figures',
+                context: 'Your boss orders: "Send me the sales figures before noon!"',
+                prompt: 'Report this order and politely ask a teammate for the updated numbers.',
+                verbs: ['send figures', 'email report'],
+                direct: 'Send me the sales figures before noon!',
+                reported: 'My boss ordered me to send the sales figures by noon.',
+                req: 'I was wondering if you could send me the latest sales figures?',
+                res: 'Of course! I will email them to you immediately.'
+            },
+            {
+                id: 9,
+                category: 'workplace',
+                register: 'FORMAL',
+                title: 'Rescheduling Staff Meeting',
+                context: 'Your manager commands: "Move tomorrow\'s meeting to 3 PM!"',
+                prompt: 'Report this order and make a formal request to attendees.',
+                verbs: ['move meeting', 'change schedule'],
+                direct: 'Move tomorrow\'s meeting to 3 PM!',
+                reported: 'My manager told us to move the meeting to 3 PM.',
+                req: 'Would it be possible to reschedule our meeting to 3 PM tomorrow?',
+                res: 'Certainly, 3 PM works perfectly for me.'
+            },
+            {
+                id: 10,
+                category: 'workplace',
+                register: 'FORMAL',
+                title: 'Quiet in Open Office',
+                context: 'The office manager says: "Stop making noise in the hallway!"',
+                prompt: 'Report this command and formally ask a colleague to speak quietly.',
+                verbs: ['speak quietly', 'keep quiet'],
+                direct: 'Stop making noise in the hallway!',
+                reported: 'The manager ordered us to keep quiet in the hallway.',
+                req: 'Could you please speak a little more quietly?',
+                res: 'I am so sorry, I will lower my voice.'
+            },
+
+            // Category 3: Public Places & Service (5 Cards)
+            {
+                id: 11,
+                category: 'public-service',
+                register: 'FORMAL',
+                title: 'Hotel Check-out Time',
+                context: 'The hotel clerk orders: "Vacate the room by 11:00 AM!"',
+                prompt: 'Report this order and make a formal request to extend your check-out by one hour.',
+                verbs: ['extend stay', 'late checkout'],
+                direct: 'Vacate the room by 11:00 AM!',
+                reported: 'The clerk told us to leave the room by 11 AM.',
+                req: 'Would you mind extending my checkout time until 12 PM?',
+                res: 'Certainly! I would be happy to grant a late checkout.'
+            },
+            {
+                id: 12,
+                category: 'public-service',
+                register: 'FORMAL',
+                title: 'Airport Security Check',
+                context: 'Security orders: "Take off your shoes and jacket!"',
+                prompt: 'Report this directive and ask an agent politely where to find a tray.',
+                verbs: ['remove shoes', 'use tray'],
+                direct: 'Take off your shoes and jacket!',
+                reported: 'Security ordered us to remove our shoes and jacket.',
+                req: 'Could you please show me where the luggage trays are?',
+                res: 'Of course, they are right over there.'
+            },
+            {
+                id: 13,
+                category: 'public-service',
+                register: 'FORMAL',
+                title: 'Restaurant Table Change',
+                context: 'The host orders: "Sit at table number 4!"',
+                prompt: 'Report this instruction and make a polite request to move to a window table.',
+                verbs: ['change table', 'sit by window'],
+                direct: 'Sit at table number 4!',
+                reported: 'The host told us to sit at table 4.',
+                req: 'I was wondering if we could possibly sit near the window?',
+                res: 'Certainly! Let me prepare that table for you.'
+            },
+            {
+                id: 14,
+                category: 'public-service',
+                register: 'FORMAL',
+                title: 'Quiet in the Library',
+                context: 'The librarian orders: "Silence your phone immediately!"',
+                prompt: 'Report this order and ask a study partner quietly if you can borrow a pen.',
+                verbs: ['silence phone', 'borrow pen'],
+                direct: 'Silence your phone immediately!',
+                reported: 'The librarian ordered us to turn off our mobile phones.',
+                req: 'Could you lend me a pen for a moment?',
+                res: 'Sure, here you go.'
+            },
+            {
+                id: 15,
+                category: 'public-service',
+                register: 'FORMAL',
+                title: 'Boarding the Bus',
+                context: 'The bus driver orders: "Show your ticket before entering!"',
+                prompt: 'Report this rule and ask a fellow passenger politely to hold your bag.',
+                verbs: ['show ticket', 'hold bag'],
+                direct: 'Show your ticket before entering!',
+                reported: 'The driver told us to show our ticket first.',
+                req: 'Would you mind holding my bag for just a second while I find my ticket?',
+                res: 'Of course, no problem at all.'
+            },
+
+            // Category 4: School, Friends & Roommates (5 Cards)
+            {
+                id: 16,
+                category: 'school-friends',
+                register: 'INFORMAL',
+                title: 'Borrowing Class Notes',
+                context: 'Your teacher orders: "Finish exercise 3 silently!"',
+                prompt: 'Report this instruction and ask a classmate informally if you can check their notes.',
+                verbs: ['finish exercise', 'check notes'],
+                direct: 'Finish exercise 3 silently!',
+                reported: 'The teacher told us to complete exercise 3.',
+                req: 'Hey, can I see your class notes for a second?',
+                res: 'Sure thing! Here you go.'
+            },
+            {
+                id: 17,
+                category: 'school-friends',
+                register: 'INFORMAL',
+                title: 'Borrowing Phone Charger',
+                context: 'Your smartphone battery dies during class.',
+                prompt: 'Report your situation and ask a classmate casually to borrow their charger.',
+                verbs: ['borrow charger', 'lend cable'],
+                direct: 'Charge your phone outside!',
+                reported: 'My teacher told me not to charge phones during lecture.',
+                req: 'Could you lend me your charger for twenty minutes?',
+                res: 'Yeah, no problem! It is in my backpack.'
+            },
+            {
+                id: 18,
+                category: 'school-friends',
+                register: 'INFORMAL',
+                title: 'Ordering Food Together',
+                context: 'Your roommates want pizza for dinner.',
+                prompt: 'Report the situation and ask a friend informally to call the delivery service.',
+                verbs: ['order food', 'call delivery'],
+                direct: 'Call the pizza place now!',
+                reported: 'My roommates told me to order pizza for dinner.',
+                req: 'Hey, can you help me call the pizza delivery?',
+                res: 'Sure! What toppings do you want?'
+            },
+            {
+                id: 19,
+                category: 'school-friends',
+                register: 'INFORMAL',
+                title: 'Car Ride Home',
+                context: 'Basketball practice ends late at night.',
+                prompt: 'Report your coach\'s instruction and ask a friend politely if they could give you a lift home.',
+                verbs: ['leave gym', 'give ride'],
+                direct: 'Clear the gym floor now!',
+                reported: 'The coach told us to leave the gym.',
+                req: 'Do me a favor and give me a ride home?',
+                res: 'Sorry, I really can\'t right now because my car is full.'
+            },
+            {
+                id: 20,
+                category: 'school-friends',
+                register: 'INFORMAL',
+                title: 'Sharing Homework Help',
+                context: 'Your classmate is confused about math homework.',
+                prompt: 'Respond to their request for help and give them polite study instructions.',
+                verbs: ['explain math', 'study together'],
+                direct: 'Solve problem number 5!',
+                reported: 'The teacher ordered us to solve problem 5.',
+                req: 'Can you explain how to solve problem 5?',
+                res: 'Sure thing! Let us read the instructions together first.'
+            }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderFlashcards('all');
+            updateBuilderPreview();
+            initCanvasWaveform();
+        });
+
+        function toggleTimer() {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('timer-icon').className = 'fa-solid fa-play text-xs';
+                playSound('click');
+            } else {
+                isTimerRunning = true;
+                document.getElementById('timer-icon').className = 'fa-solid fa-pause text-xs';
+                playSound('chime');
+                
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        document.getElementById('timer-icon').className = 'fa-solid fa-play text-xs';
+                        playSound('fanfare');
+                        alert("10-Minute Command & Request Session completed! Please proceed to Peer Review.");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = 600;
+            document.getElementById('timer-icon').className = 'fa-solid fa-play text-xs';
+            updateTimerDisplay();
+            playSound('click');
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timer-display').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            // Stages: Setup (10m-9m / 600s-540s), Round 1 (9m-5.5m / 540s-330s), Round 2 (5.5m-2m / 330s-120s), Peer Review (2m-0m / 120s-0s)
+            const badge = document.getElementById('stage-badge');
+            const desc = document.getElementById('stage-desc');
+
+            if (timerSeconds > 540) {
+                badge.innerText = "Stage 1: Setup";
+                desc.innerText = "Setup Roles & Scenarios (0-1m)";
+            } else if (timerSeconds > 330) {
+                badge.innerText = "Stage 2: Round 1";
+                desc.innerText = "Role A Interviews & Role B Transforms (1-4.5m)";
+            } else if (timerSeconds > 120) {
+                badge.innerText = "Stage 3: Round 2 (Swap)";
+                desc.innerText = "Role B Interviews & Role A Transforms (4.5-8m)";
+            } else {
+                badge.innerText = "Stage 4: Peer Review";
+                desc.innerText = "Evaluate & Claim Master Badge (8-10m)";
+            }
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            playSound('click');
+            
+            const btnA = document.getElementById('role-btn-a');
+            const btnB = document.getElementById('role-btn-b');
+            const titleText = document.getElementById('role-title-text');
+            const descText = document.getElementById('role-desc-text');
+
+            if (role === 'A') {
+                btnA.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
+                btnB.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+                titleText.innerText = "Role A (Operations Advisor) Instructions:";
+                descText.innerText = "Interview your client about common orders they receive at work or home (e.g., 'What orders do your parents or manager give you?'). Challenge them to transform direct orders into polite requests!";
+            } else {
+                btnB.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
+                btnA.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white";
+                titleText.innerText = "Role B (Client / Resident) Instructions:";
+                descText.innerText = "Report strict orders you received using reported speech ('My boss told me to print files'). Practice rephrasing those orders into polite formal or informal requests and respond to counter-requests!";
+            }
+        }
+
+        function updateBuilderPreview() {
+            const orderRaw = document.getElementById('builder-order').value;
+            const formula = document.getElementById('builder-formula').value;
+            const response = document.getElementById('builder-response').value;
+
+            // Extract direct command, reported order, and action verb phrase
+            const [directCmd, reportedCmd, actionBase] = orderRaw.split('|');
+
+            // Formulate -ing form for verbs (e.g. "clean" -> "cleaning", "print" -> "printing")
+            let actionIng = actionBase;
+            if (actionBase.startsWith("clean")) actionIng = actionBase.replace("clean", "cleaning");
+            else if (actionBase.startsWith("take out")) actionIng = actionBase.replace("take out", "taking out");
+            else if (actionBase.startsWith("do")) actionIng = actionBase.replace("do", "doing");
+            else if (actionBase.startsWith("turn down")) actionIng = actionBase.replace("turn down", "turning down");
+            else if (actionBase.startsWith("put away")) actionIng = actionBase.replace("put away", "putting away");
+            else if (actionBase.startsWith("print")) actionIng = actionBase.replace("print", "printing");
+            else if (actionBase.startsWith("cover")) actionIng = actionBase.replace("cover", "covering");
+            else if (actionBase.startsWith("send")) actionIng = actionBase.replace("send", "sending");
+            else if (actionBase.startsWith("keep quiet")) actionIng = actionBase.replace("keep quiet", "keeping quiet");
+            else if (actionBase.startsWith("extend")) actionIng = actionBase.replace("extend", "extending");
+            else if (actionBase.startsWith("turn off")) actionIng = actionBase.replace("turn off", "turning off");
+
+            // Detect if formula uses -ing
+            let finalRequest = "";
+            if (formula.includes("{action_ing}")) {
+                finalRequest = formula.replace("{action_ing}", actionIng);
+            } else {
+                finalRequest = formula.replace("{action}", actionBase);
+            }
+
+            // Update preview elements
+            document.getElementById('preview-reported').innerText = reportedCmd + ".";
+            document.getElementById('preview-request').innerText = finalRequest;
+            document.getElementById('preview-response').innerText = response;
+
+            // Update Register Badge
+            const isFormal = formula.startsWith("Could") || formula.startsWith("Would") || formula.startsWith("I was");
+            const regBadge = document.getElementById('builder-register-badge');
+            if (isFormal) {
+                regBadge.innerText = "FORMAL";
+                regBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30";
+            } else {
+                regBadge.innerText = "INFORMAL";
+                regBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
+            }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9; // Optimal speed for A2 learners
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakBuilderScript() {
+            const rep = document.getElementById('preview-reported').innerText;
+            const req = document.getElementById('preview-request').innerText;
+            const res = document.getElementById('preview-response').innerText;
+            speakText(`Reported Order: ${rep} ... Request: ${req} ... Response: ${res}`);
+        }
+
+        function copyBuilderScript() {
+            const rep = document.getElementById('preview-reported').innerText;
+            const req = document.getElementById('preview-request').innerText;
+            const res = document.getElementById('preview-response').innerText;
+            const fullText = `Command & Request Script:\nReported: "${rep}"\nRequest: "${req}"\nResponse: "${res}"`;
+            
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = fullText;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            playSound('chime');
+            alert("Script copied to clipboard!");
+        }
+
+        function addScriptToLog() {
+            const rep = document.getElementById('preview-reported').innerText;
+            const req = document.getElementById('preview-request').innerText;
+            const res = document.getElementById('preview-response').innerText;
+            const regBadgeText = document.getElementById('builder-register-badge').innerText;
+
+            const emptyMsg = document.getElementById('empty-log-msg');
+            if (emptyMsg) emptyMsg.remove();
+
+            const container = document.getElementById('script-log-container');
+            const logItem = document.createElement('div');
+            logItem.className = "p-2.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1 relative group";
+            
+            logItem.innerHTML = `
+                <div class="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                    <span class="${regBadgeText === 'FORMAL' ? 'text-purple-400' : 'text-amber-400'}">[${regBadgeText}]</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <p class="text-amber-300"><strong>Order:</strong> "${rep}"</p>
+                <p class="text-indigo-200"><strong>Request:</strong> "${req}"</p>
+                <p class="text-emerald-300"><strong>Response:</strong> "${res}"</p>
+            `;
+
+            container.prepend(logItem);
+            playSound('click');
+        }
+
+        function clearScriptLog() {
+            const container = document.getElementById('script-log-container');
+            container.innerHTML = `<p class="text-slate-500 italic text-center py-4" id="empty-log-msg">No dialogues added to log yet. Use the 3-Step Builder to generate and save your practice conversations!</p>`;
+            playSound('click');
+        }
+
+        function copyLogToClipboard() {
+            const container = document.getElementById('script-log-container');
+            const text = container.innerText;
+            
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            playSound('chime');
+            alert("Full session script log copied!");
+        }
+
+        function renderFlashcards(filter) {
+            const grid = document.getElementById('flashcards-grid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' 
+                ? scenarioCards 
+                : scenarioCards.filter(c => c.category === filter);
+
+            filtered.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = "perspective-1000 h-64 w-full cursor-pointer";
+                
+                const isFormal = card.register === 'FORMAL';
+                const regClass = isFormal 
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/30" 
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/30";
+
+                cardEl.innerHTML = `
+                    <div class="flip-card-inner transform-style-3d w-full h-full relative rounded-2xl" id="card-inner-${card.id}" onclick="flipCard(${card.id})">
+                        <!-- FRONT SIDE -->
+                        <div class="backface-hidden absolute inset-0 glass-card rounded-2xl p-4 flex flex-col justify-between border border-slate-800">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${regClass}">
+                                        ${card.register}
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 font-mono">#${card.id}</span>
+                                </div>
+                                <h4 class="font-outfit font-bold text-sm text-white">${card.title}</h4>
+                                <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">${card.prompt}</p>
+                            </div>
+
+                            <div>
+                                <div class="flex flex-wrap gap-1 mb-2">
+                                    ${card.verbs.map(v => `<span class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">#${v}</span>`).join('')}
+                                </div>
+                                <div class="text-[10px] text-indigo-400 font-semibold flex items-center justify-between border-t border-slate-800 pt-2">
+                                    <span>Click to Flip Card</span>
+                                    <i class="fa-solid fa-rotate text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BACK SIDE -->
+                        <div class="backface-hidden rotate-y-180 absolute inset-0 glass-card rounded-2xl p-4 flex flex-col justify-between border border-indigo-500/40 bg-slate-900">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[10px] font-bold text-indigo-300 uppercase">Model Dialogue</span>
+                                    <button onclick="event.stopPropagation(); speakText('Direct Command: ${card.direct} Reported: ${card.reported} Request: ${card.req} Response: ${card.res}')" class="text-indigo-400 hover:text-indigo-200">
+                                        <i class="fa-solid fa-volume-high text-xs"></i>
+                                    </button>
+                                </div>
+                                <div class="space-y-1.5 text-[11px]">
+                                    <p class="text-amber-300"><strong>Command:</strong> "${card.direct}"</p>
+                                    <p class="text-slate-300"><strong>Reported:</strong> "${card.reported}"</p>
+                                    <p class="text-indigo-200"><strong>Request:</strong> "${card.req}"</p>
+                                    <p class="text-emerald-300"><strong>Response:</strong> "${card.res}"</p>
+                                </div>
+                            </div>
+
+                            <div class="text-[10px] text-slate-400 border-t border-slate-800 pt-2 flex items-center justify-between">
+                                <span>Context: ${card.title}</span>
+                                <span class="text-indigo-400 font-semibold">Click to Flip Back</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function flipCard(id) {
+            const inner = document.getElementById(`card-inner-${id}`);
+            inner.classList.toggle('flipped');
+            playSound('click');
+        }
+
+        function filterCards(category) {
+            playSound('click');
+            document.querySelectorAll('.cat-tab').forEach(tab => {
+                tab.className = "cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition text-slate-400 hover:text-white";
+            });
+            event.target.className = "cat-tab px-2.5 py-1 rounded-lg text-[11px] font-semibold transition bg-indigo-600 text-white";
+
+            renderFlashcards(category);
+        }
+
+        function initCanvasWaveform() {
+            const canvas = document.getElementById('waveform-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            function drawIdleWave() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#1e293b';
+                
+                const bars = 30;
+                const barWidth = canvas.width / bars;
+
+                for (let i = 0; i < bars; i++) {
+                    const height = isRecording ? Math.random() * (canvas.height - 10) + 5 : 4;
+                    ctx.fillRect(i * barWidth + 2, (canvas.height - height) / 2, barWidth - 4, height);
+                }
+
+                if (isRecording) {
+                    requestAnimationFrame(drawIdleWave);
+                }
+            }
+
+            drawIdleWave();
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(blob);
+                        document.getElementById('audio-playback').src = audioUrl;
+                        document.getElementById('download-audio-link').href = audioUrl;
+                        document.getElementById('audio-playback-container').classList.remove('hidden');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordSeconds = 60;
+                    
+                    document.getElementById('rec-icon').className = 'fa-solid fa-square text-sm';
+                    document.getElementById('rec-status-dot').className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping';
+                    document.getElementById('rec-status-text').innerText = 'Recording Voice...';
+
+                    playSound('chime');
+                    initCanvasWaveform();
+
+                    recordTimerInterval = setInterval(() => {
+                        recordSeconds--;
+                        document.getElementById('rec-time-display').innerText = `${recordSeconds}s`;
+                        
+                        const offset = 150.79 - (recordSeconds / 60) * 150.79;
+                        document.getElementById('record-progress-ring').style.strokeDashoffset = offset;
+
+                        if (recordSeconds <= 0) {
+                            stopRecording();
+                        }
+                    }, 1000);
+
+                } catch (err) {
+                    alert("Microphone permission denied or unsupported in this browser environment.");
+                }
+            } else {
+                stopRecording();
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(recordTimerInterval);
+                
+                document.getElementById('rec-icon').className = 'fa-solid fa-microphone text-sm';
+                document.getElementById('rec-status-dot').className = 'w-2 h-2 rounded-full bg-emerald-500';
+                document.getElementById('rec-status-text').innerText = 'Recording Saved!';
+                playSound('click');
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+            playSound('click');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+            playSound('click');
+        }
+
+        function checkCertificateEligibility() {
+            const c1 = document.getElementById('check-1').checked;
+            const c2 = document.getElementById('check-2').checked;
+            const c3 = document.getElementById('check-3').checked;
+            
+            const btn = document.getElementById('btn-unlock-cert');
+
+            if (c1 && c2 && c3) {
+                btn.disabled = false;
+                btn.className = "w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-lg shadow-emerald-900/40";
+                btn.innerHTML = `<i class="fa-solid fa-lock-open"></i><span>Generate Master Certificate</span>`;
+            } else {
+                btn.disabled = true;
+                btn.className = "w-full py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed transition";
+                btn.innerHTML = `<i class="fa-solid fa-lock"></i><span>Complete All Checklist Items to Unlock</span>`;
+            }
+        }
+
+        function generateCertificate() {
+            const nameInput = document.getElementById('student-name-input').value.trim();
+            const finalName = nameInput.length > 0 ? nameInput : "A2 ESL Scholar";
+
+            document.getElementById('cert-student-name').innerText = finalName;
+            document.getElementById('cert-display-card').classList.remove('hidden');
+            playSound('fanfare');
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (type === 'click') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                } else if (type === 'chime') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.08 + 0.2);
+                        osc.start(ctx.currentTime + i * 0.08);
+                        osc.stop(ctx.currentTime + i * 0.08 + 0.2);
+                    });
+                }
+            } catch (e) {
+                console.log('Web Audio API muted or unsupported');
+            }
+        }
+    </script>
+</body>
+</html>
