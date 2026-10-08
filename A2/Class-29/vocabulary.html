@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Power - Plugged In</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f3f5f7;color:#222}
+.app{max-width:1100px;margin:auto;padding:22px}
+header,section{background:#fff;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.badge{display:inline-block;background:#2878b5;color:#fff;padding:7px 13px;border-radius:18px;font-size:13px;font-weight:bold}
+.score{float:right;background:#222;color:#fff;padding:10px 17px;border-radius:22px;font-weight:bold}
+h1{margin:12px 0 8px;font-size:32px}
+h2{margin-top:0}
+.muted{color:#666;line-height:1.5}
+.word-bank{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0}
+.word{background:#fff;color:#222;border:2px solid #ccc;border-radius:10px;padding:10px 13px;cursor:pointer;font:inherit}
+.word:hover{background:#f4f4f4;transform:translateY(-1px)}
+.word.selected{border-color:#2878b5;background:#eef7ff}
+.word.used{opacity:.45;text-decoration:line-through;cursor:default}
+.categories{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.category{min-height:205px;border:2px dashed #bbb;border-radius:14px;padding:15px;background:#fafafa}
+.category h3{margin:0 0 7px;font-size:16px}
+.category p{font-size:13px;color:#777;margin-top:0}
+.category.dragover{border-color:#2878b5;background:#eef7ff}
+.items{display:flex;flex-direction:column;gap:7px}
+.chip{background:#fff;border:1px solid #aaa;border-radius:9px;padding:7px 9px;font-size:14px}
+.feedback{min-height:25px;margin-top:14px;font-weight:bold}
+.correct{color:#198754}.wrong{color:#c62828}
+button{border:0;border-radius:10px;padding:11px 17px;background:#222;color:#fff;cursor:pointer;font:inherit}
+button:hover{background:#444}
+.primary{background:#2878b5}
+.choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.choice{background:#fff;color:#222;border:2px solid #ddd;text-align:left;width:100%}
+.choice.correct{border-color:#198754;background:#eaf7ef}
+.choice.wrong{border-color:#dc3545;background:#fff0f0}
+.prompt{background:#f7f7f7;border-left:5px solid #2878b5;padding:18px;line-height:1.7}
+.dialogue{background:#f7f7f7;border-left:5px solid #2878b5;padding:18px;line-height:1.8}
+textarea{width:100%;padding:14px;border:1px solid #bbb;border-radius:10px;font:inherit;resize:vertical}
+select{padding:11px;border:1px solid #bbb;border-radius:9px;font:inherit}
+.reset{background:#777}
+.tip{background:#fff8e6;border:1px solid #e5c76b;padding:14px;border-radius:12px}
+@media(max-width:850px){.categories{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.categories,.choice-grid{grid-template-columns:1fr}.score{float:none;display:inline-block;margin-top:10px}.app{padding:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <span class="badge">A2 • WORD POWER</span>
+  <span class="score">Score: <span id="score">0</span></span>
+  <h1>📱 Plugged In</h1>
+  <p class="muted">
+    Practice vocabulary about technology, gadgets, people who use technology,
+    and things you do online.
+  </p>
+</header>
+
+<section>
+<h2>A. Complete the Chart 💻</h2>
+<p class="muted">
+Click a word or phrase, then click the category where it belongs.
+You can also drag a word into a category. Afterward, add your own ideas.
+</p>
+
+<div class="word-bank" id="wordBank"></div>
+
+<div class="categories">
+
+  <div class="category" data-category="Problems with technology">
+    <h3>⚠️ Problems with technology</h3>
+    <p>Problems, failures, or unwanted technology events.</p>
+    <div class="items"></div>
+  </div>
+
+  <div class="category" data-category="Gadgets and devices">
+    <h3>🔌 Gadgets and devices</h3>
+    <p>Technology you can use or carry.</p>
+    <div class="items"></div>
+  </div>
+
+  <div class="category" data-category="People who are into technology">
+    <h3>🤓 People who are into technology</h3>
+    <p>People interested in or skilled with technology.</p>
+    <div class="items"></div>
+  </div>
+
+  <div class="category" data-category="Things to do online">
+    <h3>🌐 Things to do online</h3>
+    <p>Activities you can do on the internet.</p>
+    <div class="items"></div>
+  </div>
+
+</div>
+
+<div id="sortFeedback" class="feedback"></div>
+<br>
+<button class="primary" id="checkChart">Check My Chart</button>
+</section>
+
+<section>
+<h2>B. Vocabulary Challenge 🎯</h2>
+<p class="muted">Choose the best answer.</p>
+<div id="quiz"></div>
+<div id="quizFeedback" class="feedback"></div>
+</section>
+
+<section>
+<h2>C. What Do You Do Online? 🌐</h2>
+<div class="prompt">
+  <b>Example:</b> I usually download apps, check in for flights, and make international phone calls online.
+</div>
+<br>
+<div class="choice-grid" id="onlineChoices"></div>
+<div id="onlineFeedback" class="feedback"></div>
+</section>
+
+<section>
+<h2>D. Pair Work 🗣️</h2>
+<div class="dialogue">
+  <b>A:</b> Are you into technology?<br>
+  <b>B:</b> Yes, I am. I love smart devices and I often download new apps.
+</div>
+<p class="muted">Choose a question and discuss it with a partner.</p>
+<div class="choice-grid" id="pairQuestions"></div>
+<br>
+<button class="primary" id="newQuestion">New Question</button>
+<div id="pairFeedback" class="feedback"></div>
+</section>
+
+<section>
+<h2>E. Add Your Own Word ✍️</h2>
+<p class="muted">Add one more technology word or phrase to any category.</p>
+
+<select id="customCategory">
+<option>Problems with technology</option>
+<option>Gadgets and devices</option>
+<option>People who are into technology</option>
+<option>Things to do online</option>
+</select>
+
+<br><br>
+
+<textarea id="customWord" rows="3" placeholder="Example: wireless headphones"></textarea>
+<br><br>
+<button class="primary" id="addCustom">Add to Chart</button>
+<div id="customFeedback" class="feedback"></div>
+</section>
+
+<div class="tip">
+<b>💡 Useful vocabulary:</b>
+computer whiz • hacker • geek • software bugs • computer crash • frozen screen
+</div>
+
+<br>
+<button class="reset" id="reset">Reset Activity</button>
+</div>
+
+<script>
+let score=0;
+const scoreEl=document.getElementById('score');
+function addScore(n=1){
+  score+=n;
+  scoreEl.textContent=score;
+}
+
+/* =========================
+   WORD BANK
+========================= */
+
+const vocabulary={
+  "computer whiz":"People who are into technology",
+  "computer crash":"Problems with technology",
+  "flash drive":"Gadgets and devices",
+  "smart devices":"Gadgets and devices",
+  "hacker":"People who are into technology",
+  "edit photos":"Things to do online",
+  "identity theft":"Problems with technology",
+  "early adopter":"People who are into technology",
+  "check in for a flight":"Things to do online",
+  "download apps":"Things to do online",
+  "make international phone calls":"Things to do online",
+  "solar-powered batteries":"Gadgets and devices",
+  "geek":"People who are into technology",
+  "software bugs":"Problems with technology",
+  "frozen screen":"Problems with technology",
+  "phone charger":"Gadgets and devices"
+};
+
+const bank=document.getElementById('wordBank');
+let selectedWord=null;
+
+Object.keys(vocabulary).forEach(word=>{
+  const b=document.createElement('button');
+  b.className='word';
+  b.textContent=word;
+  b.draggable=true;
+  b.dataset.word=word;
+
+  b.onclick=()=>{
+    if(b.classList.contains('used')) return;
+    document.querySelectorAll('.word').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+    selectedWord=word;
+    document.getElementById('sortFeedback').textContent=
+      'Now choose the category for "'+word+'".';
+    document.getElementById('sortFeedback').className='feedback';
+  };
+
+  b.ondragstart=e=>{
+    if(!b.classList.contains('used')){
+      e.dataTransfer.setData('text/plain',word);
+    }
+  };
+
+  bank.appendChild(b);
+});
+
+document.querySelectorAll('.category').forEach(cat=>{
+  cat.ondragover=e=>{
+    e.preventDefault();
+    cat.classList.add('dragover');
+  };
+
+  cat.ondragleave=()=>{
+    cat.classList.remove('dragover');
+  };
+
+  cat.ondrop=e=>{
+    e.preventDefault();
+    cat.classList.remove('dragover');
+    placeWord(e.dataTransfer.getData('text/plain'),cat.dataset.category);
+  };
+
+  cat.onclick=()=>{
+    if(selectedWord) placeWord(selectedWord,cat.dataset.category);
+  };
+});
+
+function placeWord(word,category){
+  if(!word || !vocabulary[word]) return;
+
+  const feedback=document.getElementById('sortFeedback');
+
+  if(vocabulary[word]!==category){
+    feedback.textContent='✗ Not quite. Think about what the word describes.';
+    feedback.className='feedback wrong';
+    return;
+  }
+
+  const button=[...document.querySelectorAll('.word')]
+    .find(b=>b.dataset.word===word);
+
+  if(!button || button.classList.contains('used')) return;
+
+  button.classList.add('used');
+  button.classList.remove('selected');
+
+  const chip=document.createElement('span');
+  chip.className='chip';
+  chip.textContent=word;
+
+  document.querySelector(`[data-category="${category}"] .items`)
+    .appendChild(chip);
+
+  selectedWord=null;
+
+  feedback.textContent='✓ Correct! "'+word+'" belongs in '+category+'.';
+  feedback.className='feedback correct';
+
+  addScore();
+}
+
+document.getElementById('checkChart').onclick=()=>{
+  const total=Object.keys(vocabulary).length;
+  const completed=document.querySelectorAll('.word.used').length;
+  const feedback=document.getElementById('sortFeedback');
+
+  if(completed===total){
+    feedback.textContent='🎉 Excellent! You sorted all the vocabulary correctly.';
+    feedback.className='feedback correct';
+    addScore(3);
+  }else{
+    feedback.textContent=
+      'You have classified '+completed+' of '+total+
+      ' words. Keep going!';
+    feedback.className='feedback';
+  }
+};
+
+/* =========================
+   QUIZ
+========================= */
+
+const quizData=[
+  {
+    q:'What is a "computer whiz"?',
+    a:'A person who is very good with computers',
+    o:[
+      'A person who is very good with computers',
+      'A computer that is broken',
+      'A type of phone charger',
+      'A person who never uses technology'
+    ]
+  },
+  {
+    q:'What is a computer crash?',
+    a:'When a computer suddenly stops working',
+    o:[
+      'When a computer suddenly stops working',
+      'When you buy a new computer',
+      'When you download an app',
+      'When you edit photos'
+    ]
+  },
+  {
+    q:'What is a frozen screen?',
+    a:'A screen that does not respond',
+    o:[
+      'A screen that is very cold',
+      'A screen that does not respond',
+      'A new smartphone',
+      'A type of software'
+    ]
+  },
+  {
+    q:'What does an early adopter usually do?',
+    a:'Uses new technology very early',
+    o:[
+      'Uses new technology very early',
+      'Avoids all technology',
+      'Repairs old clothes',
+      'Deletes every app'
+    ]
+  },
+  {
+    q:'What can you do when you download an app?',
+    a:'Get an application onto your device',
+    o:[
+      'Get an application onto your device',
+      'Turn off your computer',
+      'Fix a frozen screen',
+      'Charge a battery'
+    ]
+  },
+  {
+    q:'What is a software bug?',
+    a:'A problem or error in software',
+    o:[
+      'A problem or error in software',
+      'An insect inside a computer',
+      'A type of phone',
+      'A battery charger'
+    ]
+  }
+];
+
+let quizIndex=0;
+
+function renderQuiz(){
+  const q=quizData[quizIndex];
+
+  document.getElementById('quiz').innerHTML=
+  `<div class="prompt"><b>${q.q}</b></div><br>
+   <div class="choice-grid">
+   ${q.o.map(x=>
+     `<button class="choice" data-answer="${x}">${x}</button>`
+   ).join('')}
+   </div>`;
+
+  document.querySelectorAll('#quiz .choice').forEach(btn=>{
+    btn.onclick=()=>{
+      if(btn.dataset.answer===q.a){
+        btn.classList.add('correct');
+        document.getElementById('quizFeedback').textContent='✓ Correct!';
+        document.getElementById('quizFeedback').className='feedback correct';
+        addScore();
+
+        setTimeout(()=>{
+          quizIndex=(quizIndex+1)%quizData.length;
+          renderQuiz();
+        },650);
+      }else{
+        btn.classList.add('wrong');
+        document.getElementById('quizFeedback').textContent='✗ Try again.';
+        document.getElementById('quizFeedback').className='feedback wrong';
+      }
+    };
+  });
+}
+renderQuiz();
+
+/* =========================
+   ONLINE ACTIVITIES
+========================= */
+
+const online=[
+  'check in for a flight',
+  'download apps',
+  'edit photos',
+  'make international phone calls',
+  'shop for groceries',
+  'watch videos'
+];
+
+const onlineBox=document.getElementById('onlineChoices');
+
+online.forEach(item=>{
+  const b=document.createElement('button');
+  b.className='choice';
+  b.textContent=item;
+  b.onclick=()=>{
+    document.getElementById('onlineFeedback').textContent=
+      '✓ Good! "'+item+'" is something you can do online.';
+    document.getElementById('onlineFeedback').className='feedback correct';
+    addScore();
+  };
+  onlineBox.appendChild(b);
+});
+
+/* =========================
+   PAIR WORK
+========================= */
+
+const questions=[
+  'Are you a geek?',
+  'Are you an early adopter?',
+  'Do you often download apps?',
+  'Have you ever had a computer crash?',
+  'Have you ever had a frozen screen?',
+  'Do you use smart devices every day?',
+  'Do you know a computer whiz?',
+  'Have you ever edited photos online?',
+  'Do you prefer a phone or a laptop?',
+  'What technology could you not live without?'
+];
+
+function renderQuestions(){
+  const box=document.getElementById('pairQuestions');
+  box.innerHTML='';
+
+  questions.slice(0,6).forEach(q=>{
+    const b=document.createElement('button');
+    b.className='choice';
+    b.textContent=q;
+    b.onclick=()=>{
+      document.getElementById('pairFeedback').textContent=
+        '🗣️ Ask your partner: "'+q+'"';
+      document.getElementById('pairFeedback').className='feedback correct';
+      addScore();
+    };
+    box.appendChild(b);
+  });
+}
+renderQuestions();
+
+document.getElementById('newQuestion').onclick=()=>{
+  const q=questions[Math.floor(Math.random()*questions.length)];
+  document.getElementById('pairFeedback').textContent=
+    '🗣️ New question: "'+q+'"';
+  document.getElementById('pairFeedback').className='feedback correct';
+  addScore();
+};
+
+/* =========================
+   CUSTOM WORD
+========================= */
+
+document.getElementById('addCustom').onclick=()=>{
+  const word=document.getElementById('customWord').value.trim();
+  const category=document.getElementById('customCategory').value;
+  const feedback=document.getElementById('customFeedback');
+
+  if(!word){
+    feedback.textContent='Please type a word or phrase first.';
+    feedback.className='feedback wrong';
+    return;
+  }
+
+  const chip=document.createElement('span');
+  chip.className='chip';
+  chip.textContent=word;
+
+  document.querySelector(`[data-category="${category}"] .items`)
+    .appendChild(chip);
+
+  feedback.textContent='✓ Added "'+word+'" to '+category+'.';
+  feedback.className='feedback correct';
+
+  document.getElementById('customWord').value='';
+  addScore();
+};
+
+document.getElementById('reset').onclick=()=>location.reload();
+</script>
+</body>
+</html>
