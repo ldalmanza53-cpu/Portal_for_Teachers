@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Career & Reason Matcher: Clauses with 'Because'</title>
+  <style>
+    :root {
+      --primary: #0d9488;
+      --primary-hover: #0f766e;
+      --bg: #f0fdfa;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #ccfbf1;
+      --border-dark: #cbd5e1;
+      --success: #16a34a;
+      --error: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+    .container { max-width: 850px; width: 100%; background: var(--card-bg); border-radius: 16px; padding: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
+
+    header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-dark); padding-bottom: 16px; }
+    header h1 { color: var(--primary); font-size: 1.75rem; margin-bottom: 6px; }
+    header p { color: #64748b; font-size: 0.95rem; }
+
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 12px; border: 2px solid var(--border-dark); background: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #64748b; }
+    .tab-btn.active { border-color: var(--primary); background: #ccfbf1; color: var(--primary); }
+
+    .grammar-box { background: #f0fdf4; border-left: 4px solid var(--primary); padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6; color: #115e59; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .match-item { background: #f8fafc; border: 1px solid var(--border-dark); border-radius: 10px; padding: 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+    @media(min-width: 640px) {
+      .match-item { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+
+    .stmt-text { font-weight: 600; font-size: 0.98rem; color: #1e293b; flex: 1; }
+    
+    select {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      border: 2px solid var(--border-dark);
+      outline: none;
+      background: white;
+      cursor: pointer;
+      min-width: 260px;
+      transition: all 0.2s;
+    }
+    select:focus { border-color: var(--primary); }
+    select.correct { border-color: var(--success); background-color: #f0fdf4; color: var(--success); font-weight: bold; }
+    select.incorrect { border-color: var(--error); background-color: #fef2f2; color: var(--error); }
+
+    .builder-card { background: #f8fafc; border: 1px solid var(--border-dark); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+    .builder-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; font-size: 0.95rem; }
+    .builder-row input { padding: 6px 12px; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 0.95rem; outline: none; }
+    .builder-row input:focus { border-color: var(--primary); }
+
+    .output-card { background: #e0f2fe; border: 1px dashed #0284c7; border-radius: 8px; padding: 14px; font-size: 1rem; color: #0369a1; min-height: 50px; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 500; }
+
+    .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-dark); }
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-sec { background: #64748b; }
+    .btn-sec:hover { background: #475569; }
+
+    .score { font-weight: bold; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Careers & Reasons Lab</h1>
+    <p>Practice hypothetical job preferences using <strong>clauses with <em>because</em></strong>.</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('part-a')">1. Matching Exercise</button>
+    <button class="tab-btn" onclick="switchTab('part-b')">2. Sentence Builder</button>
+  </div>
+
+  <div class="grammar-box">
+    <strong>Grammar Rule:</strong> The word <strong>because</strong> introduces a cause or reason.<br/>
+    • <em>I'd make a good journalist <strong>because</strong> I'm good at writing.</em><br/>
+    • <em>I could never be a stockbroker <strong>because</strong> I can't make decisions quickly.</em>
+  </div>
+
+  <!-- Part A: Matching -->
+  <div id="part-a" class="tab-content active">
+    <div id="matchingList"></div>
+  </div>
+
+  <!-- Part B: Builder -->
+  <div id="part-b" class="tab-content">
+    <div class="builder-card">
+      <h3 style="margin-bottom: 12px; color: var(--primary);">Create Your Personal Career Statement</h3>
+      
+      <div class="builder-row">
+        <span>Modal Phrase:</span>
+        <select id="builderModal" onchange="generateSentence()">
+          <option value="I'd make a good">I'd make a good...</option>
+          <option value="I could never be a">I could never be a...</option>
+          <option value="I wouldn't mind working as a">I wouldn't mind working as a...</option>
+          <option value="The best job for me is a">The best job for me is a...</option>
+        </select>
+      </div>
+
+      <div class="builder-row">
+        <span>Job Title:</span>
+        <input type="text" id="builderJob" placeholder="e.g., software engineer, chef, pilot" oninput="generateSentence()" />
+      </div>
+
+      <div class="builder-row">
+        <span>Reason (after <strong>because</strong>):</span>
+        <input type="text" id="builderReason" placeholder="e.g., I love solving complex problems" style="flex: 1; min-width: 220px;" oninput="generateSentence()" />
+      </div>
+
+      <div class="output-card" id="sentenceOutput">
+        Your complete statement will appear here...
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="score" id="scoreBox">Score: <span id="scoreVal">0</span> / 6</div>
+    <div>
+      <button class="btn btn-sec" onclick="resetExercise()">Reset</button>
+      <button class="btn" onclick="checkAnswers()" id="checkBtn">Check Answers</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const matchingData = [
+    { id: 1, stmt: "1. I'd like to be a physical therapist...", target: "c", text: "because I enjoy helping people." },
+    { id: 2, stmt: "2. I would make a bad librarian...", target: "a", text: "because I'm very disorganized." },
+    { id: 3, stmt: "3. I couldn't be a diplomat...", target: "e", text: "because I'm short-tempered." },
+    { id: 4, stmt: "4. I wouldn't mind working as a veterinarian...", target: "b", text: "because I love animals." },
+    { id: 5, stmt: "5. I could be a flight attendant...", target: "f", text: "because I really enjoy traveling." },
+    { id: 6, stmt: "6. I could never be a financial advisor...", target: "d", text: "because I'm not good at managing money." }
+  ];
+
+  const allOptions = [
+    { code: "", label: "-- Choose a reason --" },
+    { code: "a", label: "a. because I'm very disorganized." },
+    { code: "b", label: "b. because I love animals." },
+    { code: "c", label: "c. because I enjoy helping people." },
+    { code: "d", label: "d. because I'm not good at managing money." },
+    { code: "e", label: "e. because I'm short-tempered." },
+    { code: "f", label: "f. because I really enjoy traveling." }
+  ];
+
+  function renderMatching() {
+    const listEl = document.getElementById('matchingList');
+    listEl.innerHTML = '';
+
+    matchingData.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'match-item';
+
+      let optionsHtml = allOptions.map(opt => `<option value="${opt.code}">${opt.label}</option>`).join('');
+
+      card.innerHTML = `
+        <span class="stmt-text">${item.stmt}</span>
+        <select id="sel-${item.id}">${optionsHtml}</select>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    event.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    const scoreBox = document.getElementById('scoreBox');
+    const checkBtn = document.getElementById('checkBtn');
+
+    if (tabId === 'part-b') {
+      scoreBox.style.visibility = 'hidden';
+      checkBtn.style.visibility = 'hidden';
+    } else {
+      scoreBox.style.visibility = 'visible';
+      checkBtn.style.visibility = 'visible';
+    }
+  }
+
+  function checkAnswers() {
+    let score = 0;
+    matchingData.forEach(item => {
+      const select = document.getElementById(`sel-${item.id}`);
+      if (select.value === item.target) {
+        select.classList.add('correct');
+        select.classList.remove('incorrect');
+        score++;
+      } else {
+        select.classList.add('incorrect');
+        select.classList.remove('correct');
+      }
+    });
+
+    document.getElementById('scoreVal').textContent = score;
+  }
+
+  function generateSentence() {
+    const modal = document.getElementById('builderModal').value;
+    const job = document.getElementById('builderJob').value.trim();
+    const reason = document.getElementById('builderReason').value.trim();
+    const output = document.getElementById('sentenceOutput');
+
+    if (!job || !reason) {
+      output.textContent = "Type a job title and reason above to see your full sentence!";
+      return;
+    }
+
+    output.innerHTML = `"${modal} <strong>${job}</strong> because <strong>${reason}</strong>."`;
+  }
+
+  function resetExercise() {
+    matchingData.forEach(item => {
+      const select = document.getElementById(`sel-${item.id}`);
+      select.value = '';
+      select.classList.remove('correct', 'incorrect');
+    });
+
+    document.getElementById('builderJob').value = '';
+    document.getElementById('builderReason').value = '';
+    document.getElementById('scoreVal').textContent = '0';
+    generateSentence();
+  }
+
+  window.onload = () => {
+    renderMatching();
+  };
+</script>
+
+</body>
+</html>
