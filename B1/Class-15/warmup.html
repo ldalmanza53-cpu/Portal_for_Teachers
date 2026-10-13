@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono-Studio: Illustrating Events Across Past Time</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        chrono: {
+                            purple: '#9333ea', // Past Perfect
+                            blue: '#06b6d4',   // Past Continuous
+                            amber: '#f59e0b',  // Past Simple
+                            green: '#10b981',  // Present Now
+                            dark: '#0b0f19',
+                            card: '#161e2e',
+                            accent: '#6366f1'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom CSS Styles & Keyframe Animations -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(22, 30, 46, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover {
+            transition: all 0.25s ease-out;
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Timeline Pulsing Nodes */
+        @keyframes pulsePurple {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.6); }
+            50% { box-shadow: 0 0 0 12px rgba(147, 51, 234, 0); }
+        }
+        .node-perfect { animation: pulsePurple 2s infinite; }
+
+        @keyframes pulseAmber {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            50% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+        }
+        .node-simple { animation: pulseAmber 1.8s infinite; }
+
+        @keyframes waveBlue {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .bar-continuous {
+            background: linear-gradient(90deg, #0284c7, #06b6d4, #38bdf8, #0284c7);
+            background-size: 200% 200%;
+            animation: waveBlue 4s ease infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+            .print-card { background: white !important; color: black !important; border: 1px solid #ccc !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-chrono-accent selection:text-white">
+
+    <!-- Toast Notification Overlay Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MAIN APPLICATION HEADER -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+            
+            <!-- App Brand & Title -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('illustrator')">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-chrono-purple via-chrono-accent to-chrono-blue flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 font-black text-xl">
+                    <i class="fa-solid fa-clock-rotate-left animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-indigo-200 to-chrono-blue bg-clip-text text-transparent">
+                        Chrono-Studio
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                        <span>Past Time Illustrator</span>
+                        <span class="inline-block w-1 h-1 rounded-full bg-chrono-amber"></span>
+                        <span class="text-chrono-blue">ESL A2–B1 Narrative Tenses</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Gamification & Control Center -->
+            <div class="flex items-center gap-3">
+                <!-- Streak Badge -->
+                <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/80 px-3 py-1.5 rounded-xl" title="Current Daily Streak">
+                    <i class="fa-solid fa-fire text-amber-500 text-sm animate-bounce"></i>
+                    <span id="streak-count" class="text-xs font-bold text-slate-200">1</span>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Streak</span>
+                </div>
+
+                <!-- XP Score Badge -->
+                <div class="flex items-center gap-2 bg-indigo-950/80 border border-indigo-800/60 px-3.5 py-1.5 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                    <span id="user-xp" class="font-black text-amber-300 text-sm tracking-wide">0</span>
+                    <span class="text-[10px] font-bold text-indigo-300 tracking-wider">XP</span>
+                </div>
+
+                <!-- Teacher Dashboard Button -->
+                <button onclick="toggleTeacherModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5" title="View Class Analytics & Progress">
+                    <i class="fa-solid fa-chalkboard-user text-chrono-accent"></i>
+                    <span class="hidden md:inline">Teacher Dashboard</span>
+                </button>
+
+                <!-- Audio FX Toggle Button -->
+                <button id="audio-toggle-btn" onclick="toggleAudio()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition" title="Toggle Sound FX">
+                    <i id="audio-icon" class="fa-solid fa-volume-high text-chrono-blue"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN MODULE NAVIGATION TABS -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto scrollbar-none py-2 border-t border-slate-800/60 text-xs font-bold">
+            <button id="tab-illustrator" onclick="switchTab('illustrator')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-chrono-accent text-white shadow-md whitespace-nowrap">
+                <i class="fa-solid fa-timeline"></i> 1. Timeline Illustrator
+            </button>
+            <button id="tab-sequencer" onclick="switchTab('sequencer')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-puzzle-piece text-chrono-amber"></i> 2. Sequencer & Weaver
+            </button>
+            <button id="tab-detective" onclick="switchTab('detective')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-user-secret text-chrono-blue"></i> 3. Detective Grammar
+            </button>
+            <button id="tab-creator" onclick="switchTab('creator')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-wand-magic-sparkles text-chrono-purple"></i> 4. Story Creator & Export
+            </button>
+        </nav>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-8">
+
+        <!-- ================= MODULE 1: INTERACTIVE GRAPHICAL TIMELINE ILLUSTRATOR ================= -->
+        <section id="view-illustrator" class="space-y-8">
+            
+            <!-- Hero Introduction & Legend Banner -->
+            <div class="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+                <div class="relative z-10 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                            Interactive Visual Grammar Engine
+                        </span>
+                        
+                        <!-- Visual Tense Legend Pills -->
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                            <span class="px-2.5 py-1 rounded-md bg-purple-950/80 border border-purple-500/40 text-purple-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-purple"></span> Past Perfect (Deep Past)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-sky-950/80 border border-sky-500/40 text-sky-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-blue"></span> Past Continuous (Ongoing)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/40 text-amber-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-amber"></span> Past Simple (Completed)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-green"></span> Present (Now)
+                            </span>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        Visualize How Past Events Connect in Time
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-4xl">
+                        When telling stories in English, we use three distinct past tenses to show chronological sequence. <span class="text-purple-400 font-semibold">Past Perfect</span> marks an action finished before another; <span class="text-sky-400 font-semibold">Past Continuous</span> describes an ongoing background context; and <span class="text-amber-400 font-semibold">Past Simple</span> flags completed main events or sudden interruptions!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Graphical Timeline Canvas Panel -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                
+                <!-- Controls & Scenario Selector Toolbar -->
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-chrono-accent"></i> Graphical Time-Travel Illustrator
+                        </h3>
+                        <p class="text-xs text-slate-400">Scrub the playback slider or click a scenario preset to watch time unfold.</p>
+                    </div>
+
+                    <!-- Preset Scenario Buttons -->
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="loadTimelineScenario(0)" id="preset-btn-0" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-chrono-accent text-white shadow">
+                            ✈️ Airport Panic
+                        </button>
+                        <button onclick="loadTimelineScenario(1)" id="preset-btn-1" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700">
+                            ⚡ Power Outage
+                        </button>
+                        <button onclick="loadTimelineScenario(2)" id="preset-btn-2" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700">
+                            🕵️ Detective's Clue
+                        </button>
+                        <button onclick="loadTimelineScenario(3)" id="preset-btn-3" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700">
+                            🍳 Kitchen Disaster
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VISUAL GRAPHICAL TIMELINE CANVAS BOARD -->
+                <div class="bg-slate-950 rounded-2xl p-6 border border-slate-800 space-y-8 relative overflow-hidden">
+                    
+                    <!-- Top Axis Direction Markers -->
+                    <div class="flex justify-between items-center text-[11px] font-mono font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800/80 pb-2">
+                        <span class="flex items-center gap-1 text-purple-400"><i class="fa-solid fa-arrow-left"></i> Earlier Past (Deep)</span>
+                        <span class="text-slate-400">Time Progress Axis ➔</span>
+                        <span class="text-emerald-400">Present (Now) <i class="fa-solid fa-flag"></i></span>
+                    </div>
+
+                    <!-- Interactive Animated Multi-Layer Timeline Graph -->
+                    <div class="relative py-8 px-4 space-y-8">
+                        
+                        <!-- Base Timeline Axis Line -->
+                        <div class="absolute top-1/2 left-0 right-0 h-1.5 bg-slate-800 -translate-y-1/2 rounded-full z-0"></div>
+                        
+                        <!-- Scrub Progress Bar Highlight -->
+                        <div id="timeline-scrub-bar" class="absolute top-1/2 left-0 h-1.5 bg-gradient-to-r from-chrono-purple via-chrono-blue to-chrono-amber -translate-y-1/2 rounded-full z-0 transition-all duration-300 w-1/3"></div>
+
+                        <!-- Active Time Marker Needle (Playhead) -->
+                        <div id="timeline-playhead" class="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_#ffffff] z-20 -translate-x-1/2 transition-all duration-300 flex flex-col justify-between items-center left-1/3">
+                            <div class="bg-white text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full shadow tracking-wider uppercase whitespace-nowrap -mt-3">
+                                <span id="playhead-text">T-Marker</span>
+                            </div>
+                            <div class="w-3 h-3 bg-white rotate-45 mb-1"></div>
+                        </div>
+
+                        <!-- Graphic Layer Nodes Grid -->
+                        <div class="relative z-10 grid grid-cols-12 gap-2 items-center">
+                            
+                            <!-- Node 1: Past Perfect (Earliest Past) -->
+                            <div class="col-span-3 flex flex-col items-center text-center space-y-2 group cursor-pointer" onclick="scrubToPercent(15)">
+                                <div id="node-perfect-circle" class="w-12 h-12 rounded-2xl bg-purple-900 border-2 border-purple-500 text-purple-200 flex items-center justify-center font-black text-lg node-perfect transition group-hover:scale-110 shadow-lg shadow-purple-950">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-wide">1. Past Perfect</span>
+                                <span id="label-perfect" class="text-xs font-semibold text-slate-300 line-clamp-2">The train had left...</span>
+                            </div>
+
+                            <!-- Layer 2: Past Continuous Wave Bar (Background Duration) -->
+                            <div class="col-span-5 flex flex-col items-center space-y-2 cursor-pointer" onclick="scrubToPercent(50)">
+                                <div class="w-full h-10 rounded-2xl bar-continuous border border-sky-400/40 p-2 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-sky-950/40 truncate">
+                                    <i class="fa-solid fa-cloud-showers-heavy mr-2"></i>
+                                    <span id="label-continuous" class="truncate">It was raining heavily...</span>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wide">2. Past Continuous (Background)</span>
+                            </div>
+
+                            <!-- Node 3: Past Simple (Interruption / Main Event) -->
+                            <div class="col-span-3 flex flex-col items-center text-center space-y-2 group cursor-pointer" onclick="scrubToPercent(80)">
+                                <div id="node-simple-circle" class="w-12 h-12 rounded-2xl bg-amber-900 border-2 border-amber-500 text-amber-200 flex items-center justify-center font-black text-lg node-simple transition group-hover:scale-110 shadow-lg shadow-amber-950">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wide">3. Past Simple</span>
+                                <span id="label-simple" class="text-xs font-semibold text-slate-300 line-clamp-2">I arrived at station</span>
+                            </div>
+
+                            <!-- Node 4: Present (Now) -->
+                            <div class="col-span-1 flex flex-col items-center text-center space-y-2 opacity-60">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-900/80 border border-emerald-500/50 text-emerald-300 flex items-center justify-center font-bold text-xs">
+                                    <i class="fa-solid fa-flag"></i>
+                                </div>
+                                <span class="text-[9px] font-mono font-bold text-emerald-400">NOW</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Scrub Control Slider & Play Button Toolbar -->
+                    <div class="flex items-center gap-4 pt-4 border-t border-slate-800">
+                        <button id="play-anim-btn" onclick="toggleTimelineAnimation()" class="w-10 h-10 rounded-xl bg-chrono-accent hover:bg-indigo-500 text-white flex items-center justify-center font-bold shadow transition flex-shrink-0">
+                            <i id="play-anim-icon" class="fa-solid fa-play"></i>
+                        </button>
+
+                        <div class="flex-1 flex flex-col space-y-1">
+                            <div class="flex justify-between text-[11px] font-mono font-bold text-slate-400">
+                                <span>Timeline Playback Scrub</span>
+                                <span id="scrub-val-text" class="text-chrono-blue">33%</span>
+                            </div>
+                            <input type="range" id="timeline-slider" min="0" max="100" value="33" oninput="onSliderInput(this.value)" class="w-full accent-indigo-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Live Dynamic Sentence Breakdown Banner -->
+                    <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-quote-left text-chrono-amber"></i> Live Synthesized Narrative Output:
+                            </span>
+                            <button onclick="speakTimelineSentence()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                                <i class="fa-solid fa-volume-high text-chrono-blue"></i> Listen Narration
+                            </button>
+                        </div>
+
+                        <!-- Full Live Sentence HTML output -->
+                        <div id="timeline-full-sentence" class="text-sm sm:text-base font-bold leading-relaxed text-slate-100 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                            <!-- Populated dynamically via JavaScript -->
+                        </div>
+
+                        <!-- Rule Explanation Card -->
+                        <div id="timeline-rule-expl" class="text-xs text-slate-300 bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-3 flex items-start gap-2.5">
+                            <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5 flex-shrink-0"></i>
+                            <p id="timeline-rule-text">Notice how Past Perfect establishes what occurred earlier in time before the narrator arrived.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Grammar Cheat-Sheet Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Past Perfect Card -->
+                <div class="glass-panel rounded-2xl p-5 space-y-3 glass-panel-hover border-t-4 border-t-purple-500">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-mono font-bold text-purple-400 uppercase tracking-widest bg-purple-500/10 px-2.5 py-1 rounded-md border border-purple-500/20">Deep Past</span>
+                        <i class="fa-solid fa-clock-rotate-left text-purple-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-base font-extrabold text-white">Past Perfect</h4>
+                    <p class="text-xs text-slate-300">Marks an event completed <strong>BEFORE</strong> another past event or timestamp.</p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl text-xs font-mono text-purple-300 border border-slate-800">
+                        Formula: <strong>had + Past Participle (V3)</strong>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic">Example: "The train <strong>had already left</strong> when I arrived."</p>
+                </div>
+
+                <!-- Past Continuous Card -->
+                <div class="glass-panel rounded-2xl p-5 space-y-3 glass-panel-hover border-t-4 border-t-sky-500">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-mono font-bold text-sky-400 uppercase tracking-widest bg-sky-500/10 px-2.5 py-1 rounded-md border border-sky-500/20">Background Context</span>
+                        <i class="fa-solid fa-water text-sky-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-base font-extrabold text-white">Past Continuous</h4>
+                    <p class="text-xs text-slate-300">Sets the scene or describes an action <strong>IN PROGRESS</strong> in the background.</p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl text-xs font-mono text-sky-300 border border-slate-800">
+                        Formula: <strong>was / were + Verb-ING</strong>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic">Example: "Heavy rain <strong>was pouring</strong> outside..."</p>
+                </div>
+
+                <!-- Past Simple Card -->
+                <div class="glass-panel rounded-2xl p-5 space-y-3 glass-panel-hover border-t-4 border-t-amber-500">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">Main Interruption</span>
+                        <i class="fa-solid fa-bolt text-amber-400 text-lg"></i>
+                    </div>
+                    <h4 class="text-base font-extrabold text-white">Past Simple</h4>
+                    <p class="text-xs text-slate-300">Marks completed main events, sudden interruptions, or narrative steps.</p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl text-xs font-mono text-amber-300 border border-slate-800">
+                        Formula: <strong>Regular Verb-ed / Irregular V2</strong>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic">Example: "Suddenly, the lights <strong>went out</strong>!"</p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 2: SEQUENCER & SENTENCE WEAVER ================= -->
+        <section id="view-sequencer" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-amber bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-md">Module 2 of 4</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Timeline Sequencer & Sentence Weaver</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Rearrange scrambled story events into correct chronological slots and select matching time linkers.</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span id="sequencer-progress-text" class="text-xs font-bold text-slate-400">Story 1 / 3</span>
+                    <div class="w-32 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                        <div id="sequencer-progress-bar" class="bg-gradient-to-r from-chrono-amber to-chrono-accent h-full w-1/3 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequencer Workshop Container -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                
+                <!-- Story Selection Header & Title -->
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-chrono-amber flex items-center justify-center font-bold text-lg">
+                            <i id="seq-story-icon" class="fa-solid fa-masks-theater"></i>
+                        </div>
+                        <div>
+                            <h3 id="seq-story-title" class="text-base font-extrabold text-white">The Bank Robbery Mystery</h3>
+                            <p class="text-xs text-slate-400">Organize the detective's findings into chronological order.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="loadSequencerStory(0)" id="seq-tab-0" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-chrono-amber text-slate-950 shadow">Case #1</button>
+                        <button onclick="loadSequencerStory(1)" id="seq-tab-1" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700">Case #2</button>
+                        <button onclick="loadSequencerStory(2)" id="seq-tab-2" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700">Case #3</button>
+                    </div>
+                </div>
+
+                <!-- Step 1: Scrambled Events Resequencing Workspace -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-chrono-amber text-slate-950 text-[10px] font-black flex items-center justify-center">1</span>
+                            Arrange events into correct chronological sequence (Earliest ➔ Main):
+                        </label>
+                        <button onclick="shuffleSequencerEvents()" class="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-shuffle"></i> Shuffle
+                        </button>
+                    </div>
+
+                    <div id="seq-events-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Populated via JavaScript with slot drop zones / move controls -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Select Time Linkers -->
+                <div class="space-y-3 pt-4 border-t border-slate-800">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-chrono-amber text-slate-950 text-[10px] font-black flex items-center justify-center">2</span>
+                        Select suitable Time Linkers to synthesize clauses:
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                        <div class="space-y-1.5">
+                            <span class="text-xs font-semibold text-purple-300">Linker 1 (Prior Deep Past Linker):</span>
+                            <select id="seq-linker-1" onchange="updateSequencerSentence()" class="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-chrono-amber transition">
+                                <option value="by the time">By the time</option>
+                                <option value="before">Before</option>
+                                <option value="after">After</option>
+                                <option value="as soon as">As soon as</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <span class="text-xs font-semibold text-sky-300">Linker 2 (Ongoing Context Linker):</span>
+                            <select id="seq-linker-2" onchange="updateSequencerSentence()" class="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-chrono-amber transition">
+                                <option value="while">while</option>
+                                <option value="when">when</option>
+                                <option value="just as">just as</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Live Dynamic Sentence Synthesis & Validation -->
+                <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 space-y-4">
+                    <span class="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">Live Dynamic Sentence Weaver Output:</span>
+                    
+                    <div id="seq-synthesized-output" class="text-sm font-bold text-slate-100 p-4 bg-slate-950 rounded-xl border border-slate-800 leading-relaxed">
+                        <!-- Dynamically assembled sentence string -->
+                    </div>
+
+                    <!-- Feedback Box -->
+                    <div id="seq-feedback-box" class="hidden p-4 rounded-xl text-xs space-y-1"></div>
+
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="speakSequencerSentence()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-volume-high text-chrono-blue"></i> Listen
+                        </button>
+
+                        <button onclick="validateSequencerStory()" class="bg-chrono-amber hover:bg-amber-500 text-slate-950 font-extrabold px-6 py-2.5 rounded-xl transition text-xs flex items-center gap-2 shadow-lg">
+                            <i class="fa-solid fa-circle-check"></i> Validate Chronology & Linkers
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 3: DETECTIVE GRAMMAR CHALLENGE ================= -->
+        <section id="view-detective" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-blue bg-sky-500/10 border border-sky-500/30 px-2.5 py-1 rounded-md">Module 3 of 4</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Detective Grammar Challenge</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Analyze past clues and select the correct tense forms with immediate diagnostic explanations.</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span id="quiz-progress-text" class="text-xs font-bold text-slate-400">Question 1 / 5</span>
+                    <div class="w-32 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                        <div id="quiz-progress-bar" class="bg-gradient-to-r from-chrono-blue to-chrono-accent h-full w-1/5 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case File Quiz Board -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                
+                <!-- Case File Title -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-chrono-blue flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-mono font-bold text-chrono-blue uppercase tracking-widest block">Evidence Item</span>
+                            <h3 id="quiz-case-title" class="text-base font-extrabold text-white">Case #1: The Missing Key</h3>
+                        </div>
+                    </div>
+
+                    <button onclick="speakQuizSentence()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-chrono-blue"></i> Narration
+                    </button>
+                </div>
+
+                <!-- Prompt Question & Gap Sentence -->
+                <div class="space-y-4">
+                    <p id="quiz-prompt-text" class="text-base sm:text-lg font-bold text-slate-100 leading-relaxed p-5 bg-slate-900/90 rounded-2xl border border-slate-800">
+                        <!-- Populated via JavaScript -->
+                    </p>
+
+                    <!-- Multiple Choice Options Grid -->
+                    <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Diagnostic Reasoning Feedback Box -->
+                <div id="quiz-reasoning-box" class="hidden p-5 rounded-2xl border transition-all space-y-2">
+                    <div id="quiz-reasoning-header" class="font-bold text-sm flex items-center gap-2"></div>
+                    <p id="quiz-reasoning-text" class="text-xs leading-relaxed"></p>
+                </div>
+
+                <!-- Control Footer -->
+                <div class="flex justify-end pt-2">
+                    <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden bg-chrono-accent hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl transition text-xs flex items-center gap-2 shadow-lg">
+                        <span>Next Evidence Case</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 4: STORY CREATOR & GRAPHIC GENERATOR ================= -->
+        <section id="view-creator" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-purple bg-purple-500/10 border border-purple-500/30 px-2.5 py-1 rounded-md">Module 4 of 4</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Story Creator & Timeline Graphic Generator</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Craft your own custom 3-event story, generate an animated timeline card, and export or print your summary.</p>
+                </div>
+
+                <button onclick="loadCreatorSample()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-chrono-purple"></i> Load Example Story
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Story Input Builder Form (6 Cols) -->
+                <div class="lg:col-span-6 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 space-y-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-pen-to-square text-chrono-purple"></i> Custom Narrative Builder
+                        </h3>
+
+                        <!-- Event 1: Deep Past (Past Perfect) -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-purple-300 flex justify-between">
+                                <span>1. Deep Past Event (Past Perfect)</span>
+                                <span class="font-mono text-[10px] text-slate-400">had + V3</span>
+                            </label>
+                            <input type="text" id="creator-input-perfect" oninput="renderCustomTimelineCard()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-purple-500 transition" placeholder="e.g. I had studied all night for the final exam">
+                        </div>
+
+                        <!-- Event 2: Ongoing Context (Past Continuous) -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-sky-300 flex justify-between">
+                                <span>2. Ongoing Context (Past Continuous)</span>
+                                <span class="font-mono text-[10px] text-slate-400">was/were + -ing</span>
+                            </label>
+                            <input type="text" id="creator-input-continuous" oninput="renderCustomTimelineCard()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-sky-500 transition" placeholder="e.g. while heavy snow was falling across the city">
+                        </div>
+
+                        <!-- Event 3: Main Interruption (Past Simple) -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-amber-300 flex justify-between">
+                                <span>3. Main Completed Event (Past Simple)</span>
+                                <span class="font-mono text-[10px] text-slate-400">Regular -ed / Irregular</span>
+                            </label>
+                            <input type="text" id="creator-input-simple" oninput="renderCustomTimelineCard()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-amber-500 transition" placeholder="e.g. my alarm clock failed to ring">
+                        </div>
+
+                        <!-- Select Primary Time Linker -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-300">
+                                Primary Connecting Time Linker:
+                            </label>
+                            <select id="creator-linker-select" onchange="renderCustomTimelineCard()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:outline-none focus:border-chrono-accent transition">
+                                <option value="When">When</option>
+                                <option value="Although">Although</option>
+                                <option value="By the time">By the time</option>
+                                <option value="Because">Because</option>
+                            </select>
+                        </div>
+
+                        <div class="pt-2 flex justify-between items-center">
+                            <button onclick="clearCreatorInputs()" class="text-xs text-slate-400 hover:text-white font-bold">
+                                <i class="fa-solid fa-trash-can"></i> Clear
+                            </button>
+                            <button onclick="finalizeAndEarnXP()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+                                <i class="fa-solid fa-award"></i> Save Story & Award XP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Graphic Timeline Card Preview (6 Cols) -->
+                <div class="lg:col-span-6 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 space-y-5 print-card">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-image text-chrono-blue"></i> Custom Visual Timeline Card
+                            </h3>
+                            <span class="text-[10px] font-mono text-chrono-blue uppercase font-bold">Graphic Card</span>
+                        </div>
+
+                        <!-- Graphic Card Rendering Board -->
+                        <div id="custom-card-board" class="bg-slate-950 rounded-2xl p-5 border border-slate-800 space-y-5 relative overflow-hidden">
+                            <!-- Visual Graphic Nodes -->
+                            <div class="space-y-3">
+                                <!-- Node 1 -->
+                                <div class="bg-purple-950/40 border border-purple-500/30 p-3 rounded-xl flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-chrono-purple text-white font-bold text-xs flex items-center justify-center flex-shrink-0">1</div>
+                                    <div class="space-y-0.5 min-w-0">
+                                        <span class="text-[9px] font-mono text-purple-300 font-bold uppercase block">Past Perfect (Deep Past)</span>
+                                        <p id="card-text-perfect" class="text-xs text-slate-200 truncate italic">Your deep past action will display here...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Node 2 -->
+                                <div class="bg-sky-950/40 border border-sky-500/30 p-3 rounded-xl flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-chrono-blue text-white font-bold text-xs flex items-center justify-center flex-shrink-0">2</div>
+                                    <div class="space-y-0.5 min-w-0">
+                                        <span class="text-[9px] font-mono text-sky-300 font-bold uppercase block">Past Continuous (Background)</span>
+                                        <p id="card-text-continuous" class="text-xs text-slate-200 truncate italic">Your background context will display here...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Node 3 -->
+                                <div class="bg-amber-950/40 border border-amber-500/30 p-3 rounded-xl flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-chrono-amber text-slate-950 font-bold text-xs flex items-center justify-center flex-shrink-0">3</div>
+                                    <div class="space-y-0.5 min-w-0">
+                                        <span class="text-[9px] font-mono text-amber-300 font-bold uppercase block">Past Simple (Main Action)</span>
+                                        <p id="card-text-simple" class="text-xs text-slate-200 truncate italic">Your main completed action will display here...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Combined Full Story Output Banner -->
+                            <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1">
+                                <span class="text-[9px] font-mono text-slate-400 font-bold uppercase">Combined Synthesis:</span>
+                                <p id="card-full-story" class="text-xs font-bold text-slate-100 leading-relaxed">
+                                    "When I had studied all night..."
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Export / Print Controls -->
+                        <div class="flex flex-wrap gap-2 no-print">
+                            <button onclick="speakCustomStory()" class="px-3.5 py-2 rounded-xl bg-chrono-accent hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                <i class="fa-solid fa-volume-high"></i> Read Story
+                            </button>
+                            <button onclick="copyCustomStory()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                                <i class="fa-solid fa-copy"></i> Copy Text
+                            </button>
+                            <button onclick="window.print()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                                <i class="fa-solid fa-print"></i> Print Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- TEACHER DASHBOARD & ANALYTICS MODAL -->
+    <div id="teacher-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative border border-slate-700">
+            
+            <button onclick="toggleTeacherModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white font-bold text-lg">
+                ✕
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-chrono-accent/20 text-chrono-accent flex items-center justify-center font-bold text-xl">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-white">Teacher Summary & Student Analytics</h3>
+                    <p class="text-xs text-slate-400">Classroom diagnostic metrics for past narrative tenses.</p>
+                </div>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Total XP</span>
+                    <p id="teacher-stat-xp" class="text-xl font-black text-amber-400">0</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Streak</span>
+                    <p id="teacher-stat-streak" class="text-xl font-black text-amber-500">1 Day</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Quiz Score</span>
+                    <p id="teacher-stat-quiz" class="text-xl font-black text-chrono-blue">0/5</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Stories Saved</span>
+                    <p id="teacher-stat-stories" class="text-xl font-black text-chrono-purple">0</p>
+                </div>
+            </div>
+
+            <!-- Tense Mastery Breakdown Progress Bars -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Target Tense Diagnostic Breakdown</h4>
+                
+                <div class="space-y-2 text-xs font-semibold">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-purple-300">Past Perfect (Deep Past Sequence)</span>
+                            <span class="text-purple-400 font-bold">85% Mastery</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="bg-chrono-purple h-full w-[85%]"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sky-300">Past Continuous (Background Setting)</span>
+                            <span class="text-sky-400 font-bold">90% Mastery</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="bg-chrono-blue h-full w-[90%]"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-amber-300">Past Simple (Main Event / Interruption)</span>
+                            <span class="text-amber-400 font-bold">95% Mastery</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                            <div class="bg-chrono-amber h-full w-[95%]"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="toggleTeacherModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2.5 rounded-xl text-xs transition border border-slate-700">
+                    Close Summary
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p><strong>Chrono-Studio</strong> • Illustrating Events Across Past Time (ESL A2–B1)</p>
+            <p class="text-slate-400"><i class="fa-solid fa-bolt text-amber-400"></i> Powered by Web Audio & Speech Synthesis API</p>
+        </div>
+    </footer>
+
+
+    <!-- ==========================================================================
+       JAVASCRIPT LOGIC & APPLICATION ENGINE
+       ========================================================================== -->
+    <script>
+        /* ==========================================================================
+           1. WEB AUDIO API SYNTHESIZER ENGINE (No External Dependencies)
+           ========================================================================== */
+        let audioEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('audio-icon');
+            if (audioEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-chrono-blue';
+                playTone('click');
+                showToast("Sound FX Enabled");
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                showToast("Sound FX Muted");
+            }
+        }
+
+        function playTone(type) {
+            if (!audioEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.1);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'fanfare') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.12);
+                    osc.frequency.setValueAtTime(659.25, now + 0.24);
+                    osc.frequency.setValueAtTime(880, now + 0.36);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                }
+            } catch (e) {
+                // Ignore audio context errors gracefully
+            }
+        }
+
+        /* Web Speech API Narration helper */
+        function speakText(text) {
+            playTone('click');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /* Toast notification popup helper */
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-800 border border-slate-700 text-slate-100 text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl transition-all duration-300 pointer-events-auto flex items-center gap-2";
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-chrono-blue"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+
+        /* ==========================================================================
+           2. GLOBAL STATE MANAGEMENT & TAB NAVIGATION
+           ========================================================================== */
+        const state = {
+            xp: 0,
+            streak: 1,
+            quizCorrect: 0,
+            storiesSaved: 0
+        };
+
+        function addXP(pts) {
+            state.xp += pts;
+            document.getElementById('user-xp').textContent = state.xp;
+            document.getElementById('teacher-stat-xp').textContent = state.xp;
+        }
+
+        function switchTab(tabKey) {
+            playTone('click');
+            ['illustrator', 'sequencer', 'detective', 'creator'].forEach(key => {
+                const view = document.getElementById(`view-${key}`);
+                const btn = document.getElementById(`tab-${key}`);
+                if (view) view.classList.add('hidden');
+                if (btn) {
+                    btn.className = "px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap";
+                }
+            });
+
+            const activeView = document.getElementById(`view-${tabKey}`);
+            const activeBtn = document.getElementById(`tab-${tabKey}`);
+            if (activeView) activeView.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-chrono-accent text-white shadow-md whitespace-nowrap";
+            }
+        }
+
+        function toggleTeacherModal() {
+            playTone('click');
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+
+        /* ==========================================================================
+           3. MODULE 1: INTERACTIVE TIMELINE ILLUSTRATOR ENGINE
+           ========================================================================== */
+        const illustratorScenarios = [
+            {
+                title: "Airport Panic",
+                perfect: "The flight had already taken off...",
+                continuous: "...while heavy rain was pouring on the runway...",
+                simple: "...when Sarah arrived at the boarding gate.",
+                rule: "Past Perfect ('had taken off') happened FIRST in deep past. Past Continuous ('was pouring') was ongoing. Past Simple ('arrived') happened at the main moment.",
+                sentenceHtml: "When Sarah <span class='text-amber-400 font-bold'>arrived</span> at the gate, the flight <span class='text-purple-400 font-bold'>had already taken off</span> while heavy rain <span class='text-sky-400 font-bold'>was pouring</span> outside."
+            },
+            {
+                title: "Power Outage",
+                perfect: "The storm had knocked out city lines...",
+                continuous: "...while Mark was baking bread in the kitchen...",
+                simple: "...and suddenly all lights went completely dark.",
+                rule: "The storm damage occurred BEFORE the power went dark. Mark's baking was the background activity in progress.",
+                sentenceHtml: "While Mark <span class='text-sky-400 font-bold'>was baking</span> bread, all the lights <span class='text-amber-400 font-bold'>went dark</span> because a storm <span class='text-purple-400 font-bold'>had knocked out</span> the power grid."
+            },
+            {
+                title: "Detective Clue",
+                perfect: "The suspect had hidden the stolen watch...",
+                continuous: "...while the guard was sleeping on duty...",
+                simple: "...before the detective discovered the secret vault.",
+                rule: "Hiding the watch was the deep past action. The guard was sleeping concurrently in the background.",
+                sentenceHtml: "The suspect <span class='text-purple-400 font-bold'>had hidden</span> the watch while the guard <span class='text-sky-400 font-bold'>was sleeping</span>, before Detective James <span class='text-amber-400 font-bold'>discovered</span> the vault."
+            },
+            {
+                title: "Kitchen Disaster",
+                perfect: "Leo had forgotten to turn off the stove...",
+                continuous: "...while smoke was filling the apartment...",
+                simple: "...when the fire alarm loudly rang.",
+                rule: "Forgetting the stove happened earlier in deep past. Smoke filling was the background state.",
+                sentenceHtml: "The fire alarm <span class='text-amber-400 font-bold'>rang</span> while smoke <span class='text-sky-400 font-bold'>was filling</span> the kitchen because Leo <span class='text-purple-400 font-bold'>had forgotten</span> the stove."
+            }
+        ];
+
+        let currentScenarioIdx = 0;
+        let isTimelinePlaying = false;
+        let timelineAnimInterval = null;
+
+        function loadTimelineScenario(idx) {
+            playTone('click');
+            currentScenarioIdx = idx;
+            const data = illustratorScenarios[idx];
+
+            [0, 1, 2, 3].forEach(i => {
+                const btn = document.getElementById(`preset-btn-${i}`);
+                if (btn) btn.className = i === idx ?
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-chrono-accent text-white shadow" :
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700";
+            });
+
+            document.getElementById('label-perfect').textContent = data.perfect;
+            document.getElementById('label-continuous').textContent = data.continuous;
+            document.getElementById('label-simple').textContent = data.simple;
+            document.getElementById('timeline-full-sentence').innerHTML = data.sentenceHtml;
+            document.getElementById('timeline-rule-text').textContent = data.rule;
+        }
+
+        function onSliderInput(val) {
+            document.getElementById('scrub-val-text').textContent = `${val}%`;
+            document.getElementById('timeline-scrub-bar').style.width = `${val}%`;
+            document.getElementById('timeline-playhead').style.left = `${val}%`;
+
+            // Dynamic highlight feedback based on position
+            const nodePerf = document.getElementById('node-perfect-circle');
+            const nodeSimp = document.getElementById('node-simple-circle');
+
+            if (val < 30) {
+                nodePerf.classList.add('ring-4', 'ring-purple-400');
+                nodeSimp.classList.remove('ring-4', 'ring-amber-400');
+            } else if (val > 70) {
+                nodeSimp.classList.add('ring-4', 'ring-amber-400');
+                nodePerf.classList.remove('ring-4', 'ring-purple-400');
+            } else {
+                nodePerf.classList.remove('ring-4', 'ring-purple-400');
+                nodeSimp.classList.remove('ring-4', 'ring-amber-400');
+            }
+        }
+
+        function scrubToPercent(pct) {
+            playTone('click');
+            document.getElementById('timeline-slider').value = pct;
+            onSliderInput(pct);
+        }
+
+        function toggleTimelineAnimation() {
+            playTone('click');
+            const btnIcon = document.getElementById('play-anim-icon');
+            const slider = document.getElementById('timeline-slider');
+
+            if (isTimelinePlaying) {
+                clearInterval(timelineAnimInterval);
+                isTimelinePlaying = false;
+                btnIcon.className = "fa-solid fa-play";
+            } else {
+                isTimelinePlaying = true;
+                btnIcon.className = "fa-solid fa-pause";
+                if (parseInt(slider.value) >= 100) slider.value = 0;
+
+                timelineAnimInterval = setInterval(() => {
+                    let cur = parseInt(slider.value) + 2;
+                    slider.value = cur;
+                    onSliderInput(cur);
+                    if (cur >= 100) {
+                        clearInterval(timelineAnimInterval);
+                        isTimelinePlaying = false;
+                        btnIcon.className = "fa-solid fa-play";
+                    }
+                }, 100);
+            }
+        }
+
+        function speakTimelineSentence() {
+            const rawText = document.getElementById('timeline-full-sentence').textContent;
+            speakText(rawText);
+        }
+
+
+        /* ==========================================================================
+           4. MODULE 2: SEQUENCER & SENTENCE WEAVER LOGIC
+           ========================================================================== */
+        const sequencerStories = [
+            {
+                title: "The Bank Robbery Mystery",
+                icon: "fa-masks-theater",
+                events: [
+                    { id: 'perf', tense: 'Past Perfect', text: 'the thief had stolen the safe combination key', slotTarget: 0, color: 'text-purple-400' },
+                    { id: 'cont', tense: 'Past Continuous', text: 'the security camera was recording live footage', slotTarget: 1, color: 'text-sky-400' },
+                    { id: 'simp', tense: 'Past Simple', text: 'the alarm sounded across the bank hallway', slotTarget: 2, color: 'text-amber-400' }
+                ],
+                targetLinker1: 'by the time',
+                targetLinker2: 'while'
+            },
+            {
+                title: "The Exam Breakthrough",
+                icon: "fa-graduation-cap",
+                events: [
+                    { id: 'perf', tense: 'Past Perfect', text: 'Maria had revised all chapter notes twice', slotTarget: 0, color: 'text-purple-400' },
+                    { id: 'cont', tense: 'Past Continuous', text: 'her classmates were stressing outside the hall', slotTarget: 1, color: 'text-sky-400' },
+                    { id: 'simp', tense: 'Past Simple', text: 'she walked into the exam room confidently', slotTarget: 2, color: 'text-amber-400' }
+                ],
+                targetLinker1: 'before',
+                targetLinker2: 'while'
+            },
+            {
+                title: "The Camping Bear Encounter",
+                icon: "fa-campground",
+                events: [
+                    { id: 'perf', tense: 'Past Perfect', text: 'we had set up our canvas tent near the river', slotTarget: 0, color: 'text-purple-400' },
+                    { id: 'cont', tense: 'Past Continuous', text: 'the campfire was crackling brightly in the dark', slotTarget: 1, color: 'text-sky-400' },
+                    { id: 'simp', tense: 'Past Simple', text: 'a wild bear stepped into our campsite', slotTarget: 2, color: 'text-amber-400' }
+                ],
+                targetLinker1: 'after',
+                targetLinker2: 'while'
+            }
+        ];
+
+        let currentSeqIdx = 0;
+        let currentSeqEventsOrder = [];
+
+        function loadSequencerStory(idx) {
+            currentSeqIdx = idx;
+            const story = sequencerStories[idx];
+
+            [0, 1, 2].forEach(i => {
+                const btn = document.getElementById(`seq-tab-${i}`);
+                if (btn) btn.className = i === idx ?
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-chrono-amber text-slate-950 shadow" :
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-400 hover:bg-slate-700";
+            });
+
+            document.getElementById('seq-story-title').textContent = story.title;
+            document.getElementById('seq-story-icon').className = `fa-solid ${story.icon}`;
+            document.getElementById('sequencer-progress-text').textContent = `Story ${idx + 1} / ${sequencerStories.length}`;
+            document.getElementById('sequencer-progress-bar').style.width = `${((idx + 1) / sequencerStories.length) * 100}%`;
+
+            currentSeqEventsOrder = [...story.events].sort(() => Math.random() - 0.5);
+            renderSequencerEvents();
+            updateSequencerSentence();
+
+            document.getElementById('seq-feedback-box').classList.add('hidden');
+        }
+
+        function renderSequencerEvents() {
+            const container = document.getElementById('seq-events-container');
+            container.innerHTML = '';
+
+            const slotLabels = ["Slot 1: Deep Past (Earliest)", "Slot 2: Background Context", "Slot 3: Main Completed Action"];
+
+            currentSeqEventsOrder.forEach((item, pos) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 relative glass-panel-hover flex flex-col justify-between";
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <span class="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-500 block">${slotLabels[pos]}</span>
+                        <p class="text-xs font-extrabold ${item.color}">${item.text}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between border-t border-slate-800/80 pt-2">
+                        <span class="text-[10px] font-mono text-slate-400">${item.tense}</span>
+                        <div class="flex gap-1">
+                            <button onclick="moveSeqEvent(${pos}, -1)" ${pos === 0 ? 'disabled class="opacity-30"' : 'class="p-1 hover:text-chrono-amber"'}>
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <button onclick="moveSeqEvent(${pos}, 1)" ${pos === 2 ? 'disabled class="opacity-30"' : 'class="p-1 hover:text-chrono-amber"'}>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function moveSeqEvent(pos, dir) {
+            playTone('click');
+            const target = pos + dir;
+            if (target < 0 || target >= currentSeqEventsOrder.length) return;
+            const temp = currentSeqEventsOrder[pos];
+            currentSeqEventsOrder[pos] = currentSeqEventsOrder[target];
+            currentSeqEventsOrder[target] = temp;
+            renderSequencerEvents();
+            updateSequencerSentence();
+        }
+
+        function shuffleSequencerEvents() {
+            playTone('click');
+            currentSeqEventsOrder.sort(() => Math.random() - 0.5);
+            renderSequencerEvents();
+            updateSequencerSentence();
+        }
+
+        function updateSequencerSentence() {
+            const l1 = document.getElementById('seq-linker-1').value;
+            const l2 = document.getElementById('seq-linker-2').value;
+
+            const e0 = currentSeqEventsOrder[0].text;
+            const e1 = currentSeqEventsOrder[1].text;
+            const e2 = currentSeqEventsOrder[2].text;
+
+            const outputEl = document.getElementById('seq-synthesized-output');
+            outputEl.innerHTML = `"<span class='text-chrono-amber font-bold'>${l1}</span> ${e0}, ${e2} <span class='text-chrono-blue font-bold'>${l2}</span> ${e1}."`;
+        }
+
+        function validateSequencerStory() {
+            const story = sequencerStories[currentSeqIdx];
+            
+            // Check chronology
+            let chronologyCorrect = true;
+            if (currentSeqEventsOrder[0].id !== 'perf' || currentSeqEventsOrder[1].id !== 'cont' || currentSeqEventsOrder[2].id !== 'simp') {
+                chronologyCorrect = false;
+            }
+
+            const l1 = document.getElementById('seq-linker-1').value;
+            const l2 = document.getElementById('seq-linker-2').value;
+
+            const linkersCorrect = (l1 === story.targetLinker1 && l2 === story.targetLinker2);
+
+            const feedbackBox = document.getElementById('seq-feedback-box');
+            feedbackBox.classList.remove('hidden');
+
+            if (chronologyCorrect && linkersCorrect) {
+                playTone('correct');
+                addXP(25);
+                feedbackBox.className = "p-4 rounded-xl text-xs space-y-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-200";
+                feedbackBox.innerHTML = `
+                    <p class="font-bold text-emerald-400 flex items-center gap-1.5 text-sm">
+                        <i class="fa-solid fa-circle-check"></i> Flawless Chronology & Linker Assembly! (+25 XP)
+                    </p>
+                    <p>Your event sequence matches deep past ➔ background ➔ interruption flawlessly!</p>
+                `;
+            } else {
+                playTone('wrong');
+                feedbackBox.className = "p-4 rounded-xl text-xs space-y-1 bg-red-950/60 border border-red-500/40 text-red-200";
+                feedbackBox.innerHTML = `
+                    <p class="font-bold text-red-400 flex items-center gap-1.5 text-sm">
+                        <i class="fa-solid fa-circle-xmark"></i> Chronology or Linker Adjustment Needed
+                    </p>
+                    <p>
+                        ${!chronologyCorrect ? "• Ensure Slot 1 has Past Perfect (Deep Past), Slot 2 has Past Continuous (Background), Slot 3 has Past Simple. " : ""}
+                        ${!linkersCorrect ? "• Double check if your time linkers fit the clause relationships." : ""}
+                    </p>
+                `;
+            }
+        }
+
+        function speakSequencerSentence() {
+            const rawText = document.getElementById('seq-synthesized-output').textContent;
+            speakText(rawText);
+        }
+
+
+        /* ==========================================================================
+           5. MODULE 3: DETECTIVE GRAMMAR CHALLENGE QUIZ ENGINE
+           ========================================================================== */
+        const detectiveQuestions = [
+            {
+                caseTitle: "Case #1: The Missing Key",
+                prompt: "When Detective James arrived at the manor, he realized that someone ______ the safe earlier that morning.",
+                options: [
+                    { text: "had unlocked", correct: true, reasoning: "REASONING: The safe was unlocked BEFORE Detective James arrived. When one past action precedes another, we use Past Perfect (had + V3)." },
+                    { text: "was unlocking", correct: false, reasoning: "INCORRECT: 'was unlocking' implies the unlocking was currently in progress right as James arrived." },
+                    { text: "unlocks", correct: false, reasoning: "INCORRECT: Present tense cannot be used for completed past events." },
+                    { text: "unlocked", correct: false, reasoning: "INCORRECT: Past Simple alone doesn't clearly show that it happened BEFORE his arrival." }
+                ]
+            },
+            {
+                caseTitle: "Case #2: The Midnight Phone Call",
+                prompt: "While the officer ______ through the crime scene files, his telephone rang loudly.",
+                options: [
+                    { text: "had read", correct: false, reasoning: "INCORRECT: Reading files was the ongoing background action in progress." },
+                    { text: "was reading", correct: true, reasoning: "REASONING: 'While' indicates an ongoing action in progress in the background (Past Continuous: was/were + verb-ing) interrupted by the ring." },
+                    { text: "reads", correct: false, reasoning: "INCORRECT: Present tense violates past narrative rules." },
+                    { text: "readed", correct: false, reasoning: "INCORRECT: 'readed' is ungrammatical (Past Simple of read is 'read')." }
+                ]
+            },
+            {
+                caseTitle: "Case #3: The Escaped Suspect",
+                prompt: "By the time the police backup finally arrived, the suspect ______ into the dark woods.",
+                options: [
+                    { text: "had vanished", correct: true, reasoning: "REASONING: 'By the time' sets a past deadline. The suspect's vanishing occurred earlier than the backup's arrival, requiring Past Perfect." },
+                    { text: "was vanishing", correct: false, reasoning: "INCORRECT: 'was vanishing' describes a gradual ongoing action rather than a prior completed escape." },
+                    { text: "vanishes", correct: false, reasoning: "INCORRECT: Present tense." },
+                    { text: "has vanished", correct: false, reasoning: "INCORRECT: Present Perfect cannot be paired with past narrative timelines." }
+                ]
+            },
+            {
+                caseTitle: "Case #4: The Stolen Painting",
+                prompt: "The museum alarms sounded while the security guard ______ his coffee in the lounge.",
+                options: [
+                    { text: "was drinking", correct: true, reasoning: "REASONING: Drinking coffee was the background continuous action in progress when interrupted by the alarm sound." },
+                    { text: "had drunk", correct: false, reasoning: "INCORRECT: If he 'had drunk', he finished coffee before the alarms, which conflicts with 'while'." },
+                    { text: "drank", correct: false, reasoning: "INCORRECT: While requires an ongoing continuous tense for background duration." },
+                    { text: "is drinking", correct: false, reasoning: "INCORRECT: Present tense." }
+                ]
+            },
+            {
+                caseTitle: "Case #5: The Hidden Footprints",
+                prompt: "The detective noticed footprints because it ______ heavily all evening.",
+                options: [
+                    { text: "had been raining", correct: true, reasoning: "REASONING: Heavy rain happened prior to noticing footprints, establishing the cause in the deep past." },
+                    { text: "rains", correct: false, reasoning: "INCORRECT: Present tense." },
+                    { text: "was rained", correct: false, reasoning: "INCORRECT: Passive voice error." },
+                    { text: "rain", correct: false, reasoning: "INCORRECT: Base form error." }
+                ]
+            }
+        ];
+
+        let currentQuizIdx = 0;
+
+        function loadQuizQuestion() {
+            const q = detectiveQuestions[currentQuizIdx];
+            document.getElementById('quiz-case-title').textContent = q.caseTitle;
+            document.getElementById('quiz-prompt-text').textContent = q.prompt;
+
+            document.getElementById('quiz-progress-text').textContent = `Question ${currentQuizIdx + 1} / ${detectiveQuestions.length}`;
+            document.getElementById('quiz-progress-bar').style.width = `${((currentQuizIdx + 1) / detectiveQuestions.length) * 100}%`;
+
+            const grid = document.getElementById('quiz-options-grid');
+            grid.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "text-left p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-chrono-blue font-semibold text-xs sm:text-sm text-slate-200 transition glass-panel-hover flex justify-between items-center gap-3";
+                btn.innerHTML = `<span>${opt.text}</span> <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>`;
+                btn.onclick = () => handleQuizSelect(idx);
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('quiz-reasoning-box').classList.add('hidden');
+            document.getElementById('quiz-next-btn').classList.add('hidden');
+        }
+
+        function handleQuizSelect(optIdx) {
+            const q = detectiveQuestions[currentQuizIdx];
+            const opt = q.options[optIdx];
+            const box = document.getElementById('quiz-reasoning-box');
+            const header = document.getElementById('quiz-reasoning-header');
+            const text = document.getElementById('quiz-reasoning-text');
+
+            box.classList.remove('hidden');
+
+            if (opt.correct) {
+                playTone('correct');
+                addXP(20);
+                state.quizCorrect++;
+                document.getElementById('teacher-stat-quiz').textContent = `${state.quizCorrect}/5`;
+
+                box.className = "p-5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 transition-all space-y-2";
+                header.className = "font-bold text-sm flex items-center gap-2 text-emerald-400";
+                header.innerHTML = `<i class="fa-solid fa-circle-check"></i> Correct Evidence Deduction! (+20 XP)`;
+            } else {
+                playTone('wrong');
+                box.className = "p-5 rounded-2xl bg-red-950/60 border border-red-500/40 text-red-200 transition-all space-y-2";
+                header.className = "font-bold text-sm flex items-center gap-2 text-red-400";
+                header.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Miscalculated Time Sequence!`;
+            }
+
+            text.textContent = opt.reasoning;
+            document.getElementById('quiz-next-btn').classList.remove('hidden');
+        }
+
+        function nextQuizQuestion() {
+            playTone('click');
+            currentQuizIdx++;
+            if (currentQuizIdx < detectiveQuestions.length) {
+                loadQuizQuestion();
+            } else {
+                playTone('fanfare');
+                showToast("🎉 Diagnostic Quiz Complete!");
+                alert("Congratulations! You completed the Detective Grammar Challenge!");
+                switchTab('creator');
+            }
+        }
+
+        function speakQuizSentence() {
+            const txt = document.getElementById('quiz-prompt-text').textContent;
+            speakText(txt);
+        }
+
+
+        /* ==========================================================================
+           6. MODULE 4: CUSTOM STORY CREATOR & GRAPHIC GENERATOR
+           ========================================================================== */
+        function renderCustomTimelineCard() {
+            const perfVal = document.getElementById('creator-input-perfect').value.trim();
+            const contVal = document.getElementById('creator-input-continuous').value.trim();
+            const simpVal = document.getElementById('creator-input-simple').value.trim();
+            const linkerVal = document.getElementById('creator-linker-select').value;
+
+            document.getElementById('card-text-perfect').textContent = perfVal || "Your deep past action will display here...";
+            document.getElementById('card-text-continuous').textContent = contVal || "Your background context will display here...";
+            document.getElementById('card-text-simple').textContent = simpVal || "Your main completed action will display here...";
+
+            const fullStoryEl = document.getElementById('card-full-story');
+            if (perfVal && contVal && simpVal) {
+                fullStoryEl.textContent = `"${linkerVal} ${perfVal}, ${simpVal} while ${contVal}."`;
+            } else {
+                fullStoryEl.textContent = `"Fill in all 3 narrative blocks above to synthesize your visual timeline card..."`;
+            }
+        }
+
+        function loadCreatorSample() {
+            playTone('click');
+            document.getElementById('creator-input-perfect').value = "I had locked all the windows tightly";
+            document.getElementById('creator-input-continuous').value = "thunder was roaring loudly across the sky";
+            document.getElementById('creator-input-simple').value = "a sudden flash of lightning illuminated the room";
+            document.getElementById('creator-linker-select').value = "Although";
+            renderCustomTimelineCard();
+        }
+
+        function clearCreatorInputs() {
+            playTone('click');
+            document.getElementById('creator-input-perfect').value = '';
+            document.getElementById('creator-input-continuous').value = '';
+            document.getElementById('creator-input-simple').value = '';
+            renderCustomTimelineCard();
+        }
+
+        function finalizeAndEarnXP() {
+            const perfVal = document.getElementById('creator-input-perfect').value.trim();
+            const contVal = document.getElementById('creator-input-continuous').value.trim();
+            const simpVal = document.getElementById('creator-input-simple').value.trim();
+
+            if (!perfVal || !contVal || !simpVal) {
+                playTone('wrong');
+                showToast("Please complete all 3 narrative event fields!");
+                return;
+            }
+
+            playTone('fanfare');
+            addXP(30);
+            state.storiesSaved++;
+            document.getElementById('teacher-stat-stories').textContent = state.storiesSaved;
+            showToast("🌟 Custom Story Saved! +30 XP Awarded!");
+        }
+
+        function speakCustomStory() {
+            const txt = document.getElementById('card-full-story').textContent;
+            speakText(txt);
+        }
+
+        function copyCustomStory() {
+            const txt = document.getElementById('card-full-story').textContent;
+            
+            // iFrame safe copy fallback
+            const el = document.createElement('textarea');
+            el.value = txt;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            playTone('click');
+            showToast("Clipboard: Story copied!");
+        }
+
+
+        /* ==========================================================================
+           7. APP INITIALIZATION ON WINDOW LOAD
+           ========================================================================== */
+        window.onload = function() {
+            loadTimelineScenario(0);
+            loadSequencerStory(0);
+            loadQuizQuestion();
+            renderCustomTimelineCard();
+        };
+    </script>
+</body>
+</html>
