@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Narrative Validation & Diagnostic Studio (Guided Practice)</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        chrono: {
+                            purple: '#a855f7', // Past Perfect / Deep Past
+                            cyan: '#06b6d4',   // Past Continuous / Ongoing Context
+                            amber: '#f59e0b',  // Past Simple / Main Interruption
+                            emerald: '#10b981',// Correct / Present
+                            rose: '#f43f5e',   // Trap / Error / Interruption
+                            dark: '#080c14',   // Cyber Dark Background
+                            card: '#111827',   // Card Surface
+                            accent: '#6366f1'  // Main UI Accent
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts & FontAwesome CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover {
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Animated Pulse Keyframes for Visual Timeline Nodes */
+        @keyframes pulsePurple {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.6); }
+            50% { box-shadow: 0 0 0 14px rgba(168, 85, 247, 0); }
+        }
+        .node-perfect { animation: pulsePurple 2s infinite; }
+
+        @keyframes pulseAmber {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            50% { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+        }
+        .node-simple { animation: pulseAmber 1.8s infinite; }
+
+        @keyframes waveCyan {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .bar-continuous {
+            background: linear-gradient(90deg, #0284c7, #06b6d4, #38bdf8, #0284c7);
+            background-size: 200% 200%;
+            animation: waveCyan 4s ease infinite;
+        }
+
+        /* Custom Cyberpunk Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #080c14; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        /* Print / PDF Export Styling */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; }
+            .print-card { background: white !important; color: black !important; border: 1px solid #ccc !important; box-shadow: none !important; }
+            .glass-panel { background: white !important; color: black !important; border: 1px solid #ccc !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-chrono-accent selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <header class="bg-slate-900/90 border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('classifier')">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-chrono-purple via-chrono-accent to-chrono-cyan flex items-center justify-center text-white shadow-lg shadow-indigo-500/25 font-black text-xl">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-indigo-200 to-chrono-cyan bg-clip-text text-transparent">
+                        Past Narrative Studio
+                    </h1>
+                    <p class="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                        <span>ESL A2–B1 Guided Diagnostic</span>
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-chrono-emerald"></span>
+                        <span class="text-chrono-cyan font-mono">Narrative Validation Engine</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Header Controls & Gamification Badges -->
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <!-- Streak Badge -->
+                <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/80 px-3 py-1.5 rounded-xl" title="Daily Practice Streak">
+                    <i class="fa-solid fa-fire text-amber-500 text-sm animate-bounce"></i>
+                    <span id="streak-count" class="text-xs font-bold text-slate-200">1</span>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Streak</span>
+                </div>
+
+                <!-- XP Score Badge -->
+                <div class="flex items-center gap-2 bg-indigo-950/80 border border-indigo-800/60 px-3.5 py-1.5 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                    <span id="user-xp" class="font-black text-amber-300 text-sm tracking-wide">0</span>
+                    <span class="text-[10px] font-bold text-indigo-300 tracking-wider">XP</span>
+                </div>
+
+                <!-- SFX Toggle -->
+                <button id="sfx-toggle-btn" onclick="toggleAudioFX()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition" title="Toggle Web Audio Sound FX">
+                    <i id="sfx-icon" class="fa-solid fa-volume-high text-chrono-cyan"></i>
+                </button>
+
+                <!-- TTS Audio Narration Toggle -->
+                <button id="tts-toggle-btn" onclick="toggleTTS()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold transition" title="Toggle Voice Narration">
+                    <i id="tts-icon" class="fa-solid fa-comment-dots text-chrono-purple"></i>
+                </button>
+
+                <!-- Teacher Dashboard Button -->
+                <button onclick="toggleTeacherModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-bold transition flex items-center gap-1.5" title="Teacher Diagnostic Analytics">
+                    <i class="fa-solid fa-chart-pie text-chrono-accent"></i>
+                    <span class="hidden md:inline">Teacher Scorecard</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overall Master Diagnostic Progress Bar -->
+        <div class="w-full bg-slate-950 h-1.5 border-t border-slate-800/60">
+            <div id="overall-progress-bar" class="bg-gradient-to-r from-chrono-purple via-chrono-cyan to-chrono-emerald h-full w-[10%] transition-all duration-500"></div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 flex gap-2 overflow-x-auto scrollbar-none py-2 text-xs font-bold">
+            <button id="tab-classifier" onclick="switchTab('classifier')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-chrono-accent text-white shadow-md whitespace-nowrap">
+                <i class="fa-solid fa-layer-group text-chrono-cyan"></i> 1. Function Classifier
+            </button>
+            <button id="tab-spotter" onclick="switchTab('spotter')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-bug text-chrono-rose"></i> 2. Spot the Mistake
+            </button>
+            <button id="tab-builder" onclick="switchTab('builder')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-puzzle-piece text-chrono-amber"></i> 3. Sentence Weaver & Sequencer
+            </button>
+            <button id="tab-scorecard" onclick="switchTab('scorecard')" class="px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap">
+                <i class="fa-solid fa-clipboard-check text-chrono-emerald"></i> 4. Diagnostic Assessment
+            </button>
+        </nav>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-8">
+
+        <!-- ================= MODULE 1: TENSE FUNCTION CLASSIFIER ================= -->
+        <section id="view-classifier" class="space-y-8">
+            
+            <!-- Hero Context Card -->
+            <div class="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+                <div class="relative z-10 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                            Module 1 • Contextual Tense Analysis
+                        </span>
+                        
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                            <span class="px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/40 text-amber-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-amber"></span> Completed Action (Past Simple)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-cyan"></span> Ongoing Background (Past Continuous)
+                            </span>
+                            <span class="px-2.5 py-1 rounded-md bg-purple-950/80 border border-purple-500/40 text-purple-300 flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-chrono-purple"></span> Prior Past Event (Past Perfect)
+                            </span>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        Classify the Time Function of Past Events
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-4xl">
+                        When narrating experiences, English uses distinct tense forms to signal chronologies. Read or listen to each sentence prompt, evaluate its function in time, and classify it into the correct category below.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Classifier Activity Board -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-shapes text-chrono-cyan"></i> Sentence Context Classification Cards
+                        </h3>
+                        <p class="text-xs text-slate-400">Select the correct function button for each highlighted past clause.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <span id="classifier-count-badge" class="text-xs font-mono font-bold text-chrono-cyan bg-cyan-950/80 px-3 py-1.5 rounded-xl border border-cyan-800">
+                            Classified: 0 / 6
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Interactive Cards Grid -->
+                <div id="classifier-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 2: SPOT THE MISTAKE DIAGNOSTIC ================= -->
+        <section id="view-spotter" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-rose bg-rose-500/10 border border-rose-500/30 px-2.5 py-1 rounded-md">Module 2 • High-Frequency ESL Traps</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">"Spot the Mistake" Diagnostic Trap Identifier</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Identify grammatical traps: double past marking, agreement errors, continuous misuse, and linkers.</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span id="spotter-progress-text" class="text-xs font-bold text-slate-400">Case 1 / 5</span>
+                    <div class="w-32 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                        <div id="spotter-progress-bar" class="bg-gradient-to-r from-chrono-rose to-chrono-accent h-full w-1/5 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Stage Container -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                
+                <!-- Case Header -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-chrono-rose flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <span id="spotter-trap-tag" class="text-[10px] font-mono font-bold text-chrono-rose uppercase tracking-widest block">Trap Type: Double Past Marking</span>
+                            <h3 id="spotter-case-title" class="text-base font-extrabold text-white">Case #1: The Airport Check-in</h3>
+                        </div>
+                    </div>
+
+                    <button onclick="speakCurrentSpotterSentence()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-chrono-cyan"></i> Read Sentence
+                    </button>
+                </div>
+
+                <!-- Sentence Display Box -->
+                <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 space-y-2">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Examine this narrative sentence carefully:</span>
+                    <p id="spotter-sentence-text" class="text-base sm:text-xl font-bold text-white leading-relaxed">
+                        <!-- Populated via JS -->
+                    </p>
+                </div>
+
+                <!-- STEP 1: Evaluate Sentence Correctness -->
+                <div id="spotter-step-1" class="space-y-3">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-chrono-accent text-white text-[10px] font-black flex items-center justify-center">1</span>
+                        Step 1: Is this sentence grammatically CORRECT or INCORRECT?
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="evaluateSpotterStep1(true)" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-chrono-emerald text-emerald-400 font-extrabold text-sm sm:text-base transition glass-panel-hover flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> Correct (No Error)
+                        </button>
+                        <button onclick="evaluateSpotterStep1(false)" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-chrono-rose text-chrono-rose font-extrabold text-sm sm:text-base transition glass-panel-hover flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-xmark"></i> Incorrect (Contains Trap)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Rule Selection (Revealed if Step 1 evaluated) -->
+                <div id="spotter-step-2" class="hidden space-y-3 pt-4 border-t border-slate-800/80">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-chrono-rose text-white text-[10px] font-black flex items-center justify-center">2</span>
+                        Step 2: Select the exact grammatical rule required to fix this sentence:
+                    </label>
+
+                    <div id="spotter-rules-grid" class="grid grid-cols-1 gap-3">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Step Diagnostic Rationale Feedback Box -->
+                <div id="spotter-feedback-box" class="hidden p-5 rounded-2xl border transition-all space-y-2">
+                    <!-- Dynamic feedback populated via JS -->
+                </div>
+
+                <!-- Next Button -->
+                <div class="flex justify-end pt-2">
+                    <button id="spotter-next-btn" onclick="nextSpotterCase()" class="hidden bg-chrono-accent hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl transition text-xs flex items-center gap-2 shadow-lg">
+                        <span>Next Diagnostic Case</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 3: SENTENCE WEAVER & SEQUENCER ================= -->
+        <section id="view-builder" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-amber bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-md">Module 3 • Visual Narrative Weaver</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Sentence Weaver & Dynamic Timeline Graph</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Assemble multi-clause past narrative sentences with precise linkers and watch time nodes adjust live.</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="loadPresetBuilderScenario(0)" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700">Scenario 1</button>
+                    <button onclick="loadPresetBuilderScenario(1)" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700">Scenario 2</button>
+                    <button onclick="loadPresetBuilderScenario(2)" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold hover:bg-slate-700">Scenario 3</button>
+                </div>
+            </div>
+
+            <!-- VISUAL GRAPHICAL TIMELINE CANVAS BOARD -->
+            <div class="bg-slate-950 rounded-3xl p-6 sm:p-8 border border-slate-800 space-y-6 relative overflow-hidden">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
+                    <span class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-timeline text-chrono-purple"></i> Dynamic Visual Timeline Sequencer
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-400">Past Time Axis: Earliest ➔ Ongoing ➔ Interruption</span>
+                </div>
+
+                <!-- Visual Graph Nodes Layer -->
+                <div class="relative py-6 px-2 sm:px-6 space-y-6">
+                    <div class="absolute top-1/2 left-0 right-0 h-1.5 bg-slate-800 -translate-y-1/2 rounded-full z-0"></div>
+                    <div id="visual-timeline-progress" class="absolute top-1/2 left-0 h-1.5 bg-gradient-to-r from-chrono-purple via-chrono-cyan to-chrono-amber -translate-y-1/2 rounded-full z-0 transition-all duration-500 w-1/2"></div>
+
+                    <div class="relative z-10 grid grid-cols-12 gap-2 items-center">
+                        
+                        <!-- Node 1: Prior Past (Past Perfect) -->
+                        <div class="col-span-4 flex flex-col items-center text-center space-y-1.5">
+                            <div id="builder-node-perfect" class="w-11 h-11 rounded-2xl bg-purple-950 border-2 border-purple-500 text-purple-200 flex items-center justify-center font-black text-base node-perfect shadow-lg">
+                                1
+                            </div>
+                            <span class="text-[10px] font-mono font-bold text-purple-400 uppercase">Prior Past (had + V3)</span>
+                            <p id="node-text-perfect" class="text-xs font-semibold text-slate-300 line-clamp-2 italic">Clause A: Deep Past</p>
+                        </div>
+
+                        <!-- Node 2: Background Duration (Past Continuous) -->
+                        <div class="col-span-4 flex flex-col items-center text-center space-y-1.5">
+                            <div id="builder-bar-continuous" class="w-full h-9 rounded-xl bar-continuous border border-cyan-400/40 p-2 flex items-center justify-center text-white text-xs font-bold truncate">
+                                <span id="node-text-continuous" class="truncate">Clause B: Background</span>
+                            </div>
+                            <span class="text-[10px] font-mono font-bold text-chrono-cyan uppercase">Ongoing (was/were + -ing)</span>
+                        </div>
+
+                        <!-- Node 3: Interruption / Main Event (Past Simple) -->
+                        <div class="col-span-4 flex flex-col items-center text-center space-y-1.5">
+                            <div id="builder-node-simple" class="w-11 h-11 rounded-2xl bg-amber-950 border-2 border-amber-500 text-amber-200 flex items-center justify-center font-black text-base node-simple shadow-lg">
+                                3
+                            </div>
+                            <span class="text-[10px] font-mono font-bold text-amber-400 uppercase">Completed Event (V2 / -ed)</span>
+                            <p id="node-text-simple" class="text-xs font-semibold text-slate-300 line-clamp-2 italic">Clause C: Interruption</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Weaver Builder Form -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6">
+                <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-sliders text-chrono-amber"></i> Assemble Sentence Clauses & Target Linkers
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Selector 1: First Event Clause -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-purple-300 flex justify-between">
+                            <span>Event Clause A (Prior / Start)</span>
+                            <span class="text-[10px] font-mono text-purple-400">Clause 1</span>
+                        </label>
+                        <select id="builder-clause-1" onchange="updateBuilderSynthesis()" class="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-slate-100 rounded-xl p-3 focus:outline-none focus:border-chrono-accent">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+
+                    <!-- Selector 2: Connecting Time Linker -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-chrono-amber flex justify-between">
+                            <span>Connecting Time Linker</span>
+                            <span class="text-[10px] font-mono text-amber-400">Linker</span>
+                        </label>
+                        <select id="builder-linker" onchange="updateBuilderSynthesis()" class="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-amber-300 rounded-xl p-3 focus:outline-none focus:border-chrono-amber">
+                            <option value="by the time">by the time</option>
+                            <option value="while">while</option>
+                            <option value="as soon as">as soon as</option>
+                            <option value="after">after</option>
+                            <option value="when">when</option>
+                        </select>
+                    </div>
+
+                    <!-- Selector 3: Second Event Clause -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-chrono-cyan flex justify-between">
+                            <span>Event Clause B (Main / Ongoing)</span>
+                            <span class="text-[10px] font-mono text-chrono-cyan">Clause 2</span>
+                        </label>
+                        <select id="builder-clause-2" onchange="updateBuilderSynthesis()" class="w-full bg-slate-900 border border-slate-700 text-xs font-bold text-slate-100 rounded-xl p-3 focus:outline-none focus:border-chrono-accent">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Synthesized Sentence Live Card -->
+                <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 space-y-4">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Synthesized Narrative Sentence Output:</span>
+                    
+                    <div id="builder-sentence-output" class="text-base sm:text-lg font-bold text-slate-100 p-4 bg-slate-950 rounded-xl border border-slate-800 leading-relaxed">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <!-- Hint / Feedback Box -->
+                    <div id="builder-feedback-box" class="hidden p-4 rounded-xl text-xs space-y-1"></div>
+
+                    <div class="flex flex-wrap justify-between items-center gap-3 pt-2">
+                        <button onclick="speakBuilderSentence()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-volume-high text-chrono-cyan"></i> Listen Narration
+                        </button>
+
+                        <div class="flex gap-2">
+                            <button onclick="showBuilderHint()" class="px-3.5 py-2 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 text-xs font-bold transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-lightbulb text-amber-400"></i> Hint
+                            </button>
+                            <button onclick="validateBuilderSentence()" class="bg-chrono-amber hover:bg-amber-500 text-slate-950 font-extrabold px-6 py-2.5 rounded-xl transition text-xs flex items-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-circle-check"></i> Validate Grammar & Sequence
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= MODULE 4: DIAGNOSTIC ASSESSMENT & SCORECARD ================= -->
+        <section id="view-scorecard" class="hidden space-y-8">
+            
+            <!-- Module Banner -->
+            <div class="glass-panel rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-chrono-emerald bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-md">Module 4 • Competency & Pedagogical Scorecard</span>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1">Student Diagnostic & Mastery Assessment</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">Detailed breakdown of past narrative tenses across four primary ESL competency domains.</p>
+                </div>
+
+                <div class="flex flex-wrap gap-2 no-print">
+                    <button onclick="resetDiagnosticData()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-rotate-left text-chrono-rose"></i> Reset Diagnostics
+                    </button>
+                    <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-chrono-accent hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg">
+                        <i class="fa-solid fa-print"></i> Export / Print Assessment Report
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Competencies Breakdown (7 cols) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 print-card">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-chart-bar text-chrono-cyan"></i> ESL Narrative Competency Breakdown
+                        </h3>
+
+                        <!-- Metric 1: Simple vs. Continuous Interruption -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-cyan-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bolt text-amber-400"></i> Interrupted Action vs Background Context
+                                </span>
+                                <span id="metric-interruption-pct" class="font-mono text-cyan-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800">
+                                <div id="metric-interruption-bar" class="bg-chrono-cyan h-full w-[0%] transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Metric 2: Past Perfect Chronology -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-purple-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left text-chrono-purple"></i> Past Perfect Chronological Sequence
+                                </span>
+                                <span id="metric-perfect-pct" class="font-mono text-purple-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800">
+                                <div id="metric-perfect-bar" class="bg-chrono-purple h-full w-[0%] transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Metric 3: Auxiliary & Irregular Verbs -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-amber-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-spell-check text-chrono-amber"></i> Auxiliary & Irregular Verb Accuracy
+                                </span>
+                                <span id="metric-verbs-pct" class="font-mono text-amber-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800">
+                                <div id="metric-verbs-bar" class="bg-chrono-amber h-full w-[0%] transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <!-- Metric 4: Time Linker Precision -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <span class="text-emerald-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-link text-chrono-emerald"></i> Time Linker Precision (while/when/by the time)
+                                </span>
+                                <span id="metric-linkers-pct" class="font-mono text-emerald-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 overflow-hidden border border-slate-800">
+                                <div id="metric-linkers-bar" class="bg-chrono-emerald h-full w-[0%] transition-all duration-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pedagogical Recommendations & Diagnostics (5 cols) -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-5 print-card">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <i class="fa-solid fa-user-graduate text-chrono-emerald"></i> Teacher Diagnostic Recommendations
+                        </h3>
+
+                        <div id="pedagogical-notes-container" class="space-y-3">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- TEACHER DASHBOARD ANALYTICS MODAL -->
+    <div id="teacher-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 sm:p-8 space-y-6 relative border border-slate-700">
+            
+            <button onclick="toggleTeacherModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white font-bold text-lg">
+                ✕
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-chrono-accent/20 text-chrono-accent flex items-center justify-center font-bold text-xl">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-white">Teacher Diagnostic Summary</h3>
+                    <p class="text-xs text-slate-400">A2–B1 Narrative Tense Proficiency Overview</p>
+                </div>
+            </div>
+
+            <!-- Stats Overview Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Total XP</span>
+                    <p id="modal-stat-xp" class="text-xl font-black text-amber-400">0</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Classifications</span>
+                    <p id="modal-stat-class" class="text-xl font-black text-chrono-cyan">0/6</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Mistakes Spotted</span>
+                    <p id="modal-stat-spot" class="text-xl font-black text-chrono-rose">0/5</p>
+                </div>
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center space-y-1">
+                    <span class="text-[10px] font-mono text-slate-400 uppercase font-bold">Sentences Built</span>
+                    <p id="modal-stat-built" class="text-xl font-black text-chrono-emerald">0</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                <strong class="text-chrono-cyan">Diagnostic Guidance:</strong> This student is currently working on synthesizing multi-clause narrative past tenses. Check Module 4 for specific error trend analysis.
+            </p>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="toggleTeacherModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-5 py-2.5 rounded-xl text-xs transition border border-slate-700">
+                    Close Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p><strong>Past Narrative Studio</strong> • ESL/EFL A2–B1 Guided Practice & Validation Engine</p>
+            <p class="text-slate-400"><i class="fa-solid fa-bolt text-amber-400"></i> Powered by Web Audio API & Speech Synthesis API</p>
+        </div>
+    </footer>
+
+
+    <!-- ==========================================================================
+       JAVASCRIPT APPLICATION ENGINE
+       ========================================================================== -->
+    <script>
+        /* ==========================================================================
+           1. WEB AUDIO API SYNTHESIZER & TTS AUDIO ENGINE
+           ========================================================================== */
+        let sfxEnabled = true;
+        let ttsEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleAudioFX() {
+            sfxEnabled = !sfxEnabled;
+            const icon = document.getElementById('sfx-icon');
+            if (sfxEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-chrono-cyan';
+                playTone('click');
+                showToast("Sound FX Enabled");
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                showToast("Sound FX Muted");
+            }
+        }
+
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const icon = document.getElementById('tts-icon');
+            if (ttsEnabled) {
+                icon.className = 'fa-solid fa-comment-dots text-chrono-purple';
+                playTone('click');
+                showToast("Voice Narration Enabled");
+            } else {
+                icon.className = 'fa-solid fa-comment-slash text-slate-500';
+                showToast("Voice Narration Muted");
+            }
+        }
+
+        function playTone(type) {
+            if (!sfxEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(580, now);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(240, now);
+                    osc.frequency.setValueAtTime(180, now + 0.1);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'fanfare') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(554.37, now + 0.12);
+                    osc.frequency.setValueAtTime(659.25, now + 0.24);
+                    osc.frequency.setValueAtTime(880, now + 0.36);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                }
+            } catch (e) {
+                // Audio Context fallback
+            }
+        }
+
+        function speakText(text) {
+            if (!ttsEnabled) return;
+            playTone('click');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-800 border border-slate-700 text-slate-100 text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl transition-all duration-300 pointer-events-auto flex items-center gap-2";
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-chrono-cyan"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+
+        /* ==========================================================================
+           2. GLOBAL APPLICATION STATE & METRICS MATRIX
+           ========================================================================== */
+        const state = {
+            xp: 0,
+            streak: 1,
+            classifierCount: 0,
+            spotterCount: 0,
+            builtCount: 0,
+            competencies: {
+                interruption: { correct: 0, total: 0 },
+                perfect: { correct: 0, total: 0 },
+                verbs: { correct: 0, total: 0 },
+                linkers: { correct: 0, total: 0 }
+            }
+        };
+
+        function addXP(pts) {
+            state.xp += pts;
+            document.getElementById('user-xp').textContent = state.xp;
+            document.getElementById('modal-stat-xp').textContent = state.xp;
+            updateOverallProgress();
+        }
+
+        function recordCompetency(domain, isCorrect) {
+            if (state.competencies[domain]) {
+                state.competencies[domain].total += 1;
+                if (isCorrect) state.competencies[domain].correct += 1;
+            }
+            updateScorecardView();
+        }
+
+        function updateOverallProgress() {
+            const totalTasks = 6 + 5 + 3; // Classifier (6), Spotter (5), Builder (3)
+            const completed = state.classifierCount + state.spotterCount + state.builtCount;
+            const pct = Math.min(100, Math.round((completed / totalTasks) * 100));
+            document.getElementById('overall-progress-bar').style.width = `${pct}%`;
+        }
+
+        function switchTab(tabKey) {
+            playTone('click');
+            ['classifier', 'spotter', 'builder', 'scorecard'].forEach(key => {
+                const view = document.getElementById(`view-${key}`);
+                const btn = document.getElementById(`tab-${key}`);
+                if (view) view.classList.add('hidden');
+                if (btn) {
+                    btn.className = "px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 whitespace-nowrap";
+                }
+            });
+
+            const activeView = document.getElementById(`view-${tabKey}`);
+            const activeBtn = document.getElementById(`tab-${tabKey}`);
+            if (activeView) activeView.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-2.5 rounded-xl transition flex items-center gap-2 bg-chrono-accent text-white shadow-md whitespace-nowrap";
+            }
+        }
+
+        function toggleTeacherModal() {
+            playTone('click');
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+
+        /* ==========================================================================
+           3. MODULE 1: TENSE FUNCTION CLASSIFIER LOGIC
+           ========================================================================== */
+        const classifierItems = [
+            {
+                id: 1,
+                sentence: "By 8:00 PM, Maria <span class='text-chrono-purple underline font-black'>had finished</span> all her homework.",
+                fullText: "By 8:00 PM, Maria had finished all her homework.",
+                targetCategory: "perfect", // Past Perfect
+                domain: "perfect",
+                explanation: "Correct! 'had finished' happened BEFORE a specific past time (8:00 PM). This is a Prior Past Action (Past Perfect)."
+            },
+            {
+                id: 2,
+                sentence: "The storm suddenly <span class='text-chrono-amber underline font-black'>knocked out</span> the power grid.",
+                fullText: "The storm suddenly knocked out the power grid.",
+                targetCategory: "simple", // Past Simple
+                domain: "verbs",
+                explanation: "Correct! 'knocked out' is a single, finished past event. This is a Completed Action (Past Simple)."
+            },
+            {
+                id: 3,
+                sentence: "They <span class='text-chrono-cyan underline font-black'>were watching</span> a movie when the phone rang.",
+                fullText: "They were watching a movie when the phone rang.",
+                targetCategory: "continuous", // Past Continuous
+                domain: "interruption",
+                explanation: "Correct! 'were watching' describes an ongoing continuous action in progress in the background."
+            },
+            {
+                id: 4,
+                sentence: "Before the train arrived, I <span class='text-chrono-purple underline font-black'>had bought</span> my ticket.",
+                fullText: "Before the train arrived, I had bought my ticket.",
+                targetCategory: "perfect",
+                domain: "perfect",
+                explanation: "Correct! Buying the ticket happened earlier in deep past before the train's arrival."
+            },
+            {
+                id: 5,
+                sentence: "While the sun <span class='text-chrono-cyan underline font-black'>was setting</span>, we walked along the beach.",
+                fullText: "While the sun was setting, we walked along the beach.",
+                targetCategory: "continuous",
+                domain: "interruption",
+                explanation: "Correct! 'was setting' provides the background continuous context during which the walk occurred."
+            },
+            {
+                id: 6,
+                sentence: "He <span class='text-chrono-amber underline font-black'>grabbed</span> his coat and ran out the door.",
+                fullText: "He grabbed his coat and ran out the door.",
+                targetCategory: "simple",
+                domain: "verbs",
+                explanation: "Correct! 'grabbed' is a completed sequential story step in Past Simple."
+            }
+        ];
+
+        let classifierClassified = {};
+
+        function renderClassifierCards() {
+            const container = document.getElementById('classifier-cards-grid');
+            container.innerHTML = '';
+
+            classifierItems.forEach((item) => {
+                const isDone = classifierClassified[item.id];
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4 glass-panel-hover flex flex-col justify-between";
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-mono font-bold text-slate-500 uppercase">Item #${item.id}</span>
+                            <button onclick="speakText('${item.fullText.replace(/'/g, "\\'")}')" class="text-xs text-chrono-cyan hover:text-white font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+
+                        <p class="text-sm font-semibold text-slate-100 leading-relaxed bg-slate-950 p-3.5 rounded-xl border border-slate-800/80">
+                            "${item.sentence}"
+                        </p>
+                    </div>
+
+                    <div class="space-y-2 pt-2 border-t border-slate-800">
+                        <span class="text-[10px] font-mono text-slate-400 uppercase font-bold block">Classify Function:</span>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="classifyItem(${item.id}, 'simple')" ${isDone ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition border border-amber-500/30 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60">
+                                Completed Action
+                            </button>
+                            <button onclick="classifyItem(${item.id}, 'continuous')" ${isDone ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition border border-cyan-500/30 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60">
+                                Ongoing Context
+                            </button>
+                            <button onclick="classifyItem(${item.id}, 'perfect')" ${isDone ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition border border-purple-500/30 bg-purple-950/40 text-purple-300 hover:bg-purple-900/60">
+                                Prior Past
+                            </button>
+                        </div>
+
+                        <div id="classifier-feedback-${item.id}" class="hidden p-3 rounded-xl text-xs space-y-1 mt-2"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function classifyItem(id, selectedCategory) {
+            const item = classifierItems.find(i => i.id === id);
+            const feedbackEl = document.getElementById(`classifier-feedback-${id}`);
+            feedbackEl.classList.remove('hidden');
+
+            const isCorrect = (selectedCategory === item.targetCategory);
+            classifierClassified[id] = true;
+
+            if (isCorrect) {
+                playTone('correct');
+                addXP(15);
+                recordCompetency(item.domain, true);
+                feedbackEl.className = "p-3 rounded-xl text-xs bg-emerald-950/80 border border-emerald-500/40 text-emerald-200";
+                feedbackEl.innerHTML = `<p class="font-bold text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> ${item.explanation}</p>`;
+            } else {
+                playTone('wrong');
+                recordCompetency(item.domain, false);
+                feedbackEl.className = "p-3 rounded-xl text-xs bg-red-950/80 border border-red-500/40 text-red-200";
+                feedbackEl.innerHTML = `<p class="font-bold text-red-400 flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Incorrect classification.</p><p class="text-[11px]">${item.explanation}</p>`;
+            }
+
+            state.classifierCount = Object.keys(classifierClassified).length;
+            document.getElementById('classifier-count-badge').textContent = `Classified: ${state.classifierCount} / 6`;
+            document.getElementById('modal-stat-class').textContent = `${state.classifierCount}/6`;
+            updateOverallProgress();
+        }
+
+
+        /* ==========================================================================
+           4. MODULE 2: SPOT THE MISTAKE DIAGNOSTIC QUIZ LOGIC
+           ========================================================================== */
+        const spotterCases = [
+            {
+                id: 1,
+                title: "Case #1: The Airport Check-in",
+                trapTag: "Double Past Marking",
+                domain: "verbs",
+                sentence: "When I arrived at the gate, the boarding agent didn't went through my passport.",
+                isCorrect: false,
+                rules: [
+                    { id: 'a', text: "Rule: The auxiliary 'didn't' requires the base verb form ('didn't go', NOT 'didn't went').", isTarget: true },
+                    { id: 'b', text: "Rule: Past Simple must always be replaced with Past Continuous after 'didn't'.", isTarget: false },
+                    { id: 'c', text: "Rule: 'didn't' requires Past Participle V3 ('didn't gone').", isTarget: false }
+                ],
+                explanation: "EXPLANATION: In English past negative structures, 'did/didn't' carries the past tense marker. Therefore, the main verb MUST remain in base form ('didn't go')."
+            },
+            {
+                id: 2,
+                title: "Case #2: The Kitchen Disaster",
+                trapTag: "Subject-Verb Agreement in Continuous",
+                domain: "interruption",
+                sentence: "While my brothers was cooking dinner, the kitchen fire alarm sounded.",
+                isCorrect: false,
+                rules: [
+                    { id: 'a', text: "Rule: Plural subjects ('my brothers') require 'were' in continuous tenses ('were cooking').", isTarget: true },
+                    { id: 'b', text: "Rule: 'While' cannot introduce Past Continuous actions.", isTarget: false },
+                    { id: 'c', text: "Rule: Change 'sounded' to 'was sounding'.", isTarget: false }
+                ],
+                explanation: "EXPLANATION: Subject-verb agreement rules apply in Past Continuous: singular subjects take 'was', whereas plural subjects ('my brothers') require 'were'."
+            },
+            {
+                id: 3,
+                title: "Case #3: The Midnight Interruption",
+                trapTag: "Correct Narrative Interruption",
+                domain: "interruption",
+                sentence: "Sarah was sleeping peacefully when the loud phone call woke her up.",
+                isCorrect: true,
+                rules: [
+                    { id: 'a', text: "Sentence is correct: Past Continuous ('was sleeping') is correctly interrupted by Past Simple ('woke').", isTarget: true }
+                ],
+                explanation: "EXPLANATION: Excellent! Past Continuous establishes the ongoing background state ('was sleeping'), and Past Simple marks the sudden completed interruption ('woke')."
+            },
+            {
+                id: 4,
+                title: "Case #4: The Continuous Overuse Trap",
+                trapTag: "Interrupted Action vs Duration",
+                domain: "interruption",
+                sentence: "Mark was studying in his room when the lightning bolt was striking the tree.",
+                isCorrect: false,
+                rules: [
+                    { id: 'a', text: "Rule: Sudden completed interrupts must use Past Simple ('struck'), NOT continuous ('was striking').", isTarget: true },
+                    { id: 'b', text: "Rule: Change 'was studying' to 'had studied'.", isTarget: false },
+                    { id: 'c', text: "Rule: 'when' always requires Past Perfect in both clauses.", isTarget: false }
+                ],
+                explanation: "EXPLANATION: Do not use continuous for both actions when one interrupts the other. The sudden interrupting event takes Past Simple ('struck')."
+            },
+            {
+                id: 5,
+                title: "Case #5: Linker Misuse",
+                trapTag: "Time Linker Precision",
+                domain: "linkers",
+                sentence: "While she finished her project, she immediately emailed her manager.",
+                isCorrect: false,
+                rules: [
+                    { id: 'a', text: "Rule: 'While' introduces an ongoing continuous action ('While she was finishing...'). Use 'As soon as' or 'When' for completed events.", isTarget: true },
+                    { id: 'b', text: "Rule: 'While' requires Past Perfect in the secondary clause.", isTarget: false },
+                    { id: 'c', text: "Rule: Change 'emailed' to 'was emailing'.", isTarget: false }
+                ],
+                explanation: "EXPLANATION: 'While' denotes duration during an ongoing background process. For completed events occurring immediately after another, use 'as soon as' or 'when'."
+            }
+        ];
+
+        let spotterIdx = 0;
+        let spotterStep1Answer = null;
+
+        function loadSpotterCase() {
+            const caseData = spotterCases[spotterIdx];
+            document.getElementById('spotter-case-title').textContent = caseData.title;
+            document.getElementById('spotter-trap-tag').textContent = `Trap Type: ${caseData.trapTag}`;
+            document.getElementById('spotter-sentence-text').textContent = `"${caseData.sentence}"`;
+
+            document.getElementById('spotter-progress-text').textContent = `Case ${spotterIdx + 1} / ${spotterCases.length}`;
+            document.getElementById('spotter-progress-bar').style.width = `${((spotterIdx + 1) / spotterCases.length) * 100}%`;
+
+            document.getElementById('spotter-step-1').classList.remove('hidden');
+            document.getElementById('spotter-step-2').classList.add('hidden');
+            document.getElementById('spotter-feedback-box').classList.add('hidden');
+            document.getElementById('spotter-next-btn').classList.add('hidden');
+        }
+
+        function evaluateSpotterStep1(userThinksCorrect) {
+            playTone('click');
+            const caseData = spotterCases[spotterIdx];
+            spotterStep1Answer = userThinksCorrect;
+
+            if (userThinksCorrect === caseData.isCorrect) {
+                // Correct Step 1 choice
+                if (caseData.isCorrect) {
+                    // It's a correct sentence, show feedback immediately
+                    playTone('correct');
+                    addXP(20);
+                    recordCompetency(caseData.domain, true);
+                    showSpotterFeedback(true, caseData.explanation);
+                } else {
+                    // User correctly spotted the mistake! Proceed to Step 2 rule selection
+                    showToast("Correct! Now select the rule required to fix it.");
+                    renderSpotterRules();
+                }
+            } else {
+                // User misidentified step 1
+                playTone('wrong');
+                recordCompetency(caseData.domain, false);
+                showSpotterFeedback(false, "Misidentified evaluation. " + caseData.explanation);
+            }
+        }
+
+        function renderSpotterRules() {
+            const caseData = spotterCases[spotterIdx];
+            const container = document.getElementById('spotter-rules-grid');
+            container.innerHTML = '';
+
+            document.getElementById('spotter-step-2').classList.remove('hidden');
+
+            caseData.rules.forEach((rule) => {
+                const btn = document.createElement('button');
+                btn.className = "text-left p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-chrono-accent text-xs font-semibold text-slate-200 transition glass-panel-hover flex justify-between items-center gap-3";
+                btn.innerHTML = `<span>${rule.text}</span> <i class="fa-solid fa-chevron-right text-slate-500"></i>`;
+                btn.onclick = () => evaluateSpotterStep2(rule.isTarget);
+                container.appendChild(btn);
+            });
+        }
+
+        function evaluateSpotterStep2(isTargetRule) {
+            const caseData = spotterCases[spotterIdx];
+            if (isTargetRule) {
+                playTone('correct');
+                addXP(20);
+                recordCompetency(caseData.domain, true);
+                showSpotterFeedback(true, caseData.explanation);
+            } else {
+                playTone('wrong');
+                recordCompetency(caseData.domain, false);
+                showSpotterFeedback(false, "Incorrect rule selected. " + caseData.explanation);
+            }
+        }
+
+        function showSpotterFeedback(isSuccess, msg) {
+            const box = document.getElementById('spotter-feedback-box');
+            box.classList.remove('hidden');
+
+            if (isSuccess) {
+                box.className = "p-5 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 space-y-1";
+                box.innerHTML = `<p class="font-bold text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Diagnostic Validated! (+20 XP)</p><p class="text-xs">${msg}</p>`;
+            } else {
+                box.className = "p-5 rounded-2xl bg-red-950/80 border border-red-500/40 text-red-200 space-y-1";
+                box.innerHTML = `<p class="font-bold text-red-400 flex items-center gap-2"><i class="fa-solid fa-circle-xmark"></i> Diagnostic Error Detected</p><p class="text-xs">${msg}</p>`;
+            }
+
+            document.getElementById('spotter-next-btn').classList.remove('hidden');
+        }
+
+        function nextSpotterCase() {
+            playTone('click');
+            spotterIdx++;
+            state.spotterCount = spotterIdx;
+            document.getElementById('modal-stat-spot').textContent = `${spotterIdx}/5`;
+            updateOverallProgress();
+
+            if (spotterIdx < spotterCases.length) {
+                loadSpotterCase();
+            } else {
+                playTone('fanfare');
+                showToast("🎉 Diagnostic Spotter Complete!");
+                switchTab('builder');
+            }
+        }
+
+        function speakCurrentSpotterSentence() {
+            const text = spotterCases[spotterIdx].sentence;
+            speakText(text);
+        }
+
+
+        /* ==========================================================================
+           5. MODULE 3: SENTENCE WEAVER & SEQUENCER LOGIC
+           ========================================================================== */
+        const builderScenarios = [
+            {
+                title: "Scenario 1: System Outage",
+                clausesA: [
+                    { id: 'c1', text: "the engineer had saved all database backup files", type: "perfect" },
+                    { id: 'c2', text: "the servers were running routine maintenance", type: "continuous" }
+                ],
+                clausesB: [
+                    { id: 'c3', text: "the main electrical power tripped", type: "simple" },
+                    { id: 'c4', text: "the generator was shutting down", type: "continuous" }
+                ],
+                targetLinker: "by the time",
+                correctClause1: "c1",
+                correctClause2: "c3",
+                hint: "Use 'by the time' to link a prior action (Past Perfect) to a deadline interruption (Past Simple)."
+            },
+            {
+                title: "Scenario 2: Traffic Interruption",
+                clausesA: [
+                    { id: 'c1', text: "while the bus was traveling along the highway", type: "continuous" },
+                    { id: 'c2', text: "after the driver had checked his mirrors", type: "perfect" }
+                ],
+                clausesB: [
+                    { id: 'c3', text: "a tire suddenly blew out", type: "simple" },
+                    { id: 'c4', text: "passengers were sleeping quietly", type: "continuous" }
+                ],
+                targetLinker: "while",
+                correctClause1: "c1",
+                correctClause2: "c3",
+                hint: "'while' connects an ongoing duration (Past Continuous) to a sudden main interruption (Past Simple)."
+            },
+            {
+                title: "Scenario 3: The Flight Boarding",
+                clausesA: [
+                    { id: 'c1', text: "as soon as the flight attendant had closed the cabin doors", type: "perfect" },
+                    { id: 'c2', text: "while rain was falling heavily on the tarmac", type: "continuous" }
+                ],
+                clausesB: [
+                    { id: 'c3', text: "the airplane began taxiing toward the runway", type: "simple" },
+                    { id: 'c4', text: "passengers was sitting in their seats", type: "error" }
+                ],
+                targetLinker: "as soon as",
+                correctClause1: "c1",
+                correctClause2: "c3",
+                hint: "'as soon as' introduces an event immediately following a completed prior event."
+            }
+        ];
+
+        let builderIdx = 0;
+
+        function loadPresetBuilderScenario(idx) {
+            playTone('click');
+            builderIdx = idx;
+            const scenario = builderScenarios[idx];
+
+            const selectA = document.getElementById('builder-clause-1');
+            const selectB = document.getElementById('builder-clause-2');
+            selectA.innerHTML = '';
+            selectB.innerHTML = '';
+
+            scenario.clausesA.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.text;
+                selectA.appendChild(opt);
+            });
+
+            scenario.clausesB.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.text;
+                selectB.appendChild(opt);
+            });
+
+            document.getElementById('builder-linker').value = scenario.targetLinker;
+            updateBuilderSynthesis();
+            document.getElementById('builder-feedback-box').classList.add('hidden');
+        }
+
+        function updateBuilderSynthesis() {
+            const scenario = builderScenarios[builderIdx];
+            const selectA = document.getElementById('builder-clause-1');
+            const selectB = document.getElementById('builder-clause-2');
+            const linkerVal = document.getElementById('builder-linker').value;
+
+            const textA = selectA.options[selectA.selectedIndex].text;
+            const textB = selectB.options[selectB.selectedIndex].text;
+
+            const outputEl = document.getElementById('builder-sentence-output');
+            outputEl.innerHTML = `"<span class='text-chrono-amber font-bold'>${linkerVal}</span> ${textA}, ${textB}."`;
+
+            // Update visual timeline node text highlights
+            document.getElementById('node-text-perfect').textContent = textA;
+            document.getElementById('node-text-continuous').textContent = `Context: ${linkerVal}...`;
+            document.getElementById('node-text-simple').textContent = textB;
+        }
+
+        function showBuilderHint() {
+            playTone('click');
+            const scenario = builderScenarios[builderIdx];
+            const box = document.getElementById('builder-feedback-box');
+            box.classList.remove('hidden');
+            box.className = "p-4 rounded-xl text-xs bg-indigo-950/80 border border-indigo-500/40 text-indigo-200";
+            box.innerHTML = `<p class="font-bold text-amber-400"><i class="fa-solid fa-lightbulb"></i> Diagnostic Hint:</p><p>${scenario.hint}</p>`;
+        }
+
+        function validateBuilderSentence() {
+            const scenario = builderScenarios[builderIdx];
+            const selectA = document.getElementById('builder-clause-1').value;
+            const selectB = document.getElementById('builder-clause-2').value;
+            const linkerVal = document.getElementById('builder-linker').value;
+
+            const isCorrect = (selectA === scenario.correctClause1 && selectB === scenario.correctClause2 && linkerVal === scenario.targetLinker);
+
+            const box = document.getElementById('builder-feedback-box');
+            box.classList.remove('hidden');
+
+            if (isCorrect) {
+                playTone('correct');
+                addXP(25);
+                recordCompetency("linkers", true);
+                state.builtCount++;
+                document.getElementById('modal-stat-built').textContent = state.builtCount;
+
+                box.className = "p-4 rounded-xl text-xs bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 space-y-1";
+                box.innerHTML = `<p class="font-bold text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Perfect Narrative Synthesis! (+25 XP)</p><p>Your clause choices and linker sequence align seamlessly on the narrative timeline.</p>`;
+            } else {
+                playTone('wrong');
+                recordCompetency("linkers", false);
+                box.className = "p-4 rounded-xl text-xs bg-red-950/80 border border-red-500/40 text-red-200 space-y-1";
+                box.innerHTML = `<p class="font-bold text-red-400 flex items-center gap-2"><i class="fa-solid fa-circle-xmark"></i> Chronology or Linker Mismatch</p><p>Check if your selected clauses fit the temporal function of the linker '${linkerVal}'.</p>`;
+            }
+        }
+
+        function speakBuilderSentence() {
+            const text = document.getElementById('builder-sentence-output').textContent;
+            speakText(text);
+        }
+
+
+        /* ==========================================================================
+           6. MODULE 4: SCORECARD & PEDAGOGICAL ASSESSMENT LOGIC
+           ========================================================================== */
+        function updateScorecardView() {
+            const comps = state.competencies;
+
+            const calcPct = (domain) => {
+                if (comps[domain].total === 0) return 0;
+                return Math.round((comps[domain].correct / comps[domain].total) * 100);
+            };
+
+            const interruptionPct = calcPct('interruption');
+            const perfectPct = calcPct('perfect');
+            const verbsPct = calcPct('verbs');
+            const linkersPct = calcPct('linkers');
+
+            document.getElementById('metric-interruption-pct').textContent = `${interruptionPct}%`;
+            document.getElementById('metric-interruption-bar').style.width = `${interruptionPct}%`;
+
+            document.getElementById('metric-perfect-pct').textContent = `${perfectPct}%`;
+            document.getElementById('metric-perfect-bar').style.width = `${perfectPct}%`;
+
+            document.getElementById('metric-verbs-pct').textContent = `${verbsPct}%`;
+            document.getElementById('metric-verbs-bar').style.width = `${verbsPct}%`;
+
+            document.getElementById('metric-linkers-pct').textContent = `${linkersPct}%`;
+            document.getElementById('metric-linkers-bar').style.width = `${linkersPct}%`;
+
+            renderPedagogicalNotes(interruptionPct, perfectPct, verbsPct, linkersPct);
+        }
+
+        function renderPedagogicalNotes(interruptionPct, perfectPct, verbsPct, linkersPct) {
+            const container = document.getElementById('pedagogical-notes-container');
+            container.innerHTML = '';
+
+            const notes = [];
+
+            if (interruptionPct < 70) {
+                notes.push({
+                    type: 'warning',
+                    icon: 'fa-bolt text-amber-400',
+                    title: 'Target: Interrupted Action vs Background Context',
+                    desc: 'Focus on separating ongoing scene-setting (was/were + -ing) from sudden interrupting actions (Past Simple V2).'
+                });
+            } else {
+                notes.push({
+                    type: 'success',
+                    icon: 'fa-circle-check text-emerald-400',
+                    title: 'Mastery: Background Context',
+                    desc: 'Demonstrates solid ability to structure interrupted past actions.'
+                });
+            }
+
+            if (perfectPct < 70) {
+                notes.push({
+                    type: 'warning',
+                    icon: 'fa-clock-rotate-left text-purple-400',
+                    title: 'Target: Past Perfect Sequence (had + V3)',
+                    desc: 'Review earlier past actions that completed prior to a secondary past timestamp or event.'
+                });
+            } else {
+                notes.push({
+                    type: 'success',
+                    icon: 'fa-circle-check text-emerald-400',
+                    title: 'Mastery: Deep Past Chronology',
+                    desc: 'Accurately places prior events in Past Perfect before main narrative events.'
+                });
+            }
+
+            if (verbsPct < 70) {
+                notes.push({
+                    type: 'warning',
+                    icon: 'fa-spell-check text-rose-400',
+                    title: 'Target: Auxiliary & Irregular Verbs',
+                    desc: "Watch out for double past marking error traps (e.g. 'didn't went' -> 'didn't go')."
+                });
+            }
+
+            notes.forEach(n => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-1 text-xs";
+                card.innerHTML = `
+                    <div class="font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid ${n.icon}"></i>
+                        <span>${n.title}</span>
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">${n.desc}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function resetDiagnosticData() {
+            playTone('click');
+            if (confirm("Reset all diagnostic score data and progress?")) {
+                state.xp = 0;
+                state.classifierCount = 0;
+                state.spotterCount = 0;
+                state.builtCount = 0;
+                state.competencies = {
+                    interruption: { correct: 0, total: 0 },
+                    perfect: { correct: 0, total: 0 },
+                    verbs: { correct: 0, total: 0 },
+                    linkers: { correct: 0, total: 0 }
+                };
+                classifierClassified = {};
+                spotterIdx = 0;
+
+                document.getElementById('user-xp').textContent = '0';
+                document.getElementById('modal-stat-xp').textContent = '0';
+                document.getElementById('classifier-count-badge').textContent = 'Classified: 0 / 6';
+
+                renderClassifierCards();
+                loadSpotterCase();
+                loadPresetBuilderScenario(0);
+                updateScorecardView();
+                updateOverallProgress();
+                showToast("Diagnostic Progress Reset");
+            }
+        }
+
+
+        /* ==========================================================================
+           7. APPLICATION INITIALIZATION
+           ========================================================================== */
+        window.onload = function() {
+            renderClassifierCards();
+            loadSpotterCase();
+            loadPresetBuilderScenario(0);
+            updateScorecardView();
+            updateOverallProgress();
+        };
+    </script>
+</body>
+</html>
