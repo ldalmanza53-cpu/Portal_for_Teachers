@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostMortem Studio: Past Mistakes, Regrets & Modals Lab</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            serif: ['Playfair Display', 'serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+            },
+            incident: {
+              50: '#fff1f2',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+            },
+            modals: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            regret: {
+              50: '#faf5ff',
+              500: '#a855f7',
+              600: '#9333ea',
+              700: '#7e22ce',
+            },
+            hypo: {
+              50: '#fffbe3',
+              500: '#eab308',
+              600: '#ca8a04',
+              700: '#a16207',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(14, 165, 233, 0.5);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(14, 165, 233, 0.8);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .dark .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .dark .glass-nav {
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    }
+
+    @keyframes ambientGlow {
+      0%, 100% { opacity: 0.35; transform: scale(1) rotate(0deg); }
+      50% { opacity: 0.65; transform: scale(1.12) rotate(180deg); }
+    }
+    .animate-ambient {
+      animation: ambientGlow 16s infinite ease-in-out;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificateModal, #certificateModal * {
+        visibility: visible;
+      }
+      #certificateModal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen font-sans antialiased transition-colors duration-300 flex flex-col relative overflow-x-hidden">
+
+  <!-- Ambient Glowing Orbs -->
+  <div class="fixed -top-48 -left-48 w-[30rem] h-[30rem] bg-sky-500/15 rounded-full blur-3xl pointer-events-none animate-ambient"></div>
+  <div class="fixed -bottom-48 -right-48 w-[30rem] h-[30rem] bg-rose-500/15 rounded-full blur-3xl pointer-events-none animate-ambient" style="animation-delay: -8s;"></div>
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[35rem] h-[35rem] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-ambient" style="animation-delay: -4s;"></div>
+
+  <header class="sticky top-0 z-40 glass-nav transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 via-rose-500 to-emerald-400 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-sky-500/25">
+            <i class="fa-solid fa-clipboard-question"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-sky-400 via-rose-400 to-emerald-400 bg-clip-text text-transparent">
+              PostMortem Studio
+            </h1>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Past Mistakes, Regrets & Modals Lab</p>
+          </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Mode Switcher -->
+          <div class="relative hidden lg:block">
+            <select id="settingModeSelect" onchange="App.setMode(this.value)" class="bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 font-medium py-1.5 px-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer">
+              <option value="Self-Study">🏠 Self-Study Mode</option>
+              <option value="Incident Debrief">📋 Incident Debrief</option>
+              <option value="Flipped">🔄 Flipped Learning</option>
+              <option value="Corporate">💼 Corporate Root-Cause Analysis</option>
+            </select>
+          </div>
+
+          <!-- Audio Mute Switch -->
+          <button onclick="SoundFX.toggleMute()" id="muteToggleBtn" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition" title="Toggle Audio FX">
+            <i id="muteIcon" class="fa-solid fa-volume-high text-sky-500"></i>
+          </button>
+
+          <!-- Speech Speed Switcher -->
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+            <span class="mr-1 text-slate-400 pl-1 font-mono text-[10px] hidden sm:inline"><i class="fa-solid fa-headphones"></i> TTS:</span>
+            <button onclick="SpeechEngine.setRate(0.7)" id="speedBtn07" class="speed-btn px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 font-semibold transition">0.7x</button>
+            <button onclick="SpeechEngine.setRate(0.9)" id="speedBtn09" class="speed-btn px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 font-semibold transition">0.9x</button>
+            <button onclick="SpeechEngine.setRate(1.0)" id="speedBtn10" class="speed-btn px-2 py-0.5 rounded bg-sky-600 text-white font-semibold transition shadow-xs">1.0x</button>
+          </div>
+
+          <!-- Dark/Light Mode Theme Toggle -->
+          <button onclick="App.toggleTheme()" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition" title="Toggle Dark/Light Theme">
+            <i class="fa-solid fa-moon dark:hidden"></i>
+            <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <section class="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-sky-500/20 py-2.5 px-4 text-xs text-white relative z-30">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- XP, Level & Streak Bar -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-1.5">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span class="font-bold text-amber-400" id="userXP">0 XP</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i class="fa-solid fa-award text-sky-400"></i>
+          <span>Level <strong id="userLevel" class="text-sky-400">1</strong> (<span id="userRank">Incident Novice</span>)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i class="fa-solid fa-fire text-rose-400"></i>
+          <span>Streak: <strong id="userStreak" class="text-rose-400">1 Day</strong></span>
+        </div>
+      </div>
+
+      <!-- Mode Guidance Banner & Badges -->
+      <div class="flex items-center gap-3">
+        <div id="modeGuidanceBanner" class="bg-sky-500/20 text-sky-300 border border-sky-500/30 px-3 py-0.5 rounded-full font-mono text-[11px] hidden md:block">
+          💡 Debrief Tip: Contrast past mistakes ('should have') with hypothetical counterfactuals ('would have').
+        </div>
+        <div class="flex items-center gap-2" id="badgeContainer">
+          <span class="text-slate-400 text-[11px]">Badges:</span>
+          <span id="badge1" class="opacity-30 transition cursor-help" title="Mistake Investigator"><i class="fa-solid fa-magnifying-glass-chart text-sky-400"></i></span>
+          <span id="badge2" class="opacity-30 transition cursor-help" title="Regret Reframer"><i class="fa-solid fa-heart-crack text-rose-400"></i></span>
+          <span id="badge3" class="opacity-30 transition cursor-help" title="Modal Architect"><i class="fa-solid fa-diagram-project text-emerald-400"></i></span>
+          <span id="badge4" class="opacity-30 transition cursor-help" title="Master Auditor"><i class="fa-solid fa-file-signature text-purple-400"></i></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <nav class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-1 sm:space-x-3 overflow-x-auto py-2 scrollbar-none" id="navTabs">
+        <button onclick="App.switchModule(1)" id="tab1" class="nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-sky-600 text-white shadow-md">
+          <i class="fa-solid fa-table-cells"></i> Module 1: Mistake & Modal Matrix
+        </button>
+        <button onclick="App.switchModule(2)" id="tab2" class="nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-cubes"></i> Module 2: Post-Mortem Tile Scrambler
+        </button>
+        <button onclick="App.switchModule(3)" id="tab3" class="nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-user-doctor"></i> Module 3: Sentence Doctor Trap Lab
+        </button>
+        <button onclick="App.switchModule(4)" id="tab4" class="nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Module 4: Incident Analysis Parser
+        </button>
+        <button onclick="App.switchModule(5)" id="tab5" class="nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-chart-pie"></i> Module 5: Analytics & Certificate
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+
+    <!-- ==================== MODULE 1: MISTAKE & MODAL MATRIX EXPLORER ==================== -->
+    <section id="module1" class="module-pane space-y-6">
+      
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 mb-2">
+              <i class="fa-solid fa-graduation-cap mr-1"></i> Interactive Mistake & Counterfactual Matrix
+            </span>
+            <h2 class="text-2xl font-bold tracking-tight">Post-Mortem Root Cause Matrix</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-3xl">
+              Master the 5 fundamental post-mortem structures: Past Modal Remorse (<span class="font-mono text-sky-500">should have</span>), Missed Opportunities (<span class="font-mono text-emerald-500">could have</span>), Formal Regrets (<span class="font-mono text-rose-500">wish + had V3</span>), Third Conditionals, and Mixed Conditionals.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="Module1.playGrammarOverview()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-lg shadow-sky-500/20 transition">
+              <i class="fa-solid fa-circle-play text-base"></i> Audio Overview Guide
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+          
+          <div class="bg-white/60 dark:bg-slate-900/60 p-3.5 rounded-xl border border-sky-200 dark:border-sky-900/50">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-circle-exclamation text-sky-500"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">1. Past Remorse</span>
+            </div>
+            <div class="font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+              should (not) have + V3
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Criticizing past decisions or unperformed obligations.</p>
+          </div>
+
+          <div class="bg-white/60 dark:bg-slate-900/60 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900/50">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-lightbulb text-emerald-500"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">2. Missed Option</span>
+            </div>
+            <div class="font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+              could / might have + V3
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Unexecuted past possibilities and alternatives.</p>
+          </div>
+
+          <div class="bg-white/60 dark:bg-slate-900/60 p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/50">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-heart-crack text-rose-500"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">3. Formal Regret</span>
+            </div>
+            <div class="font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+              I wish / If only + had V3
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Expressing deep remorse over unavoidable past outcomes.</p>
+          </div>
+
+          <div class="bg-white/60 dark:bg-slate-900/60 p-3.5 rounded-xl border border-purple-200 dark:border-purple-900/50">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-diagram-project text-purple-500"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">4. Third Conditional</span>
+            </div>
+            <div class="font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+              If + had V3, would have V3
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Hypothetical past cause leading to unreal past result.</p>
+          </div>
+
+          <div class="bg-white/60 dark:bg-slate-900/60 p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/50">
+            <div class="flex items-center gap-2 mb-1">
+              <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">5. Mixed Conditional</span>
+            </div>
+            <div class="font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+              If + had V3, would be V1 today
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">Past mistake causing direct PRESENT consequences.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-2 overflow-x-auto pb-1" id="m1DomainFilters">
+          <button onclick="Module1.filterCategory('all')" class="cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white shadow-sm">All Incident Domains</button>
+          <button onclick="Module1.filterCategory('Workplace Incident')" class="cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-500 hover:text-white transition">🏢 Workplace Incident</button>
+          <button onclick="Module1.filterCategory('Financial Strategy')" class="cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition">📈 Financial Strategy</button>
+          <button onclick="Module1.filterCategory('Career Development')" class="cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-500 hover:text-white transition">💼 Career Development</button>
+          <button onclick="Module1.filterCategory('System & Operations')" class="cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-purple-500 hover:text-white transition">⚙️ System Operations</button>
+        </div>
+        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium"><i class="fa-solid fa-volume-high text-sky-400 mr-1"></i> Tap TTS icons for audio practice</span>
+      </div>
+
+      <!-- Dynamic Grid for Matrix Cards -->
+      <div id="m1ExplorerGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Injected via JS -->
+      </div>
+
+    </section>
+
+    <!-- ==================== MODULE 2: POST-MORTEM TILE SCRAMBLER ==================== -->
+    <section id="module2" class="module-pane hidden space-y-6">
+      
+      <div class="glass-card rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 dark:bg-sky-900/50 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 mb-2">
+              <i class="fa-solid fa-cubes mr-1"></i> Interactive Post-Mortem Syntax Assembly
+            </span>
+            <h2 class="text-2xl font-bold tracking-tight">Post-Mortem Tile Scrambler</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Reconstruct complex post-mortem statements, past modal criticisms, and root-cause conditionals into proper grammar sequence.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500 font-mono">Item: <strong id="m2TileProgress" class="text-sky-500">1/5</strong></span>
+            <button onclick="Module2.resetWorkspace()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition">
+              <i class="fa-solid fa-rotate-left mr-1"></i> Reset Workspace
+            </button>
+          </div>
+        </div>
+
+        <!-- Context Scenario Box -->
+        <div class="mt-6 bg-sky-50 dark:bg-sky-950/40 p-4 rounded-xl border border-sky-200 dark:border-sky-900/50">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-1">
+            <i class="fa-solid fa-bullseye"></i> <span id="m2ScenarioTitle">Post-Mortem Context Scenario</span>
+          </div>
+          <p id="m2ScenarioDesc" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Loading context scenario...
+          </p>
+        </div>
+
+        <!-- Workspace Drop Area -->
+        <div class="mt-6">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            Constructed Target Sentence:
+          </label>
+          <div id="m2Workspace" class="min-h-[90px] p-4 bg-slate-100 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex flex-wrap gap-2 items-center transition-all">
+            <span id="m2Placeholder" class="text-slate-400 dark:text-slate-600 text-xs italic">Tap tiles from the bank below to build your sentence...</span>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            Available Word & Clause Tiles:
+          </label>
+          <div id="m2TileBank" class="p-4 bg-slate-200/50 dark:bg-slate-900/50 rounded-xl border border-slate-300 dark:border-slate-800 flex flex-wrap gap-2.5 min-h-[80px]">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Actions & Feedback Bar -->
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div id="m2Feedback" class="text-xs font-semibold flex items-center gap-2 text-slate-500">
+            <!-- Dynamic feedback -->
+          </div>
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <button onclick="Module2.showHint()" class="flex-1 sm:flex-initial bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-4 py-2 rounded-xl text-xs font-semibold hover:bg-amber-500/20 transition">
+              <i class="fa-solid fa-lightbulb mr-1"></i> Hint
+            </button>
+            <button onclick="Module2.verifySentence()" class="flex-1 sm:flex-initial bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-sky-500/20 transition">
+              <i class="fa-solid fa-circle-check mr-1"></i> Verify Syntax (+15 XP)
+            </button>
+          </div>
+        </div>
+
+        <!-- Structural Breakdown Drawer -->
+        <div id="m2Explanation" class="hidden mt-4 p-4 rounded-xl bg-sky-500/10 border border-sky-500/30 text-xs text-sky-900 dark:text-sky-200 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-sm">
+            <i class="fa-solid fa-graduation-cap"></i> Structural Grammar Breakdown:
+          </div>
+          <p id="m2ExplanationText">Explanation details...</p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ==================== MODULE 3: SENTENCE DOCTOR TRAP LAB ==================== -->
+    <section id="module3" class="module-pane hidden space-y-6">
+      
+      <div class="glass-card rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 mb-2">
+              <i class="fa-solid fa-user-doctor mr-1"></i> Diagnostic ESL Trap Clinic
+            </span>
+            <h2 class="text-2xl font-bold tracking-tight">Sentence Doctor Trap Lab</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Diagnose and cure 5 classic past modal & regret traps: <span class="font-mono text-rose-500">"should of" phonetics</span>, <span class="font-mono text-rose-500">"wish + simple past" for regrets</span>, <span class="font-mono text-rose-500">"if I would have" misuses</span>, and <span class="font-mono text-rose-500">"shouldn't have" vs "couldn't have"</span>.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500 font-mono">Case: <strong id="m3DoctorProgress" class="text-rose-500">1/5</strong></span>
+          </div>
+        </div>
+
+        <!-- Patient Case Card -->
+        <div id="m3DoctorCard" class="mt-6 bg-slate-100 dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 relative">
+          
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-500">
+              <i class="fa-solid fa-notes-medical mr-1"></i> Incident Report Statement Diagnostic
+            </span>
+            <span id="m3DoctorTag" class="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-0.5 rounded font-mono">
+              Trap Focus: Loading...
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 my-4">
+            <p id="m3DoctorSentence" class="text-base sm:text-lg font-bold font-mono text-slate-900 dark:text-slate-100 leading-relaxed">
+              "Loading statement..."
+            </p>
+            <button onclick="SpeechEngine.speak(document.getElementById('m3DoctorSentence').textContent)" class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-sky-500 hover:bg-sky-50 flex items-center justify-center transition shrink-0 ml-2" title="Listen to statement">
+              <i class="fa-solid fa-volume-high"></i>
+            </button>
+          </div>
+
+          <!-- Choice Buttons -->
+          <div id="m3DoctorChoices" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+            <button onclick="Module3.answer('correct')" class="p-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-500 hover:bg-emerald-500/10 text-left transition font-semibold text-sm flex items-center justify-between group">
+              <span><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i> Correct (Grammatically Sound)</span>
+              <i class="fa-solid fa-arrow-right text-slate-400 group-hover:translate-x-1 transition"></i>
+            </button>
+            <button onclick="Module3.answer('incorrect')" class="p-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-rose-500 hover:bg-rose-500/10 text-left transition font-semibold text-sm flex items-center justify-between group">
+              <span><i class="fa-solid fa-triangle-exclamation text-rose-500 mr-2"></i> Incorrect (Contains ESL Trap)</span>
+              <i class="fa-solid fa-arrow-right text-slate-400 group-hover:translate-x-1 transition"></i>
+            </button>
+          </div>
+
+          <!-- Diagnostic Feedback Box -->
+          <div id="m3DoctorFeedback" class="hidden mt-6 p-4 rounded-xl text-sm space-y-2">
+            <!-- Populated on choice -->
+          </div>
+
+          <!-- Doctor Next Button -->
+          <div class="mt-6 flex justify-end">
+            <button id="m3DoctorNextBtn" onclick="Module3.nextQuestion()" class="hidden bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold shadow-lg shadow-sky-500/20 transition">
+              Next Case Diagnostic <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== MODULE 4: REAL-TIME INCIDENT ANALYSIS PARSER ==================== -->
+    <section id="module4" class="module-pane hidden space-y-6">
+      
+      <div class="glass-card rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 mb-2">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Live Incident Analysis Parser Engine
+            </span>
+            <h2 class="text-2xl font-bold tracking-tight">Real-Time Post-Mortem Report Parser</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Draft or paste an incident debrief report. Our engine evaluates your post-mortem reasoning across 4 critical criteria.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="Module4.loadTemplate()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow-md flex items-center gap-1.5">
+              <i class="fa-solid fa-folder-open"></i> Load Sample Post-Mortem
+            </button>
+            <button onclick="Module4.clearText()" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold transition" title="Clear Text">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+          
+          <div class="lg:col-span-7 flex flex-col space-y-3">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Post-Mortem Incident Workstation:
+            </label>
+            <textarea id="bioInput" oninput="Module4.analyzeText()" placeholder="Type or paste your post-mortem incident debrief report here... (e.g. 'We experienced an unannounced outage yesterday. The dev team should have verified the database migration before deployment. We could have avoided the downtime if we had conducted a dry-run test. I wish we had implemented automated rollbacks. If we had tested the code properly, our platform would be fully operational today.')" class="w-full h-64 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans text-sm text-slate-800 dark:text-slate-200 leading-relaxed resize-none transition"></textarea>
+
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span id="bioCharCount">0 characters | 0 words</span>
+              <div class="flex items-center gap-3">
+                <button onclick="Module4.copyToClipboard()" class="hover:text-emerald-500 transition"><i class="fa-regular fa-copy mr-1"></i> Copy Debrief</button>
+                <button onclick="SpeechEngine.speak(document.getElementById('bioInput').value)" class="hover:text-emerald-500 transition"><i class="fa-solid fa-volume-high mr-1"></i> Listen</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-slate-100 dark:bg-slate-900/80 p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+            
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200">Live Post-Mortem Diagnostic</h3>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-500">Score:</span>
+                <span id="bioScore" class="font-mono font-extrabold text-base text-emerald-500">0 / 100</span>
+              </div>
+            </div>
+
+            <!-- Score Bar -->
+            <div class="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div id="bioProgressBar" class="bg-gradient-to-r from-sky-500 via-rose-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+            </div>
+
+            <!-- Checklist Cards -->
+            <div class="space-y-2.5 text-xs">
+              
+              <!-- Criterion 1 -->
+              <div id="m4crit1" class="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-start gap-2.5 transition">
+                <div id="m4crit1Icon" class="text-slate-400 mt-0.5"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200">1. Past Mistake & Criticism</div>
+                  <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">Past modal obligation (<span class="font-mono">should have / shouldn't have + V3</span>).</p>
+                </div>
+              </div>
+
+              <!-- Criterion 2 -->
+              <div id="m4crit2" class="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-start gap-2.5 transition">
+                <div id="m4crit2Icon" class="text-slate-400 mt-0.5"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200">2. Missed Alternative or Regret</div>
+                  <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">Alternative options or formal regret (<span class="font-mono">could have V3 / wish I had V3</span>).</p>
+                </div>
+              </div>
+
+              <!-- Criterion 3 -->
+              <div id="m4crit3" class="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-start gap-2.5 transition">
+                <div id="m4crit3Icon" class="text-slate-400 mt-0.5"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200">3. Counterfactual Cause & Effect</div>
+                  <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">Third Conditional (<span class="font-mono">If + had V3, would have V3</span>).</p>
+                </div>
+              </div>
+
+              <!-- Criterion 4 -->
+              <div id="m4crit4" class="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-start gap-2.5 transition">
+                <div id="m4crit4Icon" class="text-slate-400 mt-0.5"><i class="fa-solid fa-circle-xmark"></i></div>
+                <div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200">4. Present Consequence Link</div>
+                  <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5">Mixed Conditional (<span class="font-mono">would be / would have today/now</span>).</p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== MODULE 5: PERFORMANCE ANALYTICS & CERTIFICATE ==================== -->
+    <section id="module5" class="module-pane hidden space-y-6">
+      
+      <div class="glass-card rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 mb-2">
+              <i class="fa-solid fa-chart-pie mr-1"></i> Root Cause & Modal Dashboard
+            </span>
+            <h2 class="text-2xl font-bold tracking-tight">Competency Analytics & Official Certificate</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              Review your mastery across past modals, regrets, and root-cause conditional structures, and generate an official printable certificate.
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="Module5.openCertificateModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-amber-500/20 transition flex items-center gap-2">
+              <i class="fa-solid fa-certificate text-base"></i> View Printable Official Certificate
+            </button>
+          </div>
+        </div>
+
+        <!-- Candidate Name Bar -->
+        <div class="mt-6 bg-slate-100 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="w-10 h-10 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase font-bold text-slate-400">Candidate Name:</label>
+              <input type="text" id="studentNameInput" value="Alex Morgan" oninput="Module5.updateStudentName(this.value)" class="bg-white dark:bg-slate-800 text-sm font-bold px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-slate-100">
+            </div>
+          </div>
+          <div class="text-xs text-slate-500 font-mono">
+            Lab ID: <span class="text-sky-400 font-bold">POSTMORTEM-LAB-2026</span>
+          </div>
+        </div>
+
+        <!-- Analytics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          
+          <!-- Competency Pillars -->
+          <div class="bg-slate-100 dark:bg-slate-900/80 p-5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-bars-progress text-sky-500"></i> Competency Breakdown Across 4 Pillars
+            </h3>
+
+            <!-- Pillar 1 -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Past Modals ('should have / shouldn't have')</span>
+                <span id="metricPill1" class="text-sky-500 font-mono">92%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barPill1" class="bg-sky-500 h-full w-[92%] transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Missed Possibilities & Regrets ('could have', 'wish + had V3')</span>
+                <span id="metricPill2" class="text-rose-500 font-mono">88%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barPill2" class="bg-rose-500 h-full w-[88%] transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Third Conditionals ('If + had V3, would have V3')</span>
+                <span id="metricPill3" class="text-emerald-500 font-mono">90%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barPill3" class="bg-emerald-500 h-full w-[90%] transition-all duration-500"></div>
+              </div>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Mixed Conditionals ('If + had V3, would be V1 today')</span>
+                <span id="metricPill4" class="text-purple-500 font-mono">95%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="barPill4" class="bg-purple-500 h-full w-[95%] transition-all duration-500"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Qualitative Report Card -->
+          <div class="bg-slate-100 dark:bg-slate-900/80 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-clipboard-check text-emerald-500"></i> Pedagogical Evaluation Summary
+              </h3>
+              <div id="pedagogicalReport" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 font-sans">
+                <p><strong>Demonstrated Mastery:</strong> Highly proficient in constructing incident debrief reports using past modal criticisms (<span class="font-mono text-sky-400">should have double-checked</span>) and counterfactual analysis (<span class="font-mono text-emerald-400">would have prevented downtime</span>).</p>
+                <p><strong>Recommended Focus:</strong> Be vigilant against phonetic confusion such as writing <span class="font-mono text-rose-400">should of</span> instead of <span class="font-mono text-sky-400">should have</span>.</p>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+              <span>Standard Target: <strong class="text-sky-400">CEFR B1–B2 Advanced Root-Cause Auditor</strong></span>
+              <span>Automated Diagnostic</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 py-4 text-center text-xs text-slate-500 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>PostMortem Studio • Past Mistakes, Regrets & Modals Lab</p>
+      <p class="font-mono text-[11px]">CEFR B1–B2 Standard • Pure Web Audio Synthesizer</p>
+    </div>
+  </footer>
+
+  <!-- Printable Certificate Modal -->
+  <div id="certificateModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl p-8 border-2 border-amber-500/40 relative shadow-2xl overflow-hidden">
+      
+      <!-- Close Modal -->
+      <button onclick="Module5.closeCertificateModal()" class="no-print absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-slate-300 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Frame Header -->
+      <div class="text-center space-y-3">
+        <div class="inline-block text-amber-500 text-4xl mb-1">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <h2 class="text-xs uppercase font-extrabold tracking-widest text-amber-600 dark:text-amber-400">
+          Official Post-Mortem & Modal Analysis Certification
+        </h2>
+        <h1 class="text-3xl font-extrabold font-serif text-slate-900 dark:text-slate-100">
+          Certificate of Post-Mortem Fluency
+        </h1>
+        <p class="text-xs text-slate-500">Issued by Quality & Incident Analysis Board • PostMortem Studio</p>
+      </div>
+
+      <!-- Body Content -->
+      <div class="my-8 text-center space-y-4">
+        <p class="text-xs text-slate-500 uppercase tracking-wider">This certifies that candidate</p>
+        <p id="certStudentName" class="text-2xl font-bold text-sky-600 dark:text-sky-400 font-serif underline decoration-amber-400 decoration-2 underline-offset-8">
+          Alex Morgan
+        </p>
+        <p class="text-sm text-slate-700 dark:text-slate-300 max-w-lg mx-auto leading-relaxed">
+          has successfully mastered all diagnostic modules, demonstrating high fluency in sequencing <strong class="text-sky-500">Past Modals (should/could have)</strong>, <strong class="text-rose-500">Formal Regrets (wish/If only)</strong>, <strong class="text-emerald-500">Third Conditionals</strong>, and <strong class="text-purple-500">Mixed Conditionals</strong>.
+        </p>
+      </div>
+
+      <!-- Metrics Grid -->
+      <div class="grid grid-cols-3 gap-3 my-6 text-center text-xs font-mono bg-slate-100 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div>
+          <span class="block text-slate-400 text-[10px]">TOTAL CUMULATIVE XP</span>
+          <strong id="certXP" class="text-amber-500 text-sm">0 XP</strong>
+        </div>
+        <div>
+          <span class="block text-slate-400 text-[10px]">MASTERY LEVEL</span>
+          <strong id="certLevel" class="text-sky-400 text-sm">Level 1</strong>
+        </div>
+        <div>
+          <span class="block text-slate-400 text-[10px]">CEFR RATING</span>
+          <strong class="text-emerald-400 text-sm">B1–B2 Advanced Root Cause Auditor</strong>
+        </div>
+      </div>
+
+      <!-- Footer Signatures & Action Button -->
+      <div class="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-800 gap-4">
+        <div class="text-left text-xs">
+          <p class="font-bold text-slate-800 dark:text-slate-200">Director of Academic & Incident Linguistics</p>
+          <p class="text-slate-500 text-[11px]">PostMortem Studio Board</p>
+        </div>
+        <div class="no-print flex items-center gap-3">
+          <button onclick="window.print()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md">
+            <i class="fa-solid fa-print"></i> Print / Save PDF
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SoundFX = {
+      ctx: null,
+      muted: false,
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      },
+      toggleMute() {
+        this.muted = !this.muted;
+        const icon = document.getElementById('muteIcon');
+        if (this.muted) {
+          icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        } else {
+          icon.className = 'fa-solid fa-volume-high text-sky-500';
+          this.playClick();
+        }
+      },
+      playClick() {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.04);
+      },
+      playSnap() {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+      },
+      playSuccess() {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+          gain.gain.setValueAtTime(0, now + idx * 0.07);
+          gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.07 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.22);
+        });
+      },
+      playBuzzer() {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(170, now);
+        osc.frequency.setValueAtTime(120, now + 0.1);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      },
+      playFanfare() {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+        const times = [0, 0.1, 0.2, 0.3, 0.4, 0.55];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + times[i]);
+          gain.gain.setValueAtTime(0.2, now + times[i]);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + times[i] + (i === 5 ? 0.7 : 0.18));
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + times[i]);
+          osc.stop(now + times[i] + (i === 5 ? 0.7 : 0.18));
+        });
+      }
+    };
+
+    const SpeechEngine = {
+      rate: 1.0,
+      speak(text) {
+        if (!('speechSynthesis' in window) || !text) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = this.rate;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      },
+      setRate(newRate) {
+        this.rate = newRate;
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+          btn.classList.remove('bg-sky-600', 'text-white');
+          btn.classList.add('text-slate-600', 'dark:text-slate-300');
+        });
+        const activeId = newRate === 0.7 ? 'speedBtn07' : newRate === 0.9 ? 'speedBtn09' : 'speedBtn10';
+        const activeBtn = document.getElementById(activeId);
+        if(activeBtn) {
+          activeBtn.classList.add('bg-sky-600', 'text-white');
+          activeBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
+        }
+        SoundFX.playClick();
+      }
+    };
+
+    const App = {
+      xp: 0,
+      level: 1,
+      streak: 1,
+      studentName: 'Alex Morgan',
+      currentMode: 'Self-Study',
+      badges: { mistake: false, regret: false, modal: false, auditor: false },
+
+      init() {
+        this.loadState();
+        this.updateUI();
+        Module1.render();
+        Module2.init();
+        Module3.init();
+        Module4.init();
+        Module5.init();
+      },
+
+      addXP(amount, badgeKey = null) {
+        this.xp += amount;
+        const newLevel = Math.floor(this.xp / 100) + 1;
+        if (newLevel > this.level) {
+          this.level = newLevel;
+          SoundFX.playFanfare();
+        } else if (badgeKey && !this.badges[badgeKey]) {
+          this.badges[badgeKey] = true;
+          SoundFX.playFanfare();
+        } else {
+          SoundFX.playSuccess();
+        }
+        this.saveState();
+        this.updateUI();
+      },
+
+      saveState() {
+        const state = { xp: this.xp, level: this.level, streak: this.streak, badges: this.badges, studentName: this.studentName };
+        localStorage.setItem('postmortem_studio_state', JSON.stringify(state));
+      },
+
+      loadState() {
+        const saved = localStorage.getItem('postmortem_studio_state');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            this.xp = parsed.xp || 0;
+            this.level = parsed.level || 1;
+            this.streak = parsed.streak || 1;
+            this.badges = parsed.badges || this.badges;
+            this.studentName = parsed.studentName || 'Alex Morgan';
+          } catch(e) {}
+        }
+      },
+
+      updateUI() {
+        document.getElementById('userXP').textContent = `${this.xp} XP`;
+        document.getElementById('userLevel').textContent = this.level;
+        document.getElementById('userStreak').textContent = `${this.streak} Day${this.streak > 1 ? 's' : ''}`;
+        
+        const ranks = ['Incident Novice', 'Root Cause Analyst', 'Modal Strategist', 'PostMortem Specialist', 'Chief Risk Inspector'];
+        const rankIndex = Math.min(Math.floor(this.level / 2), ranks.length - 1);
+        document.getElementById('userRank').textContent = ranks[rankIndex];
+
+        if (this.badges.mistake) document.getElementById('badge1').classList.remove('opacity-30');
+        if (this.badges.regret) document.getElementById('badge2').classList.remove('opacity-30');
+        if (this.badges.modal) document.getElementById('badge3').classList.remove('opacity-30');
+        if (this.badges.auditor) document.getElementById('badge4').classList.remove('opacity-30');
+
+        document.getElementById('studentNameInput').value = this.studentName;
+        document.getElementById('certStudentName').textContent = this.studentName;
+        document.getElementById('certXP').textContent = `${this.xp} XP`;
+        document.getElementById('certLevel').textContent = `Level ${this.level}`;
+      },
+
+      toggleTheme() {
+        SoundFX.playClick();
+        document.documentElement.classList.toggle('dark');
+      },
+
+      setMode(mode) {
+        SoundFX.playClick();
+        this.currentMode = mode;
+        const banner = document.getElementById('modeGuidanceBanner');
+        
+        if (mode === 'Incident Debrief') {
+          banner.textContent = '📋 Incident Debrief: Focus on past mistakes ("should have") vs missed alternatives ("could have").';
+        } else if (mode === 'Flipped') {
+          banner.textContent = '🔄 Flipped Learning: Solve diagnostic traps in Module 3 before writing debrief reports in Module 4.';
+        } else if (mode === 'Corporate') {
+          banner.textContent = '💼 Corporate Root-Cause Analysis: Focus on systemic risks, budget overruns, and outage post-mortems.';
+        } else {
+          banner.textContent = '💡 Debrief Tip: Contrast past mistakes ("should have") with hypothetical counterfactuals ("would have").';
+        }
+      },
+
+      switchModule(modNum) {
+        SoundFX.playClick();
+        document.querySelectorAll('.module-pane').forEach((pane, idx) => {
+          if (idx + 1 === modNum) {
+            pane.classList.remove('hidden');
+          } else {
+            pane.classList.add('hidden');
+          }
+        });
+
+        document.querySelectorAll('.nav-tab').forEach((tab, idx) => {
+          if (idx + 1 === modNum) {
+            tab.className = 'nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap bg-sky-600 text-white shadow-md';
+          } else {
+            tab.className = 'nav-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition';
+          }
+        });
+      }
+    };
+
+    const Module1 = {
+      cards: [
+        {
+          id: 1,
+          category: 'Workplace Incident',
+          domainBadge: '🏢 Past Remorse',
+          title: 'Unverified Database Migration',
+          formula: 'should have + V3',
+          exampleText: "The engineering team should have verified the database migration before deploying to production.",
+          explanation: "'Should have + V3' criticizes a past action that was omitted, creating a critical oversight.",
+          accentColor: 'sky'
+        },
+        {
+          id: 2,
+          category: 'Financial Strategy',
+          domainBadge: '📈 Missed Alternative',
+          title: 'Unhedged Currency Exposure',
+          formula: 'could have + V3',
+          exampleText: "The treasury department could have hedged foreign currency risk before the market drop.",
+          explanation: "'Could have + V3' highlights a viable past alternative that was available but not executed.",
+          accentColor: 'emerald'
+        },
+        {
+          id: 3,
+          category: 'Career Development',
+          domainBadge: '💼 Formal Regret',
+          title: 'Declined International Lead',
+          formula: 'I wish / If only + had + V3',
+          exampleText: "I wish I had accepted the security architecture leadership position in Zurich.",
+          explanation: "'Wish + Past Perfect' expresses deep personal or executive regret about a past decision.",
+          accentColor: 'rose'
+        },
+        {
+          id: 4,
+          category: 'System & Operations',
+          domainBadge: '⚙️ Third Conditional',
+          title: 'Server Crash Prevention',
+          formula: 'If + had + V3, would have + V3',
+          exampleText: "If they had conducted automated backup checks, the server crash wouldn't have caused downtime.",
+          explanation: "Third Conditional connects an unreal past condition ('had conducted') to an unreal past outcome ('wouldn't have caused').",
+          accentColor: 'purple'
+        },
+        {
+          id: 5,
+          category: 'Workplace Incident',
+          domainBadge: '🏢 Negative Obligation',
+          title: 'Unvetted Vendor Signing',
+          formula: "shouldn't have + V3",
+          exampleText: "We shouldn't have signed the unvetted vendor contract without legal approval.",
+          explanation: "'Shouldn't have + V3' expresses criticism over a past action that should not have occurred.",
+          accentColor: 'sky'
+        },
+        {
+          id: 6,
+          category: 'System & Operations',
+          domainBadge: '⚙️ Mixed Consequence',
+          title: 'Firewall Patch Delay',
+          formula: 'If + had + V3, would be + V1 today',
+          exampleText: "If we had updated our firewall in 2022, our client portal would be fully secure today.",
+          explanation: "Mixed Conditional connects a past decision ('had updated') directly to a present state ('would be secure today').",
+          accentColor: 'amber'
+        }
+      ],
+
+      render() {
+        const grid = document.getElementById('m1ExplorerGrid');
+        grid.innerHTML = this.cards.map(card => `
+          <div class="glass-card rounded-2xl p-5 shadow-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover:border-${card.accentColor}-500/50 transition">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-${card.accentColor}-500/10 text-${card.accentColor}-500 border border-${card.accentColor}-500/20">
+                  ${card.domainBadge}
+                </span>
+                <button onclick="SpeechEngine.speak('${card.exampleText.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-full bg-${card.accentColor}-100 dark:bg-${card.accentColor}-950 text-${card.accentColor}-600 dark:text-${card.accentColor}-400 flex items-center justify-center hover:scale-105 transition" title="Listen to audio">
+                  <i class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+              </div>
+
+              <h3 class="font-bold text-base text-slate-900 dark:text-slate-100">${card.title}</h3>
+
+              <div class="mt-4 bg-slate-100 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+                <div class="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">${card.formula}</div>
+                <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">"${card.exampleText}"</p>
+              </div>
+
+              <p class="text-[11px] text-slate-500 mt-3">${card.explanation}</p>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">Validate target syntax</span>
+              <button onclick="App.addXP(15, 'mistake')" class="text-xs font-bold text-${card.accentColor}-500 hover:opacity-80 transition flex items-center gap-1">
+                <i class="fa-solid fa-check"></i> Mastered (+15 XP)
+              </button>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      filterCategory(cat) {
+        SoundFX.playClick();
+        document.querySelectorAll('.cat-filter').forEach(btn => {
+          btn.className = 'cat-filter px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-sky-500 hover:text-white transition';
+        });
+        if(cat === 'all') {
+          this.render();
+        } else {
+          const filtered = this.cards.filter(c => c.category === cat);
+          const grid = document.getElementById('m1ExplorerGrid');
+          grid.innerHTML = filtered.map(card => `
+            <div class="glass-card rounded-2xl p-5 shadow-lg border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-500">${card.domainBadge}</span>
+                <h3 class="font-bold text-base mt-2">${card.title}</h3>
+                <div class="mt-3 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl">
+                  <p class="text-xs font-semibold">"${card.exampleText}"</p>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+      },
+
+      playGrammarOverview() {
+        SpeechEngine.speak("Welcome to PostMortem Studio. Use should have to express past regrets or criticisms. Use could have for missed possibilities. Express formal regrets with wish plus Past Perfect. Connect past root causes to present outcomes using mixed conditionals.");
+      }
+    };
+
+    const Module2 = {
+      questions: [
+        {
+          title: "Third Conditional: Software Deployment Outage",
+          desc: "Assemble a Third Conditional sentence analyzing a software deployment incident.",
+          target: ["If the engineering team had run full unit tests,", "they would not have deployed", "the flawed patch", "to production."],
+          scrambled: ["the flawed patch", "If the engineering team had run full unit tests,", "to production.", "they would not have deployed"],
+          explanation: "Third Conditional: 'If + Past Perfect' (unreal past cause) + 'would not have deployed' (unreal past result)."
+        },
+        {
+          title: "Past Modal Obligation: Unapproved Budget Overrun",
+          desc: "Construct a past modal criticism regarding an unvetted vendor transaction.",
+          target: ["We shouldn't have approved", "the unvetted vendor contract", "without legal review", "and authorization."],
+          scrambled: ["without legal review", "We shouldn't have approved", "and authorization.", "the unvetted vendor contract"],
+          explanation: "'Shouldn't have + V3' expresses past remorse over a decision that violated risk policy."
+        },
+        {
+          title: "Formal Executive Regret",
+          desc: "Construct a formal regret statement regarding a declined strategic leadership offer.",
+          target: ["I wish I had accepted", "the international transfer offer", "to spearhead European operations", "in Zurich."],
+          scrambled: ["to spearhead European operations", "in Zurich.", "the international transfer offer", "I wish I had accepted"],
+          explanation: "'Wish + Past Perfect' ('had accepted') expresses remorse over an unfulfilled past career opportunity."
+        },
+        {
+          title: "Mixed Conditional: System Backup Failure",
+          desc: "Assemble a mixed conditional connecting a past backup mistake with present status.",
+          target: ["If they had backed up the database daily,", "the server crash", "would not cause downtime", "today."],
+          scrambled: ["would not cause downtime", "the server crash", "If they had backed up the database daily,", "today."],
+          explanation: "Mixed Conditional: 'If + Past Perfect' (past omission) + 'would not cause downtime today' (present result)."
+        },
+        {
+          title: "Missed Alternative: Quality Control Miss",
+          desc: "Reconstruct a sentence highlighting a missed quality assurance check.",
+          target: ["They could have prevented", "the product recall", "if they had conducted", "thorough QA testing."],
+          scrambled: ["if they had conducted", "the product recall", "They could have prevented", "thorough QA testing."],
+          explanation: "'Could have + V3' paired with 'if + Past Perfect' describes an alternative past outcome that was achievable."
+        }
+      ],
+      currentIndex: 0,
+      selectedTiles: [],
+
+      init() {
+        this.loadQuestion(0);
+      },
+
+      loadQuestion(idx) {
+        this.currentIndex = idx;
+        this.selectedTiles = [];
+        const q = this.questions[idx];
+        document.getElementById('m2TileProgress').textContent = `${idx + 1}/${this.questions.length}`;
+        document.getElementById('m2ScenarioTitle').textContent = q.title;
+        document.getElementById('m2ScenarioDesc').textContent = q.desc;
+        document.getElementById('m2Explanation').classList.add('hidden');
+        document.getElementById('m2Feedback').innerHTML = '';
+
+        this.renderTiles();
+      },
+
+      renderTiles() {
+        const q = this.questions[this.currentIndex];
+        const bank = document.getElementById('m2TileBank');
+        const workspace = document.getElementById('m2Workspace');
+
+        if (this.selectedTiles.length === 0) {
+          workspace.innerHTML = `<span id="m2Placeholder" class="text-slate-400 dark:text-slate-600 text-xs italic">Tap tiles from the bank below to build your sentence...</span>`;
+        } else {
+          workspace.innerHTML = this.selectedTiles.map((tile, i) => `
+            <button onclick="Module2.deselectTile(${i})" class="px-3 py-1.5 rounded-xl bg-sky-600 text-white font-mono text-xs font-semibold shadow-md hover:bg-sky-700 transition transform hover:-translate-y-0.5">
+              ${tile} <i class="fa-solid fa-xmark ml-1.5 opacity-70"></i>
+            </button>
+          `).join('');
+        }
+
+        const available = [...q.scrambled];
+        this.selectedTiles.forEach(st => {
+          const foundIdx = available.indexOf(st);
+          if (foundIdx > -1) available.splice(foundIdx, 1);
+        });
+
+        bank.innerHTML = available.map((tile) => `
+          <button onclick="Module2.selectTile('${tile.replace(/'/g, "\\'")}')" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-mono text-xs font-semibold hover:border-sky-500 hover:bg-sky-50 dark:hover:bg-sky-950 transition">
+            ${tile}
+          </button>
+        `).join('');
+      },
+
+      selectTile(tile) {
+        SoundFX.playSnap();
+        this.selectedTiles.push(tile);
+        this.renderTiles();
+      },
+
+      deselectTile(index) {
+        SoundFX.playClick();
+        this.selectedTiles.splice(index, 1);
+        this.renderTiles();
+      },
+
+      resetWorkspace() {
+        SoundFX.playClick();
+        this.selectedTiles = [];
+        this.renderTiles();
+      },
+
+      verifySentence() {
+        const q = this.questions[this.currentIndex];
+        const userStr = this.selectedTiles.join(' ');
+        const targetStr = q.target.join(' ');
+
+        if (userStr === targetStr) {
+          SoundFX.playSuccess();
+          document.getElementById('m2Feedback').innerHTML = `<span class="text-sky-500"><i class="fa-solid fa-circle-check"></i> Flawless Post-Mortem Syntax! (+15 XP)</span>`;
+          document.getElementById('m2ExplanationText').textContent = q.explanation;
+          document.getElementById('m2Explanation').classList.remove('hidden');
+          App.addXP(15, 'modal');
+
+          setTimeout(() => {
+            if (this.currentIndex + 1 < this.questions.length) {
+              this.loadQuestion(this.currentIndex + 1);
+            }
+          }, 3200);
+        } else {
+          SoundFX.playBuzzer();
+          document.getElementById('m2Feedback').innerHTML = `<span class="text-rose-500"><i class="fa-solid fa-circle-xmark"></i> Clause sequence incorrect. Check hint below.</span>`;
+        }
+      },
+
+      showHint() {
+        SoundFX.playClick();
+        const q = this.questions[this.currentIndex];
+        document.getElementById('m2Feedback').innerHTML = `<span class="text-amber-500"><i class="fa-solid fa-lightbulb"></i> Hint: Start with clause "${q.target[0]}"</span>`;
+      }
+    };
+
+    const Module3 = {
+      cases: [
+        {
+          id: 1,
+          sentence: "We should of conducted a thorough risk assessment before launch.",
+          isCorrect: false,
+          trapType: "Phonetic Confusion: 'should of' vs 'should have'",
+          fix: "We should have conducted a thorough risk assessment before launch.",
+          rule: "Never write 'should of'. The phonetic contraction 'should've' sounds like 'should of', but the grammatically correct auxiliary form is 'should have'."
+        },
+        {
+          id: 2,
+          sentence: "I wish I knew about the security vulnerability last week.",
+          isCorrect: false,
+          trapType: "Simple Past Regret Misuse",
+          fix: "I wish I had known about the security vulnerability last week.",
+          rule: "Past regrets require 'I wish + Past Perfect' ('had known'). 'Wish + Simple Past' expresses a desire for a present situation to be different."
+        },
+        {
+          id: 3,
+          sentence: "If I would have checked the server logs, I would have caught the error.",
+          isCorrect: false,
+          trapType: "'Would have' inside 'If'-Clause",
+          fix: "If I had checked the server logs, I would have caught the error.",
+          rule: "Never place 'would have' inside the 'if'-clause. Use Past Perfect ('if I had checked') in the condition clause of a Third Conditional."
+        },
+        {
+          id: 4,
+          sentence: "She shouldn't have submitted the report, but she was strictly forbidden.",
+          isCorrect: false,
+          trapType: "Modal Confusion: 'shouldn't have' vs 'couldn't have'",
+          fix: "She couldn't have submitted the report because she was strictly forbidden.",
+          rule: "'Shouldn't have' implies advice or moral failure, whereas 'couldn't have' expresses impossibility due to external constraints."
+        },
+        {
+          id: 5,
+          sentence: "If the company had updated its firewall in 2022, we would not be vulnerable today.",
+          isCorrect: true,
+          trapType: "None (Valid Mixed Conditional)",
+          fix: "Already correct!",
+          rule: "Correct Mixed Conditional: Past action/condition ('had updated') connected to present security state ('would not be vulnerable today')."
+        }
+      ],
+      currentIndex: 0,
+
+      init() {
+        this.loadCase(0);
+      },
+
+      loadCase(idx) {
+        this.currentIndex = idx;
+        const c = this.cases[idx];
+        document.getElementById('m3DoctorProgress').textContent = `${idx + 1}/${this.cases.length}`;
+        document.getElementById('m3DoctorSentence').textContent = `"${c.sentence}"`;
+        document.getElementById('m3DoctorTag').textContent = `Case #${c.id}: ${c.trapType}`;
+        document.getElementById('m3DoctorFeedback').className = 'hidden mt-6 p-4 rounded-xl text-sm space-y-2';
+        document.getElementById('m3DoctorNextBtn').classList.add('hidden');
+      },
+
+      answer(userChoice) {
+        const c = this.cases[this.currentIndex];
+        const isUserRight = (userChoice === 'correct' && c.isCorrect) || (userChoice === 'incorrect' && !c.isCorrect);
+        const feedbackBox = document.getElementById('m3DoctorFeedback');
+
+        if (isUserRight) {
+          SoundFX.playSuccess();
+          feedbackBox.className = 'mt-6 p-4 rounded-xl text-sm space-y-2 bg-sky-500/10 border border-sky-500/30 text-sky-900 dark:text-sky-200';
+          feedbackBox.innerHTML = `
+            <div class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Accurate Diagnostic! (+15 XP)</div>
+            <p><strong>Trap Focus:</strong> ${c.trapType}</p>
+            <p><strong>Corrected Statement:</strong> ${c.fix}</p>
+            <p><strong>Grammar Rule:</strong> ${c.rule}</p>
+          `;
+          App.addXP(15, 'regret');
+        } else {
+          SoundFX.playBuzzer();
+          feedbackBox.className = 'mt-6 p-4 rounded-xl text-sm space-y-2 bg-rose-500/10 border border-rose-500/30 text-rose-900 dark:text-rose-200';
+          feedbackBox.innerHTML = `
+            <div class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation"></i> Incorrect Diagnosis</div>
+            <p><strong>Actual Status:</strong> Statement is ${c.isCorrect ? 'Correct' : 'Incorrect'}.</p>
+            <p><strong>Trap Focus:</strong> ${c.trapType}</p>
+            <p><strong>Grammar Rule:</strong> ${c.rule}</p>
+          `;
+        }
+
+        feedbackBox.classList.remove('hidden');
+        document.getElementById('m3DoctorNextBtn').classList.remove('hidden');
+        SpeechEngine.speak(c.rule);
+      },
+
+      nextQuestion() {
+        SoundFX.playClick();
+        if (this.currentIndex + 1 < this.cases.length) {
+          this.loadCase(this.currentIndex + 1);
+        } else {
+          this.loadCase(0);
+        }
+      }
+    };
+
+    const Module4 = {
+      init() {},
+
+      analyzeText() {
+        const text = document.getElementById('bioInput').value;
+        const chars = text.length;
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        document.getElementById('bioCharCount').textContent = `${chars} characters | ${words} words`;
+
+        // 1. Past Mistake & Criticism (should have / shouldn't have + V3)
+        const mistakeRegex = /(should\s+have\s+(?:verified|checked|tested|backed|conducted|reviewed|informed|audited|run|fixed)|shouldn't\s+have\s+(?:signed|approved|deployed|ignored|omitted|bypassed|launched))/i;
+        const hasMistake = mistakeRegex.test(text);
+
+        // 2. Missed Alternative / Regret (could have V3 or wish / If only + had V3)
+        const regretRegex = /(could\s+have\s+(?:avoided|prevented|saved|mitigated|handled|executed)|i\s+wish\s+we\s+had|if\s+only\s+we\s+had|wish\s+i\s+had)/i;
+        const hasRegret = regretRegex.test(text);
+
+        // 3. Counterfactual Cause & Effect (If + had V3, would have V3)
+        const causeRegex = /(if\s+(?:we|they|the\s+team|i)\s+had\s+(?:tested|checked|conducted|backed|implemented|reviewed|run),?\s*(?:the\s+platform|our\s+team|we|it)\s+would\s+have\s+(?:prevented|avoided|published|saved|resolved|succeeded))/i;
+        const hasCause = causeRegex.test(text);
+
+        // 4. Present Consequence Link (would be / would have + today/now)
+        const presentRegex = /(would\s+be\s+(?:fully|completely|currently)?\s*(?:operational|secure|active|stable|leading|working)|would\s+not\s+be\s+(?:vulnerable|offline|delayed)\s+(?:today|now))/i;
+        const hasPresent = presentRegex.test(text);
+
+        // UI Checklist Updates
+        this.updateCritUI('m4crit1', 'm4crit1Icon', hasMistake);
+        this.updateCritUI('m4crit2', 'm4crit2Icon', hasRegret);
+        this.updateCritUI('m4crit3', 'm4crit3Icon', hasCause);
+        this.updateCritUI('m4crit4', 'm4crit4Icon', hasPresent);
+
+        // Score Meter
+        let score = 0;
+        if(hasMistake) score += 25;
+        if(hasRegret) score += 25;
+        if(hasCause) score += 25;
+        if(hasPresent) score += 25;
+
+        document.getElementById('bioScore').textContent = `${score} / 100`;
+        document.getElementById('bioProgressBar').style.width = `${score}%`;
+
+        if(score === 100) {
+          App.addXP(25, 'auditor');
+        }
+      },
+
+      updateCritUI(elemId, iconId, isPassed) {
+        const elem = document.getElementById(elemId);
+        const icon = document.getElementById(iconId);
+        if (isPassed) {
+          elem.className = 'p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 flex items-start gap-2.5 transition';
+          icon.className = 'text-emerald-500 mt-0.5';
+          icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        } else {
+          elem.className = 'p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-start gap-2.5 transition';
+          icon.className = 'text-slate-400 mt-0.5';
+          icon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        }
+      },
+
+      loadTemplate() {
+        SoundFX.playClick();
+        const sample = "We experienced an unannounced outage yesterday. The dev team should have verified the database migration before deployment. We could have avoided the downtime if we had conducted a dry-run test. I wish we had implemented automated rollbacks. If we had tested the code properly, our platform would be fully operational today.";
+        document.getElementById('bioInput').value = sample;
+        this.analyzeText();
+      },
+
+      clearText() {
+        SoundFX.playClick();
+        document.getElementById('bioInput').value = '';
+        this.analyzeText();
+      },
+
+      copyToClipboard() {
+        const text = document.getElementById('bioInput').value;
+        if(!text) return;
+        
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          SoundFX.playSuccess();
+        } catch(e) {}
+        document.body.removeChild(textarea);
+      }
+    };
+
+    const Module5 = {
+      init() {},
+
+      updateStudentName(name) {
+        App.studentName = name;
+        App.saveState();
+        App.updateUI();
+      },
+
+      openCertificateModal() {
+        SoundFX.playClick();
+        document.getElementById('certificateModal').classList.remove('hidden');
+      },
+
+      closeCertificateModal() {
+        SoundFX.playClick();
+        document.getElementById('certificateModal').classList.add('hidden');
+      }
+    };
+
+    window.onload = function() {
+      App.init();
+    };
+  </script>
+</body>
+</html>
