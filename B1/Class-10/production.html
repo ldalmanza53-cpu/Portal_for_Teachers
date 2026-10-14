@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RequestStudio: B1 Formality Registers & Request Lab</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        informal: '#f59e0b',
+                        neutral: '#06b6d4',
+                        formal: '#10b981',
+                        softener: '#a855f7',
+                        trap: '#ef4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Glassmorphism primitives */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .light .glass-card {
+            background: rgba(241, 245, 249, 0.8);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 3D Flip Card Styles */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Radial Progress SVG Gauge */
+        .gauge-circle {
+            transition: stroke-dashoffset 0.8s ease-in-out, stroke 0.4s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+
+        /* Ambient Glow Background */
+        .ambient-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            animation: float 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0px, 0px) scale(1); }
+            50% { transform: translate(100px, 50px) scale(1.1); }
+            100% { transform: translate(-50px, 100px) scale(0.95); }
+        }
+
+        /* Print Certificate Styling */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-modal, #certificate-modal * {
+                visibility: visible;
+            }
+            #certificate-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col relative overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- Ambient Glow Backgrounds -->
+    <div class="ambient-glow bg-indigo-600 -top-40 -left-40"></div>
+    <div class="ambient-glow bg-purple-600 top-1/2 -right-40"></div>
+    <div class="ambient-glow bg-emerald-600 -bottom-40 left-1/3"></div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="relative z-10 flex flex-col min-h-screen">
+
+        <!-- TOP NAVIGATION BAR -->
+        <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Brand Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/25">
+                        R
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                            RequestStudio <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">B1 Lab</span>
+                        </h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Formality Registers & Pragmatic Diplomacy Workbench</p>
+                    </div>
+                </div>
+
+                <!-- Global Controls & Gamification Counters -->
+                <div class="flex items-center gap-2 sm:gap-4">
+                    
+                    <!-- XP Counter -->
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs font-semibold">
+                        <span class="text-amber-400">⚡</span>
+                        <span id="user-xp" class="text-amber-300 font-mono text-sm">250</span> <span class="text-slate-400 hidden sm:inline">XP</span>
+                    </div>
+
+                    <!-- Streak Counter -->
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs font-semibold">
+                        <span class="text-orange-500">🔥</span>
+                        <span id="user-streak" class="text-orange-400 font-mono text-sm">3</span> <span class="text-slate-400 hidden sm:inline">Day Streak</span>
+                    </div>
+
+                    <!-- Rank Title Pill -->
+                    <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/60 border border-indigo-800/60 text-xs text-indigo-300 font-medium">
+                        <span id="user-rank">Diplomatic Apprentice</span>
+                    </div>
+
+                    <div class="h-6 w-px bg-slate-800"></div>
+
+                    <!-- TTS Voice Speed Selector -->
+                    <div class="flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+                        <span class="text-[10px] text-slate-400 px-1 font-mono">TTS</span>
+                        <button onclick="setTTSRate(0.7)" id="rate-07" class="px-1.5 py-0.5 text-[11px] rounded text-slate-400 hover:text-white transition">0.7x</button>
+                        <button onclick="setTTSRate(0.9)" id="rate-09" class="px-1.5 py-0.5 text-[11px] rounded bg-indigo-600 text-white font-bold transition">0.9x</button>
+                        <button onclick="setTTSRate(1.0)" id="rate-10" class="px-1.5 py-0.5 text-[11px] rounded text-slate-400 hover:text-white transition">1.0x</button>
+                    </div>
+
+                    <!-- Audio Mute Toggle -->
+                    <button onclick="toggleAudioMute()" id="audio-toggle-btn" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition" title="Toggle Web Audio SFX">
+                        🔊
+                    </button>
+
+                    <!-- Dark / Light Theme Toggle -->
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition" title="Toggle Theme">
+                        🌙
+                    </button>
+
+                    <!-- Certificate Quick Trigger -->
+                    <button onclick="openCertificateModal()" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs shadow-md transition flex items-center gap-1.5">
+                        <span>🎓</span> <span class="hidden sm:inline">Certificate</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MODULE NAVIGATION TABS -->
+            <div class="max-w-7xl mx-auto mt-3 pt-2 border-t border-slate-800/60 flex items-center gap-1 overflow-x-auto no-scrollbar">
+                <button onclick="switchTab('hub')" id="tab-hub" class="nav-tab active-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>⏱️</span> 10-Min Role Activity & 20 Prompts
+                </button>
+                <button onclick="switchTab('matrix')" id="tab-matrix" class="nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>📚</span> Formality Matrix
+                </button>
+                <button onclick="switchTab('constructor')" id="tab-constructor" class="nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>🧩</span> Tile Constructor
+                </button>
+                <button onclick="switchTab('doctor')" id="tab-doctor" class="nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>🩺</span> Trap Clinic
+                </button>
+                <button onclick="switchTab('parser')" id="tab-parser" class="nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>🔍</span> Live Parser & Auditor
+                </button>
+                <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition">
+                    <span>📊</span> Progress Analytics
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE VIEWS CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-8">
+
+            <!-- ==================================================================== -->
+            <!-- TAB 0: 10-MINUTE ROLE ACTIVITY & 20 PROMPTS DECK -->
+            <!-- ==================================================================== -->
+            <section id="view-hub" class="tab-view space-y-8">
+                
+                <!-- Real-World Scenario Banner & 10-Min Timer -->
+                <div class="glass-panel rounded-2xl p-6 border border-indigo-500/20 relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                        
+                        <!-- Scenario Info -->
+                        <div class="lg:col-span-2 space-y-3">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+                                <span>🌐 Real Workplace Simulation</span>
+                            </div>
+                            <h2 class="text-2xl font-extrabold text-white">The Global Corporate Concierge & Executive Summit</h2>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Practice real-time pragmatic diplomacy! B1 learners navigate dynamic workplace request scenarios—ranging from quick desk favors with peers to high-stakes budget proposals presented to Vice Presidents. Choose your role below and launch the 10-minute speed simulation timer.
+                            </p>
+                            
+                            <!-- 3-Phase Execution Roadmap Indicator -->
+                            <div class="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+                                <div id="phase-1-badge" class="p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
+                                    <span class="font-bold block text-white">Phase 1 (0-2m)</span> Briefing & Setup
+                                </div>
+                                <div id="phase-2-badge" class="p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
+                                    <span class="font-bold block text-white">Phase 2 (2-8m)</span> Request Interviews
+                                </div>
+                                <div id="phase-3-badge" class="p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
+                                    <span class="font-bold block text-white">Phase 3 (8-10m)</span> Auditor Verdict
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interactive 10-Minute Timer Card -->
+                        <div class="glass-card rounded-xl p-5 border border-slate-700/60 text-center space-y-4">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Activity Countdown</span>
+                            <div id="timer-display" class="text-4xl lg:text-5xl font-black font-mono tracking-wider text-indigo-400 drop-shadow-md">
+                                10:00
+                            </div>
+                            <div id="timer-phase-label" class="text-xs text-slate-300 font-medium">
+                                Ready to start simulation
+                            </div>
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="startTimer()" id="btn-timer-start" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition">
+                                    ▶ Start
+                                </button>
+                                <button onclick="pauseTimer()" id="btn-timer-pause" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition">
+                                    ⏸ Pause
+                                </button>
+                                <button onclick="resetTimer()" id="btn-timer-reset" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 font-semibold text-xs border border-slate-700 transition">
+                                    🔄 Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 INTERACTIVE ROLES SELECTION -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>👥</span> Step 1: Select Your Active Simulation Role
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        <!-- Role A -->
+                        <div onclick="selectRole('A')" id="role-card-A" class="glass-card rounded-xl p-5 cursor-pointer border-2 border-indigo-500/50 bg-indigo-950/20 space-y-3 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl">🗣️</span>
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Primary Speaker</span>
+                            </div>
+                            <h4 class="text-base font-bold text-white">Role A: Requestor</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Draw outcome prompt cards. Formulate requests orally, adjusting register across Informal, Polite, and High Formal scenarios.
+                            </p>
+                            <div class="text-[11px] text-indigo-300 bg-indigo-900/40 p-2 rounded-lg border border-indigo-800/40">
+                                <strong>Key Target Frame:</strong> "I was wondering if you could possibly..."
+                            </div>
+                        </div>
+
+                        <!-- Role B -->
+                        <div onclick="selectRole('B')" id="role-card-B" class="glass-card rounded-xl p-5 cursor-pointer border border-slate-800 space-y-3 relative overflow-hidden opacity-80 hover:opacity-100">
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl">👔</span>
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Evaluator / Authority</span>
+                            </div>
+                            <h4 class="text-base font-bold text-white">Role B: Respondent</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Evaluate request register appropriateness. Accept or decline requests politely depending on whether the tone matches the authority context.
+                            </p>
+                            <div class="text-[11px] text-cyan-300 bg-cyan-900/40 p-2 rounded-lg border border-cyan-800/40">
+                                <strong>Key Response Frame:</strong> "That request is appropriately formal. I'd be glad to..."
+                            </div>
+                        </div>
+
+                        <!-- Role C -->
+                        <div onclick="selectRole('C')" id="role-card-C" class="glass-card rounded-xl p-5 cursor-pointer border border-slate-800 space-y-3 relative overflow-hidden opacity-80 hover:opacity-100">
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl">📋</span>
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Linguistic Judge</span>
+                            </div>
+                            <h4 class="text-base font-bold text-white">Role C: Formality Auditor</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Monitor grammar traps (e.g., gerund vs. infinitive errors), register alignment, and softener usage. Deliver the final Formality Verdict score.
+                            </p>
+                            <div class="text-[11px] text-emerald-300 bg-emerald-900/40 p-2 rounded-lg border border-emerald-800/40">
+                                <strong>Audit Rule:</strong> Flag missing softeners or gerund errors after "Do you mind..."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 20 OUTCOME PROMPTS DECK SECTION -->
+                <div class="space-y-6 pt-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-xl font-extrabold text-white flex items-center gap-2">
+                                <span>🃏</span> Step 2: The 20 Outcome Question Prompts Deck
+                            </h3>
+                            <p class="text-xs text-slate-400">Click any card to flip and review scaffolded B1 model structures and vocabulary tags.</p>
+                        </div>
+
+                        <!-- Prompt Category Filters -->
+                        <div class="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-xs">
+                            <button onclick="filterPrompts('all')" id="pfilter-all" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition">All (20)</button>
+                            <button onclick="filterPrompts('informal')" id="pfilter-informal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">Informal (4)</button>
+                            <button onclick="filterPrompts('neutral')" id="pfilter-neutral" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">Neutral (4)</button>
+                            <button onclick="filterPrompts('formal')" id="pfilter-formal" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">High Formal (4)</button>
+                            <button onclick="filterPrompts('pressure')" id="pfilter-pressure" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">Softened (4)</button>
+                            <button onclick="filterPrompts('permission')" id="pfilter-permission" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition">Permission (4)</button>
+                        </div>
+                    </div>
+
+                    <!-- 20 Outcome Flashcards Grid -->
+                    <div id="prompts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Dynamic Card Injector -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================== -->
+            <!-- TAB 1: FORMALITY MATRIX EXPLORER -->
+            <!-- ==================================================================== -->
+            <section id="view-matrix" class="tab-view hidden space-y-6">
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                                <span>📚</span> Formality Register Reference Matrix
+                            </h2>
+                            <p class="text-xs text-slate-400">Master the structure, target rules, and softening modifiers across workplace registers.</p>
+                        </div>
+
+                        <!-- Matrix Search Bar -->
+                        <div class="relative min-w-[260px]">
+                            <input type="text" id="matrix-search" oninput="searchMatrix()" placeholder="Search frames (e.g., 'mind', 'grateful')..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                            <span class="absolute right-3 top-2.5 text-xs text-slate-500">🔍</span>
+                        </div>
+                    </div>
+
+                    <!-- Filter Tiers -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                        
+                        <!-- Tier 1: Informal -->
+                        <div class="glass-card rounded-xl p-4 border border-amber-500/30 bg-amber-950/10 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Tier 1: Informal</span>
+                                <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">Peers / Friends</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-amber-300 block">Can you + V1...?</strong>
+                                    "Can you grab me a coffee on your way back?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-amber-300 block">Do you mind + V-ing...?</strong>
+                                    "Do you mind holding the elevator for a second?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-amber-300 block">Could you give me a hand with...?</strong>
+                                    "Could you give me a hand with this laptop cable?"
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Tier 2: Neutral / Polite -->
+                        <div class="glass-card rounded-xl p-4 border border-cyan-500/30 bg-cyan-950/10 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Tier 2: Neutral / Polite</span>
+                                <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-bold">Colleagues / Team Leads</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-cyan-300 block">Could you please + V1...?</strong>
+                                    "Could you please share the Q3 presentation slides?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-cyan-300 block">I was wondering if you could + V1...</strong>
+                                    "I was wondering if you could grant a short extension."
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-cyan-300 block">Would it be possible to + V1...?</strong>
+                                    "Would it be possible to reschedule our 2 PM check-in?"
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Tier 3: High Formal -->
+                        <div class="glass-card rounded-xl p-4 border border-emerald-500/30 bg-emerald-950/10 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Tier 3: High Formal</span>
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Executives / VIP Clients</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-emerald-300 block">I would be extremely grateful if you could...</strong>
+                                    "I would be extremely grateful if you could approve the budget."
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-emerald-300 block">Would you be so kind as to + V1...?</strong>
+                                    "Would you be so kind as to provide a recommendation letter?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-emerald-300 block">May I respectfully request that...</strong>
+                                    "May I respectfully request a brief review of this proposal?"
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Tier 4: Softeners & Modifiers -->
+                        <div class="glass-card rounded-xl p-4 border border-purple-500/30 bg-purple-950/10 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Softening Modifiers</span>
+                                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold">Diplomatic Shield</span>
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-purple-300 block">possibly / by any chance</strong>
+                                    "Could you possibly check this formula by any chance?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-purple-300 block">when you have a moment / quick favor</strong>
+                                    "Do you mind taking a quick look when you have a moment?"
+                                </li>
+                                <li class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                                    <strong class="text-purple-300 block">at your earliest convenience</strong>
+                                    "Please forward the executed contract at your earliest convenience."
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================== -->
+            <!-- TAB 2: SCRAMBLED REQUEST TILE CONSTRUCTOR -->
+            <!-- ==================================================================== -->
+            <section id="view-constructor" class="tab-view hidden space-y-6">
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                                <span>🧩</span> Scrambled Request Tile Constructor
+                            </h2>
+                            <p class="text-xs text-slate-400">Click word tiles in correct sequential order to construct diplomatic request structures.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 font-mono">Scenario:</span>
+                            <select id="constructor-scenario-select" onchange="loadConstructorScenario(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                <option value="0">1. Laptop Charger (Informal Peer)</option>
+                                <option value="1">2. Project Extension (Neutral Manager)</option>
+                                <option value="2">3. Software Budget (High Formal Exec)</option>
+                                <option value="3">4. Fixing Report Errors (Softened Pressure)</option>
+                                <option value="4">5. Leaving Early (Permission Request)</option>
+                                <option value="5">5. Vendor Emergency (Diplomatic Request)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Challenge Prompt Description Box -->
+                    <div class="p-4 rounded-xl bg-indigo-950/30 border border-indigo-800/40 text-xs text-indigo-200 flex items-start gap-3">
+                        <span class="text-xl">🎯</span>
+                        <div class="space-y-1">
+                            <strong id="constructor-scenario-title" class="text-white block font-bold text-sm">Scenario Title</strong>
+                            <p id="constructor-scenario-desc" class="text-slate-300">Description of the target context...</p>
+                        </div>
+                    </div>
+
+                    <!-- Assembly Dropzone -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Assembly Zone</label>
+                        <div id="constructor-dropzone" class="min-h-[90px] p-4 rounded-xl bg-slate-900/90 border-2 border-dashed border-indigo-500/40 flex flex-wrap gap-2 items-center">
+                            <span id="constructor-placeholder" class="text-xs text-slate-600 italic">Click tiles from the bank below to build your request sentence...</span>
+                        </div>
+                    </div>
+
+                    <!-- Tile Bank -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Tile Bank</label>
+                        <div id="constructor-tilebank" class="min-h-[80px] p-4 rounded-xl bg-slate-900/50 border border-slate-800 flex flex-wrap gap-2 items-center">
+                            <!-- Dynamic Tiles -->
+                        </div>
+                    </div>
+
+                    <!-- Action Controls & Validation Results -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+                        <div class="flex items-center gap-2">
+                            <button onclick="checkConstructorAnswer()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition">
+                                Check Construction ✨
+                            </button>
+                            <button onclick="resetConstructorTiles()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+                                Reset Tiles 🔄
+                            </button>
+                        </div>
+                        <div id="constructor-feedback" class="text-xs font-semibold px-4 py-2 rounded-xl hidden">
+                            <!-- Feedback status -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================== -->
+            <!-- TAB 3: DIAGNOSTIC TRAP DOCTOR CLINIC -->
+            <!-- ==================================================================== -->
+            <section id="view-doctor" class="tab-view hidden space-y-6">
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                            <span>🩺</span> Sentence Doctor: B1 Diagnostic Trap Clinic
+                        </h2>
+                        <p class="text-xs text-slate-400">Diagnose classic B1 request errors, analyze the underlying rule check, and apply the correct diplomatic fix.</p>
+                    </div>
+
+                    <!-- Trap Cases Accordion / List -->
+                    <div class="space-y-4" id="trap-cases-container">
+                        <!-- Dynamic Doctor Cases Injected Here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================== -->
+            <!-- TAB 4: LIVE REQUEST PARSER & FORMALITY AUDITOR ENGINE -->
+            <!-- ==================================================================== -->
+            <section id="view-parser" class="tab-view hidden space-y-6">
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                            <span>🔍</span> Real-Time Request Parser & Formality Auditor Engine
+                        </h2>
+                        <p class="text-xs text-slate-400">Type or paste any English request sentence to parse register elements, detect grammar traps, and gauge register score.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Left 2 Cols: Live Input & Highlights -->
+                        <div class="lg:col-span-2 space-y-4">
+                            
+                            <!-- Preset Buttons -->
+                            <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                                <span class="text-slate-400 font-mono">Presets:</span>
+                                <button onclick="loadParserPreset(1)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 whitespace-nowrap">Informal Peer</button>
+                                <button onclick="loadParserPreset(2)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 whitespace-nowrap">Neutral Manager</button>
+                                <button onclick="loadParserPreset(3)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">High Formal VP</button>
+                                <button onclick="loadParserPreset(4)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-red-300 border border-red-500/30 whitespace-nowrap">Gerund Trap Error</button>
+                            </div>
+
+                            <!-- Text Area Input -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Your Request Sentence</label>
+                                <textarea id="parser-input" oninput="parseLiveRequest()" rows="3" placeholder="Type your request here (e.g., 'I was wondering if you could possibly grant an extension...')" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans leading-relaxed"></textarea>
+                            </div>
+
+                            <!-- Real-Time Token Highlight View -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Syntax Highlight & Token Breakdown</label>
+                                <div id="parser-highlights" class="min-h-[70px] p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-sm text-slate-200 leading-relaxed">
+                                    <span class="text-slate-500 italic">Parsed elements will appear here with color-coded register tags...</span>
+                                </div>
+                            </div>
+
+                            <!-- Color Legend -->
+                            <div class="flex flex-wrap items-center gap-3 text-[11px]">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500/30 border border-amber-500"></span> Informal</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-cyan-500/30 border border-cyan-500"></span> Neutral</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500"></span> High Formal</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-purple-500/30 border border-purple-500"></span> Softener</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-500/30 border border-red-500"></span> Grammar Trap</span>
+                            </div>
+                        </div>
+
+                        <!-- Right Col: Radial Score Gauge & Diagnostic Checklist -->
+                        <div class="glass-card rounded-xl p-5 border border-slate-800 space-y-5 text-center flex flex-col justify-between">
+                            
+                            <div class="space-y-2">
+                                <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Register Match Score</span>
+                                
+                                <!-- Radial Gauge SVG -->
+                                <div class="relative w-36 h-36 mx-auto flex items-center justify-center">
+                                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                                        <circle class="text-slate-800" stroke-width="8" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" />
+                                        <circle id="parser-gauge-circle" class="gauge-circle text-indigo-500" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" />
+                                    </svg>
+                                    <div class="absolute flex flex-col items-center justify-center">
+                                        <span id="parser-score-text" class="text-3xl font-black font-mono text-white">0%</span>
+                                        <span id="parser-level-tag" class="text-[10px] text-slate-400 uppercase font-bold">Draft</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4 Pillar Checklist -->
+                            <div class="space-y-2 text-left text-xs">
+                                <div id="check-frame" class="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                                    <span class="text-slate-300">1. Formality Frame</span>
+                                    <span class="check-icon text-slate-600">❌</span>
+                                </div>
+                                <div id="check-softener" class="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                                    <span class="text-slate-300">2. Softener Usage</span>
+                                    <span class="check-icon text-slate-600">❌</span>
+                                </div>
+                                <div id="check-verb" class="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                                    <span class="text-slate-300">3. Verb Syntax Form</span>
+                                    <span class="check-icon text-slate-600">❌</span>
+                                </div>
+                                <div id="check-tone" class="p-2 rounded bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                                    <span class="text-slate-300">4. Pragmatic Tone Fit</span>
+                                    <span class="check-icon text-slate-600">❌</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================== -->
+            <!-- TAB 5: PROGRESS ANALYTICS & CERTIFICATE HUB -->
+            <!-- ==================================================================== -->
+            <section id="view-analytics" class="tab-view hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left 2 Cols: Competency Pillars -->
+                    <div class="lg:col-span-2 glass-panel rounded-2xl p-6 border border-slate-800 space-y-6">
+                        <div>
+                            <h2 class="text-2xl font-extrabold text-white flex items-center gap-2">
+                                <span>📊</span> Pragmatic Competency Analytics
+                            </h2>
+                            <p class="text-xs text-slate-400">Track your mastery level across B1 formality register pillars.</p>
+                        </div>
+
+                        <!-- 4 Progress Bars -->
+                        <div class="space-y-4">
+                            
+                            <!-- Pillar 1 -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs font-semibold">
+                                    <span class="text-slate-200">Informal Peer Requests (`Can you... / Do you mind...`)</span>
+                                    <span class="text-amber-400 font-mono">90%</span>
+                                </div>
+                                <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full rounded-full" style="width: 90%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Pillar 2 -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs font-semibold">
+                                    <span class="text-slate-200">Neutral Coworker Requests (`I was wondering if...`)</span>
+                                    <span class="text-cyan-400 font-mono">85%</span>
+                                </div>
+                                <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-500 h-full rounded-full" style="width: 85%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Pillar 3 -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs font-semibold">
+                                    <span class="text-slate-200">High Formal Executive Diplomacy (`I would be extremely grateful...`)</span>
+                                    <span class="text-emerald-400 font-mono">75%</span>
+                                </div>
+                                <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
+                                    <div class="bg-emerald-500 h-full rounded-full" style="width: 75%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Pillar 4 -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs font-semibold">
+                                    <span class="text-slate-200">Grammar Trap Clinic & Softeners</span>
+                                    <span class="text-purple-400 font-mono">80%</span>
+                                </div>
+                                <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
+                                    <div class="bg-purple-500 h-full rounded-full" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unlocked Badges -->
+                        <div class="space-y-3 pt-4 border-t border-slate-800">
+                            <h3 class="text-sm font-bold text-white">Earned Badges</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                    <span class="text-2xl block">⚡</span>
+                                    <strong class="text-xs text-white block">Speed Requestor</strong>
+                                    <span class="text-[10px] text-slate-500">10-Min Timer completed</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                    <span class="text-2xl block">🩺</span>
+                                    <strong class="text-xs text-white block">Trap Doctor</strong>
+                                    <span class="text-[10px] text-slate-500">Gerund traps fixed</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                    <span class="text-2xl block">👑</span>
+                                    <strong class="text-xs text-white block">Diplomat</strong>
+                                    <span class="text-[10px] text-slate-500">High Formal mastered</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                                    <span class="text-2xl block">🔥</span>
+                                    <strong class="text-xs text-white block">Consistent</strong>
+                                    <span class="text-[10px] text-slate-500">3-Day streak active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col: Certificate Generator Box -->
+                    <div class="glass-card rounded-2xl p-6 border border-emerald-500/30 bg-emerald-950/10 space-y-4 text-center flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mx-auto border border-emerald-500/40">
+                                🎓
+                            </div>
+                            <h3 class="text-xl font-bold text-white">Official Certificate of Accomplishment</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Validate your completion of the B1 Formality Registers & Request Lab. Export or print your verified achievement credential.
+                            </p>
+                        </div>
+
+                        <button onclick="openCertificateModal()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition">
+                            View & Print Certificate 🖨️
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="mt-auto glass-panel border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
+            <p>RequestStudio: B1 Pragmatic Formality & Diplomacy Lab • Guided Practice Framework</p>
+        </footer>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- OFFICIAL CERTIFICATE MODAL -->
+    <!-- ==================================================================== -->
+    <div id="certificate-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="glass-panel bg-slate-900 max-w-2xl w-full rounded-2xl border-2 border-emerald-500/40 p-8 space-y-6 relative shadow-2xl">
+            
+            <button onclick="closeCertificateModal()" class="no-print absolute top-4 right-4 p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition">
+                ✕
+            </button>
+
+            <!-- Certificate Header -->
+            <div class="text-center space-y-2 border-b border-slate-800 pb-6">
+                <div class="text-3xl font-black tracking-widest text-emerald-400 uppercase">Certificate of Mastery</div>
+                <p class="text-xs text-slate-400 font-mono">B1 FORMALITY REGISTERS & PRAGMATIC DIPLOMACY LAB</p>
+            </div>
+
+            <!-- Certificate Body -->
+            <div class="text-center space-y-4 py-4">
+                <p class="text-xs text-slate-400">This is to officially certify that</p>
+                <div class="inline-block border-b-2 border-indigo-500 pb-1">
+                    <input type="text" id="cert-candidate-name" value="Alex Morgan" class="bg-transparent text-center text-2xl font-black text-white focus:outline-none font-serif" placeholder="Enter Your Name">
+                </div>
+                <p class="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                    has successfully demonstrated competency in formulating English workplace requests across Informal, Neutral, and High Formal registers, mastering softening modifiers and diagnostic verb syntax.
+                </p>
+            </div>
+
+            <!-- Stats Badge Summary in Certificate -->
+            <div class="grid grid-cols-3 gap-3 text-center border-t border-b border-slate-800/80 py-4 font-mono text-xs">
+                <div>
+                    <span class="text-slate-500 block text-[10px]">TOTAL XP EARNED</span>
+                    <span id="cert-xp" class="text-amber-400 font-bold">250 XP</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px]">REGISTER RANK</span>
+                    <span id="cert-rank" class="text-indigo-400 font-bold">Diplomatic Apprentice</span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px]">DATE OF ISSUE</span>
+                    <span id="cert-date" class="text-emerald-400 font-bold">2026-10-14</span>
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="no-print flex items-center justify-end gap-3 pt-2">
+                <button onclick="closeCertificateModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+                    Close
+                </button>
+                <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30">
+                    Print / Save as PDF 🖨️
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- JAVASCRIPT LOGIC ENGINE -->
+    <!-- ==================================================================== -->
+    <script>
+        /* =================================================================== */
+        /* GLOBAL STATE & CONSTANTS */
+        /* =================================================================== */
+        let state = {
+            xp: 250,
+            streak: 3,
+            audioMuted: false,
+            ttsRate: 0.9,
+            activeRole: 'A',
+            activeTab: 'hub',
+            timerSeconds: 600,
+            timerRunning: false,
+            timerInterval: null
+        };
+
+        /* Pure Web Audio API Sound Synthesizer */
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudioCtx() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+        }
+
+        function playSound(type) {
+            if (state.audioMuted) return;
+            initAudioCtx();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'flip') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'snap') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'alarm') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        }
+
+        /* Web Speech API Implementation */
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.ttsRate;
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function setTTSRate(rate) {
+            state.ttsRate = rate;
+            document.querySelectorAll('[id^="rate-"]').forEach(btn => btn.className = 'px-1.5 py-0.5 text-[11px] rounded text-slate-400 hover:text-white transition');
+            const rateStr = rate.toString().replace('.', '');
+            const activeBtn = document.getElementById(`rate-${rateStr}`);
+            if (activeBtn) activeBtn.className = 'px-1.5 py-0.5 text-[11px] rounded bg-indigo-600 text-white font-bold transition';
+            playSound('click');
+        }
+
+        /* =================================================================== */
+        /* 20 OUTCOME QUESTION PROMPTS DATASET */
+        /* =================================================================== */
+        const promptsData = [
+            // Category 1: Informal Requests
+            {
+                id: 1,
+                cat: 'informal',
+                title: 'Borrow Laptop Charger',
+                prompt: 'You need to borrow a laptop charger from a peer sitting next to you. How do you ask informally?',
+                model: 'Hey, do you mind if I borrow your laptop charger for an hour or so?',
+                vocab: ['Do you mind if...', 'laptop charger', 'for an hour or so'],
+                level: 'Informal Peer'
+            },
+            {
+                id: 2,
+                cat: 'informal',
+                title: 'Cover Desk for Call',
+                prompt: 'Ask a close coworker to cover your desk for 10 minutes while you take an urgent personal phone call.',
+                model: 'Could you give me a hand and cover my desk for 10 minutes?',
+                vocab: ['Could you give me a hand...', 'cover my desk', 'urgent call'],
+                level: 'Informal Peer'
+            },
+            {
+                id: 3,
+                cat: 'informal',
+                title: 'Lower Audio Volume',
+                prompt: 'Ask a teammate to lower their speaker volume during a joint work session in a shared pod.',
+                model: 'Can you turn down the volume a little bit when you get a chance?',
+                vocab: ['Can you turn down...', 'a little bit', 'when you get a chance'],
+                level: 'Informal Peer'
+            },
+            {
+                id: 4,
+                cat: 'informal',
+                title: 'Quick Email Proofread',
+                prompt: 'Ask a friend in your department to look over a short email before you send it to your team.',
+                model: 'Do you mind taking a quick look at this draft before I hit send?',
+                vocab: ['Do you mind taking...', 'a quick look', 'hit send'],
+                level: 'Informal Peer'
+            },
+
+            // Category 2: Neutral / Polite Requests
+            {
+                id: 5,
+                cat: 'neutral',
+                title: 'Deadline Extension',
+                prompt: 'Request a two-day extension on a project deadline from your direct project manager.',
+                model: 'I was wondering if you could grant a short two-day extension on the report deadline?',
+                vocab: ['I was wondering if you could...', 'grant an extension', 'deadline'],
+                level: 'Polite Neutral'
+            },
+            {
+                id: 6,
+                cat: 'neutral',
+                title: 'Remote Work Request',
+                prompt: 'Ask your department supervisor for permission to work remotely next Friday.',
+                model: 'Would it be possible for me to work remotely next Friday?',
+                vocab: ['Would it be possible...', 'work remotely', 'department supervisor'],
+                level: 'Polite Neutral'
+            },
+            {
+                id: 7,
+                cat: 'neutral',
+                title: 'IT Shared Folder Access',
+                prompt: 'Ask a colleague from IT for access to a restricted shared folder needed for a quarterly report.',
+                model: 'Could you please grant me access to the Q3 shared folder?',
+                vocab: ['Could you please...', 'grant access', 'shared folder'],
+                level: 'Polite Neutral'
+            },
+            {
+                id: 8,
+                cat: 'neutral',
+                title: 'Meeting Reschedule',
+                prompt: 'Request a meeting reschedule with a busy colleague whose calendar is packed.',
+                model: 'Would you mind if we rescheduled our 2:00 PM check-in to tomorrow morning?',
+                vocab: ['Would you mind if we...', 'rescheduled', 'check-in'],
+                level: 'Polite Neutral'
+            },
+
+            // Category 3: High Formal Requests
+            {
+                id: 9,
+                cat: 'formal',
+                title: 'Software Budget Approval',
+                prompt: 'Request an Executive Vice President to approve budget funding for a new software tool.',
+                model: 'I would be extremely grateful if you could approve the budget request for the software migration.',
+                vocab: ['I would be extremely grateful if...', 'approve funding', 'budget request'],
+                level: 'High Formal'
+            },
+            {
+                id: 10,
+                cat: 'formal',
+                title: 'Client Feedback Survey',
+                prompt: 'Ask a high-profile enterprise client to complete a detailed end-of-quarter feedback survey.',
+                model: 'Would you be so kind as to complete our brief quarterly feedback survey?',
+                vocab: ['Would you be so kind as to...', 'complete', 'quarterly survey'],
+                level: 'High Formal'
+            },
+            {
+                id: 11,
+                cat: 'formal',
+                title: 'Recommendation Letter',
+                prompt: 'Ask a senior division director for a formal written recommendation letter for an executive scholarship.',
+                model: 'May I respectfully request a letter of recommendation for the executive leadership program?',
+                vocab: ['May I respectfully request...', 'letter of recommendation', 'executive program'],
+                level: 'High Formal'
+            },
+            {
+                id: 12,
+                cat: 'formal',
+                title: 'Contract Policy Exception',
+                prompt: 'Request a contract adjustment or policy exception from an enterprise service account manager.',
+                model: 'I would appreciate it if you could review clause four for a potential policy modification.',
+                vocab: ['I would appreciate it if...', 'review clause', 'policy modification'],
+                level: 'High Formal'
+            },
+
+            // Category 4: Softened Requests under Pressure
+            {
+                id: 13,
+                cat: 'pressure',
+                title: 'Fix Report Errors',
+                prompt: 'Ask a team member to re-do a financial report that contains several formatting errors without sounding rude.',
+                model: 'Would it be possible to double-check these figures when you have a moment?',
+                vocab: ['Would it be possible to...', 'double-check figures', 'when you have a moment'],
+                level: 'Softened Pressure'
+            },
+            {
+                id: 14,
+                cat: 'pressure',
+                title: 'Clarify Vague Guidelines',
+                prompt: 'Ask your manager to clarify vague project guidelines without making them feel criticized.',
+                model: 'I was wondering if you could possibly clarify the target deliverables for phase two?',
+                vocab: ['I was wondering if you could possibly...', 'clarify deliverables', 'phase two'],
+                level: 'Softened Pressure'
+            },
+            {
+                id: 15,
+                cat: 'pressure',
+                title: 'Turn On Video Camera',
+                prompt: 'Request a client or guest speaker to turn on their video camera during an international web call.',
+                model: 'If it\'s not too much trouble, could you possibly turn on your video camera?',
+                vocab: ['If it\'s not too much trouble...', 'turn on video', 'by any chance'],
+                level: 'Softened Pressure'
+            },
+            {
+                id: 16,
+                cat: 'pressure',
+                title: 'Expedite Delayed Shipment',
+                prompt: 'Ask a logistics vendor to expedite a delayed shipment due to an emergency client request.',
+                model: 'Would you be so kind as to expedite this shipment at your earliest convenience?',
+                vocab: ['Would you be so kind as to...', 'expedite shipment', 'at your earliest convenience'],
+                level: 'Softened Pressure'
+            },
+
+            // Category 5: Permission Requests vs Action Requests
+            {
+                id: 17,
+                cat: 'permission',
+                title: 'Leave Meeting Early',
+                prompt: 'Ask your meeting host if you may leave a high-level strategy session ten minutes early.',
+                model: 'Would you mind if I left the strategy session ten minutes early today?',
+                vocab: ['Would you mind if I left...', 'strategy session', 'ten minutes early'],
+                level: 'Permission Frame'
+            },
+            {
+                id: 18,
+                cat: 'permission',
+                title: 'Record Live Webinar',
+                prompt: 'Request permission to record a live internal training webinar for remote team members.',
+                model: 'May I have permission to record this session for colleagues who cannot attend?',
+                vocab: ['May I have permission to...', 'record session', 'remote colleagues'],
+                level: 'Permission Frame'
+            },
+            {
+                id: 19,
+                cat: 'permission',
+                title: 'Extra Audience Q&A',
+                prompt: 'Ask a guest speaker at a seminar if they would mind answering two extra audience questions.',
+                model: 'Would you mind answering two additional audience questions if time permits?',
+                vocab: ['Would you mind answering...', 'additional questions', 'if time permits'],
+                level: 'Action Frame'
+            },
+            {
+                id: 20,
+                cat: 'permission',
+                title: 'Switch Messaging Platform',
+                prompt: 'Request an entire department to switch from an old messaging application to a new platform.',
+                model: 'I would be grateful if all team members could migrate to the new channel by Friday.',
+                vocab: ['I would be grateful if...', 'migrate channel', 'by Friday'],
+                level: 'Action Frame'
+            }
+        ];
+
+        /* Render 20 Outcome Prompts Deck */
+        function renderPrompts(filter = 'all') {
+            const container = document.getElementById('prompts-grid');
+            container.innerHTML = '';
+
+            const filtered = filter === 'all' ? promptsData : promptsData.filter(p => p.cat === filter);
+
+            filtered.forEach(p => {
+                let badgeColor = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
+                if (p.cat === 'informal') badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                if (p.cat === 'neutral') badgeColor = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+                if (p.cat === 'formal') badgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+                if (p.cat === 'pressure') badgeColor = 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+
+                const cardHtml = `
+                    <div class="flip-card h-72 perspective-1000 cursor-pointer" onclick="toggleCardFlip(this)">
+                        <div class="flip-card-inner">
+                            
+                            <!-- Front of Card -->
+                            <div class="flip-card-front glass-card p-5 flex flex-col justify-between border border-slate-700/60 shadow-lg">
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded ${badgeColor} border uppercase">
+                                            #${p.id} ${p.level}
+                                        </span>
+                                        <span class="text-xs text-slate-400">Click to flip 🔄</span>
+                                    </div>
+                                    <h4 class="text-base font-bold text-white">${p.title}</h4>
+                                    <p class="text-xs text-slate-300 leading-relaxed">${p.prompt}</p>
+                                </div>
+                                <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+                                    <span>Target: B1 Formality Fit</span>
+                                    <button onclick="event.stopPropagation(); speakText('${p.prompt.replace(/'/g, "\\'")}')" class="p-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 transition" title="Listen Prompt">🔊 Listen</button>
+                                </div>
+                            </div>
+
+                            <!-- Back of Card (Scaffolded Answer) -->
+                            <div class="flip-card-back glass-panel p-5 flex flex-col justify-between border-2 border-indigo-500/40 bg-slate-900 shadow-2xl">
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Scaffolded B1 Answer</span>
+                                        <span class="text-xs text-slate-400">Click to flip 🔄</span>
+                                    </div>
+                                    <div class="p-3 rounded-lg bg-indigo-950/50 border border-indigo-800/40 text-xs font-medium text-white italic leading-relaxed">
+                                        "${p.model}"
+                                    </div>
+                                    <div class="space-y-1">
+                                        <span class="text-[10px] uppercase font-bold text-slate-400">Key Vocab Tags:</span>
+                                        <div class="flex flex-wrap gap-1">
+                                            ${p.vocab.map(v => `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] border border-slate-700">${v}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                                    <button onclick="event.stopPropagation(); speakText('${p.model.replace(/'/g, "\\'")}')" class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1">
+                                        <span>🔊</span> Speak Model
+                                    </button>
+                                    <span class="text-[10px] text-amber-400">+10 XP Review</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        function toggleCardFlip(cardEl) {
+            cardEl.classList.toggle('flipped');
+            playSound('flip');
+            addXP(5);
+        }
+
+        function filterPrompts(filter) {
+            playSound('click');
+            document.querySelectorAll('[id^="pfilter-"]').forEach(btn => btn.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition');
+            const activeBtn = document.getElementById(`pfilter-${filter}`);
+            if (activeBtn) activeBtn.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold transition';
+            renderPrompts(filter);
+        }
+
+        /* =================================================================== */
+        /* SCRAMBLED REQUEST TILE CONSTRUCTOR DATA & ENGINE */
+        /* =================================================================== */
+        const constructorScenarios = [
+            {
+                title: "Scenario 1: Borrowing Charger (Informal Peer)",
+                desc: "Ask your desk neighbor if they mind lending their charger for an hour.",
+                tiles: ["Do", "you", "mind", "lending", "me", "your", "charger", "for", "an", "hour?"],
+                target: "Do you mind lending me your charger for an hour?"
+            },
+            {
+                title: "Scenario 2: Project Extension (Neutral Manager)",
+                desc: "Ask your project manager politely for a deadline extension.",
+                tiles: ["I", "was", "wondering", "if", "you", "could", "grant", "a", "short", "extension."],
+                target: "I was wondering if you could grant a short extension."
+            },
+            {
+                title: "Scenario 3: Software Budget (High Formal VP)",
+                desc: "Request formal budget approval from a division executive.",
+                tiles: ["I", "would", "be", "extremely", "grateful", "if", "you", "could", "approve", "this", "budget."],
+                target: "I would be extremely grateful if you could approve this budget."
+            },
+            {
+                title: "Scenario 4: Fixing Report Errors (Softened Pressure)",
+                desc: "Ask a colleague gently to double-check error-prone report numbers.",
+                tiles: ["Would", "it", "be", "possible", "to", "double-check", "these", "figures", "when", "you", "have", "a", "moment?"],
+                target: "Would it be possible to double-check these figures when you have a moment?"
+            },
+            {
+                title: "Scenario 5: Leaving Session Early (Permission Request)",
+                desc: "Ask permission to exit a strategy meeting 10 minutes early.",
+                tiles: ["Would", "you", "mind", "if", "I", "left", "the", "session", "ten", "minutes", "early?"],
+                target: "Would you mind if I left the session ten minutes early?"
+            },
+            {
+                title: "Scenario 6: Vendor Emergency (Diplomatic Request)",
+                desc: "Ask a logistics vendor to expedite a critical delayed shipment.",
+                tiles: ["Would", "you", "be", "so", "kind", "as", "to", "expedite", "the", "delayed", "shipment?"],
+                target: "Would you be so kind as to expedite the delayed shipment?"
+            }
+        ];
+
+        let currentConstructorIdx = 0;
+        let constructedTiles = [];
+
+        function loadConstructorScenario(idx) {
+            currentConstructorIdx = parseInt(idx);
+            const sc = constructorScenarios[currentConstructorIdx];
+            document.getElementById('constructor-scenario-title').innerText = sc.title;
+            document.getElementById('constructor-scenario-desc').innerText = sc.desc;
+            
+            // Shuffle tiles
+            const shuffled = [...sc.tiles].sort(() => Math.random() - 0.5);
+            
+            constructedTiles = [];
+            renderConstructorDropzone();
+            renderConstructorBank(shuffled);
+
+            const feedback = document.getElementById('constructor-feedback');
+            feedback.className = 'text-xs font-semibold px-4 py-2 rounded-xl hidden';
+        }
+
+        function renderConstructorDropzone() {
+            const dropzone = document.getElementById('constructor-dropzone');
+            dropzone.innerHTML = '';
+
+            if (constructedTiles.length === 0) {
+                dropzone.innerHTML = `<span id="constructor-placeholder" class="text-xs text-slate-600 italic">Click tiles from the bank below to build your request sentence...</span>`;
+                return;
+            }
+
+            constructedTiles.forEach((tileText, tIdx) => {
+                const tileBtn = document.createElement('button');
+                tileBtn.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow transition animate-pop';
+                tileBtn.innerText = tileText;
+                tileBtn.onclick = () => removeTileFromDropzone(tIdx);
+                dropzone.appendChild(tileBtn);
+            });
+        }
+
+        function renderConstructorBank(tilesArray) {
+            const bank = document.getElementById('constructor-tilebank');
+            bank.innerHTML = '';
+
+            tilesArray.forEach((tileText, bIdx) => {
+                const tileBtn = document.createElement('button');
+                tileBtn.className = 'px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 shadow transition';
+                tileBtn.innerText = tileText;
+                tileBtn.onclick = () => addTileToDropzone(tileText, tileBtn);
+                bank.appendChild(tileBtn);
+            });
+        }
+
+        function addTileToDropzone(text, btnEl) {
+            playSound('snap');
+            constructedTiles.push(text);
+            btnEl.remove();
+            renderConstructorDropzone();
+        }
+
+        function removeTileFromDropzone(tIdx) {
+            playSound('click');
+            const removed = constructedTiles.splice(tIdx, 1)[0];
+            renderConstructorDropzone();
+
+            // Append back to bank
+            const bank = document.getElementById('constructor-tilebank');
+            const tileBtn = document.createElement('button');
+            tileBtn.className = 'px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 shadow transition';
+            tileBtn.innerText = removed;
+            tileBtn.onclick = () => addTileToDropzone(removed, tileBtn);
+            bank.appendChild(tileBtn);
+        }
+
+        function resetConstructorTiles() {
+            playSound('click');
+            loadConstructorScenario(currentConstructorIdx);
+        }
+
+        function checkConstructorAnswer() {
+            const sc = constructorScenarios[currentConstructorIdx];
+            const userSentence = constructedTiles.join(' ');
+            const feedback = document.getElementById('constructor-feedback');
+
+            if (userSentence.trim() === sc.target.trim()) {
+                playSound('correct');
+                feedback.className = 'text-xs font-bold px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 block';
+                feedback.innerText = '✨ Perfect Request Construction! +50 XP';
+                addXP(50);
+            } else {
+                playSound('wrong');
+                feedback.className = 'text-xs font-bold px-4 py-2 rounded-xl bg-red-500/20 text-red-300 border border-red-500/40 block';
+                feedback.innerText = '❌ Construction error. Check word sequence and register modifiers.';
+            }
+        }
+
+        /* =================================================================== */
+        /* DIAGNOSTIC TRAP CLINIC DOCTOR ENGINE */
+        /* =================================================================== */
+        const trapClinicCases = [
+            {
+                id: 1,
+                wrong: "Do you mind to send me the updated spreadsheet by five o'clock?",
+                trapType: "Gerund Trap Error",
+                rule: "The expression 'Do you mind...' requires a gerund (V-ing), never an infinitive ('to send').",
+                correct: "Do you mind sending me the updated spreadsheet by five o'clock?",
+                options: [
+                    "Do you mind send me the updated spreadsheet...?",
+                    "Do you mind sending me the updated spreadsheet...?",
+                    "Do you mind to sending me the updated spreadsheet...?"
+                ],
+                correctOptIdx: 1
+            },
+            {
+                id: 2,
+                wrong: "Could you please to grant me access to the shared folder?",
+                trapType: "Bare Infinitive Trap",
+                rule: "Modal verbs like 'could', 'can', and 'would' are followed by a bare infinitive (verb without 'to').",
+                correct: "Could you please grant me access to the shared folder?",
+                options: [
+                    "Could you please grant me access to the shared folder?",
+                    "Could you please to granting me access to the shared folder?",
+                    "Could you please granted me access to the shared folder?"
+                ],
+                correctOptIdx: 0
+            },
+            {
+                id: 3,
+                wrong: "I demand that you give me a project extension immediately.",
+                trapType: "Pragmatic Tone Error",
+                rule: "Imperative commands like 'I demand' sound overly aggressive in corporate settings; use softened indirect request frames.",
+                correct: "I was wondering if it might be possible to get a short extension?",
+                options: [
+                    "I demand a project extension immediately.",
+                    "Give me a project extension right now.",
+                    "I was wondering if it might be possible to get a short extension?"
+                ],
+                correctOptIdx: 2
+            },
+            {
+                id: 4,
+                wrong: "Would you mind if I opening the window for a few minutes?",
+                trapType: "Permission Clause Trap",
+                rule: "'Would you mind if I...' takes a past simple or present clause ('opened' / 'open'), whereas 'Would you mind...' takes a gerund ('opening').",
+                correct: "Would you mind if I opened the window for a few minutes?",
+                options: [
+                    "Would you mind if I opened the window for a few minutes?",
+                    "Would you mind if I opening the window...?",
+                    "Would you mind to opening the window...?"
+                ],
+                correctOptIdx: 0
+            },
+            {
+                id: 5,
+                wrong: "I would be grateful if you can send the document at your earliest convenience.",
+                trapType: "Conditional Alignment",
+                rule: "Align hypothetical request frames ('I would be grateful if...') with secondary modal 'could' rather than present modal 'can'.",
+                correct: "I would be grateful if you could send the document at your earliest convenience.",
+                options: [
+                    "I would be grateful if you can send the document...",
+                    "I would be grateful if you could send the document at your earliest convenience.",
+                    "I would be grateful if you will send the document..."
+                ],
+                correctOptIdx: 1
+            }
+        ];
+
+        function renderTrapClinic() {
+            const container = document.getElementById('trap-cases-container');
+            container.innerHTML = '';
+
+            trapClinicCases.forEach((tc, idx) => {
+                const caseHtml = `
+                    <div class="glass-card rounded-xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 font-mono text-[10px] font-bold">
+                                    TRAP #${tc.id}: ${tc.trapType}
+                                </span>
+                            </div>
+                            <span class="text-xs text-slate-400">Diagnosis Task</span>
+                        </div>
+
+                        <!-- Incorrect Sentence Display -->
+                        <div class="p-3 rounded-lg bg-red-950/20 border border-red-800/30 text-xs text-red-200">
+                            <strong>❌ Error Sentence:</strong> "${tc.wrong}"
+                        </div>
+
+                        <!-- Options selection -->
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Select Diplomatic Fix:</label>
+                            <div class="space-y-1.5 text-xs">
+                                ${tc.options.map((opt, oIdx) => `
+                                    <button onclick="checkDoctorChoice(${idx}, ${oIdx}, this)" class="w-full text-left p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 transition">
+                                        ${opt}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Rule Explanation Box (Hidden until solved) -->
+                        <div id="doctor-explanation-${idx}" class="hidden p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/40 text-xs text-indigo-200 space-y-1">
+                            <strong class="text-white block font-bold">📖 Underlying B1 Rule Check:</strong>
+                            <p>${tc.rule}</p>
+                            <div class="text-emerald-300 font-bold pt-1">
+                                ✅ Correct Fix: "${tc.correct}"
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', caseHtml);
+            });
+        }
+
+        function checkDoctorChoice(caseIdx, optIdx, btnEl) {
+            const tc = trapClinicCases[caseIdx];
+            const expDiv = document.getElementById(`doctor-explanation-${caseIdx}`);
+
+            if (optIdx === tc.correctOptIdx) {
+                playSound('correct');
+                btnEl.className = 'w-full text-left p-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500 text-emerald-300 font-semibold';
+                expDiv.classList.remove('hidden');
+                addXP(25);
+            } else {
+                playSound('wrong');
+                btnEl.className = 'w-full text-left p-2.5 rounded-lg bg-red-500/20 border border-red-500 text-red-300 font-semibold';
+            }
+        }
+
+        /* =================================================================== */
+        /* LIVE REQUEST PARSER & FORMALITY AUDITOR ENGINE */
+        /* =================================================================== */
+        const parserRules = {
+            informalFrames: [/\bcan you\b/i, /\bcould you give me a hand\b/i, /\bdo you mind\b/i, /\bcan i\b/i, /\bhey\b/i],
+            neutralFrames: [/\bcould you please\b/i, /\bi was wondering if you could\b/i, /\bwould it be possible to\b/i, /\bwould you mind\b/i],
+            formalFrames: [/\bi would be extremely grateful if\b/i, /\bwould you be so kind as to\b/i, /\bmay i respectfully request\b/i, /\bi would appreciate it if\b/i],
+            softeners: [/\bpossibly\b/i, /\bby any chance\b/i, /\bjust\b/i, /\ba quick favor\b/i, /\bat your earliest convenience\b/i, /\bwhen you have a moment\b/i, /\bif time permits\b/i],
+            traps: [
+                { reg: /\bdo you mind to\b/i, name: "Gerund Error ('mind to' -> 'mind -ing')" },
+                { reg: /\bcould you please to\b/i, name: "Bare Infinitive Error ('please to')" },
+                { reg: /\bi demand\b/i, name: "Imperative Aggressive Command" },
+                { reg: /\bmind if i [a-z]+ing\b/i, name: "Permission Clause Mixup" }
+            ]
+        };
+
+        function parseLiveRequest() {
+            const text = document.getElementById('parser-input').value;
+            const highlightContainer = document.getElementById('parser-highlights');
+
+            if (!text.trim()) {
+                highlightContainer.innerHTML = `<span class="text-slate-500 italic">Parsed elements will appear here with color-coded register tags...</span>`;
+                updateGauge(0, "Draft");
+                setChecklist(false, false, false, false);
+                return;
+            }
+
+            let score = 30; // base score for typing
+            let hasFrame = false;
+            let hasSoftener = false;
+            let hasTrap = false;
+            let verbOk = true;
+
+            let highlightedText = text;
+
+            // Detect Traps
+            parserRules.traps.forEach(t => {
+                if (t.reg.test(text)) {
+                    hasTrap = true;
+                    verbOk = false;
+                    score -= 25;
+                    highlightedText = highlightedText.replace(t.reg, match => `<span class="bg-red-500/30 text-red-300 px-1 py-0.5 rounded border border-red-500 font-bold">${match} [${t.name}]</span>`);
+                }
+            });
+
+            // Detect Formal Frames
+            parserRules.formalFrames.forEach(f => {
+                if (f.test(text)) {
+                    hasFrame = true;
+                    score += 40;
+                    highlightedText = highlightedText.replace(f, match => `<span class="bg-emerald-500/30 text-emerald-300 px-1 py-0.5 rounded border border-emerald-500 font-bold">${match} [High Formal]</span>`);
+                }
+            });
+
+            // Detect Neutral Frames
+            parserRules.neutralFrames.forEach(f => {
+                if (f.test(text)) {
+                    hasFrame = true;
+                    score += 30;
+                    highlightedText = highlightedText.replace(f, match => `<span class="bg-cyan-500/30 text-cyan-300 px-1 py-0.5 rounded border border-cyan-500 font-bold">${match} [Neutral Polite]</span>`);
+                }
+            });
+
+            // Detect Informal Frames
+            parserRules.informalFrames.forEach(f => {
+                if (f.test(text)) {
+                    hasFrame = true;
+                    score += 20;
+                    highlightedText = highlightedText.replace(f, match => `<span class="bg-amber-500/30 text-amber-300 px-1 py-0.5 rounded border border-amber-500 font-bold">${match} [Informal Peer]</span>`);
+                }
+            });
+
+            // Detect Softeners
+            parserRules.softeners.forEach(s => {
+                if (s.test(text)) {
+                    hasSoftener = true;
+                    score += 20;
+                    highlightedText = highlightedText.replace(s, match => `<span class="bg-purple-500/30 text-purple-300 px-1 py-0.5 rounded border border-purple-500 font-bold">${match} [Softener]</span>`);
+                }
+            });
+
+            // Clamp Score
+            score = Math.max(0, Math.min(100, score));
+
+            let levelTag = "B1 Basic";
+            if (score >= 85) levelTag = "Master Diplomat";
+            else if (score >= 60) levelTag = "Polite Professional";
+
+            highlightContainer.innerHTML = highlightedText;
+            updateGauge(score, levelTag);
+            setChecklist(hasFrame, hasSoftener, verbOk, !hasTrap);
+        }
+
+        function updateGauge(score, levelLabel) {
+            const circle = document.getElementById('parser-gauge-circle');
+            const scoreText = document.getElementById('parser-score-text');
+            const levelTag = document.getElementById('parser-level-tag');
+
+            const circumference = 238.76;
+            const offset = circumference - (score / 100) * circumference;
+
+            circle.style.strokeDashoffset = offset;
+            scoreText.innerText = `${score}%`;
+            levelTag.innerText = levelLabel;
+
+            if (score >= 80) circle.className = 'gauge-circle text-emerald-500';
+            else if (score >= 50) circle.className = 'gauge-circle text-cyan-500';
+            else circle.className = 'gauge-circle text-amber-500';
+        }
+
+        function setChecklist(frame, softener, verb, tone) {
+            const toggleIcon = (id, valid) => {
+                const el = document.getElementById(id).querySelector('.check-icon');
+                el.innerText = valid ? '✅' : '❌';
+                el.className = valid ? 'check-icon text-emerald-400' : 'check-icon text-red-500';
+            };
+
+            toggleIcon('check-frame', frame);
+            toggleIcon('check-softener', softener);
+            toggleIcon('check-verb', verb);
+            toggleIcon('check-tone', tone);
+        }
+
+        function loadParserPreset(type) {
+            playSound('click');
+            const input = document.getElementById('parser-input');
+            if (type === 1) input.value = "Can you grab me a coffee when you have a moment?";
+            if (type === 2) input.value = "I was wondering if you could grant a short extension on the project deadline?";
+            if (type === 3) input.value = "I would be extremely grateful if you could approve this software budget at your earliest convenience.";
+            if (type === 4) input.value = "Do you mind to send me the updated spreadsheet immediately?";
+            parseLiveRequest();
+        }
+
+        /* =================================================================== */
+        /* 10-MINUTE TIMER ENGINE */
+        /* =================================================================== */
+        function startTimer() {
+            if (state.timerRunning) return;
+            playSound('click');
+            state.timerRunning = true;
+
+            state.timerInterval = setInterval(() => {
+                if (state.timerSeconds > 0) {
+                    state.timerSeconds--;
+                    updateTimerUI();
+                } else {
+                    pauseTimer();
+                    playSound('alarm');
+                    alert("⏱️ 10-Minute Activity Complete! Proceed to the Formality Auditor Verdict.");
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            playSound('click');
+            state.timerRunning = false;
+            clearInterval(state.timerInterval);
+        }
+
+        function resetTimer() {
+            playSound('click');
+            pauseTimer();
+            state.timerSeconds = 600;
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            const mins = Math.floor(state.timerSeconds / 60);
+            const secs = state.timerSeconds % 60;
+            const displayStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').innerText = displayStr;
+
+            // Phase badges highlight
+            const phase1 = document.getElementById('phase-1-badge');
+            const phase2 = document.getElementById('phase-2-badge');
+            const phase3 = document.getElementById('phase-3-badge');
+            const phaseLabel = document.getElementById('timer-phase-label');
+
+            if (state.timerSeconds > 480) { // 8-10m
+                phase1.className = 'p-2 rounded-lg bg-indigo-600/30 border border-indigo-500 text-indigo-200 font-bold';
+                phase2.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phase3.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phaseLabel.innerText = "Phase 1: Role Assignment & Strategy Briefing";
+            } else if (state.timerSeconds > 120) { // 2-8m
+                phase1.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phase2.className = 'p-2 rounded-lg bg-indigo-600/30 border border-indigo-500 text-indigo-200 font-bold';
+                phase3.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phaseLabel.innerText = "Phase 2: Speed Request Simulation & Interviews";
+            } else { // 0-2m
+                phase1.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phase2.className = 'p-2 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400';
+                phase3.className = 'p-2 rounded-lg bg-emerald-600/30 border border-emerald-500 text-emerald-200 font-bold';
+                phaseLabel.innerText = "Phase 3: Formality Auditor Verdict & Feedback";
+            }
+        }
+
+        /* Role Selection Logic */
+        function selectRole(roleLetter) {
+            playSound('click');
+            state.activeRole = roleLetter;
+            ['A', 'B', 'C'].forEach(r => {
+                const card = document.getElementById(`role-card-${r}`);
+                if (r === roleLetter) {
+                    card.className = 'glass-card rounded-xl p-5 cursor-pointer border-2 border-indigo-500 bg-indigo-950/30 space-y-3 relative overflow-hidden shadow-lg';
+                } else {
+                    card.className = 'glass-card rounded-xl p-5 cursor-pointer border border-slate-800 space-y-3 relative overflow-hidden opacity-70 hover:opacity-100';
+                }
+            });
+        }
+
+        /* =================================================================== */
+        /* GAMIFICATION & XP STATE MANAGEMENT */
+        /* =================================================================== */
+        function addXP(amount) {
+            state.xp += amount;
+            document.getElementById('user-xp').innerText = state.xp;
+            document.getElementById('cert-xp').innerText = `${state.xp} XP`;
+
+            // Update rank
+            let rank = "Diplomatic Apprentice";
+            if (state.xp >= 500) rank = "Master Diplomat";
+            else if (state.xp >= 350) rank = "Polite Specialist";
+
+            document.getElementById('user-rank').innerText = rank;
+            document.getElementById('cert-rank').innerText = rank;
+        }
+
+        /* =================================================================== */
+        /* CERTIFICATE MODAL LOGIC */
+        /* =================================================================== */
+        function openCertificateModal() {
+            playSound('click');
+            document.getElementById('cert-date').innerText = new Date().toISOString().split('T')[0];
+            document.getElementById('certificate-modal').classList.remove('hidden');
+        }
+
+        function closeCertificateModal() {
+            playSound('click');
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+
+        /* =================================================================== */
+        /* MATRIX SEARCH ENGINE */
+        /* =================================================================== */
+        function searchMatrix() {
+            const query = document.getElementById('matrix-search').value.toLowerCase();
+            const items = document.querySelectorAll('#view-matrix li');
+
+            items.forEach(li => {
+                const text = li.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    li.style.display = 'block';
+                } else {
+                    li.style.display = 'none';
+                }
+            });
+        }
+
+        /* Navigation Tab Switcher */
+        function switchTab(tabId) {
+            playSound('click');
+            state.activeTab = tabId;
+
+            // Hide all tab views
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+
+            // Show selected view
+            const selectedView = document.getElementById(`view-${tabId}`);
+            if (selectedView) selectedView.classList.remove('hidden');
+
+            // Reset tab styles
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = 'nav-tab inactive-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-white transition';
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = 'nav-tab active-tab px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition';
+            }
+        }
+
+        /* Toggle Dark / Light Theme */
+        function toggleTheme() {
+            playSound('click');
+            document.documentElement.classList.toggle('dark');
+            document.documentElement.classList.toggle('light');
+        }
+
+        /* Toggle Audio Mute */
+        function toggleAudioMute() {
+            state.audioMuted = !state.audioMuted;
+            document.getElementById('audio-toggle-btn').innerText = state.audioMuted ? '🔇' : '🔊';
+        }
+
+        /* =================================================================== */
+        /* APPLICATION INITIALIZATION */
+        /* =================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPrompts('all');
+            loadConstructorScenario(0);
+            renderTrapClinic();
+            parseLiveRequest();
+            updateTimerUI();
+        });
+    </script>
+</body>
+</html>
