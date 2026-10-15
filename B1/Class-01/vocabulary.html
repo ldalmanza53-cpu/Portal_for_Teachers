@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B1 English: Personality Traits Interactive App</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); line-height: 1.5; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.8rem; color: var(--primary); margin-bottom: 6px; }
+    header p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+    .tab-btn {
+      padding: 10px 18px; border: 1px solid var(--border); background: var(--card-bg);
+      border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .card { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 20px; }
+    .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .instruction { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 20px; }
+
+    /* Part A Styles */
+    .vocab-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .vocab-item {
+      display: grid; grid-template-columns: 140px 1fr 110px; gap: 12px; align-items: center;
+      background: #f1f5f9; padding: 12px 16px; border-radius: 8px; border: 1px solid transparent;
+    }
+    .vocab-item.correct { border-color: var(--success); background: #f0fdf4; }
+    .vocab-item.incorrect { border-color: var(--danger); background: #fef2f2; }
+    .word-title { font-weight: 700; font-size: 1.05rem; }
+    select {
+      width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: white; font-size: 0.9rem; cursor: pointer;
+    }
+    .polarity-group { display: flex; gap: 10px; }
+    .polarity-btn {
+      flex: 1; padding: 6px; text-align: center; border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; background: white;
+    }
+    .polarity-btn.selected-P { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .polarity-btn.selected-N { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    /* Part B Flashcard Styles */
+    .flashcard-container { text-align: center; max-width: 500px; margin: 0 auto; }
+    .flashcard {
+      background: #f8fafc; border: 2px dashed var(--primary); border-radius: 16px;
+      padding: 30px 20px; margin-bottom: 16px; min-height: 180px; display: flex;
+      flex-direction: column; justify-content: center; align-items: center;
+    }
+    .flashcard-word { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+    .flashcard-prompt { font-style: italic; color: var(--text-muted); font-size: 1.1rem; }
+    .flashcard-def { margin-top: 15px; font-weight: 600; color: var(--text-main); font-size: 1.05rem; display: none; background: white; padding: 10px; border-radius: 8px; width: 100%; border: 1px solid var(--border); }
+
+    /* Action Buttons */
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px; background: var(--primary);
+      color: white; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Part C Relative Builder */
+    .form-group { margin-bottom: 16px; }
+    label { font-weight: 600; display: block; margin-bottom: 6px; }
+    input[type="text"], textarea {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 1rem;
+    }
+    .trait-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 8px; }
+    .trait-label { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; cursor: pointer; }
+
+    .score-banner {
+      padding: 12px; border-radius: 8px; text-align: center; font-weight: 700;
+      margin-top: 16px; display: none;
+    }
+    .score-banner.show { display: block; }
+    .score-good { background: #dcfce7; color: #15803d; }
+    .score-bad { background: #fee2e2; color: #b91c1c; }
+
+    @media (max-width: 680px) {
+      .vocab-item { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Word Power: Personality Traits</h1>
+    <p>Interactive Vocabulary Activity — Level B1 (Intermediate)</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('partA')">Part A: Match & Classify</button>
+    <button class="tab-btn" onclick="switchTab('partB')">Part B: Speaking Practice</button>
+    <button class="tab-btn" onclick="switchTab('partC')">Part C: Describe a Relative</button>
+  </div>
+
+  <!-- PART A: MATCHING & POSITIVE/NEGATIVE CLASSIFICATION -->
+  <div id="partA" class="card tab-content">
+    <div class="section-title">Part A: Match & Classify</div>
+    <div class="instruction">
+      Match each adjective with its definition. Then choose whether the word is <strong>Positive (P)</strong> or <strong>Negative (N)</strong>.
+    </div>
+
+    <div class="vocab-grid" id="vocabGrid"></div>
+
+    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <button class="btn" onclick="checkPartA()">Check Answers</button>
+      <button class="btn btn-secondary" onclick="resetPartA()">Reset</button>
+    </div>
+    <div id="scoreBanner" class="score-banner"></div>
+  </div>
+
+  <!-- PART B: IN YOUR OWN WORDS FLASHCARDS -->
+  <div id="partB" class="card tab-content" style="display:none;">
+    <div class="section-title">Part B: Practice in Your Own Words</div>
+    <div class="instruction">
+      Practice defining each adjective orally without looking at the exact definition. Use the sentence frame provided.
+    </div>
+
+    <div class="flashcard-container">
+      <div class="flashcard">
+        <div class="flashcard-word" id="fcWord">easygoing</div>
+        <div class="flashcard-prompt" id="fcPrompt">"An easygoing person is someone who..."</div>
+        <div class="flashcard-def" id="fcDef">a person who doesn't worry much or get angry easily</div>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 12px;">
+        <button class="btn btn-secondary" onclick="toggleDefinition()" id="revealBtn">Show Definition</button>
+        <button class="btn" onclick="nextCard()">Next Word &rarr;</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted);" id="cardCounter">Card 1 of 9</p>
+    </div>
+  </div>
+
+  <!-- PART C: DESCRIBE YOUR FAVORITE RELATIVE -->
+  <div id="partC" class="card tab-content" style="display:none;">
+    <div class="section-title">Part C: Describe Your Favorite Relative</div>
+    <div class="instruction">
+      Select at least two adjectives from the lesson and write a short description of your favorite relative.
+    </div>
+
+    <form id="relativeForm" onsubmit="generateDescription(event)">
+      <div class="form-group">
+        <label for="relativeName">Relative (e.g., my uncle, my sister, my grandmother):</label>
+        <input type="text" id="relativeName" placeholder="e.g., My aunt Maria" required>
+      </div>
+
+      <div class="form-group">
+        <label>Select at least 2 target adjectives:</label>
+        <div class="trait-checkboxes" id="traitCheckboxes"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="relativeText">Your Description / Speaking Notes:</label>
+        <textarea id="relativeText" rows="4" placeholder="e.g., I love my aunt Maria because she is very easygoing. She never gets angry when things go wrong..." required></textarea>
+      </div>
+
+      <button type="submit" class="btn">Generate Practice Card</button>
+    </form>
+
+    <div id="outputCard" style="display:none; margin-top: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px;">
+      <h3 style="color: #15803d; margin-bottom: 8px;">Great job!</h3>
+      <p id="outputText"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Vocabulary dataset extracted from lesson image
+  const dataset = [
+    { id: 1, word: "easygoing", defKey: "h", polarity: "P", defText: "a person who doesn't worry much or get angry easily" },
+    { id: 2, word: "egotistical", defKey: "c", polarity: "N", defText: "someone who has a very high opinion of him- or herself" },
+    { id: 3, word: "inflexible", defKey: "a", polarity: "N", defText: "a person who doesn't change easily and is stubborn" },
+    { id: 4, word: "modest", defKey: "i", polarity: "P", defText: "someone who doesn't brag about his or her accomplishments" },
+    { id: 5, word: "outgoing", defKey: "f", polarity: "P", defText: "a person who enjoys being with other people" },
+    { id: 6, word: "stingy", defKey: "b", polarity: "N", defText: "someone who doesn't like giving or spending money" },
+    { id: 7, word: "supportive", defKey: "d", polarity: "P", defText: "someone who is helpful and encouraging" },
+    { id: 8, word: "temperamental", defKey: "g", polarity: "N", defText: "a person who has unpredictable or irregular moods" },
+    { id: 9, word: "unreliable", defKey: "e", polarity: "N", defText: "a person who doesn't do what he or she promised" }
+  ];
+
+  const definitionsOptions = [
+    { key: "a", text: "a. a person who doesn't change easily and is stubborn" },
+    { key: "b", text: "b. someone who doesn't like giving or spending money" },
+    { key: "c", text: "c. someone who has a very high opinion of him- or herself" },
+    { key: "d", text: "d. someone who is helpful and encouraging" },
+    { key: "e", text: "e. a person who doesn't do what he or she promised" },
+    { key: "f", text: "f. a person who enjoys being with other people" },
+    { key: "g", text: "g. a person who has unpredictable or irregular moods" },
+    { key: "h", text: "h. a person who doesn't worry much or get angry easily" },
+    { key: "i", text: "i. someone who doesn't brag about his or her accomplishments" }
+  ];
+
+  let userPolarity = {};
+  let currentCardIdx = 0;
+
+  // Initialize Part A
+  function initPartA() {
+    const container = document.getElementById("vocabGrid");
+    container.innerHTML = "";
+    dataset.forEach(item => {
+      userPolarity[item.id] = null;
+
+      let selectOptions = `<option value="">-- Choose Definition --</option>`;
+      definitionsOptions.forEach(opt => {
+        selectOptions += `<option value="${opt.key}">${opt.text}</option>`;
+      });
+
+      const row = document.createElement("div");
+      row.className = "vocab-item";
+      row.id = `item-${item.id}`;
+      row.innerHTML = `
+        <div class="word-title">${item.id}. ${item.word}</div>
+        <div>
+          <select id="select-${item.id}">
+            ${selectOptions}
+          </select>
+        </div>
+        <div class="polarity-group">
+          <button type="button" class="polarity-btn" id="p-btn-${item.id}-P" onclick="setPolarity(${item.id}, 'P')">P</button>
+          <button type="button" class="polarity-btn" id="p-btn-${item.id}-N" onclick="setPolarity(${item.id}, 'N')">N</button>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function setPolarity(id, val) {
+    userPolarity[id] = val;
+    document.getElementById(`p-btn-${id}-P`).className = "polarity-btn " + (val === 'P' ? "selected-P" : "");
+    document.getElementById(`p-btn-${id}-N`).className = "polarity-btn " + (val === 'N' ? "selected-N" : "");
+  }
+
+  function checkPartA() {
+    let score = 0;
+    const total = dataset.length * 2; // Definition + Polarity
+
+    dataset.forEach(item => {
+      const selectedDef = document.getElementById(`select-${item.id}`).value;
+      const selectedPol = userPolarity[item.id];
+      const row = document.getElementById(`item-${item.id}`);
+
+      const isDefCorrect = selectedDef === item.defKey;
+      const isPolCorrect = selectedPol === item.polarity;
+
+      if (isDefCorrect) score++;
+      if (isPolCorrect) score++;
+
+      if (isDefCorrect && isPolCorrect) {
+        row.className = "vocab-item correct";
+      } else {
+        row.className = "vocab-item incorrect";
+      }
+    });
+
+    const banner = document.getElementById("scoreBanner");
+    banner.className = "score-banner show " + (score === total ? "score-good" : "score-bad");
+    banner.innerText = `Your Score: ${score} / ${total} points. ${score === total ? "Perfect work!" : "Review highlighted items and try again."}`;
+  }
+
+  function resetPartA() {
+    initPartA();
+    const banner = document.getElementById("scoreBanner");
+    banner.className = "score-banner";
+  }
+
+  // Flashcards (Part B)
+  function loadCard(idx) {
+    const item = dataset[idx];
+    const article = item.word.match(/^[aeiou]/i) ? "An" : "A";
+    document.getElementById("fcWord").innerText = item.word;
+    document.getElementById("fcPrompt").innerText = `"${article} ${item.word} person is someone who..."`;
+    document.getElementById("fcDef").innerText = item.defText;
+    document.getElementById("fcDef").style.display = "none";
+    document.getElementById("revealBtn").innerText = "Show Definition";
+    document.getElementById("cardCounter").innerText = `Card ${idx + 1} of ${dataset.length}`;
+  }
+
+  function toggleDefinition() {
+    const defEl = document.getElementById("fcDef");
+    const btn = document.getElementById("revealBtn");
+    if (defEl.style.display === "none") {
+      defEl.style.display = "block";
+      btn.innerText = "Hide Definition";
+    } else {
+      defEl.style.display = "none";
+      btn.innerText = "Show Definition";
+    }
+  }
+
+  function nextCard() {
+    currentCardIdx = (currentCardIdx + 1) % dataset.length;
+    loadCard(currentCardIdx);
+  }
+
+  // Part C Setup
+  function initPartC() {
+    const container = document.getElementById("traitCheckboxes");
+    container.innerHTML = "";
+    dataset.forEach(item => {
+      const label = document.createElement("label");
+      label.className = "trait-label";
+      label.innerHTML = `<input type="checkbox" name="trait" value="${item.word}"> ${item.word}`;
+      container.appendChild(label);
+    });
+  }
+
+  function generateDescription(e) {
+    e.preventDefault();
+    const relative = document.getElementById("relativeName").value;
+    const text = document.getElementById("relativeText").value;
+    const selected = Array.from(document.querySelectorAll('input[name="trait"]:checked')).map(cb => cb.value);
+
+    if (selected.length < 2) {
+      alert("Please select at least two adjectives to describe your relative.");
+      return;
+    }
+
+    const output = document.getElementById("outputCard");
+    const outputText = document.getElementById("outputText");
+    outputText.innerHTML = `<strong>Subject:</strong> ${relative}<br><strong>Target Adjectives Used:</strong> ${selected.join(", ")}<br><br><em>"${text}"</em>`;
+    output.style.display = "block";
+  }
+
+  // Tab switching logic
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).style.display = 'block';
+    event.currentTarget.classList.add('active');
+  }
+
+  // App Initialization
+  window.onload = function() {
+    initPartA();
+    loadCard(0);
+    initPartC();
+  };
+</script>
+</body>
+</html>
