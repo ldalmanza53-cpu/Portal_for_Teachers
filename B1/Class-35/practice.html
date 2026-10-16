@@ -1,1 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preference Pulse - B1 Grammar Studio</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #0d9488;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+        }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+        
+        .app-container { width: 100%; max-width: 800px; background: var(--card); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid var(--border); overflow: hidden; }
+        
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 24px; text-align: center; }
+        header h1 { font-size: 22px; margin-bottom: 6px; }
+        header p { font-size: 13px; opacity: 0.9; }
+
+        .nav-tabs { display: flex; background: #f1f5f9; border-bottom: 1px solid var(--border); }
+        .tab-btn { flex: 1; padding: 14px; border: none; background: none; font-weight: 600; color: #64748b; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .tab-btn.active { background: white; color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .tab-content { padding: 24px; display: none; }
+        .tab-content.active { display: block; }
+
+        .rule-badge { background: #eff6ff; border-left: 4px solid var(--primary); padding: 12px; border-radius: 6px; font-size: 13px; color: #1e40af; margin-bottom: 20px; }
+
+        .question-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .question-card.correct { border-color: var(--success); background: #f0fdf4; }
+        .question-card.incorrect { border-color: var(--danger); background: #fef2f2; }
+
+        .prompt { font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #334155; }
+        .given-tag { font-size: 13px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: block; }
+
+        input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; margin-bottom: 10px; }
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        .btn-group { display: flex; gap: 8px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-speech { background: #e0e7ff; color: var(--primary); }
+
+        .feedback { font-size: 13px; font-weight: 600; margin-top: 8px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.incorrect { color: var(--danger); }
+
+        /* Group Survey Styles */
+        .poll-box { background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: 10px; margin-bottom: 16px; }
+        .poll-options { display: flex; gap: 10px; margin-top: 10px; }
+        .poll-btn { flex: 1; padding: 10px; border: 1px solid var(--primary); background: white; color: var(--primary); border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .poll-btn:hover { background: #eff6ff; }
+        .report-out { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 6px; font-size: 14px; color: #166534; font-weight: 600; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>⚡ Preference Pulse</h1>
+        <p>B1 Grammar Studio: Gerunds, Infinitives & Preference Structures</p>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-drill')">Part A: Question Builder</button>
+        <button class="tab-btn" onclick="switchTab('tab-survey')">Part B: Class Survey Simulator</button>
+    </div>
+
+    <!-- TAB 1: EXERCISE 9A -->
+    <div id="tab-drill" class="tab-content active">
+        <div class="rule-badge">
+            📌 <strong>Remember:</strong> <code>Would prefer</code> + <b>to + verb</b> | <code>Would rather</code> + <b>base verb</b>
+        </div>
+        <div id="questions-container"></div>
+    </div>
+
+    <!-- TAB 2: EXERCISE 9B SURVEY -->
+    <div id="tab-survey" class="tab-content">
+        <div class="rule-badge">
+            🗣️ <strong>Part B Group Work:</strong> Select preferences for classmates to generate correct 3rd person report statements.
+        </div>
+        <div id="survey-container"></div>
+    </div>
+</div>
+
+<script>
+const items = [
+    {
+        id: 1,
+        pair: "earn a degree / learn for fun",
+        prompt: "Would you prefer",
+        type: "prefer",
+        answers: [
+            "would you prefer to earn a degree or learn for fun?",
+            "would you prefer to earn a degree or to learn for fun?"
+        ],
+        targetSuffix: "to earn a degree or learn for fun?"
+    },
+    {
+        id: 2,
+        pair: "learn English in Australia / in Canada",
+        prompt: "Would you rather",
+        type: "rather",
+        answers: [
+            "would you rather learn english in australia or in canada?",
+            "would you rather learn english in australia or canada?"
+        ],
+        targetSuffix: "learn English in Australia or in Canada?"
+    },
+    {
+        id: 3,
+        pair: "learn how to cook / how to dance the tango",
+        prompt: "Would you prefer",
+        type: "prefer",
+        answers: [
+            "would you prefer to learn how to cook or how to dance the tango?",
+            "would you prefer to learn how to cook or dance the tango?"
+        ],
+        targetSuffix: "to learn how to cook or how to dance the tango?"
+    },
+    {
+        id: 4,
+        pair: "brush up on skills you already have / learn something new",
+        prompt: "Would you rather",
+        type: "rather",
+        answers: [
+            "would you rather brush up on skills you already have or learn something new?"
+        ],
+        targetSuffix: "brush up on skills you already have or learn something new?"
+    },
+    {
+        id: 5,
+        pair: "read English magazines / English novels",
+        prompt: "Would you rather",
+        type: "rather",
+        answers: [
+            "would you rather read english magazines or english novels?",
+            "would you rather read english magazines or novels?"
+        ],
+        targetSuffix: "read English magazines or English novels?"
+    },
+    {
+        id: 6,
+        pair: "study in the morning / at night",
+        prompt: "Would you prefer",
+        type: "prefer",
+        answers: [
+            "would you prefer to study in the morning or at night?",
+            "would you prefer to study in the morning or study at night?"
+        ],
+        targetSuffix: "to study in the morning or at night?"
+    }
+];
+
+function renderDrill() {
+    const container = document.getElementById('questions-container');
+    container.innerHTML = items.map((q, idx) => `
+        <div class="question-card" id="card-${q.id}">
+            <div class="prompt">${idx + 1}. ${q.pair}</div>
+            <span class="given-tag">${q.prompt} ... ?</span>
+            <input type="text" id="input-${q.id}" placeholder="Type complete question starting with '${q.prompt}...' " onkeyup="if(event.key==='Enter') checkAnswer(${q.id})">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="checkAnswer(${q.id})">Check</button>
+                <button class="btn btn-speech" onclick="speakQuestion(${q.id})">🔊 Listen</button>
+            </div>
+            <div id="feedback-${q.id}" class="feedback"></div>
+        </div>
+    `).join('');
+}
+
+function checkAnswer(id) {
+    const q = items.find(item => item.id === id);
+    const input = document.getElementById(`input-${id}`).value.trim().toLowerCase().replace(/\s+/g, ' ');
+    const card = document.getElementById(`card-${id}`);
+    const feedback = document.getElementById(`feedback-${id}`);
+
+    const isCorrect = q.answers.some(ans => ans === input || ans.replace('?', '') === input.replace('?', ''));
+
+    if (isCorrect) {
+        card.className = "question-card correct";
+        feedback.className = "feedback correct";
+        feedback.innerText = "✅ Excellent! Correct structure.";
+    } else {
+        card.className = "question-card incorrect";
+        feedback.className = "feedback incorrect";
+        feedback.innerText = `❌ Remember: ${q.prompt} ${q.targetSuffix}`;
+    }
+}
+
+function speakQuestion(id) {
+    const q = items.find(item => item.id === id);
+    const text = `${q.prompt} ${q.targetSuffix}`;
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+function renderSurvey() {
+    const container = document.getElementById('survey-container');
+    const classmates = ["Mari", "Juan", "Elena", "Lucas"];
+    
+    container.innerHTML = classmates.map((name, i) => {
+        const q = items[i];
+        const opt = q.pair.split(' / ');
+        return `
+            <div class="poll-box">
+                <div class="prompt">Ask ${name}: "${q.prompt} ${q.targetSuffix}"</div>
+                <div class="poll-options">
+                    <button class="poll-btn" onclick="recordPreference('${name}', '${q.type}', '${opt[0]}', ${i})">${opt[0]}</button>
+                    <button class="poll-btn" onclick="recordPreference('${name}', '${q.type}', '${opt[1]}', ${i})">${opt[1]}</button>
+                </div>
+                <div id="report-${i}" class="report-out"></div>
+            </div>
+        `;
+    }).join('');
+}
+
+function recordPreference(name, type, choice, idx) {
+    const reportBox = document.getElementById(`report-${idx}`);
+    let sentence = "";
+    if (type === 'prefer') {
+        sentence = `${name} would prefer to ${choice.startsWith('in') || choice.startsWith('at') ? 'study ' + choice : choice}.`;
+    } else {
+        sentence = `${name} would rather ${choice.startsWith('in') || choice.startsWith('at') ? 'learn ' + choice : choice}.`;
+    }
+    reportBox.style.display = "block";
+    reportBox.innerText = `📢 Class Report: "${sentence}"`;
+}
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+window.onload = () => {
+    renderDrill();
+    renderSurvey();
+};
+</script>
+
+</body>
+</html>
