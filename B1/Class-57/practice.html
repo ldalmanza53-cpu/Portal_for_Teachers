@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Past Modals Studio: Degrees of Certainty & Judgments Lab</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            heading: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              900: '#134e4a',
+            },
+            accent: {
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .glass-card-active {
+      border-color: rgba(45, 212, 191, 0.4);
+      box-shadow: 0 0 20px -5px rgba(20, 184, 166, 0.2);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
+    }
+    .pulse-subtle {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white bg-slate-950 text-slate-100">
+
+  <!-- Confetti Canvas Overlay -->
+  <canvas id="confettiCanvas" class="pointer-events-none fixed inset-0 z-50 w-full h-full"></canvas>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4"></div>
+
+  <!-- Top Header Navigation & Gamification Bar -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- Logo & Course Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 via-teal-500 to-accent-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 font-heading font-extrabold text-xl">
+          ⚖️
+        </div>
+        <div>
+          <h1 class="font-heading font-bold text-base sm:text-xl text-white tracking-tight flex items-center gap-2">
+            Past Modals Studio
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Unit 12 • B2</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Cambridge Interchange 3 • Degrees of Certainty & Judgments Lab</p>
+        </div>
+      </div>
+
+      <!-- Gamification Stats Pill Bar -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        
+        <!-- Rank Badge -->
+        <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 px-3 py-1.5 rounded-xl">
+          <span id="rankIcon" class="text-lg sm:text-xl">🕵️‍♂️</span>
+          <div class="text-left">
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Rank</div>
+            <div id="rankLabel" class="text-xs font-bold text-brand-400">Detective Novato</div>
+          </div>
+        </div>
+
+        <!-- XP Counter -->
+        <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 px-3 py-1.5 rounded-xl">
+          <span class="text-amber-400 font-bold text-lg">⚡</span>
+          <div class="text-left">
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">XP Score</div>
+            <div class="text-xs font-bold text-amber-400"><span id="xpValue">0</span> XP</div>
+          </div>
+        </div>
+
+        <!-- Audio FX Toggle -->
+        <button id="audioToggleBtn" title="Toggle Sound FX" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700">
+          <svg id="soundOnIcon" class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+          <svg id="soundOffIcon" class="w-5 h-5 text-slate-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Overall Mastery Progress Bar -->
+    <div class="w-full bg-slate-800 h-1.5 relative overflow-hidden">
+      <div id="progressBar" class="bg-gradient-to-r from-brand-500 via-teal-400 to-accent-500 h-full w-0 transition-all duration-500"></div>
+    </div>
+  </header>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="bg-slate-900/80 border-b border-slate-800 px-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-2 py-3">
+      <button onclick="switchTab('tab1')" id="nav-tab1" class="tab-btn px-4 py-2.5 rounded-xl font-heading font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all bg-brand-600/20 text-brand-400 border border-brand-500/30">
+        <span>🎯</span> 1. Degrees of Certainty (Ex 1)
+      </button>
+      <button onclick="switchTab('tab2')" id="nav-tab2" class="tab-btn px-4 py-2.5 rounded-xl font-heading font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+        <span>⚖️</span> 2. Judgments & Advice (Ex 2)
+      </button>
+      <button onclick="switchTab('tab3')" id="nav-tab3" class="tab-btn px-4 py-2.5 rounded-xl font-heading font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+        <span>📊</span> 3. Interactive Spectrum & Rules
+      </button>
+      <button onclick="switchTab('tab4')" id="nav-tab4" class="tab-btn px-4 py-2.5 rounded-xl font-heading font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+        <span>🧪</span> 4. Custom Case Analyzer
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto space-y-6">
+
+    <!-- ================= TAB 1: EXERCISE 1 - DEGREES OF CERTAINTY ================= -->
+    <section id="tab1" class="tab-content space-y-6">
+      
+      <!-- Header Banner -->
+      <div class="glass-card rounded-2xl p-6 border-l-4 border-l-brand-500 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-brand-500/20 text-brand-300">Unit 12 • Part 1</span>
+            <h2 class="text-xl font-heading font-bold text-white">Degrees of Certainty in Past Modals</h2>
+          </div>
+          <p class="text-sm text-slate-300">
+            Complete each conversation using <code class="text-brand-300 bg-slate-900 px-1.5 py-0.5 rounded">must (not) have</code>, <code class="text-brand-300 bg-slate-900 px-1.5 py-0.5 rounded">could (not) have</code>, or <code class="text-brand-300 bg-slate-900 px-1.5 py-0.5 rounded">may/might (not) have</code> plus the verb in parentheses.
+          </p>
+        </div>
+        <button onclick="checkAllTab1()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm rounded-xl transition-all shadow-lg shadow-brand-600/30 flex items-center gap-2 self-start md:self-auto shrink-0">
+          <span>✔️</span> Validate All (Ex 1)
+        </button>
+      </div>
+
+      <!-- Scenarios Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Scenario 1 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 1</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">50% Possible</span>
+            </div>
+            <button onclick="speakScenario(1)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> Yoko still hasn't called me back.</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> She 
+                <input type="text" id="ex1-1" data-answers='["might not have gotten","may not have gotten","might not have got","may not have got"]' placeholder="might not have gotten" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-52 text-sm inline-block font-medium"> 
+                your message.
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's possible – not get)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-1" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-1')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-1" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            Use <strong>might not have</strong> or <strong>may not have</strong> + Past Participle (gotten/got) to indicate a negative possibility (~50% certainty).
+          </div>
+        </div>
+
+        <!-- Scenario 2 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 2</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">95% Almost Certain</span>
+            </div>
+            <button onclick="speakScenario(2)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> What's wrong with Steven?</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> Oh, you 
+                <input type="text" id="ex1-2" data-answers='["must not have heard"]' placeholder="(it's almost certain - not hear)" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-52 text-sm inline-block font-medium"> 
+                the news. His dog ran away.
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's almost certain – not hear)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-2" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-2')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-2" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            For near total certainty about a negative situation in the past, use <strong>must not have heard</strong>.
+          </div>
+        </div>
+
+        <!-- Scenario 3 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 3</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">50% Possible</span>
+            </div>
+            <button onclick="speakScenario(3)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> I went to see the Larsens today, but they didn't answer the door.</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> Was their car there? If so, they 
+                <input type="text" id="ex1-3" data-answers='["could have been","might have been","may have been"]' placeholder="(it's possible - be)" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-48 text-sm inline-block font-medium"> 
+                in the backyard.
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's possible – be)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-3" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-3')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-3" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            Expressing past possibility allows <strong>could have been</strong>, <strong>might have been</strong>, or <strong>may have been</strong>.
+          </div>
+        </div>
+
+        <!-- Scenario 4 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 4</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">100% Impossible</span>
+            </div>
+            <button onclick="speakScenario(4)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> Fabio said he was going to the party last night, but I didn't see him.</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> Neither did I. He 
+                <input type="text" id="ex1-4" data-answers='["couldn’t have been","couldn&#39;t have been","couldn\u0027t have been","could not have been","must not have been"]' placeholder="(it's not possible - not be)" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-48 text-sm inline-block font-medium"> 
+                there then.
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's not possible – not be)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-4" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-4')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-4" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            When you are 100% sure something was impossible in the past, use <strong>couldn't have been</strong> (or <strong>must not have been</strong>).
+          </div>
+        </div>
+
+        <!-- Scenario 5 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 5</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">50% Possible</span>
+            </div>
+            <button onclick="speakScenario(5)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> I can't find my glasses, but I know I had them at work today.</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> You 
+                <input type="text" id="ex1-5" data-answers='["could have left","might have left","may have left"]' placeholder="(it's possible - leave)" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-48 text-sm inline-block font-medium"> 
+                them at the office.
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's possible – leave)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-5" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-5')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-5" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            Past participle of "leave" is "left". Combine with <strong>could / might / may have</strong>.
+          </div>
+        </div>
+
+        <!-- Scenario 6 -->
+        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between space-y-4 border border-slate-800">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Scenario 6</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">95% Almost Certain</span>
+            </div>
+            <button onclick="speakScenario(6)" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1 bg-brand-500/10 px-2.5 py-1 rounded-lg border border-brand-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3H6a1 1 0 01-1-1V10a1 1 0 011-1h3l3-3z"></path></svg> Listen
+            </button>
+          </div>
+
+          <div class="space-y-3 text-sm leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+              <p><strong class="text-amber-400">A:</strong> Marc's new car looks really expensive.</p>
+            </div>
+            
+            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+              <p><strong class="text-brand-400">B:</strong> Yes, it does. It 
+                <input type="text" id="ex1-6" data-answers='["must have cost"]' placeholder="(it's almost certain - cost)" class="mx-1 px-3 py-1 bg-slate-950 border border-slate-700 rounded-lg text-brand-300 focus:outline-none focus:border-brand-500 w-48 text-sm inline-block font-medium"> 
+                a fortune!
+              </p>
+              <div class="text-[11px] text-slate-400 italic">(it's almost certain – cost)</div>
+            </div>
+          </div>
+
+          <div id="feedback-ex1-6" class="hidden text-xs p-3 rounded-xl"></div>
+          <button onclick="toggleHint('hint-6')" class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1 self-start">
+            <span>💡 Toggle Hint & Explanation</span>
+          </button>
+          <div id="hint-6" class="hidden text-xs text-slate-300 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+            For strong logical deduction about a past event, use <strong>must have</strong> + V3 ("cost" stays "cost").
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 2: EXERCISE 2 - JUDGMENTS & SUGGESTIONS ================= -->
+    <section id="tab2" class="tab-content space-y-6 hidden">
+      
+      <!-- Header Banner -->
+      <div class="glass-card rounded-2xl p-6 border-l-4 border-l-accent-500 space-y-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-accent-500/20 text-accent-300">Unit 12 • Part 2</span>
+          <h2 class="text-xl font-heading font-bold text-white">Past Modals for Judgments & Suggestions</h2>
+        </div>
+        <p class="text-sm text-slate-300">
+          Match each past situation with its corresponding judgment or suggestion for an alternative past action. Notice that <code class="text-accent-300 bg-slate-900 px-1.5 py-0.5 rounded">would have</code> means <em>"If I were you..."</em> while <code class="text-brand-300 bg-slate-900 px-1.5 py-0.5 rounded">should (not) have</code> states moral expectation or criticism.
+        </p>
+      </div>
+
+      <!-- Interactive Matching Interface -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Situations List (Left Column) -->
+        <div class="lg:col-span-7 space-y-3">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 px-1">Past Situations</h3>
+          
+          <div id="matchingList" class="space-y-3">
+            <!-- Dynamic situation cards injected via JS -->
+          </div>
+        </div>
+
+        <!-- Available Suggestions Pool / Inspector (Right Column) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4 sticky top-24">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <span>💡 Available Judgments / Suggestions</span>
+              </h3>
+              <button onclick="resetTab2()" class="text-xs text-slate-400 hover:text-white">Reset 🔄</button>
+            </div>
+
+            <div id="suggestionPool" class="space-y-2">
+              <!-- Choices a-f rendering -->
+            </div>
+
+            <button onclick="checkAllTab2()" class="w-full py-3 bg-accent-600 hover:bg-accent-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-accent-600/30 transition-all">
+              Validate Matches (Ex 2) ✨
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 3: INTERACTIVE SPECTRUM & RULES ================= -->
+    <section id="tab3" class="tab-content space-y-6 hidden">
+      
+      <!-- Certainty Spectrum Bar -->
+      <div class="glass-card rounded-2xl p-6 border-l-4 border-l-cyan-500 space-y-6">
+        <div>
+          <h2 class="text-xl font-heading font-bold text-white flex items-center gap-2">
+            <span>📊 Interactive Certainty Spectrum Bar</span>
+          </h2>
+          <p class="text-sm text-slate-300 mt-1">
+            Click on any percentage point on the certainty gradient to see how native speakers express levels of certainty about the past.
+          </p>
+        </div>
+
+        <!-- Visual Gradient Bar -->
+        <div class="space-y-3">
+          <div class="relative h-6 w-full rounded-full bg-gradient-to-r from-rose-600 via-amber-500 via-teal-400 to-emerald-500 p-0.5 shadow-inner">
+            <div id="spectrumIndicator" class="absolute top-0 bottom-0 w-4 bg-white rounded-full shadow-lg transform -translate-x-1/2 transition-all duration-300 border-2 border-slate-900"></div>
+          </div>
+
+          <!-- Clickable Spectrum Nodes -->
+          <div class="grid grid-cols-5 text-center text-xs font-semibold">
+            <button onclick="selectSpectrum(-100)" class="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-rose-400">
+              <div>-100%</div>
+              <div class="text-[10px] text-slate-400 font-normal">Impossible</div>
+            </button>
+            <button onclick="selectSpectrum(-50)" class="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-amber-400">
+              <div>-50%</div>
+              <div class="text-[10px] text-slate-400 font-normal">Possible Not</div>
+            </button>
+            <button onclick="selectSpectrum(50)" class="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-teal-400">
+              <div>+50%</div>
+              <div class="text-[10px] text-slate-400 font-normal">Possible</div>
+            </button>
+            <button onclick="selectSpectrum(90)" class="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-emerald-400">
+              <div>+90%</div>
+              <div class="text-[10px] text-slate-400 font-normal">Almost Certain Not</div>
+            </button>
+            <button onclick="selectSpectrum(100)" class="p-2 rounded-xl hover:bg-slate-800/80 transition-colors text-emerald-300">
+              <div>+95-100%</div>
+              <div class="text-[10px] text-slate-400 font-normal">Almost Certain</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Spectrum Details Box -->
+        <div id="spectrumDetailCard" class="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Comparative Matrix: Judgments vs Hypothetical Advice -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <h3 class="text-lg font-heading font-bold text-white flex items-center gap-2">
+          <span>⚖️ Comparative Grammar: "Should Have" vs "Would Have"</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <div class="p-4 rounded-xl bg-slate-900/70 border border-brand-500/30 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-brand-500/20 text-brand-300">Should (not) have + V3</span>
+              <span class="text-xs text-slate-400">Judgment / Criticism</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Expresses <strong>what was expected or morally correct</strong>. Used to criticize oneself or others for a past mistake or omitted duty.
+            </p>
+            <div class="p-3 bg-slate-950 rounded-lg text-xs space-y-1 font-mono text-brand-300">
+              <p>• "Sue <strong>should have put</strong> it on her calendar."</p>
+              <p>• "He <strong>shouldn't have gone</strong> over the speed limit."</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/70 border border-accent-500/30 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-xs font-bold bg-accent-500/20 text-accent-300">Would (not) have + V3</span>
+              <span class="text-xs text-slate-400">Hypothetical Advice</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Expresses <strong>personal reaction in a hypothetical scenario</strong>. Means: <em>"If I had been in that person's shoes, I would have done this..."</em>
+            </p>
+            <div class="p-3 bg-slate-950 rounded-lg text-xs space-y-1 font-mono text-accent-300">
+              <p>• "I <strong>wouldn't have lent</strong> her money."</p>
+              <p>• "I <strong>would have cooked</strong> something simple."</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Common Pitfalls (B2 ESL Warnings) -->
+      <div class="glass-card rounded-2xl p-6 border border-rose-500/30 space-y-3">
+        <h3 class="font-heading font-bold text-base text-rose-400 flex items-center gap-2">
+          <span>⚠️ 3 Common Past Modal Traps To Avoid</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div class="p-3 rounded-xl bg-rose-950/20 border border-rose-800/40 space-y-1">
+            <span class="text-rose-400 font-bold">1. Phonetic Fallacy ("of")</span>
+            <p class="text-slate-300">❌ "I should <span class="underline">of</span> called."</p>
+            <p class="text-emerald-400">✔️ "I should <strong>have</strong> called."</p>
+          </div>
+          <div class="p-3 rounded-xl bg-rose-950/20 border border-rose-800/40 space-y-1">
+            <span class="text-rose-400 font-bold">2. Incorrect Verb Form</span>
+            <p class="text-slate-300">❌ "He must have <span class="underline">forgot</span>."</p>
+            <p class="text-emerald-400">✔️ "He must have <strong>forgotten</strong>." (Needs V3)</p>
+          </div>
+          <div class="p-3 rounded-xl bg-rose-950/20 border border-rose-800/40 space-y-1">
+            <span class="text-rose-400 font-bold">3. Unnecessary "to"</span>
+            <p class="text-slate-300">❌ "She could <span class="underline">to have</span> left."</p>
+            <p class="text-emerald-400">✔️ "She <strong>could have</strong> left."</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 4: CUSTOM CASE ANALYZER ================= -->
+    <section id="tab4" class="tab-content space-y-6 hidden">
+      
+      <div class="glass-card rounded-2xl p-6 border-l-4 border-l-amber-500 space-y-2">
+        <h2 class="text-xl font-heading font-bold text-white flex items-center gap-2">
+          <span>🧪 Custom Case Analyzer Studio</span>
+        </h2>
+        <p class="text-sm text-slate-300">
+          Write any real-life situation and practice forming past modal sentences. Our real-time syntax evaluator will analyze your grammar structure (<code class="text-amber-300">Modal + Have + Past Participle V3</code>).
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Interactive Form -->
+        <div class="lg:col-span-7 glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+          
+          <!-- Scenario Input / Presets -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-semibold text-slate-300">1. Situation / Dilemma:</label>
+              <div class="text-[11px] text-slate-400">Pick a preset or write your own</div>
+            </div>
+            <input type="text" id="customScenario" placeholder="e.g., My friend missed our flight to NYC." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
+            
+            <!-- Quick Presets -->
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button onclick="applyPreset('My colleague missed an important meeting.')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">🏢 Missed meeting</button>
+              <button onclick="applyPreset('Lucas lost his passport at the airport.')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">✈️ Lost passport</button>
+              <button onclick="applyPreset('My neighbor baked a cake but it burned.')" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">🎂 Burned cake</button>
+            </div>
+          </div>
+
+          <!-- Target Intention Selector -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">2. Target Purpose:</label>
+            <select id="customTargetPurpose" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+              <option value="certainty_high">Degree of Certainty: Almost Certain (must have)</option>
+              <option value="certainty_possibility">Degree of Certainty: Possibility (could/might/may have)</option>
+              <option value="certainty_impossible">Degree of Certainty: Impossible (couldn't have)</option>
+              <option value="judgment_should">Judgment / Criticism (should have / shouldn't have)</option>
+              <option value="advice_would">Hypothetical Advice (would have / wouldn't have)</option>
+            </select>
+          </div>
+
+          <!-- Sentence Typing Area -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">3. Your Past Modal Sentence (in English):</label>
+            <textarea id="customSentence" rows="3" oninput="evaluateCustomSentence()" placeholder="e.g., He should have set an alarm before going to bed." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-amber-500"></textarea>
+          </div>
+
+        </div>
+
+        <!-- Real-Time Evaluation Output Box -->
+        <div class="lg:col-span-5 glass-card rounded-2xl p-6 border border-slate-800 flex flex-col justify-between space-y-4">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
+              <span>🔍 Syntax Inspector</span>
+            </h3>
+
+            <div id="evaluationResults" class="space-y-3 text-xs text-slate-300">
+              <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 italic">
+                Start typing your sentence on the left to activate syntax parsing...
+              </div>
+            </div>
+          </div>
+
+          <button onclick="submitCustomCase()" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-600/30 transition-all">
+            Submit Case & Gain XP ⚡
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // State Management
+    const state = {
+      xp: 0,
+      soundOn: true,
+      currentTab: 'tab1',
+      solvedEx1: new Set(),
+      matchedEx2: {},
+      customCasesCount: 0,
+      
+      // Exercise 2 Match Data (Unit 12 Part 2)
+      tab2Data: [
+        { id: 1, situation: "1. Sue forgot her boyfriend's birthday.", correctKey: "b", prompt: "b. She should have put it on her calendar." },
+        { id: 2, situation: "2. Tim got a speeding ticket.", correctKey: "d", prompt: "d. He shouldn't have gone over the limit." },
+        { id: 3, situation: "3. Ruth still hasn't paid me back.", correctKey: "a", prompt: "a. I wouldn't have lent her money." },
+        { id: 4, situation: "4. Bill lied to us.", correctKey: "c", prompt: "c. He should have told the truth." },
+        { id: 5, situation: "5. I spent an hour making Joe dinner, and he didn't even thank me.", correctKey: "f", prompt: "f. I wouldn't have cooked for him." },
+        { id: 6, situation: "6. Carol came over for dinner empty-handed.", correctKey: "e", prompt: "e. She should have brought something." }
+      ],
+
+      suggestionsPool: [
+        { key: "a", text: "a. I wouldn't have lent her money.", type: "would", usage: "Hypothetical advice ('If I were you...')" },
+        { key: "b", text: "b. She should have put it on her calendar.", type: "should", usage: "Moral expectation / Judgment" },
+        { key: "c", text: "c. He should have told the truth.", type: "should", usage: "Moral expectation / Judgment" },
+        { key: "d", text: "d. He shouldn't have gone over the limit.", type: "should", usage: "Criticism of past action" },
+        { key: "e", text: "e. She should have brought something.", type: "should", usage: "Expectation of polite behavior" },
+        { key: "f", text: "f. I wouldn't have cooked for him.", type: "would", usage: "Hypothetical reaction" }
+      ]
+    };
+
+    // Web Audio Synthesizer
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+      playSuccess() {
+        if (!state.soundOn) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+        osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+      playError() {
+        if (!state.soundOn) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(120, now + 0.2);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+      playLevelUp() {
+        if (!state.soundOn) return;
+        this.init();
+        [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.08;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        });
+      }
+    }
+    const audio = new SoundFX();
+
+    // Toggle Audio Button
+    document.getElementById('audioToggleBtn').addEventListener('click', () => {
+      state.soundOn = !state.soundOn;
+      document.getElementById('soundOnIcon').classList.toggle('hidden', !state.soundOn);
+      document.getElementById('soundOffIcon').classList.toggle('hidden', state.soundOn);
+      showToast(state.soundOn ? "Sound Effects Enabled 🔊" : "Sound Effects Muted 🔇");
+    });
+
+    // Navigation Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-600/20', 'text-brand-400', 'border', 'border-brand-500/30');
+        btn.classList.add('text-slate-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeNav = document.getElementById('nav-' + tabId);
+      activeNav.classList.add('bg-brand-600/20', 'text-brand-400', 'border', 'border-brand-500/30');
+      activeNav.classList.remove('text-slate-400');
+      state.currentTab = tabId;
+    }
+
+    // Add XP & Gamification Upgrade
+    function addXP(amount) {
+      state.xp += amount;
+      document.getElementById('xpValue').textContent = state.xp;
+      
+      const maxXP = 300;
+      const pct = Math.min(100, Math.round((state.xp / maxXP) * 100));
+      document.getElementById('progressBar').style.width = pct + '%';
+
+      const rankLabel = document.getElementById('rankLabel');
+      const rankIcon = document.getElementById('rankIcon');
+
+      if (state.xp >= 250 && rankLabel.textContent !== 'Maestro de Modales') {
+        rankLabel.textContent = 'Maestro de Modales';
+        rankIcon.textContent = '🎓⚡';
+        rankLabel.className = 'text-xs font-bold text-amber-400';
+        audio.playLevelUp();
+        triggerConfetti();
+        showToast("LEVEL UP! 🎓 You are now a Maestro de Modales!");
+      } else if (state.xp >= 120 && state.xp < 250 && rankLabel.textContent !== 'Analista B1') {
+        rankLabel.textContent = 'Analista B1';
+        rankIcon.textContent = '🔍';
+        rankLabel.className = 'text-xs font-bold text-indigo-400';
+        audio.playLevelUp();
+        showToast("LEVEL UP! 🔍 You are now an Analista B1!");
+      }
+    }
+
+    // Speech Synthesis
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      } else {
+        showToast("Speech synthesis not supported in this browser.");
+      }
+    }
+
+    function speakScenario(num) {
+      const texts = {
+        1: "A: Yoko still hasn't called me back. B: She might not have gotten your message.",
+        2: "A: What's wrong with Steven? B: Oh, you must not have heard the news. His dog ran away.",
+        3: "A: I went to see the Larsens today, but they didn't answer the door. B: Was their car there? If so, they could have been in the backyard.",
+        4: "A: Fabio said he was going to the party last night, but I didn't see him. B: Neither did I. He couldn't have been there then.",
+        5: "A: I can't find my glasses, but I know I had them at work today. B: You could have left them at the office.",
+        6: "A: Marc's new car looks really expensive. B: Yes, it does. It must have cost a fortune!"
+      };
+      speakText(texts[num]);
+    }
+
+    function toggleHint(id) {
+      document.getElementById(id).classList.toggle('hidden');
+    }
+
+    // Normalize text input for string matching
+    function normalizeString(str) {
+      return str.toLowerCase()
+        .replace(/’/g, "'")
+        .replace(/’/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Exercise 1 Validator
+    function checkAllTab1() {
+      let correctCount = 0;
+      const total = 6;
+
+      for (let i = 1; i <= total; i++) {
+        const input = document.getElementById(`ex1-${i}`);
+        const fb = document.getElementById(`feedback-ex1-${i}`);
+        const rawVal = input.value;
+        const normVal = normalizeString(rawVal);
+        const validAnswers = JSON.parse(input.getAttribute('data-answers')).map(normalizeString);
+
+        const isCorrect = validAnswers.includes(normVal);
+        fb.classList.remove('hidden');
+
+        if (isCorrect) {
+          input.className = "mx-1 px-3 py-1 bg-brand-950 border-2 border-brand-500 rounded-lg text-brand-300 w-52 text-sm inline-block font-semibold";
+          fb.className = "text-xs p-2.5 rounded-xl bg-brand-950/80 border border-brand-500/40 text-brand-300 font-medium";
+          fb.innerHTML = `✨ Correct! Answer accepted.`;
+          
+          if (!state.solvedEx1.has(i)) {
+            state.solvedEx1.add(i);
+            addXP(20);
+          }
+          correctCount++;
+        } else {
+          input.className = "mx-1 px-3 py-1 bg-rose-950 border-2 border-rose-500 rounded-lg text-rose-300 w-52 text-sm inline-block font-medium";
+          fb.className = "text-xs p-2.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-300 font-medium";
+          fb.innerHTML = `❌ Expected: <strong class="underline">${validAnswers[0]}</strong>`;
+        }
+      }
+
+      if (correctCount === total) {
+        audio.playSuccess();
+        triggerConfetti();
+        showToast("Perfect! All 6 certainty scenarios completed! +120 XP total");
+      } else {
+        audio.playError();
+        showToast(`You scored ${correctCount}/${total}. Review feedback and try again.`);
+      }
+    }
+
+    // Render Tab 2 Matching
+    function renderTab2() {
+      const listContainer = document.getElementById('matchingList');
+      const poolContainer = document.getElementById('suggestionPool');
+
+      listContainer.innerHTML = '';
+      poolContainer.innerHTML = '';
+
+      state.tab2Data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "glass-card p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3";
+        
+        card.innerHTML = `
+          <div class="space-y-1 flex-1">
+            <div class="text-sm font-semibold text-slate-100">${item.situation}</div>
+            <div id="matched-badge-${item.id}" class="text-xs text-slate-400 italic">No judgment selected yet...</div>
+          </div>
+          <select id="select-match-${item.id}" onchange="onTab2SelectChange(${item.id})" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accent-500 max-w-xs w-full">
+            <option value="">-- Choose matching option --</option>
+            ${state.suggestionsPool.map(s => `<option value="${s.key}">${s.text}</option>`).join('')}
+          </select>
+        `;
+        listContainer.appendChild(card);
+      });
+
+      state.suggestionsPool.forEach(s => {
+        const poolCard = document.createElement('div');
+        poolCard.className = "p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 text-xs";
+        poolCard.innerHTML = `
+          <div class="font-semibold text-accent-300">${s.text}</div>
+          <div class="text-[10px] text-slate-400">Type: <span class="text-slate-300">${s.usage}</span></div>
+        `;
+        poolContainer.appendChild(poolCard);
+      });
+    }
+
+    function onTab2SelectChange(id) {
+      const sel = document.getElementById(`select-match-${id}`);
+      const val = sel.value;
+      const badge = document.getElementById(`matched-badge-${id}`);
+
+      if (val) {
+        const suggestion = state.suggestionsPool.find(s => s.key === val);
+        badge.innerHTML = `Selected: <span class="text-accent-300 font-semibold">${suggestion.text}</span>`;
+        state.matchedEx2[id] = val;
+      } else {
+        badge.innerHTML = `No judgment selected yet...`;
+        delete state.matchedEx2[id];
+      }
+    }
+
+    function checkAllTab2() {
+      let correct = 0;
+      const total = state.tab2Data.length;
+
+      state.tab2Data.forEach(item => {
+        const sel = document.getElementById(`select-match-${item.id}`);
+        const userChoice = state.matchedEx2[item.id];
+        const badge = document.getElementById(`matched-badge-${item.id}`);
+
+        if (userChoice === item.correctKey) {
+          correct++;
+          sel.className = "bg-brand-950 border-2 border-brand-500 rounded-xl px-3 py-2 text-xs text-brand-300 font-semibold focus:outline-none max-w-xs w-full";
+          badge.className = "text-xs font-semibold text-brand-400";
+          badge.innerHTML = `✔️ Correct Match! (${item.prompt})`;
+        } else {
+          sel.className = "bg-rose-950 border-2 border-rose-500 rounded-xl px-3 py-2 text-xs text-rose-300 font-semibold focus:outline-none max-w-xs w-full";
+          badge.className = "text-xs font-semibold text-rose-400";
+          badge.innerHTML = `❌ Incorrect. Correct choice is: <strong class="underline">${item.prompt}</strong>`;
+        }
+      });
+
+      if (correct === total) {
+        audio.playSuccess();
+        triggerConfetti();
+        addXP(100);
+        showToast("Perfect Match! All 6 Judgments & Suggestions correct! +100 XP");
+      } else {
+        audio.playError();
+        showToast(`Matched ${correct}/${total} correctly. Review incorrect items.`);
+      }
+    }
+
+    function resetTab2() {
+      state.matchedEx2 = {};
+      renderTab2();
+      showToast("Judgments exercise reset.");
+    }
+
+    // Spectrum Visualizer Interactive Logic
+    const spectrumData = {
+      '-100': {
+        title: "-100% Impossibility: couldn't have + V3",
+        badge: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+        rule: "Use couldn't have when you are almost 100% certain that an event was logically impossible in the past.",
+        examples: [
+          "He couldn't have forgotten his own birthday party.",
+          "They couldn't have arrived so fast without a car.",
+          "She couldn't have seen me—I was wearing a disguise."
+        ]
+      },
+      '-50': {
+        title: "-50% Negative Possibility: might not / may not have + V3",
+        badge: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+        rule: "Use might not have or may not have to express that it is possible something did not happen.",
+        examples: [
+          "She might not have gotten your message.",
+          "They may not have heard the doorbell.",
+          "He might not have received his exam results yet."
+        ]
+      },
+      '50': {
+        title: "+50% Positive Possibility: could / might / may have + V3",
+        badge: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+        rule: "Use could have, might have, or may have when you are about 50% sure something happened.",
+        examples: [
+          "They could have been in the backyard.",
+          "You might have left your keys at the office.",
+          "He may have taken a earlier train."
+        ]
+      },
+      '90': {
+        title: "+90% Negative Certainty: must not have + V3",
+        badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+        rule: "Use must not have when logically you are almost certain a past action did NOT occur.",
+        examples: [
+          "You must not have heard the news—his dog ran away.",
+          "He must not have noticed the red light.",
+          "They must not have paid attention to the warning sign."
+        ]
+      },
+      '100': {
+        title: "+95-100% Strong Certainty: must have + V3",
+        badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+        rule: "Use must have when evidence makes you almost 100% certain that an event occurred.",
+        examples: [
+          "It must have cost a fortune!",
+          "She must have trained for months to win.",
+          "They must have left early to catch the 6 AM flight."
+        ]
+      }
+    };
+
+    function selectSpectrum(val) {
+      const card = document.getElementById('spectrumDetailCard');
+      const indicator = document.getElementById('spectrumIndicator');
+
+      // Map value to percentage position
+      const posMap = { '-100': 5, '-50': 27, '50': 50, '90': 75, '100': 95 };
+      indicator.style.left = `${posMap[val]}%`;
+
+      const data = spectrumData[val];
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <h4 class="font-heading font-bold text-base text-white">${data.title}</h4>
+          <span class="text-xs px-2.5 py-0.5 rounded-full border font-semibold ${data.badge}">Certainty Level: ${val}%</span>
+        </div>
+        <p class="text-xs text-slate-300">${data.rule}</p>
+        <div class="space-y-1 pt-1 border-t border-slate-800">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Example Sentences:</div>
+          ${data.examples.map(ex => `<div class="text-xs text-brand-300 font-mono">• "${ex}"</div>`).join('')}
+        </div>
+      `;
+      audio.playSuccess();
+    }
+
+    // Custom Case Analyzer Syntax Evaluator
+    function applyPreset(text) {
+      document.getElementById('customScenario').value = text;
+      evaluateCustomSentence();
+    }
+
+    function evaluateCustomSentence() {
+      const sentence = document.getElementById('customSentence').value.trim();
+      const resultsBox = document.getElementById('evaluationResults');
+
+      if (!sentence) {
+        resultsBox.innerHTML = `
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 italic">
+            Start typing your sentence on the left to activate syntax parsing...
+          </div>
+        `;
+        return;
+      }
+
+      const lower = sentence.toLowerCase();
+
+      // Detection Rules
+      const hasOfError = /\b(should|would|could|must|might|may)\s+of\b/.test(lower);
+      const modalMatch = lower.match(/\b(shouldn't|should not|should|wouldn't|would not|would|couldn't|could not|could|must not|must|might not|might|may not|may)\s+have\b/);
+      
+      let modalName = modalMatch ? modalMatch[0] : null;
+
+      let feedbackHTML = '';
+
+      if (hasOfError) {
+        feedbackHTML += `
+          <div class="p-3 rounded-xl bg-rose-950/80 border border-rose-500/50 text-rose-300 space-y-1">
+            <div class="font-bold flex items-center gap-1">❌ Critical Grammar Trap: "of" error</div>
+            <div>You wrote <code class="bg-slate-950 px-1 rounded">${sentence}</code>. In English, modals always take <strong>have</strong>, never "of". Change "should of" to <strong>"should have"</strong>.</div>
+          </div>
+        `;
+      } else if (modalName) {
+        feedbackHTML += `
+          <div class="p-3 rounded-xl bg-brand-950/80 border border-brand-500/50 text-brand-300 space-y-1">
+            <div class="font-bold flex items-center gap-1">✔️ Modal Auxiliary Detected</div>
+            <div>Structure: <code class="bg-slate-950 px-1.5 py-0.5 rounded text-brand-300 font-bold">${modalName}</code></div>
+          </div>
+        `;
+
+        // Check if sentence has potential verb after have
+        const postHave = lower.split(modalName)[1];
+        if (postHave && postHave.trim().length > 2) {
+          feedbackHTML += `
+            <div class="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 space-y-1">
+              <div class="font-bold">✨ Complete Past Modal Structure</div>
+              <div>Your sentence matches valid past modal syntax: <em>Modal + Have + Verb Phrase</em>.</div>
+            </div>
+          `;
+        } else {
+          feedbackHTML += `
+            <div class="p-3 rounded-xl bg-amber-950/80 border border-amber-500/50 text-amber-300 space-y-1">
+              <div class="font-bold">⚠️ Pending Past Participle (V3)</div>
+              <div>Add a main verb in Past Participle form after <code class="bg-slate-950 px-1 rounded">${modalName}</code> (e.g., <em>done, call, spoken, brought, forgotten</em>).</div>
+            </div>
+          `;
+        }
+      } else {
+        feedbackHTML += `
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 space-y-1">
+            <div class="font-bold text-amber-400">💡 Searching for Past Modal Pattern...</div>
+            <div>Include one of the required past modal structures: <code class="bg-slate-950 px-1 rounded text-brand-300">should have</code>, <code class="bg-slate-950 px-1 rounded text-brand-300">would have</code>, <code class="bg-slate-950 px-1 rounded text-brand-300">must have</code>, or <code class="bg-slate-950 px-1 rounded text-brand-300">could have</code>.</div>
+          </div>
+        `;
+      }
+
+      resultsBox.innerHTML = feedbackHTML;
+    }
+
+    function submitCustomCase() {
+      const scenario = document.getElementById('customScenario').value.trim();
+      const sentence = document.getElementById('customSentence').value.trim();
+
+      if (!scenario || sentence.length < 10) {
+        showToast("Please provide both a situation and a full sentence.");
+        return;
+      }
+
+      const lower = sentence.toLowerCase();
+      if (/\b(should|would|could|must|might|may)\s+of\b/.test(lower)) {
+        audio.playError();
+        showToast("Fix the 'should of' error before submitting!");
+        return;
+      }
+
+      state.customCasesCount++;
+      addXP(30);
+      audio.playSuccess();
+      showToast(`Case Submitted! +30 XP gained (Total cases analyzed: ${state.customCasesCount})`);
+      
+      document.getElementById('customSentence').value = '';
+      evaluateCustomSentence();
+    }
+
+    // Toast Notification System
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = "p-3.5 rounded-xl bg-slate-900/95 border border-slate-700 text-slate-100 text-xs font-semibold shadow-2xl backdrop-blur-md transition-all duration-300 opacity-0 transform translate-y-2 flex items-center justify-between pointer-events-auto";
+      toast.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white ml-3">✕</button>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      }, 50);
+
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 4000);
+    }
+
+    // Confetti Animation Engine
+    function triggerConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#14b8a6', '#6366f1', '#f59e0b', '#ec4899', '#3b82f6'];
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vy: Math.random() * 4 + 2,
+          vx: (Math.random() - 0.5) * 2,
+          rot: Math.random() * 360,
+          vRot: Math.random() * 10 - 5
+        });
+      }
+
+      let frame = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.y += p.vy;
+          p.x += p.vx;
+          p.rot += p.vRot;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rot * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        });
+        frame++;
+        if (frame < 150) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      animate();
+    }
+
+    // On Load Initialization
+    window.onload = function() {
+      renderTab2();
+      selectSpectrum(50);
+    };
+  </script>
+</body>
+</html>
