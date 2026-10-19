@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detective Logic: The Mystery of St. Jude's Vault</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            noir: {
+              950: '#090d16',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            amber: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            },
+            crimson: {
+              500: '#ef4444',
+              600: '#dc2626',
+            }
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Cinzel, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090d16;
+      color: #f8fafc;
+    }
+    .font-noir-header {
+      font-family: 'Cinzel', serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbar for Detective Board */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f59e0b;
+    }
+
+    /* Print Styles for Official Detective Certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 40px;
+        background: #0f172a !important;
+        color: #f8fafc !important;
+        box-shadow: none !important;
+        border: 8px double #f59e0b !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-noir-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-noir-950">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // =========================================================================
+    // AUDIO SYNTHESIZER HELPER (NO EXTERNAL SOUND FILES NEEDED)
+    // =========================================================================
+    const playSoundEffect = (type, enabled = true) => {
+      if (!enabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        if (type === 'correct') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.25);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(400, ctx.currentTime);
+          gain.gain.setValueAtTime(0.04, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.03);
+        } else if (type === 'clue') {
+          // Noir mystery chime
+          [440, 554.37, 659.25, 830.61].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+            gain.gain.setValueAtTime(0.08, ctx.currentTime + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.4);
+            osc.start(ctx.currentTime + idx * 0.08);
+            osc.stop(ctx.currentTime + idx * 0.08 + 0.4);
+          });
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.35);
+            osc.start(ctx.currentTime + idx * 0.1);
+            osc.stop(ctx.currentTime + idx * 0.1 + 0.35);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio Context error:", e);
+      }
+    };
+
+    // Text To Speech Helper
+    const speakText = (text, rate = 1.0) => {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // =========================================================================
+    // STATIC EVIDENCE & CHALLENGE DATA
+    // =========================================================================
+
+    const EVIDENCE_ITEMS = [
+      {
+        id: 'vault_lock',
+        title: "1. Undamaged Vault Lock Mechanism",
+        icon: "🔒",
+        shortDesc: "Vault Door 3 • No mechanical forced entry",
+        fullDetails: "The ancient brass vault tumbler lock shows zero scratches or heavy tool marks. The heavy steel bolts were retracted smoothly from the inside digital panel.",
+        question: "Based on the undamaged lock, complete the logical deduction:",
+        promptPrefix: "The intruder ",
+        promptSuffix: " the secret vault combination in advance.",
+        options: ["must have known", "can't have known", "might have guessed", "should have forgotten"],
+        correct: "must have known",
+        explanation: "100% Positive Deduction: Since there are no marks of physical forced entry, it is almost certain (must have + V3) that the intruder possessed the secret code."
+      },
+      {
+        id: 'coffee_mug',
+        title: "2. Guard's Sedated Coffee Mug",
+        icon: "☕",
+        shortDesc: "Officer Miller's Desk • 3 empty cups",
+        fullDetails: "Three drained espresso mugs sit near the guard console. Forensic analysis detected traces of a odorless sleeping agent in the ceramic mug.",
+        question: "Deduce what happened to Officer Miller during his night shift:",
+        promptPrefix: "An accomplice ",
+        promptSuffix: " the guard's espresso with a potent sedative.",
+        options: ["must have spiked", "couldn't have touched", "might have forgotten", "was supposed to drink"],
+        correct: "must have spiked",
+        explanation: "100% Positive Deduction: The presence of sedative residue in his mug logically proves someone spiked his coffee."
+      },
+      {
+        id: 'cctv_feed',
+        title: "3. Blacked-Out CCTV Camera Feed",
+        icon: "📹",
+        shortDesc: "Security Room • 2:30 AM to 3:15 AM blackout",
+        fullDetails: "The security monitor recorded static for 45 minutes. The physical power cable remains intact, suggesting software manipulation or a remote bypass.",
+        question: "Deduce how the video feed was disabled:",
+        promptPrefix: "The perpetrator ",
+        promptSuffix: " specialized cyber tools or internal credentials to loop the video feed.",
+        options: ["might have used", "must have broken", "can't have needed", "should have fixed"],
+        correct: "might have used",
+        explanation: "50% Speculation/Possibility: We cannot be 100% sure without digital forensic logs, so 'might have used' expresses a strong possibility."
+      },
+      {
+        id: 'subway_map',
+        title: "4. Highlighted 18th-Century Map",
+        icon: "📜",
+        shortDesc: "Archives Table • Abandoned Subterranean Tunnels",
+        fullDetails: "An antique parchment map of St. Jude's Cathedral foundations lies open. Red ink circles the old drainage conduits leading to the river.",
+        question: "Formulate a past speculation regarding the escape route:",
+        promptPrefix: "The thief ",
+        promptSuffix: " through the abandoned catacombs beneath the nave.",
+        options: ["could have escaped", "must have bought", "can't have seen", "had better run"],
+        correct: "could have escaped",
+        explanation: "50% Speculation/Possibility: The circled map indicates an underground escape route as a plausible hypothesis (could have + V3)."
+      }
+    ];
+
+    const CERTAINTY_STATEMENTS = [
+      {
+        id: 1,
+        text: "The thief must have known the vault code because the heavy door was opened without force.",
+        category: "positive", // 100% positive
+        grammarNote: "must have + V3 (Logical Certainty)"
+      },
+      {
+        id: 2,
+        text: "Officer Miller might have fallen asleep naturally, but the lab test detected chemical sedative traces.",
+        category: "possibility", // 50% possibility
+        grammarNote: "might have + V3 (Uncertain Possibility)"
+      },
+      {
+        id: 3,
+        text: "The burglar can't have acted alone because the reliquary weighs over 200 kilograms.",
+        category: "negative", // 100% negative/impossible
+        grammarNote: "can't have + V3 (Impossible Deduction)"
+      },
+      {
+        id: 4,
+        text: "Dr. Aris may have left the archive door unlocked when she finished her late-night research.",
+        category: "possibility",
+        grammarNote: "may have + V3 (Possibility)"
+      },
+      {
+        id: 5,
+        text: "The suspect couldn't have escaped through the front gates; four guards were standing watch there.",
+        category: "negative",
+        grammarNote: "couldn't have + V3 (Logical Impossibility)"
+      },
+      {
+        id: 6,
+        text: "The archivist must have seen the intruder if she stayed in her office until 2:00 AM.",
+        category: "positive",
+        grammarNote: "must have + V3 (Strong Deduction)"
+      },
+      {
+        id: 7,
+        text: "Mr. Vance could have borrowed the old blueprint map earlier during the afternoon shift.",
+        category: "possibility",
+        grammarNote: "could have + V3 (Past Possibility)"
+      },
+      {
+        id: 8,
+        text: "The thief must have disabled the motion alarm before entering Vault 3.",
+        category: "positive",
+        grammarNote: "must have + V3 (Necessary Deduction)"
+      }
+    ];
+
+    const OBLIGATION_BUILDER_DATA = [
+      {
+        id: 1,
+        concept: "Unfulfilled Expectation (was supposed to)",
+        hint: "Officer Miller had a scheduled duty to check Vault 3 every hour, but he failed.",
+        tiles: ["Officer", "Miller", "was", "supposed", "to", "patrol", "the", "vault", "corridor", "at", "2:00", "AM", "."],
+        grammarFocus: "was/were supposed to + V1"
+      },
+      {
+        id: 2,
+        concept: "Past Criticisms & Regret (should have)",
+        hint: "The head security supervisor made a grave error by ignoring the initial alarm warning.",
+        tiles: ["The", "supervisor", "should", "have", "investigated", "the", "power", "flicker", "immediately", "."],
+        grammarFocus: "should have + V3"
+      },
+      {
+        id: 3,
+        concept: "Actual Past Necessity (had to)",
+        hint: "Because the main generator failed, the police were forced to seal all exit gates.",
+        tiles: ["The", "detectives", "had", "to", "seal", "all", "cathedral", "exits", "after", "the", "alarm", "."],
+        grammarFocus: "had to + V1"
+      }
+    ];
+
+    const INTERROGATION_SUSPECTS = [
+      {
+        id: 'miller',
+        name: "Officer Miller",
+        role: "Night Guard on Duty",
+        avatar: "👮‍♂️",
+        quote: "I swear I only closed my eyes for a minute after drinking my second espresso cup! I didn't hear anything suspicious.",
+        q1Prompt: "Advice: How should you advise the Security Chief regarding Officer Miller?",
+        q1Options: [
+          { text: "You had better suspend Miller's clearance until the drug test results arrive.", correct: true, feedback: "Excellent! 'had better + V1' delivers urgent, strong advice with potential consequences." },
+          { text: "You had better to fire him right now without investigation.", correct: false, feedback: "Incorrect grammar: 'had better' is followed directly by base verb (no 'to')." },
+          { text: "You ought asking him nicely about his coffee.", correct: false, feedback: "Incorrect structure: 'ought to + V1' requires 'to'." }
+        ],
+        q2Prompt: "Opinion: Express your official suspicion regarding Miller's claim.",
+        q2Options: [
+          { text: "I strongly suspect Miller was drugged by an insider who knew his night routine.", correct: true, feedback: "Spot on! 'I strongly suspect' frames a professional detective opinion." },
+          { text: "In my view Miller must to be completely innocent.", correct: false, feedback: "Grammar mistake: Modal 'must' cannot be followed by 'to'." },
+          { text: "It seems to me that he had better lie to us.", correct: false, feedback: "'had better' is for advice, not for stating opinions about actions." }
+        ]
+      },
+      {
+        id: 'aris',
+        name: "Dr. Elena Aris",
+        role: "Cathedral Senior Archivist",
+        avatar: "👩‍🏫",
+        quote: "I was examining the medieval manuscripts until 1:30 AM. I noticed the tunnel map was missing from the vault case, but I thought Mr. Vance had archived it.",
+        q1Prompt: "Advice: What advice should be given to Dr. Aris regarding archive protocols?",
+        q1Options: [
+          { text: "You ought to double-check the logbook whenever rare manuscripts leave the vault.", correct: true, feedback: "Correct! 'ought to + V1' expresses clear professional advice." },
+          { text: "You should to lock all doors twice.", correct: false, feedback: "Grammar error: 'should' is a modal verb followed directly by base verb (no 'to')." },
+          { text: "You had better to write a apology note.", correct: false, feedback: "Incorrect: 'had better' does not take 'to'." }
+        ],
+        q2Prompt: "Opinion: Formulate your assessment of Dr. Aris's testimony.",
+        q2Options: [
+          { text: "It seems to me that Dr. Aris is withholding information about who borrowed the map.", correct: true, feedback: "Great deduction! 'It seems to me that...' introduces a measured opinion." },
+          { text: "In my view she should of reported the missing map at midnight.", correct: false, feedback: "Grammar error: Never write 'should of' — write 'should have'!" },
+          { text: "I strongly suspect she was supposed to stolen the map.", correct: false, feedback: "Grammar error: 'was supposed to' takes base verb 'steal'." }
+        ]
+      },
+      {
+        id: 'vance',
+        name: "Mr. Arthur Vance",
+        role: "Retired Cathedral Historian",
+        avatar: "👨‍🦳",
+        quote: "I was taking my usual late walk near the courtyard at 2:40 AM. I saw a dark figure carrying a heavy leather satchel near the catacomb grate.",
+        q1Prompt: "Advice: How should the investigation team handle Vance's eyewitness report?",
+        q1Options: [
+          { text: "We had better cross-reference Vance's timeline with the 2:30 AM CCTV blackout.", correct: true, feedback: "Perfect! 'We had better + V1' emphasizes a critical tactical step." },
+          { text: "We ought testing his boots for catacomb mud.", correct: false, feedback: "Grammar error: 'ought to test' is required." },
+          { text: "We should had interviewed him earlier.", correct: false, feedback: "Grammar error: Should be 'should have interviewed'." }
+        ],
+        q2Prompt: "Opinion: State your final professional opinion on Vance's reliability.",
+        q2Options: [
+          { text: "In my view, Vance's account aligns perfectly with the subterranean escape route hypothesis.", correct: true, feedback: "Brilliant! 'In my view' introduces a clear, professional conclusion." },
+          { text: "It seems to me he might to be telling the truth.", correct: false, feedback: "Grammar error: 'might' is followed by base verb 'be' (no 'to')." },
+          { text: "I strongly suspect he had better know who the thief is.", correct: false, feedback: "Misuse of 'had better' inside an opinion sentence." }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+    function App() {
+      // User State
+      const [xp, setXp] = useState(40);
+      const [cluesFound, setCluesFound] = useState([]);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [activeTab, setActiveTab] = useState('evidence'); // evidence, certainty, obligation, interrogation, report
+      const [showHandbook, setShowHandbook] = useState(false);
+      const [detectiveName, setDetectiveName] = useState('Detective Vance');
+
+      // Rank calculation
+      const getRank = (points) => {
+        if (points < 100) return { title: "Junior Sleuth", icon: "🔍", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" };
+        if (points < 200) return { title: "Lead Inspector", icon: "🕵️‍♂️", color: "text-teal-400 border-teal-500/30 bg-teal-500/10" };
+        if (points < 320) return { title: "Senior Detective", icon: "💼", color: "text-indigo-400 border-indigo-500/30 bg-indigo-500/10" };
+        return { title: "Master Sleuth", icon: "👑", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" };
+      };
+
+      const currentRank = getRank(xp);
+
+      const addXp = (amount) => {
+        setXp(prev => prev + amount);
+      };
+
+      const markClueFound = (clueId) => {
+        if (!cluesFound.includes(clueId)) {
+          setCluesFound(prev => [...prev, clueId]);
+          addXp(25);
+          playSoundEffect('clue', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans border-t-4 border-amber-500">
+          
+          {/* HEADER & CASE PROGRESS HUB */}
+          <header className="bg-noir-900 border-b border-slate-800 sticky top-0 z-40 shadow-xl no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                
+                {/* Brand Title */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20 text-noir-950 font-black">
+                    🕵️‍♂️
+                  </div>
+                  <div>
+                    <h1 className="text-base sm:text-lg font-black font-noir-header tracking-wider text-amber-400">
+                      DETECTIVE LOGIC
+                    </h1>
+                    <p className="text-[11px] text-slate-400 font-mono tracking-tight">The Mystery of St. Jude's Vault • ESL B1-C1</p>
+                  </div>
+                </div>
+
+                {/* Case Stats Bar */}
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  
+                  {/* Clues Tracker */}
+                  <div className="flex items-center space-x-1.5 bg-noir-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono" title="Clues Inspected">
+                    <span className="text-amber-400">🔍 Clues:</span>
+                    <span className="font-bold text-amber-300">{cluesFound.length} / 4</span>
+                  </div>
+
+                  {/* Detective Rank */}
+                  <div className={`hidden md:flex items-center space-x-1.5 border px-3 py-1.5 rounded-xl text-xs font-bold ${currentRank.color}`}>
+                    <span>{currentRank.icon}</span>
+                    <span>{currentRank.title}</span>
+                  </div>
+
+                  {/* XP Counter */}
+                  <div className="flex items-center space-x-1.5 bg-noir-950 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400">
+                    <span>⭐</span>
+                    <span>{xp} <span className="text-[10px] text-slate-400 font-normal">XP</span></span>
+                  </div>
+
+                  {/* Handbook Button */}
+                  <button
+                    onClick={() => {
+                      setShowHandbook(true);
+                      playSoundEffect('click', soundEnabled);
+                    }}
+                    className="bg-amber-500 hover:bg-amber-600 text-noir-950 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                  >
+                    <span>📖</span>
+                    <span className="hidden sm:inline">Grammar Handbook</span>
+                  </button>
+
+                  {/* Sound Toggle */}
+                  <button
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      playSoundEffect('click', !soundEnabled);
+                    }}
+                    className={`p-2 rounded-xl border text-xs transition ${
+                      soundEnabled 
+                        ? 'bg-slate-800 border-amber-500/50 text-amber-400' 
+                        : 'bg-noir-950 border-slate-800 text-slate-500'
+                    }`}
+                    title="Toggle Audio Effects"
+                  >
+                    {soundEnabled ? '🔊' : '🔇'}
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <nav className="flex items-center gap-2">
+                  {[
+                    { id: 'evidence', label: '1. Crime Scene Evidence', icon: '🔍' },
+                    { id: 'certainty', label: '2. Deduction Matrix', icon: '📊' },
+                    { id: 'obligation', label: '3. Obligation Lab', icon: '🧩' },
+                    { id: 'interrogation', label: '4. Interrogation Room', icon: '🚨' },
+                    { id: 'report', label: '5. Final Case Report', icon: '📜' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        playSoundEffect('click', soundEnabled);
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        activeTab === tab.id
+                          ? 'bg-amber-500 text-noir-950 font-black shadow-md shadow-amber-500/20'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT WORKSPACE */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'evidence' && (
+              <Module1CrimeScene
+                evidenceItems={EVIDENCE_ITEMS}
+                cluesFound={cluesFound}
+                markClueFound={markClueFound}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                speakText={speakText}
+              />
+            )}
+
+            {activeTab === 'certainty' && (
+              <Module2CertaintyMatrix
+                statements={CERTAINTY_STATEMENTS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                speakText={speakText}
+              />
+            )}
+
+            {activeTab === 'obligation' && (
+              <Module3ObligationLab
+                data={OBLIGATION_BUILDER_DATA}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'interrogation' && (
+              <Module4InterrogationRoom
+                suspects={INTERROGATION_SUSPECTS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'report' && (
+              <Module5FinalReport
+                detectiveName={detectiveName}
+                setDetectiveName={setDetectiveName}
+                xp={xp}
+                currentRank={currentRank}
+                cluesCount={cluesFound.length}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+          </main>
+
+          {/* DETECTIVE'S GRAMMAR HANDBOOK MODAL */}
+          {showHandbook && (
+            <div className="fixed inset-0 bg-noir-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-noir-900 border border-slate-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto text-slate-200">
+                
+                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">📖</span>
+                    <h3 className="text-lg font-black font-noir-header text-amber-400">Detective's Logic Handbook</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowHandbook(false)}
+                    className="text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6 text-xs sm:text-sm">
+                  
+                  {/* Table 1: Certainty Levels */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-amber-400 uppercase tracking-wider font-mono text-xs">
+                      1. Past Degrees of Certainty & Speculation
+                    </h4>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-noir-950 text-slate-400 text-[11px] uppercase font-mono">
+                          <tr>
+                            <th className="p-3 border-b border-slate-800">Modal Structure</th>
+                            <th className="p-3 border-b border-slate-800">Certainty Level</th>
+                            <th className="p-3 border-b border-slate-800">Detective Example</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 text-xs font-mono">
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-emerald-400">must have + V3</td>
+                            <td className="p-3">95-100% Positive Certainty</td>
+                            <td className="p-3 text-slate-300">"The burglar must have known the code."</td>
+                          </tr>
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-amber-400">might / could / may have + V3</td>
+                            <td className="p-3">30-50% Unverified Possibility</td>
+                            <td className="p-3 text-slate-300">"The suspect might have escaped via tunnels."</td>
+                          </tr>
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-crimson-500">can't / couldn't have + V3</td>
+                            <td className="p-3">95-100% Negative Impossibility</td>
+                            <td className="p-3 text-slate-300">"He can't have acted alone."</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Table 2: Obligations & Expectations */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-teal-400 uppercase tracking-wider font-mono text-xs">
+                      2. Obligations, Expectations & Past Regrets
+                    </h4>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="bg-noir-950 text-slate-400 text-[11px] uppercase font-mono">
+                          <tr>
+                            <th className="p-3 border-b border-slate-800">Structure</th>
+                            <th className="p-3 border-b border-slate-800">Function</th>
+                            <th className="p-3 border-b border-slate-800">Detective Example</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 text-xs font-mono">
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-teal-300">had to + V1</td>
+                            <td className="p-3">Past Necessity / Obligation</td>
+                            <td className="p-3 text-slate-300">"Police had to seal the cathedral gates."</td>
+                          </tr>
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-indigo-300">was/were supposed to + V1</td>
+                            <td className="p-3">Unfulfilled Duty / Expectation</td>
+                            <td className="p-3 text-slate-300">"Miller was supposed to patrol at 2:00 AM."</td>
+                          </tr>
+                          <tr className="hover:bg-slate-800/50">
+                            <td className="p-3 font-bold text-rose-400">should have + V3</td>
+                            <td className="p-3">Past Regret or Criticism</td>
+                            <td className="p-3 text-slate-300">"They should have tested the power generator."</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Advice & Opinions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-noir-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                      <h5 className="font-bold text-amber-400 font-mono text-xs">💡 Tactical Advice</h5>
+                      <ul className="text-xs space-y-1 font-mono text-slate-300">
+                        <li>• <strong>had better + V1:</strong> Urgent warning ("We had better review CCTV.")</li>
+                        <li>• <strong>ought to + V1:</strong> Duty/Advice ("You ought to check the log.")</li>
+                      </ul>
+                    </div>
+                    <div className="bg-noir-950 p-4 rounded-2xl border border-slate-800 space-y-1.5">
+                      <h5 className="font-bold text-indigo-400 font-mono text-xs">💬 Opinion Frames</h5>
+                      <ul className="text-xs space-y-1 font-mono text-slate-300">
+                        <li>• <strong>In my view,</strong> the thief had insider help.</li>
+                        <li>• <strong>It seems to me that</strong> Miller was drugged.</li>
+                        <li>• <strong>I strongly suspect that</strong> Dr. Aris is hiding something.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setShowHandbook(false)}
+                    className="bg-amber-500 hover:bg-amber-600 text-noir-950 font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md"
+                  >
+                    Resume Investigation
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-noir-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
+            <p>Detective Logic • Educational Case File for ESL/EFL CEFR B1-C1 Learners</p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 1: CRIME SCENE & EVIDENCE INSPECTOR
+    // =========================================================================
+    function Module1CrimeScene({ evidenceItems, cluesFound, markClueFound, addXp, soundEnabled, speakText }) {
+      const [selectedClue, setSelectedClue] = useState(null);
+      const [userChoice, setUserChoice] = useState('');
+      const [feedback, setFeedback] = useState(null);
+
+      const handleInspect = (item) => {
+        setSelectedClue(item);
+        setUserChoice('');
+        setFeedback(null);
+        playSoundEffect('click', soundEnabled);
+      };
+
+      const handleVerifyDeduction = () => {
+        if (!selectedClue) return;
+        if (userChoice === selectedClue.correct) {
+          setFeedback({ isCorrect: true, text: selectedClue.explanation });
+          markClueFound(selectedClue.id);
+          playSoundEffect('correct', soundEnabled);
+        } else {
+          setFeedback({ isCorrect: false, text: "Incorrect deduction. Re-examine the physical details of the evidence!" });
+          playSoundEffect('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          
+          {/* Header Banner */}
+          <div className="bg-noir-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+                Module 1 • Physical Evidence Inspection
+              </span>
+              <h2 className="text-xl font-black font-noir-header text-white mt-1">
+                St. Jude's Vault Crime Scene
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Inspect all four key evidence items to formulate correct past certainty deductions (`must have`, `might have`, `can't have`).
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2 bg-noir-950 px-4 py-2 rounded-2xl border border-slate-800 text-xs font-mono">
+              <span>Collected Clues:</span>
+              <span className="font-bold text-amber-400">{cluesFound.length} / 4</span>
+            </div>
+          </div>
+
+          {/* Interactive Evidence Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {evidenceItems.map((item) => {
+              const isFound = cluesFound.includes(item.id);
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => handleInspect(item)}
+                  className={`p-6 rounded-3xl border transition cursor-pointer relative overflow-hidden group shadow-lg ${
+                    isFound
+                      ? 'bg-noir-900/90 border-emerald-500/50 ring-1 ring-emerald-500/30'
+                      : 'bg-noir-900 border-slate-800 hover:border-amber-500/50 hover:bg-slate-800/40'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                      {item.icon}
+                    </div>
+                    {isFound ? (
+                      <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
+                        ✓ Deducted (+25 XP)
+                      </span>
+                    ) : (
+                      <span className="bg-amber-500/10 text-amber-400 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border border-amber-500/30">
+                        Inspect Clue
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="text-base font-bold text-white mt-4">{item.title}</h3>
+                  <p className="text-xs font-mono text-slate-400 mt-1">{item.shortDesc}</p>
+
+                  <div className="mt-4 flex items-center justify-between text-xs font-bold text-amber-400 group-hover:translate-x-1 transition">
+                    <span>Analyze Details & Deduce →</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* EVIDENCE INSPECTION MODAL */}
+          {selectedClue && (
+            <div className="fixed inset-0 bg-noir-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-noir-900 border border-slate-700 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative">
+                
+                <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-3xl">{selectedClue.icon}</span>
+                    <div>
+                      <h3 className="text-lg font-black font-noir-header text-amber-400">{selectedClue.title}</h3>
+                      <p className="text-xs font-mono text-slate-400">{selectedClue.shortDesc}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedClue(null)}
+                    className="text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Evidence Forensic Observation */}
+                <div className="bg-noir-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
+                    Forensic Report:
+                  </span>
+                  <p className="text-xs sm:text-sm text-slate-200 italic leading-relaxed">
+                    "{selectedClue.fullDetails}"
+                  </p>
+                </div>
+
+                {/* Deduction Challenge */}
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-slate-300">{selectedClue.question}</p>
+                  
+                  <div className="p-3 bg-noir-950 rounded-2xl border border-slate-800 font-mono text-xs sm:text-sm text-amber-300">
+                    {selectedClue.promptPrefix}{" "}
+                    <span className="underline decoration-amber-500 decoration-2 font-bold px-1">
+                      {userChoice || "________"}
+                    </span>{" "}
+                    {selectedClue.promptSuffix}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {selectedClue.options.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setUserChoice(opt)}
+                        className={`p-3 rounded-xl border text-xs font-mono text-left transition ${
+                          userChoice === opt
+                            ? 'bg-amber-500 text-noir-950 font-bold border-amber-500'
+                            : 'bg-slate-800/60 border-slate-700 text-slate-300 hover:border-amber-400'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Feedback or Action */}
+                {feedback ? (
+                  <div className={`p-4 rounded-2xl border text-xs font-mono space-y-2 ${
+                    feedback.isCorrect ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300' : 'bg-rose-500/10 border-rose-500 text-rose-300'
+                  }`}>
+                    <p className="font-bold">{feedback.isCorrect ? "✓ Valid Deduction Logged!" : "❌ Logical Error"}</p>
+                    <p>{feedback.text}</p>
+
+                    {feedback.isCorrect && (
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={() => speakText(`${selectedClue.promptPrefix} ${selectedClue.correct} ${selectedClue.promptSuffix}`)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition"
+                        >
+                          🔊 Hear Deduction
+                        </button>
+                        <button
+                          onClick={() => setSelectedClue(null)}
+                          className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition"
+                        >
+                          Close Inspection
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={handleVerifyDeduction}
+                      disabled={!userChoice}
+                      className={`px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md ${
+                        userChoice
+                          ? 'bg-amber-500 hover:bg-amber-600 text-noir-950 shadow-amber-500/20'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Confirm Deduction
+                    </button>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 2: DEGREE OF CERTAINTY DEDUCTIVE MATRIX
+    // =========================================================================
+    function Module2CertaintyMatrix({ statements, addXp, soundEnabled, speakText }) {
+      const [userCategories, setUserCategories] = useState({});
+      const [checkedItems, setCheckedItems] = useState({});
+
+      const categories = [
+        { id: 'positive', label: '100% Positive Deduction', modal: 'must have + V3', color: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400' },
+        { id: 'possibility', label: '50% Possibility / Uncertainty', modal: 'might / could / may have + V3', color: 'border-amber-500/50 bg-amber-500/10 text-amber-400' },
+        { id: 'negative', label: '100% Impossible Deduction', modal: "can't / couldn't have + V3", color: 'border-rose-500/50 bg-rose-500/10 text-rose-400' }
+      ];
+
+      const handleAssignCategory = (stmtId, catId) => {
+        setUserCategories({ ...userCategories, [stmtId]: catId });
+        playSoundEffect('click', soundEnabled);
+      };
+
+      const handleVerifyStatement = (stmt) => {
+        const selected = userCategories[stmt.id];
+        const isRight = selected === stmt.category;
+        setCheckedItems({ ...checkedItems, [stmt.id]: isRight });
+
+        if (isRight) {
+          addXp(15);
+          playSoundEffect('correct', soundEnabled);
+        } else {
+          playSoundEffect('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          
+          <div className="bg-noir-900 rounded-3xl p-6 border border-slate-800 shadow-xl">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+              Module 2 • Degree of Certainty Classifier
+            </span>
+            <h2 className="text-xl font-black font-noir-header text-white mt-1">
+              Deductive Speculation Board
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Classify each statement into its exact level of certainty based on the modal verb used.
+            </p>
+          </div>
+
+          {/* Statements List */}
+          <div className="space-y-4">
+            {statements.map((stmt) => {
+              const selectedCat = userCategories[stmt.id];
+              const isChecked = checkedItems[stmt.id] !== undefined;
+              const isCorrect = checkedItems[stmt.id] === true;
+
+              return (
+                <div
+                  key={stmt.id}
+                  className={`bg-noir-900 rounded-3xl p-5 border transition space-y-3 ${
+                    isChecked
+                      ? isCorrect
+                        ? 'border-emerald-500/80 bg-emerald-950/20'
+                        : 'border-rose-500/80 bg-rose-950/20'
+                      : 'border-slate-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <p className="text-xs sm:text-sm font-mono font-medium text-slate-200 leading-relaxed">
+                      "{stmt.text}"
+                    </p>
+
+                    {/* Speech TTS buttons */}
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        onClick={() => speakText(stmt.text, 1.0)}
+                        className="bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded-lg text-slate-300"
+                        title="Normal Speed Audio"
+                      >
+                        🔊 1.0x
+                      </button>
+                      <button
+                        onClick={() => speakText(stmt.text, 0.75)}
+                        className="bg-slate-800 hover:bg-slate-700 text-xs px-2 py-1 rounded-lg text-slate-300"
+                        title="Slow Speed Audio"
+                      >
+                        🐢 0.75x
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category Selection Bar */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                    {categories.map((cat) => {
+                      const isSelected = selectedCat === cat.id;
+
+                      return (
+                        <button
+                          key={cat.id}
+                          disabled={isChecked}
+                          onClick={() => handleAssignCategory(stmt.id, cat.id)}
+                          className={`p-2.5 rounded-xl border text-[11px] font-mono text-left transition ${
+                            isSelected
+                              ? 'bg-amber-500 text-noir-950 font-bold border-amber-500 shadow-md'
+                              : 'bg-noir-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="font-bold">{cat.label}</div>
+                          <div className="text-[10px] opacity-80">{cat.modal}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Action & Feedback */}
+                  <div className="flex justify-between items-center pt-2 text-xs font-mono">
+                    {isChecked ? (
+                      <div className="flex items-center space-x-2">
+                        <span className={`font-bold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {isCorrect ? '✓ Correct Category (+15 XP)' : '❌ Incorrect Category'}
+                        </span>
+                        <span className="text-slate-400 text-[11px]">({stmt.grammarNote})</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleVerifyStatement(stmt)}
+                        disabled={!selectedCat}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-bold transition ${
+                          selectedCat
+                            ? 'bg-amber-500 hover:bg-amber-600 text-noir-950 shadow-md'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Verify Classification
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 3: OBLIGATION & UNFULFILLED EXPECTATIONS LAB
+    // =========================================================================
+    function Module3ObligationLab({ data, addXp, soundEnabled }) {
+      const [activeTaskIdx, setActiveTaskIdx] = useState(0);
+      const [availableTiles, setAvailableTiles] = useState([]);
+      const [constructedSentence, setConstructedSentence] = useState([]);
+      const [isCorrect, setIsCorrect] = useState(null);
+      const [completedTasks, setCompletedTasks] = useState({});
+
+      const task = data[activeTaskIdx];
+
+      useEffect(() => {
+        if (!task) return;
+        const shuffled = [...task.tiles].sort(() => Math.random() - 0.5);
+        setAvailableTiles(shuffled);
+        setConstructedSentence([]);
+        setIsCorrect(null);
+      }, [activeTaskIdx]);
+
+      const handleAddTile = (word, index) => {
+        playSoundEffect('click', soundEnabled);
+        setConstructedSentence([...constructedSentence, word]);
+        setAvailableTiles(availableTiles.filter((_, idx) => idx !== index));
+        setIsCorrect(null);
+      };
+
+      const handleRemoveTile = (word, index) => {
+        playSoundEffect('click', soundEnabled);
+        setAvailableTiles([...availableTiles, word]);
+        setConstructedSentence(constructedSentence.filter((_, idx) => idx !== index));
+        setIsCorrect(null);
+      };
+
+      const handleCheck = () => {
+        const userStr = constructedSentence.join(" ");
+        const correctStr = task.tiles.join(" ");
+
+        if (userStr === correctStr) {
+          setIsCorrect(true);
+          if (!completedTasks[task.id]) {
+            setCompletedTasks({ ...completedTasks, [task.id]: true });
+            addXp(20);
+          }
+          playSoundEffect('correct', soundEnabled);
+        } else {
+          setIsCorrect(false);
+          playSoundEffect('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          
+          <div className="bg-noir-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/30">
+                Module 3 • Obligation & Expectation Builder
+              </span>
+              <h2 className="text-xl font-black font-noir-header text-white mt-1">
+                Construct Target Sentences
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {data.map((item, idx) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTaskIdx(idx)}
+                  className={`w-8 h-8 rounded-xl text-xs font-bold transition font-mono ${
+                    activeTaskIdx === idx
+                      ? 'bg-amber-500 text-noir-950 font-black'
+                      : completedTasks[item.id]
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-noir-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            
+            <div className="space-y-2 border-b border-slate-800 pb-4">
+              <span className="text-xs font-mono font-bold text-teal-400 uppercase tracking-widest">
+                Target Concept: {task.concept}
+              </span>
+              <p className="text-xs text-slate-400 italic">
+                💡 Context Hint: {task.hint}
+              </p>
+            </div>
+
+            {/* Target Drop Zone */}
+            <div className={`min-h-[110px] p-4 rounded-2xl border-2 transition flex flex-wrap gap-2 items-center align-content-start ${
+              isCorrect === true
+                ? 'bg-emerald-500/10 border-emerald-500'
+                : isCorrect === false
+                ? 'bg-rose-500/10 border-rose-500'
+                : 'bg-noir-950 border-dashed border-slate-700'
+            }`}>
+              {constructedSentence.length === 0 && (
+                <span className="text-xs text-slate-500 italic">Click available word tiles below to construct the sentence...</span>
+              )}
+              {constructedSentence.map((word, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleRemoveTile(word, idx)}
+                  className="bg-amber-500 text-noir-950 font-mono text-xs font-bold px-3 py-2 rounded-xl shadow-md transition transform hover:-translate-y-0.5 flex items-center gap-1"
+                >
+                  <span>{word}</span>
+                  <span className="text-[10px] opacity-70">✕</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Word Bank */}
+            <div className="space-y-2">
+              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                Available Tiles:
+              </span>
+              <div className="flex flex-wrap gap-2 min-h-[60px] p-3 bg-noir-950 rounded-2xl border border-slate-800">
+                {availableTiles.map((word, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleAddTile(word, idx)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition"
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex justify-between items-center pt-2">
+              <button
+                onClick={handleCheck}
+                disabled={constructedSentence.length === 0}
+                className={`px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md ${
+                  constructedSentence.length > 0
+                    ? 'bg-amber-500 hover:bg-amber-600 text-noir-950 shadow-amber-500/20'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                Check Construction (+20 XP)
+              </button>
+
+              {isCorrect === true && (
+                <span className="text-xs font-mono text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                  🎉 Perfect Grammar Construction!
+                </span>
+              )}
+              {isCorrect === false && (
+                <span className="text-xs font-mono text-rose-400 font-bold bg-rose-500/10 px-3 py-1.5 rounded-xl border border-rose-500/30">
+                  ❌ Incorrect tile order. Try reordering!
+                </span>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 4: INTERROGATION ROOM & ADVICE / OPINION BUILDER
+    // =========================================================================
+    function Module4InterrogationRoom({ suspects, addXp, soundEnabled }) {
+      const [selectedSuspectIdx, setSelectedSuspectIdx] = useState(0);
+      const [userAnswers, setUserAnswers] = useState({});
+
+      const suspect = suspects[selectedSuspectIdx];
+
+      const handleSelectOption = (qKey, opt) => {
+        setUserAnswers({ ...userAnswers, [`${suspect.id}_${qKey}`]: opt });
+        if (opt.correct) {
+          addXp(20);
+          playSoundEffect('correct', soundEnabled);
+        } else {
+          playSoundEffect('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          
+          <div className="bg-noir-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-crimson-500 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/30">
+              Module 4 • Interrogation Room
+            </span>
+            <h2 className="text-xl font-black font-noir-header text-white mt-1">
+              Cross-Examine Key Suspects
+            </h2>
+
+            {/* Suspect Selector Tabs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {suspects.map((s, idx) => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setSelectedSuspectIdx(idx);
+                    playSoundEffect('click', soundEnabled);
+                  }}
+                  className={`p-4 rounded-2xl border text-left transition flex items-center space-x-3 ${
+                    selectedSuspectIdx === idx
+                      ? 'bg-amber-500/10 border-amber-500 text-white ring-1 ring-amber-500/30'
+                      : 'bg-noir-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="text-2xl">{s.avatar}</span>
+                  <div>
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-200">{s.name}</h3>
+                    <p className="text-[10px] font-mono text-slate-400">{s.role}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Interrogation Workspace */}
+          <div className="bg-noir-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            
+            {/* Suspect Statement */}
+            <div className="bg-noir-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl">{suspect.avatar}</span>
+                <span className="text-xs font-bold text-amber-400">{suspect.name}'s Statement:</span>
+              </div>
+              <p className="text-xs sm:text-sm italic text-slate-200 leading-relaxed font-serif">
+                "{suspect.quote}"
+              </p>
+            </div>
+
+            {/* Question 1: Advice */}
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-slate-300 font-mono">1. {suspect.q1Prompt}</p>
+              <div className="space-y-2">
+                {suspect.q1Options.map((opt, oIdx) => {
+                  const answerKey = `${suspect.id}_q1`;
+                  const chosen = userAnswers[answerKey];
+                  const isThis = chosen === opt;
+
+                  return (
+                    <div key={oIdx} className="space-y-1">
+                      <button
+                        onClick={() => handleSelectOption('q1', opt)}
+                        disabled={chosen !== undefined}
+                        className={`w-full p-3 rounded-xl border text-xs text-left font-mono transition ${
+                          chosen
+                            ? opt.correct
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
+                              : isThis
+                              ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
+                              : 'bg-noir-950 border-slate-800 text-slate-500'
+                            : 'bg-noir-950 border-slate-800 text-slate-300 hover:border-amber-500/50'
+                        }`}
+                      >
+                        {opt.text}
+                      </button>
+                      {chosen && isThis && (
+                        <p className="text-[11px] font-mono text-amber-300 pl-2">💡 {opt.feedback}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question 2: Opinion Frame */}
+            <div className="space-y-3 pt-2">
+              <p className="text-xs font-bold text-slate-300 font-mono">2. {suspect.q2Prompt}</p>
+              <div className="space-y-2">
+                {suspect.q2Options.map((opt, oIdx) => {
+                  const answerKey = `${suspect.id}_q2`;
+                  const chosen = userAnswers[answerKey];
+                  const isThis = chosen === opt;
+
+                  return (
+                    <div key={oIdx} className="space-y-1">
+                      <button
+                        onClick={() => handleSelectOption('q2', opt)}
+                        disabled={chosen !== undefined}
+                        className={`w-full p-3 rounded-xl border text-xs text-left font-mono transition ${
+                          chosen
+                            ? opt.correct
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
+                              : isThis
+                              ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
+                              : 'bg-noir-950 border-slate-800 text-slate-500'
+                            : 'bg-noir-950 border-slate-800 text-slate-300 hover:border-amber-500/50'
+                        }`}
+                      >
+                        {opt.text}
+                      </button>
+                      {chosen && isThis && (
+                        <p className="text-[11px] font-mono text-amber-300 pl-2">💡 {opt.feedback}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 5: FINAL CASE REPORT & PRINTABLE CERTIFICATE
+    // =========================================================================
+    function Module5FinalReport({ detectiveName, setDetectiveName, xp, currentRank, cluesCount, addXp, soundEnabled }) {
+      const [reportText, setReportText] = useState(
+        "In my view, the perpetrator must have known the vault combination because there was no forced entry. Officer Miller was supposed to patrol at 2:00 AM, but someone might have spiked his coffee. I strongly suspect that the thief escaped through the catacomb tunnels. We had better lock down the river exits immediately."
+      );
+      const [detectedTags, setDetectedTags] = useState([]);
+
+      const TARGET_GRAMMAR_TRIGGERS = [
+        { label: "must have", regex: /must have/i },
+        { label: "might / could have", regex: /(might|could|may) have/i },
+        { label: "can't / couldn't have", regex: /can't have|couldn't have/i },
+        { label: "was/were supposed to", regex: /(was|were) supposed to/i },
+        { label: "should have", regex: /should have/i },
+        { label: "had better", regex: /had better/i },
+        { label: "ought to", regex: /ought to/i },
+        { label: "In my view / It seems to me", regex: /(in my view|it seems to me)/i },
+        { label: "I strongly suspect", regex: /i strongly suspect/i }
+      ];
+
+      useEffect(() => {
+        const found = TARGET_GRAMMAR_TRIGGERS.filter(item => item.regex.test(reportText));
+        setDetectedTags(found);
+      }, [reportText]);
+
+      useEffect(() => {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 90,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+        playSoundEffect('fanfare', soundEnabled);
+      }, []);
+
+      const handlePrint = () => {
+        window.print();
+      };
+
+      const wordCount = reportText.trim().split(/\s+/).filter(Boolean).length;
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          {/* Theory Writer Section */}
+          <div className="bg-noir-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4 no-print">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+                Module 5 • Official Case Synthesis
+              </span>
+              <h2 className="text-xl font-black font-noir-header text-white mt-1">
+                Draft Final Case Report
+              </h2>
+              <p className="text-xs text-slate-400">
+                Use past certainty modals, opinion frames, and tactical advice to summarize your conclusions.
+              </p>
+            </div>
+
+            <textarea
+              rows={5}
+              value={reportText}
+              onChange={(e) => setReportText(e.target.value)}
+              className="w-full bg-noir-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+
+            {/* Live Grammar Scanner Chips */}
+            <div className="bg-noir-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="font-bold text-amber-400 uppercase tracking-wider">
+                  Target Grammar Detector ({detectedTags.length} / 9):
+                </span>
+                <span className="text-slate-400">{wordCount} words</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {detectedTags.map((tag, idx) => (
+                  <span key={idx} className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <span>✓</span>
+                    <span>{tag.label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* PRINTABLE CERTIFICATE CONTROLS */}
+          <div className="bg-noir-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6 no-print">
+            <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-black font-noir-header text-amber-400">🎓 Official Master Sleuth Certificate</h3>
+                <p className="text-xs text-slate-400">Export or print your verified accreditation in B1-C1 Detective Logic.</p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="text"
+                  value={detectiveName}
+                  onChange={(e) => setDetectiveName(e.target.value)}
+                  className="bg-noir-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                  placeholder="Detective Name"
+                />
+                <button
+                  onClick={handlePrint}
+                  className="bg-amber-500 hover:bg-amber-600 text-noir-950 font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-md shadow-amber-500/20 flex items-center gap-2"
+                >
+                  🖨️ Print Certificate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* OFFICIAL DIPLOMA / CERTIFICATE CARD */}
+          <div 
+            id="printable-certificate"
+            className="bg-noir-950 p-8 sm:p-12 rounded-3xl border-4 border-amber-500/50 text-center space-y-6 relative overflow-hidden shadow-2xl text-slate-100"
+          >
+            <div className="absolute top-4 left-4 text-[10px] font-mono text-amber-500/60">
+              CASE-ID: STJ-2026-VAULT
+            </div>
+            <div className="absolute top-4 right-4 text-[10px] font-mono text-amber-500/60">
+              CEFR B1-C1 GRAMMAR ACCREDITATION
+            </div>
+
+            <div className="space-y-2 pt-4">
+              <span className="text-4xl">👑</span>
+              <h2 className="text-2xl sm:text-3xl font-black font-noir-header tracking-widest text-amber-400">
+                MASTER INVESTIGATOR ACCREDITATION
+              </h2>
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">
+                St. Jude's Vault Crime Investigation Board
+              </p>
+            </div>
+
+            <div className="py-4 border-y border-slate-800 space-y-3">
+              <p className="text-xs text-slate-400">This official document certifies that</p>
+              <p className="text-2xl sm:text-3xl font-black text-white underline decoration-amber-500 decoration-2 font-noir-header">{detectiveName}</p>
+              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2">
+                has successfully solved the crime scene of St. Jude's Vault, demonstrating exceptional proficiency in **degrees of certainty** (`must have`, `might have`, `can't have`), **past obligations**, **tactical advice**, and **opinion framing**.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs font-mono">
+              <div className="bg-noir-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Rank</span>
+                <span className="text-xs font-black text-amber-400">{currentRank.title}</span>
+              </div>
+              <div className="bg-noir-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Case Score</span>
+                <span className="text-xs font-black text-teal-300">{xp} XP</span>
+              </div>
+              <div className="bg-noir-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Clues Analyzed</span>
+                <span className="text-xs font-black text-emerald-400">{cluesCount} / 4 Found</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    // RENDER APP
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
