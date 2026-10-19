@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serendipity & Sparks: World-Changing Accidents & Personal Stories</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              950: '#070a12',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            accent: {
+              indigo: '#6366f1',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              cyan: '#06b6d4',
+              violet: '#8b5cf6',
+            }
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070a12;
+      color: #f8fafc;
+    }
+    .font-header {
+      font-family: 'Cinzel', serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6366f1;
+    }
+
+    /* Card Flip Perspective */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+
+    /* Print Styles for Certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 40px;
+        background: #0f172a !important;
+        color: #f8fafc !important;
+        box-shadow: none !important;
+        border: 8px double #6366f1 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-brand-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // =========================================================================
+    // AUDIO SYNTHESIZER & TTS SPEECH HELPER
+    // =========================================================================
+    const playSound = (type, enabled = true) => {
+      if (!enabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        if (type === 'correct') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        } else if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(420, ctx.currentTime);
+          gain.gain.setValueAtTime(0.04, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.04);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.35);
+            osc.start(ctx.currentTime + idx * 0.09);
+            osc.stop(ctx.currentTime + idx * 0.09 + 0.35);
+          });
+        }
+      } catch (e) {
+        console.warn("Web Audio API warning", e);
+      }
+    };
+
+    const speakText = (text, rate = 1.0) => {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // =========================================================================
+    // STATIC CURRICULUM DATA
+    // =========================================================================
+
+    const HISTORICAL_CASES = [
+      {
+        id: 'c1',
+        title: "Alexander Fleming & Penicillin",
+        year: "1928",
+        inventor: "Dr. Alexander Fleming",
+        icon: "🧫",
+        summary: "The Contaminated Petri Dish",
+        fullStory: "In September 1928, Scottish scientist Alexander Fleming was researching Staphylococcus bacteria in his London laboratory. Before leaving for a two-week vacation, he accidentally left a stack of Petri dishes uncovered near an open window. When he returned, he noticed a unusual mold growing on one dish. Surprisingly, the bacteria immediately surrounding the mold had been completely destroyed! Fleming identified the mold as Penicillium notatum. This fortunate mistake launched the age of modern antibiotics, saving over 200 million lives worldwide.",
+        targetGrammarSample: "If Fleming had cleaned his laboratory before leaving for vacation, he would not have discovered penicillin.",
+        vocabHighlights: [
+          { word: "Contaminated", def: "Made impure or dirty by touching an unwanted substance." },
+          { word: "Fortunate mistake", def: "An error that leads to an unexpected positive result." },
+          { word: "Antibiotics", def: "Medicines that fight bacterial infections in people and animals." }
+        ],
+        quiz: {
+          question: "What happened while Fleming was away on his vacation?",
+          options: [
+            "A heater malfunctioned and boiled his glass equipment.",
+            "Mold contaminated an uncovered Petri dish and destroyed the surrounding bacteria.",
+            "An assistant accidentally threw away his bacteriological samples.",
+            "He intentionally mixed mold and bacteria to test a new medicine."
+          ],
+          correctIdx: 1,
+          explanation: "Fleming left a Petri dish uncovered. Airborne mold spores drifted through the window and killed the Staphylococcus bacteria."
+        }
+      },
+      {
+        id: 'c2',
+        title: "Percy Spencer & The Microwave Oven",
+        year: "1945",
+        inventor: "Percy Spencer",
+        icon: "🍿",
+        summary: "The Melted Chocolate Bar",
+        fullStory: "Percy Spencer was an engineer working at Raytheon on military radar magnetrons during World War II. One afternoon while standing near an active radar tube, he felt a strange warm sensation in his pocket. To his astonishment, the chocolate peanut bar in his pocket had completely melted! Curious about what was happening, Spencer placed popcorn kernels in front of the magnetron; they violently popped across the laboratory floor. By understanding this unexpected radiation effect, Spencer created the world's first commercial microwave oven.",
+        targetGrammarSample: "If Spencer had not carried a chocolate bar in his pocket, he might not have noticed the magnetron's heating effect so quickly.",
+        vocabHighlights: [
+          { word: "Astonishment", def: "Great surprise or amazement." },
+          { word: "Magnetron", def: "A high-powered vacuum tube that generates microwaves." },
+          { word: "Commercial", def: "Intended to be bought and sold on the mass market." }
+        ],
+        quiz: {
+          question: "How did Spencer first realize the power of microwave radiation?",
+          options: [
+            "His coffee cup began boiling automatically on his laboratory desk.",
+            "He intentionally tried to bake bread using military radar waves.",
+            "A chocolate bar in his pocket melted while he was standing near a magnetron.",
+            "His laboratory assistant burned his hand on a cold metal machine."
+          ],
+          correctIdx: 2,
+          explanation: "The radar magnetron's microwaves melted the chocolate bar in Spencer's pocket, triggering his scientific curiosity."
+        }
+      },
+      {
+        id: 'c3',
+        title: "Roy Plunkett & Teflon",
+        year: "1938",
+        inventor: "Roy J. Plunkett",
+        icon: "🍳",
+        summary: "The Frozen Gas Cylinder",
+        fullStory: "Chemist Roy Plunkett was attempting to create a new non-toxic refrigerant for DuPont. He stored tetrafluoroethylene gas inside small metal cylinders at freezing temperatures. When he opened the valve on one cylinder, no gas flowed out, yet the cylinder weighed the exact same as before! Curious, Plunkett and his team sawed the metal container open. Inside, they stumbled upon a slippery white powder. The gas had unexpectedly polymerized into polytetrafluoroethylene (PTFE)—now famous everywhere as non-stick Teflon.",
+        targetGrammarSample: "If Plunkett had thrown away the empty-sounding cylinder, Teflon would never have been discovered.",
+        vocabHighlights: [
+          { word: "Stumble upon", def: "To discover something unexpectedly or by chance." },
+          { word: "Refrigerant", def: "A substance used for cooling in refrigerators and air conditioners." },
+          { word: "Polymerize", def: "To combine small molecules into a long-chain synthetic compound." }
+        ],
+        quiz: {
+          question: "Why did Plunkett decide to saw open the gas cylinder?",
+          options: [
+            "The cylinder was rusty and leaking dangerous gas into the room.",
+            "No gas came out when opened, but the cylinder was still heavy.",
+            "He wanted to reuse the metal cylinder for another chemical experiment.",
+            "His supervisor commanded him to destroy all experimental materials."
+          ],
+          correctIdx: 1,
+          explanation: "The gas valve yielded nothing, but weight measurements proved the material was still inside. Sawing it open revealed Teflon powder."
+        }
+      },
+      {
+        id: 'c4',
+        title: "Wilson Greatbatch & The Pacemaker",
+        year: "1956",
+        inventor: "Wilson Greatbatch",
+        icon: "🫀",
+        summary: "The Wrong Resistor",
+        fullStory: "Electrical engineer Wilson Greatbatch was constructing an electronic oscillator to record human heart rhythms at the University of Buffalo. While assembling the circuit, he reached into a component box and accidentally pulled out a 10,000-ohm resistor instead of a 1-megaohm resistor. When he plugged it into the circuit, it didn't record a heartbeat—instead, it began pulsing with a precise electrical rhythm: 1.8 milliseconds of power followed by 1 second of silence. Greatbatch instantly realized this pulse matched the human heartbeat and could stimulate a failing heart.",
+        targetGrammarSample: "If Greatbatch had installed the correct resistor, he would have built a recorder instead of an artificial pacemaker.",
+        vocabHighlights: [
+          { word: "Resistor", def: "An electrical component that limits the flow of electric current." },
+          { word: "Stimulate", def: "To encourage or trigger activity in a physical organ or tissue." },
+          { word: "Precision", def: "The quality of being exact, accurate, and consistent." }
+        ],
+        quiz: {
+          question: "What mistake led Greatbatch to invent the implantable pacemaker?",
+          options: [
+            "He dropped a heavy battery into a tank of saline water.",
+            "He accidentally grabbed a 10,000-ohm resistor instead of a 1-megaohm resistor.",
+            "He wired the cardiac monitor backwards during a patient test.",
+            "He spilled liquid copper onto a live heart rhythm circuit."
+          ],
+          correctIdx: 1,
+          explanation: "The wrong resistor created a rhythmic pulsing circuit that mimicked human heart beats perfectly."
+        }
+      },
+      {
+        id: 'c5',
+        title: "Édouard Bénédictus & Safety Glass",
+        year: "1903",
+        inventor: "Édouard Bénédictus",
+        icon: "🛡️",
+        summary: "The Dropped Flask",
+        fullStory: "French chemist Édouard Bénédictus was working in his studio when he accidentally knocked a glass flask off a high shelf. The glass crashed onto the hardwood floor, making a loud shatter. To Bénédictus's amazement, the flask didn't break into dangerous flying shards—it maintained its exact original shape, cracked but completely intact! Bénédictus realized that a liquid plastic coating (cellulose nitrate) inside had dried, binding the glass pieces together. This accident birthed shatterproof safety glass used in automobile windshields today.",
+        targetGrammarSample: "If Bénédictus had washed his flask before storing it on the shelf, the glass would have shattered into dangerous pieces.",
+        vocabHighlights: [
+          { word: "Shatterproof", def: "Designed to resist breaking into sharp fragments." },
+          { word: "Shards", def: "Sharp, dangerous broken pieces of glass or ceramic." },
+          { word: "Intact", def: "Not damaged or broken; kept together as a whole." }
+        ],
+        quiz: {
+          question: "Why didn't the dropped glass flask shatter into pieces?",
+          options: [
+            "The glass was made of thick industrial crystal.",
+            "A dried plastic coating inside held all the broken glass fragments together.",
+            "The floor was cushioned by thick woolen rugs.",
+            "The flask landed on its soft rubber cork."
+          ],
+          correctIdx: 1,
+          explanation: "Evaporated liquid cellulose nitrate left a flexible film that held the fractured glass in place."
+        }
+      }
+    ];
+
+    const CONDITIONAL_TILES = [
+      {
+        id: 't1',
+        prompt: "Reconstruct Fleming's Discovery (3rd Conditional):",
+        correctSequence: ["If Fleming had cleaned", "his Petri dishes,", "he would not have", "discovered penicillin."],
+        distractors: ["has cleaned", "will discover", "cleaning"]
+      },
+      {
+        id: 't2',
+        prompt: "Reconstruct Spencer's Radar Incident:",
+        correctSequence: ["If Spencer had not stood", "near the magnetron,", "his chocolate bar", "would not have melted."],
+        distractors: ["didn't stand", "will melt", "would melt"]
+      },
+      {
+        id: 't3',
+        prompt: "Reconstruct Bénédictus's Glass Experiment:",
+        correctSequence: ["If the flask had been clean,", "the glass fragments", "would have shattered", "across the floor."],
+        distractors: ["was clean", "shatters", "would shatter"]
+      }
+    ];
+
+    const INTERRUPTED_PAST_DATA = [
+      {
+        id: 'ip1',
+        background: "Percy Spencer was testing a radar magnetron",
+        connector: "when",
+        unexpected: "his chocolate bar suddenly melted.",
+        wrongConnectors: ["while", "unless", "if"]
+      },
+      {
+        id: 'ip2',
+        background: "Roy Plunkett was searching for a new refrigerant gas",
+        connector: "when",
+        unexpected: "he discovered non-stick Teflon powder inside a cylinder.",
+        wrongConnectors: ["because", "although", "so"]
+      },
+      {
+        id: 'ip3',
+        background: "Wilson Greatbatch was constructing a heart rhythm recorder",
+        connector: "when",
+        unexpected: "he mistakenly inserted the wrong electrical resistor.",
+        wrongConnectors: ["until", "since", "whereas"]
+      }
+    ];
+
+    const IDIOMS = [
+      {
+        id: 'id1',
+        term: "Blessing in disguise",
+        meaning: "Something that seems bad at first, but turns out to produce good results later.",
+        example: "Losing my job was a blessing in disguise because I started my own successful business."
+      },
+      {
+        id: 'id2',
+        term: "Turning point",
+        meaning: "A time at which a decisive change in a situation occurs, especially one with beneficial results.",
+        example: "Dropping the glass flask was the turning point that led to shatterproof windshields."
+      },
+      {
+        id: 'id3',
+        term: "Stumble upon",
+        meaning: "To discover or meet someone or something unexpectedly and by chance.",
+        example: "Chemist Roy Plunkett stumbled upon Teflon inside a frozen metal cylinder."
+      },
+      {
+        id: 'id4',
+        term: "Happy accident",
+        meaning: "A mistake or unintended event that leads to an unexpected positive outcome.",
+        example: "The invention of penicillin was a happy accident born from an unwashed dish."
+      },
+      {
+        id: 'id5',
+        term: "Silver lining",
+        meaning: "A hopeful or encouraging aspect in an otherwise difficult or negative situation.",
+        example: "The silver lining of our cancelled flight was discovering a beautiful ancient village."
+      },
+      {
+        id: 'id6',
+        term: "Strike oil / Fortuitous strike",
+        meaning: "To achieve sudden unexpected wealth or luck through a random occurrence.",
+        example: "Inserting the wrong electrical resistor was a fortuitous strike for modern cardiology."
+      }
+    ];
+
+    const BUTTERFLY_SCENARIOS = [
+      {
+        id: 'bs1',
+        title: "The Clean Laboratory Paradox",
+        historicalFact: "In 1928, Fleming left dirty Petri dishes near an open window.",
+        question: "What would have happened if Alexander Fleming had obsessively sanitized his lab before leaving?",
+        options: [
+          {
+            text: "If Fleming had sanitized his lab, penicillin would not have grown, delaying antibiotics by decades.",
+            isCorrect: true,
+            timeline: "ALTERNATE TIMELINE A: World War II soldiers suffer massive bacterial infections. Modern medicine lacks penicillin until the late 1960s!"
+          },
+          {
+            text: "If Fleming sanitized his lab, penicillin would have grown much faster in the clean air.",
+            isCorrect: false,
+            timeline: "INCORRECT GRAMMAR/LOGIC: Bacteria and mold require contamination to interact unexpectedly."
+          }
+        ]
+      },
+      {
+        id: 'bs2',
+        title: "The Candy-Free Engineer",
+        historicalFact: "In 1945, Percy Spencer brought a peanut chocolate bar to his magnetron lab.",
+        question: "What if Percy Spencer had skipped breakfast and carried no snacks in his pocket?",
+        options: [
+          {
+            text: "If Spencer had not carried a chocolate bar, he would not have felt the microwave heating effect that day.",
+            isCorrect: true,
+            timeline: "ALTERNATE TIMELINE B: The invention of the microwave oven is delayed by 20 years until an engineer accidentally melts a wax candle!"
+          },
+          {
+            text: "If Spencer did not carry a chocolate bar, the magnetron wouldn't work at all.",
+            isCorrect: false,
+            timeline: "INCORRECT GRAMMAR: Use 3rd conditional ('had not carried ... would not have felt') for past hypotheticals!"
+          }
+        ]
+      }
+    ];
+
+    const TARGET_CHIPS = [
+      { id: 'c1', label: '3rd Conditional (had + V3)', regex: /if\s+\w+\s+had\s+(\w+ed|\w+en|been|done|cleaned|left|known)/i, category: 'Conditionals' },
+      { id: 'c2', label: '3rd Conditional Result (would have)', regex: /would\s+have\s+(\w+ed|\w+en|been|discovered|changed|led)/i, category: 'Conditionals' },
+      { id: 'c3', label: 'Interrupted Past (was/were ...ing when)', regex: /(was|were)\s+\w+ing\s+when/i, category: 'Tenses' },
+      { id: 'c4', label: 'Blessing in disguise', regex: /blessing\s+in\s+disguise/i, category: 'Serendipity Idiom' },
+      { id: 'c5', label: 'Turning point', regex: /turning\s+point/i, category: 'Serendipity Idiom' },
+      { id: 'c6', label: 'Happy accident', regex: /happy\s+accident/i, category: 'Serendipity Idiom' },
+      { id: 'c7', label: 'Stumble upon/into', regex: /stumble[sd]?\s+(upon|into)/i, category: 'Serendipity Idiom' }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+    function App() {
+      const [xp, setXp] = useState(80);
+      const [streak, setStreak] = useState(7);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [ttsRate, setTtsRate] = useState(1.0);
+      const [activeTab, setActiveTab] = useState('cases'); // cases, grammar, butterfly, studio, certificate
+      const [showToolkitModal, setShowToolkitModal] = useState(false);
+      const [studentName, setStudentName] = useState('Taylor Morgan');
+
+      // Rank Calculation
+      const getRank = (points) => {
+        if (points < 150) return { title: "Accidental Observer", icon: "🌱", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" };
+        if (points < 300) return { title: "Serendipity Scholar", icon: "🔍", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" };
+        return { title: "Master of Fate", icon: "⚡", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" };
+      };
+
+      const currentRank = getRank(xp);
+
+      const addXp = (amount) => {
+        setXp(prev => prev + amount);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans border-t-4 border-indigo-500">
+          
+          {/* HEADER & NAVIGATION HUB */}
+          <header className="bg-brand-900 border-b border-slate-800 sticky top-0 z-40 shadow-2xl no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                
+                {/* Brand & Title */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-amber-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/25 text-white font-black">
+                    ✨
+                  </div>
+                  <div>
+                    <h1 className="text-base sm:text-lg font-black font-header tracking-wider text-indigo-400">
+                      SERENDIPITY & SPARKS
+                    </h1>
+                    <p className="text-[11px] text-slate-400 font-mono tracking-tight">World-Changing Accidents & Personal Stories • B1-B2 ESL</p>
+                  </div>
+                </div>
+
+                {/* Gamification Stats & Quick Controls */}
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  
+                  {/* Day Streak */}
+                  <div className="flex items-center space-x-1.5 bg-brand-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono" title="Learning Streak">
+                    <span className="text-amber-500">🔥</span>
+                    <span className="font-bold text-slate-200">{streak} Days</span>
+                  </div>
+
+                  {/* Rank Badge */}
+                  <div className={`hidden md:flex items-center space-x-1.5 border px-3 py-1.5 rounded-xl text-xs font-bold ${currentRank.color}`}>
+                    <span>{currentRank.icon}</span>
+                    <span>{currentRank.title}</span>
+                  </div>
+
+                  {/* XP Counter */}
+                  <div className="flex items-center space-x-1.5 bg-brand-950 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-300">
+                    <span>⭐</span>
+                    <span>{xp} <span className="text-[10px] text-slate-400 font-normal">XP</span></span>
+                  </div>
+
+                  {/* Dual Speed Speech Synthesis Selector */}
+                  <div className="hidden sm:flex items-center bg-brand-950 border border-slate-800 rounded-xl p-1 text-[11px] font-mono">
+                    <button
+                      onClick={() => setTtsRate(1.0)}
+                      className={`px-2 py-0.5 rounded-lg transition ${ttsRate === 1.0 ? 'bg-indigo-500 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      1.0x Normal
+                    </button>
+                    <button
+                      onClick={() => setTtsRate(0.75)}
+                      className={`px-2 py-0.5 rounded-lg transition ${ttsRate === 0.75 ? 'bg-indigo-500 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      0.75x Slow 🐢
+                    </button>
+                  </div>
+
+                  {/* Language Toolkit Modal Button */}
+                  <button
+                    onClick={() => {
+                      setShowToolkitModal(true);
+                      playSound('click', soundEnabled);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+                  >
+                    <span>📖</span>
+                    <span className="hidden sm:inline">Language Toolkit</span>
+                  </button>
+
+                  {/* Sound Effects Toggle */}
+                  <button
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      playSound('click', !soundEnabled);
+                    }}
+                    className={`p-2 rounded-xl border text-xs transition ${
+                      soundEnabled 
+                        ? 'bg-slate-800 border-indigo-500/50 text-indigo-400' 
+                        : 'bg-brand-950 border-slate-800 text-slate-500'
+                    }`}
+                    title="Toggle Audio Feedback"
+                  >
+                    {soundEnabled ? '🔊' : '🔇'}
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Navigation Bar */}
+              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <nav className="flex items-center gap-2">
+                  {[
+                    { id: 'cases', label: '1. Accident Case Files', icon: '🧫' },
+                    { id: 'grammar', label: '2. Grammar & Idiom Lab', icon: '🧩' },
+                    { id: 'butterfly', label: '3. Butterfly Effect Simulator', icon: '🦋' },
+                    { id: 'studio', label: '4. Personal Story Studio', icon: '✍️' },
+                    { id: 'certificate', label: '5. Mastery Certificate', icon: '🎓' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        playSound('click', soundEnabled);
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        activeTab === tab.id
+                          ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT WORKSPACE */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'cases' && (
+              <Module1CaseFiles
+                cases={HISTORICAL_CASES}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'grammar' && (
+              <Module2GrammarLab
+                tileData={CONDITIONAL_TILES}
+                interruptedData={INTERRUPTED_PAST_DATA}
+                idioms={IDIOMS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'butterfly' && (
+              <Module3ButterflyEffect
+                scenarios={BUTTERFLY_SCENARIOS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'studio' && (
+              <Module4StoryStudio
+                targetChips={TARGET_CHIPS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'certificate' && (
+              <Module5MasteryCertificate
+                studentName={studentName}
+                setStudentName={setStudentName}
+                xp={xp}
+                currentRank={currentRank}
+                soundEnabled={soundEnabled}
+              />
+            )}
+          </main>
+
+          {/* LANGUAGE TOOLKIT QUICK REFERENCE MODAL */}
+          {showToolkitModal && (
+            <div className="fixed inset-0 bg-brand-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-brand-900 border border-slate-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto text-slate-200">
+                
+                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">📖</span>
+                    <h3 className="text-lg font-black font-header text-indigo-400">Language Toolkit: B1-B2 Serendipity Structures</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowToolkitModal(false)}
+                    className="text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6 text-xs sm:text-sm">
+                  {/* 3rd Conditional */}
+                  <div className="bg-brand-950 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                    <h4 className="font-bold text-indigo-400 font-mono text-xs uppercase tracking-wider">1. The 3rd Conditional (Past Unreal / Hypotheticals)</h4>
+                    <p className="text-slate-300">Used to imagine a different past outcome that did not actually happen.</p>
+                    <div className="bg-slate-900 p-3 rounded-xl font-mono text-xs border border-slate-800 text-indigo-300">
+                      <strong>Structure:</strong> If + Past Perfect (had + V3), WOULD HAVE + Past Participle (V3)<br/>
+                      <em>Example: "If Fleming **had cleaned** his dish, he **would not have discovered** penicillin."</em>
+                    </div>
+                  </div>
+
+                  {/* Interrupted Past Tense */}
+                  <div className="bg-brand-950 p-4 rounded-2xl border border-cyan-500/30 space-y-2">
+                    <h4 className="font-bold text-cyan-400 font-mono text-xs uppercase tracking-wider">2. Interrupted Past (Past Continuous + Past Simple)</h4>
+                    <p className="text-slate-300">Shows an ongoing background action interrupted by an unexpected discovery.</p>
+                    <div className="bg-slate-900 p-3 rounded-xl font-mono text-xs border border-slate-800 text-cyan-300">
+                      <strong>Structure:</strong> [was / were + V-ing] + WHEN + [Past Simple V2]<br/>
+                      <em>Example: "Percy Spencer **was testing** a radar tube **when** his chocolate bar **melted**."</em>
+                    </div>
+                  </div>
+
+                  {/* Key Idioms Table */}
+                  <div className="bg-brand-950 p-4 rounded-2xl border border-amber-500/30 space-y-2">
+                    <h4 className="font-bold text-amber-400 font-mono text-xs uppercase tracking-wider">3. Key Serendipity Expressions & Idioms</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                      <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span className="text-amber-300 font-bold block">Blessing in disguise:</span>
+                        <span className="text-slate-400 text-[11px]">A problem that turns out good later.</span>
+                      </div>
+                      <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span className="text-amber-300 font-bold block">Turning point:</span>
+                        <span className="text-slate-400 text-[11px]">A moment of decisive positive change.</span>
+                      </div>
+                      <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span className="text-amber-300 font-bold block">Stumble upon:</span>
+                        <span className="text-slate-400 text-[11px]">To find something unexpectedly.</span>
+                      </div>
+                      <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span className="text-amber-300 font-bold block">Happy accident:</span>
+                        <span className="text-slate-400 text-[11px]">A mistake producing good fortune.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setShowToolkitModal(false)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md"
+                  >
+                    Got It! Back to Study
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-brand-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
+            <p>Serendipity & Sparks • B1-B2 ESL Learning Studio for World-Changing Accidents</p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 1: HISTORICAL CASE FILES
+    // =========================================================================
+    function Module1CaseFiles({ cases, addXp, soundEnabled, ttsRate }) {
+      const [selectedIdx, setSelectedIdx] = useState(0);
+      const [userAnswers, setUserAnswers] = useState({});
+      const [checkedQuestions, setCheckedQuestions] = useState({});
+
+      const caseItem = cases[selectedIdx];
+
+      const handleAnswerSelect = (optionIdx) => {
+        setUserAnswers(prev => ({ ...prev, [caseItem.id]: optionIdx }));
+      };
+
+      const handleCheckQuiz = () => {
+        const selected = userAnswers[caseItem.id];
+        const isCorrect = selected === caseItem.quiz.correctIdx;
+        setCheckedQuestions(prev => ({ ...prev, [caseItem.id]: { isCorrect, checked: true } }));
+
+        if (isCorrect) {
+          addXp(20);
+          playSound('correct', soundEnabled);
+        } else {
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Module Banner */}
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 1 • Historical Accident Case Files
+              </span>
+              <h2 className="text-xl font-black font-header text-white mt-1">
+                Discover the Fortunate Errors that Shaped History
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Listen to authentic narrations, explore target B1-B2 vocabulary, and test your comprehension.
+              </p>
+            </div>
+          </div>
+
+          {/* Selector Carousel Buttons */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {cases.map((c, idx) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedIdx(idx);
+                  playSound('click', soundEnabled);
+                }}
+                className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                  selectedIdx === idx
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg shadow-indigo-600/10'
+                    : 'bg-brand-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between text-lg mb-1">
+                  <span>{c.icon}</span>
+                  <span className="text-[10px] font-mono text-slate-500">{c.year}</span>
+                </div>
+                <span className="text-xs font-bold font-mono line-clamp-1">{c.inventor}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Active Case File Reader Card */}
+          <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            
+            <div className="flex flex-wrap justify-between items-start gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-3xl">{caseItem.icon}</span>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold font-header text-indigo-300">{caseItem.title}</h3>
+                    <p className="text-xs font-mono text-amber-400">Accident: {caseItem.summary} ({caseItem.year})</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* TTS Speech Player */}
+              <button
+                onClick={() => speakText(caseItem.fullStory, ttsRate)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-4 py-2.5 rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
+              >
+                <span>🔊</span>
+                <span>Listen to Narration ({ttsRate}x)</span>
+              </button>
+            </div>
+
+            {/* Main Narrative Text */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-mono font-bold uppercase text-slate-400 tracking-wider">The Historical Case Story:</h4>
+              <p className="text-sm sm:text-base font-mono text-slate-200 leading-relaxed bg-brand-950 p-5 rounded-2xl border border-slate-800/80">
+                "{caseItem.fullStory}"
+              </p>
+            </div>
+
+            {/* Targeted Grammar Highlight Card */}
+            <div className="bg-indigo-950/40 p-4 rounded-2xl border border-indigo-500/30 space-y-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-400 block">💡 B1-B2 Target Grammar Sample (3rd Conditional):</span>
+              <p className="text-xs font-mono text-indigo-200 italic">
+                "{caseItem.targetGrammarSample}"
+              </p>
+            </div>
+
+            {/* Key Vocabulary Highlights */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-mono font-bold uppercase text-slate-400 tracking-wider">Key Serendipity & Scientific Terms:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {caseItem.vocabHighlights.map((v, i) => (
+                  <div key={i} className="bg-brand-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                    <span className="text-xs font-mono font-bold text-emerald-400 block">{v.word}</span>
+                    <span className="text-[11px] text-slate-400 leading-tight block">{v.def}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Interactive Case Comprehension Quiz */}
+            <div className="pt-4 border-t border-slate-800 space-y-4">
+              <h4 className="text-xs font-mono font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                <span>🎯</span> Case File Comprehension Check
+              </h4>
+
+              <div className="space-y-3">
+                <p className="text-xs sm:text-sm font-mono text-slate-200 font-bold">
+                  {caseItem.quiz.question}
+                </p>
+
+                <div className="space-y-2">
+                  {caseItem.quiz.options.map((opt, oIdx) => {
+                    const isSelected = userAnswers[caseItem.id] === oIdx;
+                    return (
+                      <button
+                        key={oIdx}
+                        disabled={checkedQuestions[caseItem.id]?.checked}
+                        onClick={() => {
+                          handleAnswerSelect(oIdx);
+                          playSound('click', soundEnabled);
+                        }}
+                        className={`w-full text-left p-3.5 rounded-2xl border font-mono text-xs transition ${
+                          isSelected
+                            ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold'
+                            : 'bg-brand-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-between items-center pt-2">
+                  {checkedQuestions[caseItem.id]?.checked ? (
+                    <div className="space-y-1 text-xs font-mono">
+                      <span className={`font-bold ${checkedQuestions[caseItem.id].isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {checkedQuestions[caseItem.id].isCorrect ? '✓ Correct! (+20 XP)' : '❌ Incorrect Selection'}
+                      </span>
+                      <p className="text-slate-400 text-[11px]">💡 {caseItem.quiz.explanation}</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleCheckQuiz}
+                      disabled={userAnswers[caseItem.id] === undefined}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold font-mono transition ${
+                        userAnswers[caseItem.id] !== undefined
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Verify Case Answer
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 2: GRAMMAR & IDIOM LAB
+    // =========================================================================
+    function Module2GrammarLab({ tileData, interruptedData, idioms, addXp, soundEnabled, ttsRate }) {
+      const [subTab, setSubTab] = useState('tiles'); // tiles, interrupted, idioms
+
+      // Tile Builder State
+      const [activeTileIdx, setActiveTileIdx] = useState(0);
+      const [selectedTiles, setSelectedTiles] = useState([]);
+      const [availableTiles, setAvailableTiles] = useState([]);
+      const [tileValidation, setTileValidation] = useState(null);
+
+      // Interrupted Past State
+      const [userConnectors, setUserConnectors] = useState({});
+      const [checkedInterrupted, setCheckedInterrupted] = useState({});
+
+      // Idioms Card & Match Game State
+      const [flippedCards, setFlippedCards] = useState({});
+
+      const currentTile = tileData[activeTileIdx];
+
+      useEffect(() => {
+        // Initialize randomized tiles for tile builder
+        if (currentTile) {
+          const combined = [...currentTile.correctSequence, ...currentTile.distractors];
+          const shuffled = combined.sort(() => Math.random() - 0.5);
+          setAvailableTiles(shuffled);
+          setSelectedTiles([]);
+          setTileValidation(null);
+        }
+      }, [activeTileIdx]);
+
+      const handleAddTile = (tile, idx) => {
+        setSelectedTiles(prev => [...prev, tile]);
+        setAvailableTiles(prev => prev.filter((_, i) => i !== idx));
+        playSound('click', soundEnabled);
+      };
+
+      const handleRemoveTile = (tile, idx) => {
+        setAvailableTiles(prev => [...prev, tile]);
+        setSelectedTiles(prev => prev.filter((_, i) => i !== idx));
+        playSound('click', soundEnabled);
+      };
+
+      const handleCheckTileSentence = () => {
+        const isMatch = JSON.stringify(selectedTiles) === JSON.stringify(currentTile.correctSequence);
+        if (isMatch) {
+          setTileValidation({ isCorrect: true, msg: "✓ Perfect 3rd Conditional Structure! (+25 XP)" });
+          addXp(25);
+          playSound('correct', soundEnabled);
+        } else {
+          setTileValidation({ isCorrect: false, msg: "❌ Sequence incorrect. Check 'If + had + V3' and 'would have + V3'." });
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      const toggleCardFlip = (id) => {
+        setFlippedCards(prev => ({ ...prev, [id]: !prev[id] }));
+        playSound('click', soundEnabled);
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          
+          {/* Sub Navigation Bar */}
+          <div className="bg-brand-900 p-2 rounded-2xl border border-slate-800 flex flex-wrap gap-2">
+            {[
+              { id: 'tiles', label: '1. 3rd Conditional Builder', icon: '🧩' },
+              { id: 'interrupted', label: '2. Interrupted Past Matcher', icon: '⚡' },
+              { id: 'idioms', label: '3. Serendipity Flashcards', icon: '🎴' }
+            ].map(st => (
+              <button
+                key={st.id}
+                onClick={() => {
+                  setSubTab(st.id);
+                  playSound('click', soundEnabled);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 ${
+                  subTab === st.id
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>{st.icon}</span>
+                <span>{st.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* SUB-TAB 1: 3RD CONDITIONAL TILE BUILDER */}
+          {subTab === 'tiles' && (
+            <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6">
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400">
+                    Challenge {activeTileIdx + 1} of {tileData.length}
+                  </span>
+                  <h3 className="text-lg font-bold font-header text-white mt-0.5">3rd Conditional Word-Tile Unscrambler</h3>
+                </div>
+
+                <div className="flex gap-1.5">
+                  {tileData.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveTileIdx(idx)}
+                      className={`w-7 h-7 rounded-xl font-mono text-xs font-bold transition border ${
+                        activeTileIdx === idx
+                          ? 'bg-indigo-600 border-indigo-500 text-white'
+                          : 'bg-brand-950 border-slate-800 text-slate-500'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-brand-950 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Prompt Target:</span>
+                <p className="text-sm font-mono text-slate-200 font-bold">{currentTile.prompt}</p>
+              </div>
+
+              {/* Sentence Construction Zone */}
+              <div className="space-y-2">
+                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">Your Built Sentence:</span>
+                <div className="min-h-[70px] p-4 bg-brand-950 border-2 border-dashed border-slate-800 rounded-2xl flex flex-wrap items-center gap-2">
+                  {selectedTiles.length === 0 ? (
+                    <span className="text-xs font-mono text-slate-600 italic">Click word tiles below to assemble sentence...</span>
+                  ) : (
+                    selectedTiles.map((tile, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleRemoveTile(tile, idx)}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-3 py-2 rounded-xl transition shadow-md flex items-center gap-1.5"
+                      >
+                        <span>{tile}</span>
+                        <span className="text-[10px] opacity-70">✕</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Available Tiles */}
+              <div className="space-y-2">
+                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">Available Word Tiles:</span>
+                <div className="flex flex-wrap gap-2">
+                  {availableTiles.map((tile, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAddTile(tile, idx)}
+                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs px-3 py-2 rounded-xl transition shadow-sm"
+                    >
+                      + {tile}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+                <button
+                  onClick={() => speakText(selectedTiles.join(" "), ttsRate)}
+                  disabled={selectedTiles.length === 0}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs px-4 py-2 rounded-xl transition disabled:opacity-40"
+                >
+                  🔊 Listen
+                </button>
+
+                <button
+                  onClick={handleCheckTileSentence}
+                  disabled={selectedTiles.length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md disabled:opacity-40"
+                >
+                  Verify Sentence
+                </button>
+              </div>
+
+              {tileValidation && (
+                <div className={`p-4 rounded-2xl font-mono text-xs ${tileValidation.isCorrect ? 'bg-emerald-950/40 border border-emerald-500/50 text-emerald-300' : 'bg-rose-950/40 border border-rose-500/50 text-rose-300'}`}>
+                  {tileValidation.msg}
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* SUB-TAB 2: INTERRUPTED PAST MATCHER */}
+          {subTab === 'interrupted' && (
+            <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6">
+              <div>
+                <h3 className="text-lg font-bold font-header text-white">Interrupted Past Structure Matcher</h3>
+                <p className="text-xs text-slate-400">Match background continuous actions with unexpected sudden events using 'WHEN'.</p>
+              </div>
+
+              <div className="space-y-4">
+                {interruptedData.map((item) => {
+                  const selectedConn = userConnectors[item.id];
+                  const checked = checkedInterrupted[item.id];
+
+                  return (
+                    <div key={item.id} className="bg-brand-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2 font-mono text-xs sm:text-sm">
+                        <span className="text-cyan-300 font-bold bg-cyan-950/60 p-2 rounded-xl border border-cyan-800/50">
+                          {item.background}
+                        </span>
+
+                        <span className="text-amber-400 font-bold px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                          [ WHEN ]
+                        </span>
+
+                        <span className="text-emerald-300 font-bold bg-emerald-950/60 p-2 rounded-xl border border-emerald-800/50">
+                          {item.unexpected}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-800/80">
+                        <p className="text-[11px] font-mono text-slate-400">
+                          💡 Rule: Past Continuous (was/were -ing) + WHEN + Past Simple (unexpected accident).
+                        </p>
+                        <button
+                          onClick={() => speakText(`${item.background} when ${item.unexpected}`, ttsRate)}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-[11px] px-3 py-1.5 rounded-lg transition"
+                        >
+                          🔊 Listen
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* SUB-TAB 3: SERENDIPITY IDIOMS FLASHCARDS */}
+          {subTab === 'idioms' && (
+            <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6">
+              <div>
+                <h3 className="text-lg font-bold font-header text-white">Serendipity Idioms & Vocabulary Flip Cards</h3>
+                <p className="text-xs text-slate-400">Click cards to flip and discover definitions, examples, and natural B1-B2 usage.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {idioms.map((card) => {
+                  const isFlipped = flippedCards[card.id];
+
+                  return (
+                    <div
+                      key={card.id}
+                      onClick={() => toggleCardFlip(card.id)}
+                      className="h-44 cursor-pointer perspective-1000"
+                    >
+                      <div className={`relative w-full h-full duration-500 transform-style-3d transition-transform ${isFlipped ? 'rotate-y-180' : ''}`}>
+                        
+                        {/* Front Side */}
+                        <div className="absolute inset-0 bg-brand-950 border border-indigo-500/30 rounded-2xl p-5 flex flex-col justify-between backface-hidden shadow-lg">
+                          <span className="text-xs font-mono text-indigo-400 uppercase tracking-widest font-bold">Idiom Card</span>
+                          <h4 className="text-base font-bold font-header text-amber-300">{card.term}</h4>
+                          <span className="text-[10px] font-mono text-slate-500">Click to reveal definition ↺</span>
+                        </div>
+
+                        {/* Back Side */}
+                        <div className="absolute inset-0 bg-indigo-950 border border-indigo-500 rounded-2xl p-4 flex flex-col justify-between rotate-y-180 backface-hidden shadow-xl text-slate-100">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">Meaning:</span>
+                            <p className="text-xs font-mono leading-tight text-slate-200">{card.meaning}</p>
+                          </div>
+                          <div className="space-y-1 pt-2 border-t border-indigo-800/60">
+                            <span className="text-[10px] font-mono text-amber-300 uppercase font-bold">Example:</span>
+                            <p className="text-[11px] font-mono italic text-indigo-200 line-clamp-2">"{card.example}"</p>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 3: "BUTTERFLY EFFECT" ALTERNATE HISTORY SIMULATOR
+    // =========================================================================
+    function Module3ButterflyEffect({ scenarios, addXp, soundEnabled, ttsRate }) {
+      const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
+      const [userSelections, setUserSelections] = useState({});
+      const [revealedTimelines, setRevealedTimelines] = useState({});
+
+      const scenario = scenarios[activeScenarioIdx];
+
+      const handleOptionClick = (optIdx, option) => {
+        setUserSelections(prev => ({ ...prev, [scenario.id]: optIdx }));
+        setRevealedTimelines(prev => ({
+          ...prev,
+          [scenario.id]: {
+            isCorrect: option.isCorrect,
+            timelineText: option.timeline
+          }
+        }));
+
+        if (option.isCorrect) {
+          addXp(30);
+          playSound('correct', soundEnabled);
+        } else {
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+              Module 3 • "Butterfly Effect" Alternate History Simulator
+            </span>
+            <h2 className="text-xl font-black font-header text-white">
+              Change the Past: What If Accidents Had Never Happened?
+            </h2>
+            <p className="text-xs text-slate-400">
+              Select the correct 3rd conditional formulation to rewrite modern history and unlock alternate timeline branches.
+            </p>
+          </div>
+
+          {/* Scenario Tabs */}
+          <div className="flex gap-2">
+            {scenarios.map((s, idx) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setActiveScenarioIdx(idx);
+                  playSound('click', soundEnabled);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition border ${
+                  activeScenarioIdx === idx
+                    ? 'bg-amber-600 border-amber-500 text-white'
+                    : 'bg-brand-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                {s.title}
+              </button>
+            ))}
+          </div>
+
+          {/* Active Scenario Card */}
+          <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            
+            <div className="bg-brand-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Real History Fact:</span>
+              <p className="text-xs sm:text-sm font-mono text-slate-200">"{scenario.historicalFact}"</p>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm sm:text-base font-bold font-header text-amber-300">
+                🦋 {scenario.question}
+              </h3>
+
+              <div className="space-y-3">
+                {scenario.options.map((opt, idx) => {
+                  const isSelected = userSelections[scenario.id] === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionClick(idx, opt)}
+                      className={`w-full text-left p-4 rounded-2xl border font-mono text-xs sm:text-sm transition ${
+                        isSelected
+                          ? opt.isCorrect
+                            ? 'bg-emerald-950/60 border-emerald-500 text-emerald-200 font-bold'
+                            : 'bg-rose-950/60 border-rose-500 text-rose-200 font-bold'
+                          : 'bg-brand-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      {opt.text}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Alternate Timeline Outcome Card */}
+            {revealedTimelines[scenario.id] && (
+              <div className={`p-5 rounded-2xl border font-mono text-xs space-y-2 animate-fadeIn ${
+                revealedTimelines[scenario.id].isCorrect 
+                  ? 'bg-amber-950/30 border-amber-500/50 text-amber-200' 
+                  : 'bg-rose-950/30 border-rose-500/50 text-rose-200'
+              }`}>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold uppercase tracking-wider text-[10px]">
+                    {revealedTimelines[scenario.id].isCorrect ? '⚡ Alternate Reality Unlocked (+30 XP)' : '⚠️ Timeline Disrupted'}
+                  </span>
+                  <button
+                    onClick={() => speakText(revealedTimelines[scenario.id].timelineText, ttsRate)}
+                    className="bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] text-slate-300 hover:text-white"
+                  >
+                    🔊 Listen
+                  </button>
+                </div>
+                <p className="leading-relaxed text-xs sm:text-sm">
+                  {revealedTimelines[scenario.id].timelineText}
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 4: PERSONAL REFLECTION & STORY STUDIO
+    // =========================================================================
+    function Module4StoryStudio({ targetChips, addXp, soundEnabled }) {
+      const [storyText, setStoryText] = useState(
+        "A turning point in my life happened two years ago. I was walking to the train station when I bumped into an old friend. If I had caught the earlier train, I would not have discovered our new business idea!"
+      );
+      const [detectedChips, setDetectedChips] = useState([]);
+
+      useEffect(() => {
+        const found = targetChips.filter(chip => chip.regex.test(storyText));
+        setDetectedChips(found);
+      }, [storyText]);
+
+      const handleClaimXp = () => {
+        if (detectedChips.length > 0) {
+          addXp(detectedChips.length * 15);
+          playSound('fanfare', soundEnabled);
+        }
+      };
+
+      const wordCount = storyText.trim().split(/\s+/).filter(Boolean).length;
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+              Module 4 • Personal Story Studio & Live Grammar Scanner
+            </span>
+            <h2 className="text-xl font-black font-header text-white">
+              Write Your Own Serendipity Story
+            </h2>
+            <p className="text-xs text-slate-400">
+              Describe an unexpected accident, mistake, or happy coincidence that influenced your life or someone you know.
+            </p>
+          </div>
+
+          <div className="bg-brand-900 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            
+            <div className="bg-brand-950 p-4 rounded-2xl border border-slate-800 space-y-1">
+              <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-widest font-bold">Writing Prompt:</span>
+              <p className="text-xs sm:text-sm font-mono text-white font-bold">
+                "Talk about an unexpected accident, mistake, or coincidence that changed your direction or taught you something valuable."
+              </p>
+            </div>
+
+            {/* Live Detected Target Phrases Chips Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
+                  ⚡ Live Detected Target Structures ({detectedChips.length}/{targetChips.length}):
+                </span>
+                <span className="text-xs font-mono text-emerald-400 font-bold">
+                  +{detectedChips.length * 15} Storytelling XP
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 bg-brand-950 p-3 rounded-2xl border border-slate-800">
+                {targetChips.map(chip => {
+                  const isDetected = detectedChips.some(c => c.id === chip.id);
+                  return (
+                    <span
+                      key={chip.id}
+                      className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1 ${
+                        isDetected
+                          ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm'
+                          : 'bg-slate-900 border border-slate-800 text-slate-600'
+                      }`}
+                    >
+                      <span>{isDetected ? '✓' : '•'}</span>
+                      <span>{chip.label}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Main Textarea */}
+            <div className="space-y-2">
+              <textarea
+                rows={6}
+                value={storyText}
+                onChange={(e) => setStoryText(e.target.value)}
+                placeholder="Type your serendipity story here..."
+                className="w-full bg-brand-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="flex justify-between text-[11px] font-mono text-slate-400">
+                <span>Use 3rd conditionals, interrupted pasts, and idioms to light up chips above.</span>
+                <span>Word Count: {wordCount} words</span>
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={handleClaimXp}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md shadow-indigo-600/20"
+              >
+                Claim Writing XP
+              </button>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 5: MASTERY DASHBOARD & PRINTABLE CERTIFICATE
+    // =========================================================================
+    function Module5MasteryCertificate({ studentName, setStudentName, xp, currentRank, soundEnabled }) {
+
+      useEffect(() => {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
+        playSound('fanfare', soundEnabled);
+      }, []);
+
+      const handlePrint = () => {
+        window.print();
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4 no-print">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 5 • Mastery Accreditation
+              </span>
+              <h2 className="text-xl font-black font-header text-white mt-1">
+                Official Serendipity & Sparks Diploma
+              </h2>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <input
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                className="bg-brand-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                placeholder="Learner Full Name"
+              />
+              <button
+                onClick={handlePrint}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
+              >
+                🖨️ Print Certificate
+              </button>
+            </div>
+          </div>
+
+          {/* PRINTABLE DIPLOMA CARD */}
+          <div 
+            id="printable-certificate"
+            className="bg-brand-950 p-8 sm:p-12 rounded-3xl border-4 border-indigo-500/50 text-center space-y-6 relative overflow-hidden shadow-2xl text-slate-100"
+          >
+            <div className="absolute top-4 left-4 text-[10px] font-mono text-indigo-400/60">
+              ACCREDITATION-ID: SERENDIPITY-2026-B1B2
+            </div>
+            <div className="absolute top-4 right-4 text-[10px] font-mono text-indigo-400/60">
+              CEFR B1-B2 PROFICIENCY
+            </div>
+
+            <div className="space-y-2 pt-4">
+              <span className="text-5xl">✨</span>
+              <h2 className="text-2xl sm:text-3xl font-black font-header tracking-widest text-indigo-400">
+                CERTIFICATE OF MASTERY
+              </h2>
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">
+                Serendipity & Sparks • World-Changing Accidents & Personal Stories
+              </p>
+            </div>
+
+            <div className="py-4 border-y border-slate-800 space-y-3">
+              <p className="text-xs text-slate-400">This official document certifies that</p>
+              <p className="text-2xl sm:text-3xl font-black text-white underline decoration-indigo-500 decoration-2 font-header">{studentName}</p>
+              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2 font-mono">
+                has successfully demonstrated proficiency in **3rd conditionals** (`had + V3 ... would have + V3`), **interrupted past tense** (`was/were -ing when`), and **serendipity idioms** through historical case analysis and interactive storytelling.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs font-mono">
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Rank Achieved</span>
+                <span className="text-xs font-black text-indigo-400">{currentRank.title}</span>
+              </div>
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Total Score</span>
+                <span className="text-xs font-black text-amber-300">{xp} XP</span>
+              </div>
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">CEFR Standard</span>
+                <span className="text-xs font-black text-emerald-400">B1–B2 Intermediate</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    // RENDER APPLICATION
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
