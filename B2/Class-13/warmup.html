@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certitude & Duty: Opinions, Obligations & Certainty Lab</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              950: '#070a12',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            accent: {
+              indigo: '#6366f1',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              cyan: '#06b6d4',
+              violet: '#8b5cf6',
+            }
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070a12;
+      color: #f8fafc;
+    }
+    .font-header {
+      font-family: 'Cinzel', serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #6366f1;
+    }
+
+    /* Print Styles for Certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 40px;
+        background: #0f172a !important;
+        color: #f8fafc !important;
+        box-shadow: none !important;
+        border: 8px double #6366f1 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-brand-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // =========================================================================
+    // AUDIO SYNTHESIZER & SPEECH HELPER
+    // =========================================================================
+    const playSound = (type, enabled = true) => {
+      if (!enabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        if (type === 'correct') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15); // G5
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        } else if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(420, ctx.currentTime);
+          gain.gain.setValueAtTime(0.04, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.04);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.35);
+            osc.start(ctx.currentTime + idx * 0.09);
+            osc.stop(ctx.currentTime + idx * 0.09 + 0.35);
+          });
+        }
+      } catch (e) {
+        console.warn("Web Audio API not supported/blocked", e);
+      }
+    };
+
+    const speakText = (text, rate = 1.0) => {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = rate;
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // =========================================================================
+    // STATIC CURRICULUM DATA
+    // =========================================================================
+
+    const CLASSIFIER_DATA = [
+      {
+        id: 'c1',
+        sentence: "From my perspective, management will definitely have to hire more staff before summer.",
+        type: "Opinion & Obligation",
+        certainty: "High (100%)",
+        explanation: "'From my perspective' frames a strong opinion, while 'will definitely have to' expresses 100% positive certainty about a future obligation."
+      },
+      {
+        id: 'c2',
+        sentence: "We might be supposed to register at the front desk, but nobody was there when we walked in.",
+        type: "Obligation",
+        certainty: "Low (30-50%)",
+        explanation: "'Might be supposed to' combines low certainty ('might') with expected duty ('be supposed to')."
+      },
+      {
+        id: 'c3',
+        sentence: "There is no doubt in my mind that plastic packaging should be banned immediately.",
+        type: "Opinion",
+        certainty: "High (100%)",
+        explanation: "'There is no doubt in my mind' expresses absolute conviction regarding a moral/policy opinion."
+      },
+      {
+        id: 'c4',
+        sentence: "Employees probably ought to double-check their security codes before leaving the building.",
+        type: "Obligation",
+        certainty: "Medium (70-80%)",
+        explanation: "'Probably ought to' adds medium probability ('probably') to a strong recommendation ('ought to')."
+      },
+      {
+        id: 'c5',
+        sentence: "You can't possibly have to pay a cancellation fee if they canceled the flight themselves!",
+        type: "Obligation",
+        certainty: "Negative (0% / Impossible)",
+        explanation: "'Can't possibly have to' indicates absolute negative certainty regarding a required rule or payment."
+      },
+      {
+        id: 'c6',
+        sentence: "In all likelihood, the committee is going to recommend a full financial audit.",
+        type: "Opinion",
+        certainty: "Medium (70-80%)",
+        explanation: "'In all likelihood' signals high probability opinion without 100% absolute guarantee."
+      }
+    ];
+
+    const TRANSFORMER_DATA = [
+      {
+        id: 't1',
+        prompt: "Transform: 'Visitors must sign the guest register.'",
+        targetLevel: "Low Certainty (30-50%) Obligation",
+        correctSequence: ["Visitors", "might have to", "sign", "the guest register."],
+        allTiles: ["Visitors", "might have to", "sign", "the guest register.", "definitely must", "ought to", "can't"]
+      },
+      {
+        id: 't2',
+        prompt: "Transform: 'In my opinion, we should change our suppliers.'",
+        targetLevel: "High Certainty (100%) Conviction",
+        correctSequence: ["I am completely convinced that", "we", "must change", "our suppliers."],
+        allTiles: ["I am completely convinced that", "we", "must change", "our suppliers.", "might be", "In my view,", "should"]
+      },
+      {
+        id: 't3',
+        prompt: "Transform: 'Students are expected to turn off their phones during exams.'",
+        targetLevel: "Medium Probability (70-80%) Obligation",
+        correctSequence: ["Students", "are probably supposed to", "turn off", "their phones."],
+        allTiles: ["Students", "are probably supposed to", "turn off", "their phones.", "must", "can't possibly", "might have to"]
+      },
+      {
+        id: 't4',
+        prompt: "Transform: 'You don't have to complete this form today.'",
+        targetLevel: "Strong Negative Certainty (0%) Impossibility",
+        correctSequence: ["You", "can't possibly be required to", "complete", "this form today."],
+        allTiles: ["You", "can't possibly be required to", "complete", "this form today.", "don't have to", "must not", "might not"]
+      }
+    ];
+
+    const ERROR_DETECTIVE_DATA = [
+      {
+        id: 'e1',
+        sentence: "I am strongly convinced that we might have to arriving earlier tomorrow.",
+        errorPart: "might have to arriving",
+        options: [
+          "might have to arrive",
+          "might have to arriving",
+          "must to arrive",
+          "might have to arrived"
+        ],
+        correct: "might have to arrive",
+        explanation: "Modal expressions like 'might have to' must be followed by the base form (bare infinitive) of the verb: 'arrive'."
+      },
+      {
+        id: 'e2',
+        sentence: "From my view, you are definitely supposed to informing your supervisor.",
+        errorPart: "From my view / to informing",
+        options: [
+          "In my view, you are definitely supposed to inform",
+          "From my view, you are definitely supposed to informing",
+          "On my view, you are definitely supposed to inform",
+          "In my view, you are definitely supposed informing"
+        ],
+        correct: "In my view, you are definitely supposed to inform",
+        explanation: "The idiomatic opinion phrase is 'In my view' (or 'From my perspective'), and 'be supposed to' takes the bare infinitive ('inform')."
+      },
+      {
+        id: 'e3',
+        sentence: "She doesn't can't possibly have to work this weekend because her shift was covered.",
+        errorPart: "doesn't can't possibly",
+        options: [
+          "can't possibly have to",
+          "doesn't can't possibly",
+          "is not can't possibly",
+          "must not to have"
+        ],
+        correct: "can't possibly have to",
+        explanation: "Do not double-stack auxiliary 'does not' with modal 'can't'. Use 'can't possibly have to' directly."
+      },
+      {
+        id: 'e4',
+        sentence: "We had better to check the guidelines before we submit our application.",
+        errorPart: "had better to check",
+        options: [
+          "had better check",
+          "had better to check",
+          "had better checking",
+          "would better to check"
+        ],
+        correct: "had better check",
+        explanation: "The modal phrase 'had better' is followed directly by the bare infinitive without 'to'."
+      }
+    ];
+
+    const DIALOGUE_SCENARIO = {
+      title: "The HR Remote Work Policy",
+      context: "HR has released a strict memo requiring all remote employees to log into the corporate portal by 8:00 AM sharp. Mark & Sarah are discussing how to respond pragmatically.",
+      turns: [
+        {
+          speaker: "Mark",
+          avatar: "👨‍💼",
+          line: "Did you see the new remote work memo from HR? It seems extremely strict compared to last year's policy.",
+          prompt: "How should Sarah state her opinion on the policy strictness with MEDIUM certainty?",
+          options: [
+            {
+              text: "In my view, the new policy is probably going to be a bit more demanding, but we need to read the details.",
+              isBest: true,
+              feedback: "Excellent! 'In my view' frames the stance, and 'probably going to be' maintains medium certainty without escalating conflict.",
+              xp: 25
+            },
+            {
+              text: "It's completely absurd! I'm convinced HR definitely must be trying to ruin our working conditions.",
+              isBest: false,
+              feedback: "Too aggressive! Expressing 100% negative emotion reduces workplace diplomatic tact.",
+              xp: 5
+            },
+            {
+              text: "Maybe... I guess it might be a memo or something.",
+              isBest: false,
+              feedback: "Too vague and passive. Fails to express a clear B1-B2 opinion marker.",
+              xp: 5
+            }
+          ]
+        },
+        {
+          speaker: "Mark",
+          avatar: "👨‍💼",
+          line: "It explicitly states we must log in by 8:00 AM sharp every day. Is that an absolute obligation for everyone?",
+          prompt: "How should Sarah clarify the duty using MEDIUM obligation / expectation?",
+          options: [
+            {
+              text: "Well, we are probably supposed to log in by 8:00 AM, but I suspect there is a short grace period for server lag.",
+              isBest: true,
+              feedback: "Spot on! 'Are probably supposed to' correctly expresses medium probability duty.",
+              xp: 25
+            },
+            {
+              text: "You had better to log in at 8:00 AM sharp or you doesn't can't work.",
+              isBest: false,
+              feedback: "Grammar errors! Contains 'had better to' and double auxiliary 'doesn't can't'.",
+              xp: 5
+            },
+            {
+              text: "Nobody has to do anything ever.",
+              isBest: false,
+              feedback: "Inaccurate modal usage and unrealistic workplace response.",
+              xp: 5
+            }
+          ]
+        },
+        {
+          speaker: "Mark",
+          avatar: "👨‍💼",
+          line: "Surely they won't penalize us if we experience unexpected home internet outages?",
+          prompt: "How should Sarah express STRONG NEGATIVE CERTAINTY regarding penalty for tech glitches?",
+          options: [
+            {
+              text: "I agree. They can't possibly require us to guarantee 100% internet uptime during citywide blackouts.",
+              isBest: true,
+              feedback: "Brilliant! 'Can't possibly require' expresses 100% negative certainty about an unreasonable duty.",
+              xp: 25
+            },
+            {
+              text: "They might penalize us or they might not, who knows really?",
+              isBest: false,
+              feedback: "This expresses low certainty (might), not strong negative certainty.",
+              xp: 5
+            },
+            {
+              text: "They definitely must fire anyone whose wifi drops for 5 seconds.",
+              isBest: false,
+              feedback: "Incorrect logic and wrong modal for impossible rules.",
+              xp: 5
+            }
+          ]
+        },
+        {
+          speaker: "Mark",
+          avatar: "👨‍💼",
+          line: "What do you think is our best course of action then?",
+          prompt: "How should Sarah give a STRONG RECOMMENDATION / ADVICE?",
+          options: [
+            {
+              text: "To be safe, we had better notify our team leader immediately whenever we experience technical glitches.",
+              isBest: true,
+              feedback: "Perfect! 'Had better + bare verb' provides a strong, pragmatic workplace recommendation.",
+              xp: 25
+            },
+            {
+              text: "We had better to write an angry email to the CEO right now.",
+              isBest: false,
+              feedback: "'Had better' should NOT be followed by 'to'.",
+              xp: 5
+            },
+            {
+              text: "We could perhaps ignore it completely.",
+              isBest: false,
+              feedback: "Weak recommendation, does not express strong advice.",
+              xp: 5
+            }
+          ]
+        }
+      ]
+    };
+
+    const WRITING_PROMPTS = [
+      {
+        id: 'p1',
+        title: "Prompt 1: Weekend Work Emails",
+        promptText: "Should employers be allowed to require staff to answer work emails during weekends?",
+        modelSample: "In my view, employees shouldn't have to answer non-urgent emails over the weekend. While workers are probably supposed to stay informed during emergencies, managers can't possibly expect 24/7 availability. From my perspective, companies had better establish clear offline boundaries."
+      },
+      {
+        id: 'p2',
+        title: "Prompt 2: Airport Security Expectations",
+        promptText: "What security protocols are international travelers obligated to follow before boarding an airplane?",
+        modelSample: "Travelers definitely have to present valid passports and pass through security checkpoints. In all likelihood, passengers are probably supposed to arrive three hours prior to departure. I am convinced that everyone must follow safety procedures without exception."
+      },
+      {
+        id: 'p3',
+        title: "Prompt 3: University Degrees vs. Professional Success",
+        promptText: "Is holding a university degree an absolute requirement to achieve success in the modern workforce?",
+        modelSample: "From my perspective, having a degree is beneficial, but candidates don't definitely have to possess one for every career. In my opinion, practical skills might be more valuable than formal diplomas in technology fields."
+      }
+    ];
+
+    const TARGET_CHIPS = [
+      { id: 'c1', label: 'In my view', regex: /in my view/i, category: 'Opinion' },
+      { id: 'c2', label: 'From my perspective', regex: /from my perspective/i, category: 'Opinion' },
+      { id: 'c3', label: 'I am convinced that', regex: /i am convinced that/i, category: 'Opinion' },
+      { id: 'c4', label: 'definitely have to', regex: /definitely have to|definitely must/i, category: 'Certainty' },
+      { id: 'c5', label: 'might have to', regex: /might have to|could be required to/i, category: 'Certainty' },
+      { id: 'c6', label: 'are probably supposed to', regex: /are probably supposed to|probably ought to/i, category: 'Obligation' },
+      { id: 'c7', label: "can't possibly", regex: /can't possibly|couldn't possibly/i, category: 'Negative Certainty' },
+      { id: 'c8', label: 'had better', regex: /had better/i, category: 'Advice' }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+    function App() {
+      const [xp, setXp] = useState(60);
+      const [streak, setStreak] = useState(5);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [ttsRate, setTtsRate] = useState(1.0);
+      const [activeTab, setActiveTab] = useState('classifier'); // classifier, transformer, error_detective, dialogue, studio, certificate
+      const [showMatrixModal, setShowMatrixModal] = useState(false);
+      const [studentName, setStudentName] = useState('Alex Rivera');
+
+      // Rank Calculation
+      const getRank = (points) => {
+        if (points < 120) return { title: "Certainty Apprentice", icon: "🌱", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" };
+        if (points < 250) return { title: "Duty Analyst", icon: "🔍", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" };
+        if (points < 400) return { title: "Pragmatic Specialist", icon: "💼", color: "text-indigo-400 border-indigo-500/30 bg-indigo-500/10" };
+        return { title: "Master Arbitrator", icon: "👑", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" };
+      };
+
+      const currentRank = getRank(xp);
+
+      const addXp = (amount) => {
+        setXp(prev => prev + amount);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans border-t-4 border-indigo-500">
+          
+          {/* HEADER & PROGRESS HUB */}
+          <header className="bg-brand-900 border-b border-slate-800 sticky top-0 z-40 shadow-2xl no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                
+                {/* Brand & Title */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/25 text-white font-black">
+                    ⚖️
+                  </div>
+                  <div>
+                    <h1 className="text-base sm:text-lg font-black font-header tracking-wider text-indigo-400">
+                      CERTITUDE & DUTY
+                    </h1>
+                    <p className="text-[11px] text-slate-400 font-mono tracking-tight">Opinions, Obligations & Certainty Lab • B1-B2 ESL</p>
+                  </div>
+                </div>
+
+                {/* Case Stats & Audio Hub */}
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  
+                  {/* Streak */}
+                  <div className="flex items-center space-x-1.5 bg-brand-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono" title="Daily Learning Streak">
+                    <span className="text-amber-500">🔥</span>
+                    <span className="font-bold text-slate-200">{streak} Days</span>
+                  </div>
+
+                  {/* Rank Badge */}
+                  <div className={`hidden md:flex items-center space-x-1.5 border px-3 py-1.5 rounded-xl text-xs font-bold ${currentRank.color}`}>
+                    <span>{currentRank.icon}</span>
+                    <span>{currentRank.title}</span>
+                  </div>
+
+                  {/* XP Counter */}
+                  <div className="flex items-center space-x-1.5 bg-brand-950 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-300">
+                    <span>⭐</span>
+                    <span>{xp} <span className="text-[10px] text-slate-400 font-normal">XP</span></span>
+                  </div>
+
+                  {/* TTS Speed Selector */}
+                  <div className="hidden sm:flex items-center bg-brand-950 border border-slate-800 rounded-xl p-1 text-[11px] font-mono">
+                    <button
+                      onClick={() => setTtsRate(1.0)}
+                      className={`px-2 py-0.5 rounded-lg transition ${ttsRate === 1.0 ? 'bg-indigo-500 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      1.0x
+                    </button>
+                    <button
+                      onClick={() => setTtsRate(0.75)}
+                      className={`px-2 py-0.5 rounded-lg transition ${ttsRate === 0.75 ? 'bg-indigo-500 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                    >
+                      0.75x 🐢
+                    </button>
+                  </div>
+
+                  {/* Reference Matrix Button */}
+                  <button
+                    onClick={() => {
+                      setShowMatrixModal(true);
+                      playSound('click', soundEnabled);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20"
+                  >
+                    <span>📊</span>
+                    <span className="hidden sm:inline">Certainty Matrix</span>
+                  </button>
+
+                  {/* Sound Toggle */}
+                  <button
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      playSound('click', !soundEnabled);
+                    }}
+                    className={`p-2 rounded-xl border text-xs transition ${
+                      soundEnabled 
+                        ? 'bg-slate-800 border-indigo-500/50 text-indigo-400' 
+                        : 'bg-brand-950 border-slate-800 text-slate-500'
+                    }`}
+                    title="Toggle Audio Feedback"
+                  >
+                    {soundEnabled ? '🔊' : '🔇'}
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <nav className="flex items-center gap-2">
+                  {[
+                    { id: 'classifier', label: '1. Certainty Classifier', icon: '🗂️' },
+                    { id: 'transformer', label: '2. Tile Transformer', icon: '🧩' },
+                    { id: 'error_detective', label: '3. Error Detective', icon: '🕵️‍♂️' },
+                    { id: 'dialogue', label: '4. HR Policy Simulator', icon: '💬' },
+                    { id: 'studio', label: '5. Writing Studio', icon: '✍️' },
+                    { id: 'certificate', label: '6. Accreditation', icon: '🎓' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        playSound('click', soundEnabled);
+                      }}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        activeTab === tab.id
+                          ? 'bg-indigo-600 text-white font-black shadow-lg shadow-indigo-600/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT WORKSPACE */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'classifier' && (
+              <Module1Classifier
+                data={CLASSIFIER_DATA}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'transformer' && (
+              <Module2Transformer
+                data={TRANSFORMER_DATA}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'error_detective' && (
+              <Module3ErrorDetective
+                data={ERROR_DETECTIVE_DATA}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'dialogue' && (
+              <Module4DialogueSimulator
+                scenario={DIALOGUE_SCENARIO}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                ttsRate={ttsRate}
+              />
+            )}
+
+            {activeTab === 'studio' && (
+              <Module5WritingStudio
+                prompts={WRITING_PROMPTS}
+                targetChips={TARGET_CHIPS}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'certificate' && (
+              <Module6Certificate
+                studentName={studentName}
+                setStudentName={setStudentName}
+                xp={xp}
+                currentRank={currentRank}
+                soundEnabled={soundEnabled}
+              />
+            )}
+          </main>
+
+          {/* REFERENCE MATRIX MODAL */}
+          {showMatrixModal && (
+            <div className="fixed inset-0 bg-brand-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-brand-900 border border-slate-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto text-slate-200">
+                
+                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">📊</span>
+                    <h3 className="text-lg font-black font-header text-indigo-400">Certainty & Duty Reference Matrix</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowMatrixModal(false)}
+                    className="text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-6 text-xs sm:text-sm">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-brand-950 text-slate-400 text-[11px] uppercase font-mono">
+                        <tr>
+                          <th className="p-3 border-b border-slate-800">Degree of Certainty</th>
+                          <th className="p-3 border-b border-slate-800">Obligation / Expectation</th>
+                          <th className="p-3 border-b border-slate-800">Opinion Marker</th>
+                          <th className="p-3 border-b border-slate-800">Example Sentence</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 text-xs font-mono">
+                        <tr className="hover:bg-slate-800/50">
+                          <td className="p-3 font-bold text-emerald-400">High Certainty (100%)</td>
+                          <td className="p-3">must / definitely have to / are required to</td>
+                          <td className="p-3">I am convinced that / There is no doubt that</td>
+                          <td className="p-3 text-slate-300">"You **definitely have to** submit tax forms before midnight."</td>
+                        </tr>
+                        <tr className="hover:bg-slate-800/50">
+                          <td className="p-3 font-bold text-cyan-400">Medium Certainty (70–80%)</td>
+                          <td className="p-3">are probably supposed to / should / ought to</td>
+                          <td className="p-3">In all likelihood / In my view</td>
+                          <td className="p-3 text-slate-300">"We **are probably supposed to** check in at the front desk."</td>
+                        </tr>
+                        <tr className="hover:bg-slate-800/50">
+                          <td className="p-3 font-bold text-amber-400">Low Certainty (30–50%)</td>
+                          <td className="p-3">might have to / could be required to</td>
+                          <td className="p-3">It seems to me that / I suspect that</td>
+                          <td className="p-3 text-slate-300">"If the flight is delayed, we **might have to** book a room."</td>
+                        </tr>
+                        <tr className="hover:bg-slate-800/50">
+                          <td className="p-3 font-bold text-rose-400">Negative Certainty (0%)</td>
+                          <td className="p-3">can't possibly have to / don't have to</td>
+                          <td className="p-3">I strongly doubt that / There is no way</td>
+                          <td className="p-3 text-slate-300">"You **can't possibly have to** pay a cancellation fee."</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="bg-brand-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <h5 className="font-bold text-indigo-400 font-mono text-xs">💡 Pragmatic Tip: Had Better</h5>
+                    <p className="text-xs text-slate-300">
+                      Use <strong>had better + bare verb</strong> for strong urgent advice or warnings. Avoid putting 'to' after had better!  
+                      <br/>
+                      <span className="text-emerald-400 font-mono text-[11px]">Correct: "We had better check the guidelines."</span>  
+                      <br/>
+                      <span className="text-rose-400 font-mono text-[11px]">Incorrect: "We had better to check..."</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setShowMatrixModal(false)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md"
+                  >
+                    Resume Practice
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-brand-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
+            <p>Certitude & Duty • ESL B1-B2 Interactive Opinions, Obligations & Certainty Studio</p>
+          </footer>
+
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 1: CERTAINTY CLASSIFIER
+    // =========================================================================
+    function Module1Classifier({ data, addXp, soundEnabled, ttsRate }) {
+      const [userTypes, setUserTypes] = useState({});
+      const [userCertainties, setUserCertainties] = useState({});
+      const [checkedItems, setCheckedItems] = useState({});
+
+      const TYPES = ["Opinion", "Obligation", "Opinion & Obligation"];
+      const CERTAINTIES = [
+        "High (100%)",
+        "Medium (70-80%)",
+        "Low (30-50%)",
+        "Negative (0% / Impossible)"
+      ];
+
+      const handleVerify = (item) => {
+        const typeMatch = userTypes[item.id] === item.type;
+        const certMatch = userCertainties[item.id] === item.certainty;
+        const isCorrect = typeMatch && certMatch;
+
+        setCheckedItems(prev => ({ ...prev, [item.id]: { isCorrect, typeMatch, certMatch } }));
+
+        if (isCorrect) {
+          addXp(20);
+          playSound('correct', soundEnabled);
+        } else {
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+              Module 1 • Certainty & Duty Classifier
+            </span>
+            <h2 className="text-xl font-black font-header text-white mt-1">
+              Classify Stance Type & Degree of Certainty
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Analyze each sentence. Determine whether it expresses an Opinion, Obligation, or Both, and select its precise level of certainty.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {data.map((item) => {
+              const selectedType = userTypes[item.id];
+              const selectedCert = userCertainties[item.id];
+              const checked = checkedItems[item.id];
+
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-brand-900 rounded-3xl p-6 border transition space-y-4 ${
+                    checked
+                      ? checked.isCorrect
+                        ? 'border-emerald-500/80 bg-emerald-950/10'
+                        : 'border-rose-500/80 bg-rose-950/10'
+                      : 'border-slate-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    <p className="text-sm font-mono font-bold text-slate-100 leading-relaxed">
+                      "{item.sentence}"
+                    </p>
+                    <button
+                      onClick={() => speakText(item.sentence, ttsRate)}
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition shrink-0"
+                      title="Listen with Native Pronunciation"
+                    >
+                      🔊 Listen
+                    </button>
+                  </div>
+
+                  {/* Selectors */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    {/* Stance Type */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold block">
+                        1. Select Type:
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {TYPES.map(t => (
+                          <button
+                            key={t}
+                            disabled={checked?.isCorrect}
+                            onClick={() => {
+                              setUserTypes(prev => ({ ...prev, [item.id]: t }));
+                              playSound('click', soundEnabled);
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-mono transition border ${
+                              selectedType === t
+                                ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
+                                : 'bg-brand-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Certainty Level */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold block">
+                        2. Select Certainty Level:
+                      </span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CERTAINTIES.map(c => (
+                          <button
+                            key={c}
+                            disabled={checked?.isCorrect}
+                            onClick={() => {
+                              setUserCertainties(prev => ({ ...prev, [item.id]: c }));
+                              playSound('click', soundEnabled);
+                            }}
+                            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-mono transition border text-left ${
+                              selectedCert === c
+                                ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
+                                : 'bg-brand-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verify & Feedback */}
+                  <div className="flex flex-wrap justify-between items-center gap-3 pt-2 border-t border-slate-800/80">
+                    {checked ? (
+                      <div className="space-y-1 text-xs font-mono">
+                        <span className={`font-bold ${checked.isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {checked.isCorrect ? '✓ Perfectly Classified (+20 XP)' : '❌ Incorrect Selection'}
+                        </span>
+                        <p className="text-slate-400 text-[11px]">💡 {item.explanation}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleVerify(item)}
+                        disabled={!selectedType || !selectedCert}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition ${
+                          selectedType && selectedCert
+                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Verify Classification
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 2: TILE TRANSFORMER
+    // =========================================================================
+    function Module2Transformer({ data, addXp, soundEnabled, ttsRate }) {
+      const [activeIdx, setActiveIdx] = useState(0);
+      const [selectedTiles, setSelectedTiles] = useState([]);
+      const [availableTiles, setAvailableTiles] = useState([]);
+      const [validation, setValidation] = useState(null);
+
+      const item = data[activeIdx];
+
+      useEffect(() => {
+        // Shuffle available tiles
+        const shuffled = [...item.allTiles].sort(() => Math.random() - 0.5);
+        setAvailableTiles(shuffled);
+        setSelectedTiles([]);
+        setValidation(null);
+      }, [activeIdx]);
+
+      const handleAddTile = (tile, idx) => {
+        setSelectedTiles(prev => [...prev, tile]);
+        setAvailableTiles(prev => prev.filter((_, i) => i !== idx));
+        playSound('click', soundEnabled);
+      };
+
+      const handleRemoveTile = (tile, idx) => {
+        setAvailableTiles(prev => [...prev, tile]);
+        setSelectedTiles(prev => prev.filter((_, i) => i !== idx));
+        playSound('click', soundEnabled);
+      };
+
+      const handleCheckSentence = () => {
+        const isMatch = JSON.stringify(selectedTiles) === JSON.stringify(item.correctSequence);
+        if (isMatch) {
+          setValidation({ isCorrect: true, msg: "✓ Sentence correctly transformed! (+25 XP)" });
+          addXp(25);
+          playSound('correct', soundEnabled);
+        } else {
+          setValidation({ isCorrect: false, msg: "❌ Sequence incorrect. Check word order and certainty modals." });
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      const builtText = selectedTiles.join(" ");
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+              Module 2 • Certainty Transformer & Sentence Tile Builder
+            </span>
+            <h2 className="text-xl font-black font-header text-white">
+              Rebuild Sentences into Target Certainty Levels
+            </h2>
+            <p className="text-xs text-slate-400">
+              Click word tiles to arrange them into the requested degree of certainty.
+            </p>
+          </div>
+
+          {/* Item Navigator */}
+          <div className="flex gap-2">
+            {data.map((d, idx) => (
+              <button
+                key={d.id}
+                onClick={() => setActiveIdx(idx)}
+                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition border ${
+                  activeIdx === idx
+                    ? 'bg-indigo-600 border-indigo-500 text-white'
+                    : 'bg-brand-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                Challenge {idx + 1}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-6">
+            
+            {/* Prompt Card */}
+            <div className="space-y-2 bg-brand-950 p-4 rounded-2xl border border-slate-800">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Original Prompt:</span>
+              <p className="text-sm font-mono text-slate-200">{item.prompt}</p>
+              <div className="inline-block bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg text-xs font-mono text-amber-400 font-bold">
+                🎯 Target Output: {item.targetLevel}
+              </div>
+            </div>
+
+            {/* Selected Tiles Slot Container */}
+            <div className="space-y-2">
+              <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">Constructed Sentence Slot:</span>
+              <div className="min-h-[70px] p-4 bg-brand-950 border-2 border-dashed border-slate-800 rounded-2xl flex flex-wrap items-center gap-2">
+                {selectedTiles.length === 0 ? (
+                  <span className="text-xs font-mono text-slate-600 italic">Click tiles below to build sentence...</span>
+                ) : (
+                  selectedTiles.map((tile, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleRemoveTile(tile, idx)}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs px-3 py-2 rounded-xl transition shadow-md flex items-center gap-1.5"
+                    >
+                      <span>{tile}</span>
+                      <span className="text-[10px] opacity-70">✕</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Available Tiles Pool */}
+            <div className="space-y-2">
+              <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">Available Word Tiles:</span>
+              <div className="flex flex-wrap gap-2">
+                {availableTiles.map((tile, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleAddTile(tile, idx)}
+                    className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-mono text-xs px-3 py-2 rounded-xl transition shadow-sm"
+                  >
+                    + {tile}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => speakText(builtText, ttsRate)}
+                disabled={!builtText}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs px-4 py-2 rounded-xl transition disabled:opacity-40"
+              >
+                🔊 Listen to Construction
+              </button>
+
+              <button
+                onClick={handleCheckSentence}
+                disabled={selectedTiles.length === 0}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md disabled:opacity-40"
+              >
+                Validate Built Sentence
+              </button>
+            </div>
+
+            {validation && (
+              <div className={`p-4 rounded-2xl font-mono text-xs ${validation.isCorrect ? 'bg-emerald-950/40 border border-emerald-500/50 text-emerald-300' : 'bg-rose-950/40 border border-rose-500/50 text-rose-300'}`}>
+                {validation.msg}
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 3: ERROR DETECTIVE
+    // =========================================================================
+    function Module3ErrorDetective({ data, addXp, soundEnabled }) {
+      const [userFixes, setUserFixes] = useState({});
+      const [checkedItems, setCheckedItems] = useState({});
+
+      const handleVerify = (item) => {
+        const choice = userFixes[item.id];
+        const isCorrect = choice === item.correct;
+        setCheckedItems(prev => ({ ...prev, [item.id]: isCorrect }));
+
+        if (isCorrect) {
+          addXp(20);
+          playSound('correct', soundEnabled);
+        } else {
+          playSound('wrong', soundEnabled);
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-2">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+              Module 3 • Error Detective
+            </span>
+            <h2 className="text-xl font-black font-header text-white">
+              Spot & Fix Grammar & Pragmatics Mistakes
+            </h2>
+            <p className="text-xs text-slate-400">
+              Identify common errors in modal structures, bare infinitives, and opinion phrases. Select the correct fix.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {data.map((item) => {
+              const selectedOpt = userFixes[item.id];
+              const isChecked = checkedItems[item.id] !== undefined;
+              const isCorrect = checkedItems[item.id] === true;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-brand-900 rounded-3xl p-6 border transition space-y-4 ${
+                    isChecked
+                      ? isCorrect
+                        ? 'border-emerald-500/80 bg-emerald-950/10'
+                        : 'border-rose-500/80 bg-rose-950/10'
+                      : 'border-slate-800'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-rose-400 uppercase tracking-widest font-bold">Contains Error:</span>
+                    <p className="text-sm font-mono text-white leading-relaxed">
+                      "{item.sentence}"
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-xs font-mono text-slate-400 block">Select Corrected Phrase Structure:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {item.options.map((opt, idx) => (
+                        <button
+                          key={idx}
+                          disabled={isChecked}
+                          onClick={() => {
+                            setUserFixes(prev => ({ ...prev, [item.id]: opt }));
+                            playSound('click', soundEnabled);
+                          }}
+                          className={`p-3 rounded-xl border text-xs font-mono text-left transition ${
+                            selectedOpt === opt
+                              ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
+                              : 'bg-brand-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-800">
+                    {isChecked ? (
+                      <div className="space-y-1 text-xs font-mono">
+                        <span className={`font-bold ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {isCorrect ? '✓ Error Correctly Fixed (+20 XP)' : '❌ Incorrect Selection'}
+                        </span>
+                        <p className="text-slate-400 text-[11px]">💡 {item.explanation}</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleVerify(item)}
+                        disabled={!selectedOpt}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition ${
+                          selectedOpt
+                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md'
+                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Verify Correction
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 4: DIALOGUE SIMULATOR
+    // =========================================================================
+    function Module4DialogueSimulator({ scenario, addXp, soundEnabled, ttsRate }) {
+      const [currentStep, setCurrentStep] = useState(0);
+      const [history, setHistory] = useState([]);
+      const [diplomacyScore, setDiplomacyScore] = useState(100);
+
+      const turn = scenario.turns[currentStep];
+
+      const handleSelectOption = (opt) => {
+        const newHistory = [...history, { turn, chosen: opt }];
+        setHistory(newHistory);
+
+        if (opt.isBest) {
+          addXp(opt.xp);
+          playSound('correct', soundEnabled);
+        } else {
+          setDiplomacyScore(prev => Math.max(20, prev - 25));
+          playSound('wrong', soundEnabled);
+        }
+
+        if (currentStep + 1 < scenario.turns.length) {
+          setCurrentStep(currentStep + 1);
+        }
+      };
+
+      const handleReset = () => {
+        setCurrentStep(0);
+        setHistory([]);
+        setDiplomacyScore(100);
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 4 • Workplace Dialogue Simulator
+              </span>
+              <h2 className="text-xl font-black font-header text-white mt-1">
+                {scenario.title}
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                {scenario.context}
+              </p>
+            </div>
+
+            {/* Diplomacy Meter */}
+            <div className="bg-brand-950 p-4 rounded-2xl border border-slate-800 text-right font-mono text-xs">
+              <span className="text-slate-400 block text-[10px]">Diplomatic Tact Score:</span>
+              <span className={`text-lg font-black ${diplomacyScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {diplomacyScore}%
+              </span>
+            </div>
+          </div>
+
+          {/* Conversation History Thread */}
+          <div className="space-y-4">
+            {history.map((h, idx) => (
+              <div key={idx} className="space-y-3">
+                {/* Speaker Line */}
+                <div className="flex gap-3 items-start bg-brand-900 p-4 rounded-2xl border border-slate-800">
+                  <span className="text-2xl">{h.turn.avatar}</span>
+                  <div>
+                    <span className="text-xs font-mono font-bold text-indigo-400">{h.turn.speaker}</span>
+                    <p className="text-xs font-mono text-slate-200 mt-0.5">{h.turn.line}</p>
+                  </div>
+                </div>
+
+                {/* Learner Chosen Response */}
+                <div className="flex gap-3 items-start bg-indigo-950/40 p-4 rounded-2xl border border-indigo-500/30 ml-6">
+                  <span className="text-2xl">👩‍💼</span>
+                  <div className="space-y-1">
+                    <span className="text-xs font-mono font-bold text-emerald-400">Sarah (You)</span>
+                    <p className="text-xs font-mono text-slate-200">{h.chosen.text}</p>
+                    <p className={`text-[11px] font-mono ${h.chosen.isBest ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      💡 {h.chosen.feedback}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Active Turn Interactive Prompt */}
+            {currentStep < scenario.turns.length ? (
+              <div className="bg-brand-900 rounded-3xl p-6 border border-indigo-500/50 shadow-2xl space-y-4">
+                <div className="flex gap-3 items-start">
+                  <span className="text-3xl">{turn.avatar}</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-indigo-400">{turn.speaker}</span>
+                      <button
+                        onClick={() => speakText(turn.line, ttsRate)}
+                        className="text-[10px] font-mono bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-300"
+                      >
+                        🔊 Listen
+                      </button>
+                    </div>
+                    <p className="text-sm font-mono text-slate-100 mt-1">"{turn.line}"</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-3 border-t border-slate-800">
+                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider block">
+                    🎯 {turn.prompt}
+                  </span>
+
+                  <div className="space-y-2">
+                    {turn.options.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSelectOption(opt)}
+                        className="w-full text-left p-4 rounded-2xl bg-brand-950 border border-slate-800 hover:border-indigo-500/80 text-xs font-mono text-slate-200 transition shadow-sm hover:shadow-indigo-500/10"
+                      >
+                        {opt.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-brand-900 rounded-3xl p-8 border border-emerald-500/50 text-center space-y-4">
+                <span className="text-4xl">🎉</span>
+                <h3 className="text-xl font-bold font-header text-emerald-400">
+                  Simulation Complete!
+                </h3>
+                <p className="text-xs font-mono text-slate-300">
+                  Final Pragmatic Tact Rating: {diplomacyScore}%
+                </p>
+                <button
+                  onClick={handleReset}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition"
+                >
+                  Replay Scenario
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 5: WRITING STUDIO WITH KEYWORD DETECTOR
+    // =========================================================================
+    function Module5WritingStudio({ prompts, targetChips, addXp, soundEnabled }) {
+      const [selectedPromptIdx, setSelectedPromptIdx] = useState(0);
+      const [textValue, setTextValue] = useState(
+        "In my view, employees should definitely have to turn off work notifications on weekends. From my perspective, workers are probably supposed to rest."
+      );
+      const [detectedChips, setDetectedChips] = useState([]);
+
+      const currentPrompt = prompts[selectedPromptIdx];
+
+      useEffect(() => {
+        const found = targetChips.filter(chip => chip.regex.test(textValue));
+        setDetectedChips(found);
+      }, [textValue]);
+
+      const handleAddBonus = () => {
+        if (detectedChips.length > 0) {
+          addXp(detectedChips.length * 10);
+          playSound('fanfare', soundEnabled);
+        }
+      };
+
+      const wordCount = textValue.trim().split(/\s+/).filter(Boolean).length;
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+              Module 5 • Writing Studio & Live Phrase Detector
+            </span>
+            <h2 className="text-xl font-black font-header text-white">
+              Formulate Pragmatic Opinions & Obligations
+            </h2>
+
+            {/* Prompt Selector */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {prompts.map((p, idx) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPromptIdx(idx)}
+                  className={`p-3 rounded-2xl border text-left font-mono transition ${
+                    selectedPromptIdx === idx
+                      ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                      : 'bg-brand-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <span className="text-xs font-bold block">{p.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-6">
+            
+            <div className="p-4 bg-brand-950 rounded-2xl border border-slate-800 space-y-1">
+              <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-widest font-bold">Discussion Question:</span>
+              <p className="text-sm font-mono text-white font-bold">{currentPrompt.promptText}</p>
+            </div>
+
+            {/* Target Phrases Live Chips Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
+                  ⚡ Live Detected Target Phrases ({detectedChips.length}/{targetChips.length}):
+                </span>
+                <span className="text-xs font-mono text-emerald-400 font-bold">
+                  +{detectedChips.length * 10} Writing XP
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 bg-brand-950 p-3 rounded-2xl border border-slate-800">
+                {targetChips.map(chip => {
+                  const isDetected = detectedChips.some(c => c.id === chip.id);
+                  return (
+                    <span
+                      key={chip.id}
+                      className={`px-3 py-1 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1 ${
+                        isDetected
+                          ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-sm'
+                          : 'bg-slate-900 border border-slate-800 text-slate-600'
+                      }`}
+                    >
+                      <span>{isDetected ? '✓' : '•'}</span>
+                      <span>{chip.label}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Live Text Area */}
+            <div className="space-y-2">
+              <textarea
+                rows={6}
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                placeholder="Type your paragraph here..."
+                className="w-full bg-brand-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="flex justify-between text-[11px] font-mono text-slate-400">
+                <span>Use opinion markers & certainty modals to trigger chips above.</span>
+                <span>Word Count: {wordCount} words</span>
+              </div>
+            </div>
+
+            {/* Model Comparison */}
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <span className="text-xs font-mono text-amber-400 uppercase tracking-wider font-bold block">
+                📖 Model Reference Response:
+              </span>
+              <p className="text-xs font-mono text-slate-300 italic bg-brand-950 p-4 rounded-2xl border border-slate-800/80 leading-relaxed">
+                "{currentPrompt.modelSample}"
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={handleAddBonus}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition shadow-md"
+              >
+                Claim Writing XP
+              </button>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 6: ACCREDITATION & PRINTABLE CERTIFICATE
+    // =========================================================================
+    function Module6Certificate({ studentName, setStudentName, xp, currentRank, soundEnabled }) {
+
+      useEffect(() => {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+        playSound('fanfare', soundEnabled);
+      }, []);
+
+      const handlePrint = () => {
+        window.print();
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          <div className="bg-brand-900 rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4 no-print">
+            <div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 6 • Mastery Accreditation
+              </span>
+              <h2 className="text-xl font-black font-header text-white mt-1">
+                Official Certitude & Duty Certificate
+              </h2>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <input
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                className="bg-brand-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                placeholder="Learner Full Name"
+              />
+              <button
+                onClick={handlePrint}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
+              >
+                🖨️ Print Certificate
+              </button>
+            </div>
+          </div>
+
+          {/* PRINTABLE DIPLOMA CARD */}
+          <div 
+            id="printable-certificate"
+            className="bg-brand-950 p-8 sm:p-12 rounded-3xl border-4 border-indigo-500/50 text-center space-y-6 relative overflow-hidden shadow-2xl text-slate-100"
+          >
+            <div className="absolute top-4 left-4 text-[10px] font-mono text-indigo-400/60">
+              ACCREDITATION-ID: CERT-2026-DUTY
+            </div>
+            <div className="absolute top-4 right-4 text-[10px] font-mono text-indigo-400/60">
+              CEFR B1-B2 PROFICIENCY
+            </div>
+
+            <div className="space-y-2 pt-4">
+              <span className="text-5xl">⚖️</span>
+              <h2 className="text-2xl sm:text-3xl font-black font-header tracking-widest text-indigo-400">
+                CERTIFICATE OF MASTERY
+              </h2>
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">
+                Certitude & Duty • Opinions, Obligations & Certainty Studio
+              </p>
+            </div>
+
+            <div className="py-4 border-y border-slate-800 space-y-3">
+              <p className="text-xs text-slate-400">This official document certifies that</p>
+              <p className="text-2xl sm:text-3xl font-black text-white underline decoration-indigo-500 decoration-2 font-header">{studentName}</p>
+              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2">
+                has successfully demonstrated proficiency in **expressing opinions, obligations, and degrees of certainty** using B1-B2 modal verbs (`must`, `might have to`, `can't possibly`), stance expressions, and workplace pragmatic communication.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs font-mono">
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Rank Achieved</span>
+                <span className="text-xs font-black text-indigo-400">{currentRank.title}</span>
+              </div>
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Total Score</span>
+                <span className="text-xs font-black text-cyan-300">{xp} XP</span>
+              </div>
+              <div className="bg-brand-900 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">CEFR Standard</span>
+                <span className="text-xs font-black text-emerald-400">B1–B2 Upper-Inter</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    // RENDER APP
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
