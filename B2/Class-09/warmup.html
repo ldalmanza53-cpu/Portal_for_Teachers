@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problem Solver Studio: Brainstorm & Write!</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18 & React DOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #080d1a;
+      color: #f1f5f9;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0d9488;
+    }
+
+    /* Animations */
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
+    }
+    .pulse-glow {
+      animation: pulse-subtle 3s infinite ease-in-out;
+    }
+
+    /* Print styling for Certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 40px;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        border: 6px double #0d9488 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-teal-500 selection:text-white">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // =========================================================================
+    // AUDIO SYNTHESIZER HELPER (NO EXTERNAL AUDIO FILES)
+    // =========================================================================
+    const playSoundEffect = (type, enabled = true) => {
+      if (!enabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        
+        if (type === 'correct') {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+          osc1.start(ctx.currentTime);
+          osc2.start(ctx.currentTime + 0.1);
+          osc1.stop(ctx.currentTime + 0.3);
+          osc2.stop(ctx.currentTime + 0.3);
+        } else if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(420, ctx.currentTime);
+          gain.gain.setValueAtTime(0.04, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.05);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.25);
+            osc.start(ctx.currentTime + idx * 0.08);
+            osc.stop(ctx.currentTime + idx * 0.08 + 0.25);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio Context error:", e);
+      }
+    };
+
+    // =========================================================================
+    // DATA & PRESETS
+    // =========================================================================
+
+    const PROBLEM_SCENARIOS = [
+      {
+        id: "stress",
+        title: "Managing Workplace & Study Stress",
+        icon: "🧠",
+        description: "Students or workers feel overwhelmed by too many assignments, tight deadlines, and lack of relaxation time.",
+        suggestedNodes: [
+          { type: "cause", text: "Too many overlapping deadlines and long hours" },
+          { type: "cause", text: "Poor sleep hygiene and continuous screen time" },
+          { type: "solution", text: "Create a prioritized daily schedule (e.g. Timeboxing)" },
+          { type: "solution", text: "Take short regular breaks every 50 minutes (Pomodoro)" },
+          { type: "result", text: "Improved concentration, reduced anxiety, and higher work quality" }
+        ],
+        defaultMatrix: {
+          what: "High levels of chronic stress caused by heavy academic or work obligations.",
+          why: "People misjudge task duration, multitask constantly, and neglect physical rest.",
+          how: "Establish clear boundaries, break big projects into small steps, and talk to supervisors.",
+          outcome: "Better balance, renewed energy, and structured task management."
+        }
+      },
+      {
+        id: "roommate",
+        title: "Resolving Shared Space Conflicts",
+        icon: "🏠",
+        description: "Disagreements with roommates regarding unwashed dishes, noise levels late at night, and unfair chore distribution.",
+        suggestedNodes: [
+          { type: "cause", text: "Lack of clear ground rules for household chores" },
+          { type: "cause", text: "Holding back frustration until it explodes into anger" },
+          { type: "solution", text: "Hold a calm, friendly house meeting to discuss expectations" },
+          { type: "solution", text: "Use a shared digital or wall chore chart with deadlines" },
+          { type: "result", text: "Fair division of labor and a peaceful living environment" }
+        ],
+        defaultMatrix: {
+          what: "Tension between housemates regarding household duties and personal habits.",
+          why: "Everyone has different standards of cleanliness and communication styles.",
+          how: "Communicate directly using 'I' statements and establish a weekly chore chart.",
+          outcome: "Mutual respect, clear expectations, and reduced daily friction."
+        }
+      },
+      {
+        id: "deadlines",
+        title: "Overcoming Procrastination & Poor Time Management",
+        icon: "⏳",
+        description: "Constantly delaying important projects until the last night, resulting in rushed work and panic.",
+        suggestedNodes: [
+          { type: "cause", text: "Fear of failure or feeling overwhelmed by a big project" },
+          { type: "cause", text: "Distractions from smartphones and social media" },
+          { type: "solution", text: "Apply the '5-Minute Rule' to start working immediately without pressure" },
+          { type: "solution", text: "Put the phone in another room during focus hours" },
+          { type: "result", text: "Earlier completion, steady progress, and better self-confidence" }
+        ],
+        defaultMatrix: {
+          what: "Delaying urgent assignments until the final hours.",
+          why: "Tasks feel intimidating, and digital distractions offer instant pleasure.",
+          how: "Break big tasks into tiny 10-minute actions and remove digital notifications.",
+          outcome: "Consistent work habits, less panic, and higher quality results."
+        }
+      }
+    ];
+
+    const DRAFT_COMPARISON_DATA = {
+      unplanned: {
+        title: "Draft A: Unplanned (Spontaneous Writing)",
+        text: "Stress is very bad. I have so much work. Yesterday I had three tests and I couldn't sleep. People need to stop being stressed. Also you should go to sleep early. And another thing is to make a list. If you make a list you will remember stuff. My friend made a list and it helped him. In my opinion stress makes people sick so we must fix it fast.",
+        flaws: [
+          "No clear introduction or paragraph structure",
+          "Repetitive ideas and jumping between random points",
+          "Lack of B1 transition phrases (relies on 'also' and 'and')",
+          "Fails to develop actionable solutions logically"
+        ]
+      },
+      planned: {
+        title: "Draft B: Planned (Brainstormed & Structured)",
+        text: "In modern student life, chronic stress has become a major issue that impacts both health and performance. One effective way to deal with this problem is to create a structured daily study plan. For example, dividing large assignments into smaller tasks makes them feel more manageable. Consequently, students can maintain steady progress without feeling overwhelmed. In conclusion, by organizing time effectively and setting realistic goals, we can overcome academic pressure and achieve a healthier lifestyle.",
+        strengths: [
+          "Clear 3-part progression: Problem -> Solution + Example -> Conclusion",
+          "Strong B1 transition phrases ('One effective way to deal with this', 'For example', 'Consequently', 'In conclusion')",
+          "Logical flow with well-supported arguments",
+          "Concise, focused ideas derived from pre-writing planning"
+        ]
+      },
+      quiz: [
+        {
+          question: "Which transition phrase introduces the main solution in Draft B?",
+          options: [
+            "In modern student life",
+            "One effective way to deal with this",
+            "Consequently",
+            "In conclusion"
+          ],
+          correct: 1,
+          explanation: "'One effective way to deal with this' clearly signposts the solution to the reader."
+        },
+        {
+          question: "What function does the word 'Consequently' serve in Draft B?",
+          options: [
+            "It gives an example of a timetable.",
+            "It introduces a new problem.",
+            "It shows the result or effect of the solution.",
+            "It summarizes the entire essay."
+          ],
+          correct: 2,
+          explanation: "'Consequently' introduces a logical result or outcome of taking action."
+        },
+        {
+          question: "Why is Draft B significantly easier to read than Draft A?",
+          options: [
+            "Because it is much longer and uses harder words.",
+            "Because the writer brainstormed and organized main points before writing.",
+            "Because it doesn't offer any solutions.",
+            "Because it was written without thinking."
+          ],
+          correct: 1,
+          explanation: "Pre-writing planning creates a logical path, making the text clear and easy to follow."
+        }
+      ]
+    };
+
+    const B1_TRANSITION_PHRASES = [
+      { category: "Introducing Problem", phrase: "a major issue", regex: /a major issue/i },
+      { category: "Introducing Problem", phrase: "one key problem is", regex: /one key problem is/i },
+      { category: "Introducing Solution", phrase: "one effective way to deal with this", regex: /one effective way to deal with this/i },
+      { category: "Introducing Solution", phrase: "in order to resolve this", regex: /in order to resolve this/i },
+      { category: "Introducing Solution", phrase: "a practical solution is", regex: /a practical solution is/i },
+      { category: "Introducing Solution", phrase: "to tackle this issue", regex: /to tackle this issue/i },
+      { category: "Giving Examples", phrase: "for example", regex: /for example/i },
+      { category: "Giving Examples", phrase: "for instance", regex: /for instance/i },
+      { category: "Showing Results", phrase: "as a result", regex: /as a result/i },
+      { category: "Showing Results", phrase: "consequently", regex: /consequently/i },
+      { category: "Showing Results", phrase: "this allows us to", regex: /this allows us to/i },
+      { category: "Conclusion", phrase: "in conclusion", regex: /in conclusion/i },
+      { category: "Conclusion", phrase: "to sum up", regex: /to sum up/i },
+      { category: "Conclusion", phrase: "overall", regex: /overall/i }
+    ];
+
+    const VOCABULARY_ITEMS = [
+      {
+        word: "tackle",
+        pos: "verb",
+        meaning: "To make a determined effort to deal with a difficult problem or situation.",
+        example: "The team gathered to brainstorm ways to tackle high study stress.",
+        phonetic: "/ˈtæk.əl/"
+      },
+      {
+        word: "resolve",
+        pos: "verb",
+        meaning: "To find an acceptable solution to a problem or conflict.",
+        example: "Communicating openly is essential to resolve roommate disagreements.",
+        phonetic: "/rɪˈzɒlv/"
+      },
+      {
+        word: "overcome",
+        pos: "verb",
+        meaning: "To succeed in dealing with or controlling a difficulty.",
+        example: "With a structured plan, you can overcome procrastination.",
+        phonetic: "/ˌəʊ.vəˈkʌm/"
+      },
+      {
+        word: "address",
+        pos: "verb",
+        meaning: "To give attention to a problem and begin taking action.",
+        example: "We must address the root causes of workplace burnout immediately.",
+        phonetic: "/əˈdres/"
+      },
+      {
+        word: "implement",
+        pos: "verb",
+        meaning: "To put a plan, decision, or system into official action.",
+        example: "The school decided to implement a new time-management workshop.",
+        phonetic: "/ˈɪm.plɪ.ment/"
+      },
+      {
+        word: "come up with",
+        pos: "phrasal verb",
+        meaning: "To think of or produce an idea, suggestion, or solution.",
+        example: "Pre-writing brainstorming helps you come up with creative ideas.",
+        phonetic: "/kʌm ʌp wɪð/"
+      },
+      {
+        word: "obstacle",
+        pos: "noun",
+        meaning: "A situation or problem that prevents progress or makes it difficult.",
+        example: "Lack of planning is a major obstacle to clear writing.",
+        phonetic: "/ˈɒb.stə.kəl/"
+      },
+      {
+        word: "feasible",
+        pos: "adjective",
+        meaning: "Possible and practical to achieve or carry out successfully.",
+        example: "Breaking big projects into daily steps provides a feasible solution.",
+        phonetic: "/ˈfiː.zə.bəl/"
+      }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('sandbox'); // sandbox, lab, outline, editor, vocab, summary
+      const [xp, setXp] = useState(60);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [showModal, setShowModal] = useState(false);
+      const [studentName, setStudentName] = useState('Alex Morgan');
+
+      // Problem & MindMap State
+      const [selectedScenario, setSelectedScenario] = useState(PROBLEM_SCENARIOS[0]);
+      const [nodes, setNodes] = useState(PROBLEM_SCENARIOS[0].suggestedNodes);
+      const [matrix, setMatrix] = useState(PROBLEM_SCENARIOS[0].defaultMatrix);
+      const [newNodeText, setNewNodeText] = useState('');
+      const [newNodeType, setNewNodeType] = useState('solution');
+
+      // Outline State
+      const [outline, setOutline] = useState({
+        intro: "In modern daily life, managing stress has become a major issue that affects our health and productivity.",
+        solutions: [],
+        conclusion: "In conclusion, by planning ahead and executing feasible solutions, we can overcome challenges effectively."
+      });
+
+      // Essay Writing State
+      const [essayText, setEssayText] = useState("");
+
+      // Badges tracking
+      const [badges, setBadges] = useState({
+        brainstormer: true,
+        analyst: false,
+        architect: false,
+        writer: false,
+        master: false
+      });
+
+      // Handle Scenario Switch
+      const handleScenarioChange = (scenario) => {
+        setSelectedScenario(scenario);
+        setNodes(scenario.suggestedNodes);
+        setMatrix(scenario.defaultMatrix);
+        playSoundEffect('click', soundEnabled);
+      };
+
+      const addXp = (amount) => {
+        setXp(prev => prev + amount);
+        playSoundEffect('correct', soundEnabled);
+      };
+
+      // TTS Speech Function
+      const speakText = (text, speed = 1.0) => {
+        if (!('speechSynthesis' in window)) {
+          alert("Text-to-speech is not supported in this browser.");
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = speed;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      };
+
+      // Get rank title based on XP
+      const getRank = (points) => {
+        if (points < 100) return { title: "Novice Ideator", badge: "🌱", color: "text-amber-400 border-amber-500/30" };
+        if (points < 200) return { title: "Strategic Planner", badge: "🧭", color: "text-teal-300 border-teal-500/30" };
+        if (points < 320) return { title: "Outline Architect", badge: "📐", color: "text-indigo-300 border-indigo-500/30" };
+        return { title: "Master Problem Solver Writer", badge: "👑", color: "text-emerald-300 border-emerald-500/30" };
+      };
+
+      const currentRank = getRank(xp);
+
+      return (
+        <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100">
+          
+          {/* HEADER & DASHBOARD */}
+          <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shadow-2xl no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                
+                {/* Logo & Title */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-500 via-indigo-500 to-emerald-400 flex items-center justify-center text-xl shadow-lg shadow-teal-500/20">
+                    ✒️
+                  </div>
+                  <div>
+                    <h1 className="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-teal-300 via-indigo-200 to-emerald-300 bg-clip-text text-transparent">
+                      Problem Solver Studio
+                    </h1>
+                    <p className="text-[11px] text-slate-400 font-medium">Brainstorm & Write • CEFR B1 English Writing</p>
+                  </div>
+                </div>
+
+                {/* Dashboard Stats & Actions */}
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  {/* Rank Badge */}
+                  <div className={`hidden md:flex items-center space-x-1.5 bg-slate-950 border px-3 py-1.5 rounded-xl text-xs font-bold ${currentRank.color}`}>
+                    <span>{currentRank.badge}</span>
+                    <span>{currentRank.title}</span>
+                  </div>
+
+                  {/* XP Indicator */}
+                  <div className="flex items-center space-x-1.5 bg-slate-950 border border-teal-500/30 px-3 py-1.5 rounded-xl text-xs font-bold text-teal-300">
+                    <span>⭐</span>
+                    <span>{xp} <span className="text-[10px] text-slate-500 font-normal">XP</span></span>
+                  </div>
+
+                  {/* Sound Toggle */}
+                  <button
+                    onClick={() => {
+                      setSoundEnabled(!soundEnabled);
+                      playSoundEffect('click', !soundEnabled);
+                    }}
+                    className={`p-2 rounded-xl border text-xs transition ${
+                      soundEnabled 
+                        ? 'bg-teal-500/20 border-teal-500/40 text-teal-300 hover:bg-teal-500/30' 
+                        : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'
+                    }`}
+                    title="Toggle Audio Effects"
+                  >
+                    {soundEnabled ? '🔊' : '🔇'}
+                  </button>
+
+                  {/* Pedagogical "Why Brainstorm?" Modal Button */}
+                  <button
+                    onClick={() => {
+                      setShowModal(true);
+                      playSoundEffect('click', soundEnabled);
+                    }}
+                    className="bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition shadow-md shadow-teal-600/20 flex items-center gap-1.5"
+                  >
+                    <span>💡</span>
+                    <span className="hidden sm:inline">Why Brainstorm First?</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <nav className="flex items-center gap-1.5">
+                  {[
+                    { id: 'sandbox', label: '1. Brainstorm Sandbox', icon: '🧠' },
+                    { id: 'lab', label: '2. Analysis Lab', icon: '🔍' },
+                    { id: 'outline', label: '3. Outline Builder', icon: '📐' },
+                    { id: 'editor', label: '4. Guided Studio', icon: '✍️' },
+                    { id: 'vocab', label: '5. Vocab & Audio', icon: '🗣️' },
+                    { id: 'summary', label: '6. Final Certificate', icon: '🎓' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        playSoundEffect('click', soundEnabled);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        activeTab === tab.id
+                          ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'sandbox' && (
+              <Module1BrainstormSandbox
+                scenarios={PROBLEM_SCENARIOS}
+                selectedScenario={selectedScenario}
+                onSelectScenario={handleScenarioChange}
+                nodes={nodes}
+                setNodes={setNodes}
+                matrix={matrix}
+                setMatrix={setMatrix}
+                newNodeText={newNodeText}
+                setNewNodeText={setNewNodeText}
+                newNodeType={newNodeType}
+                setNewNodeType={setNewNodeType}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'lab' && (
+              <Module2AnalysisLab
+                data={DRAFT_COMPARISON_DATA}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                onComplete={() => setBadges(b => ({ ...b, analyst: true }))}
+              />
+            )}
+
+            {activeTab === 'outline' && (
+              <Module3OutlineBuilder
+                nodes={nodes}
+                selectedScenario={selectedScenario}
+                outline={outline}
+                setOutline={setOutline}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                onComplete={() => setBadges(b => ({ ...b, architect: true }))}
+              />
+            )}
+
+            {activeTab === 'editor' && (
+              <Module4GuidedEditor
+                selectedScenario={selectedScenario}
+                outline={outline}
+                essayText={essayText}
+                setEssayText={setEssayText}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+                onComplete={() => setBadges(b => ({ ...b, writer: true }))}
+              />
+            )}
+
+            {activeTab === 'vocab' && (
+              <Module5VocabStudio
+                vocabList={VOCABULARY_ITEMS}
+                speakText={speakText}
+                addXp={addXp}
+                soundEnabled={soundEnabled}
+              />
+            )}
+
+            {activeTab === 'summary' && (
+              <Module6MasterySummary
+                studentName={studentName}
+                setStudentName={setStudentName}
+                selectedScenario={selectedScenario}
+                nodes={nodes}
+                outline={outline}
+                essayText={essayText}
+                xp={xp}
+                currentRank={currentRank}
+                soundEnabled={soundEnabled}
+              />
+            )}
+          </main>
+
+          {/* PEDAGOGICAL MODAL: WHY BRAINSTORM FIRST? */}
+          {showModal && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">🧠</span>
+                    <h3 className="text-lg font-black text-white">Why Brainstorm & Plan Before Writing?</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p>
+                    Writing directly without planning is like embarking on a road trip without a map. At the **B1 level**, taking 3–5 minutes to brainstorm transforms your text from confusing to clear and persuasive!
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-teal-500/30 space-y-1">
+                      <span className="text-teal-300 font-bold block text-xs">1. Defeats Writer's Block</span>
+                      <p className="text-[11px] text-slate-400">Separates ideation from drafting so you never stare at a blank screen.</p>
+                    </div>
+
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-indigo-500/30 space-y-1">
+                      <span className="text-indigo-300 font-bold block text-xs">2. Ensures Logical Flow</span>
+                      <p className="text-[11px] text-slate-400">Groups related points into clear paragraphs before you start writing.</p>
+                    </div>
+
+                    <div className="bg-slate-950 p-3.5 rounded-2xl border border-emerald-500/30 space-y-1">
+                      <span className="text-emerald-300 font-bold block text-xs">3. Unlocks B1 Signposts</span>
+                      <p className="text-[11px] text-slate-400">Makes it easy to insert linking phrases like <em>"One effective way"</em> or <em>"Consequently"</em>.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-950/40 p-4 rounded-2xl border border-indigo-500/30 flex items-center gap-3">
+                    <span className="text-2xl">🎯</span>
+                    <div>
+                      <span className="text-xs font-bold text-indigo-300 block">The B1 Pre-Writing Rule:</span>
+                      <span className="text-xs text-slate-300 font-mono">Brainstorm Ideas ➔ Organize Outline ➔ Write with Signposts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-teal-600/30"
+                  >
+                    Got it! Start Brainstorming
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
+            <p>Problem Solver Studio • CEFR B1 English Writing & Pre-Writing Pedagogy App</p>
+          </footer>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 1: BRAINSTORM SANDBOX
+    // =========================================================================
+
+    function Module1BrainstormSandbox({
+      scenarios,
+      selectedScenario,
+      onSelectScenario,
+      nodes,
+      setNodes,
+      matrix,
+      setMatrix,
+      newNodeText,
+      setNewNodeText,
+      newNodeType,
+      setNewNodeType,
+      addXp,
+      soundEnabled
+    }) {
+      const [viewMode, setViewMode] = useState('mindmap'); // mindmap, matrix
+
+      const handleAddNode = (e) => {
+        e.preventDefault();
+        if (!newNodeText.trim()) return;
+
+        setNodes([...nodes, { type: newNodeType, text: newNodeText.trim() }]);
+        setNewNodeText('');
+        addXp(10);
+        playSoundEffect('correct', soundEnabled);
+      };
+
+      const handleRemoveNode = (index) => {
+        setNodes(nodes.filter((_, idx) => idx !== index));
+        playSoundEffect('click', soundEnabled);
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* SCENARIO SELECTOR CARD */}
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/30">
+                Stage 1 • Pick a Real-World Problem
+              </span>
+              <span className="text-xs text-slate-400 hidden sm:inline">Choose a topic to brainstorm:</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {scenarios.map((sc) => {
+                const isSelected = selectedScenario.id === sc.id;
+                return (
+                  <button
+                    key={sc.id}
+                    onClick={() => onSelectScenario(sc)}
+                    className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${
+                      isSelected
+                        ? 'bg-gradient-to-br from-teal-950/80 to-slate-900 border-teal-500 ring-2 ring-teal-500/30 text-white'
+                        : 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">{sc.icon}</span>
+                      <h3 className="font-bold text-xs sm:text-sm">{sc.title}</h3>
+                    </div>
+                    <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{sc.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* IDEATION TOOL TABS */}
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-6">
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-4">
+              <div>
+                <h2 className="text-lg font-black text-white flex items-center gap-2">
+                  <span>{selectedScenario.icon}</span>
+                  <span>{selectedScenario.title}</span>
+                </h2>
+                <p className="text-xs text-slate-400">Generate causes, solutions, and outcomes before writing.</p>
+              </div>
+
+              <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button
+                  onClick={() => setViewMode('mindmap')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    viewMode === 'mindmap' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🌐 Mind Map Builder
+                </button>
+                <button
+                  onClick={() => setViewMode('matrix')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    viewMode === 'matrix' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  📋 4-Ws & How Matrix
+                </button>
+              </div>
+            </div>
+
+            {/* VIEW 1: MIND MAP NODE BUILDER */}
+            {viewMode === 'mindmap' && (
+              <div className="space-y-6">
+                
+                {/* CENTRAL HUB DISPLAY */}
+                <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 relative overflow-hidden">
+                  <div className="flex flex-col items-center justify-center text-center space-y-2 py-4">
+                    <span className="text-xs font-bold font-mono text-teal-400 uppercase tracking-widest bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/20">
+                      Central Issue Topic
+                    </span>
+                    <h3 className="text-xl font-black text-white max-w-lg">{selectedScenario.title}</h3>
+                  </div>
+
+                  {/* BRANCHES GRID */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800/80">
+                    
+                    {/* CAUSES BRANCH */}
+                    <div className="bg-slate-900/80 p-4 rounded-2xl border border-rose-500/30 space-y-3">
+                      <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block flex items-center gap-1.5">
+                        <span>⚠️</span> Root Causes ({nodes.filter(n => n.type === 'cause').length})
+                      </span>
+                      <div className="space-y-2 min-h-[80px]">
+                        {nodes.filter(n => n.type === 'cause').map((node, idx) => (
+                          <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-200 flex justify-between items-center gap-2">
+                            <span>{node.text}</span>
+                            <button onClick={() => handleRemoveNode(nodes.indexOf(node))} className="text-slate-500 hover:text-rose-400 font-bold">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SOLUTIONS BRANCH */}
+                    <div className="bg-slate-900/80 p-4 rounded-2xl border border-teal-500/30 space-y-3">
+                      <span className="text-xs font-bold text-teal-300 uppercase tracking-wider block flex items-center gap-1.5">
+                        <span>💡</span> Actionable Solutions ({nodes.filter(n => n.type === 'solution').length})
+                      </span>
+                      <div className="space-y-2 min-h-[80px]">
+                        {nodes.filter(n => n.type === 'solution').map((node, idx) => (
+                          <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-200 flex justify-between items-center gap-2">
+                            <span>{node.text}</span>
+                            <button onClick={() => handleRemoveNode(nodes.indexOf(node))} className="text-slate-500 hover:text-rose-400 font-bold">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* EXPECTED RESULTS BRANCH */}
+                    <div className="bg-slate-900/80 p-4 rounded-2xl border border-indigo-500/30 space-y-3">
+                      <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider block flex items-center gap-1.5">
+                        <span>🎯</span> Expected Results ({nodes.filter(n => n.type === 'result').length})
+                      </span>
+                      <div className="space-y-2 min-h-[80px]">
+                        {nodes.filter(n => n.type === 'result').map((node, idx) => (
+                          <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-200 flex justify-between items-center gap-2">
+                            <span>{node.text}</span>
+                            <button onClick={() => handleRemoveNode(nodes.indexOf(node))} className="text-slate-500 hover:text-rose-400 font-bold">✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* ADD NEW NODE FORM */}
+                <form onSubmit={handleAddNode} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-wrap sm:flex-nowrap gap-3 items-center">
+                  <select
+                    value={newNodeType}
+                    onChange={(e) => setNewNodeType(e.target.value)}
+                    className="bg-slate-900 border border-slate-700 text-xs font-bold rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="cause">⚠️ Root Cause</option>
+                    <option value="solution">💡 Solution</option>
+                    <option value="result">🎯 Expected Result</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    value={newNodeText}
+                    onChange={(e) => setNewNodeText(e.target.value)}
+                    placeholder="Type a new idea node (e.g. Set a timer for focus blocks)..."
+                    className="flex-1 bg-slate-900 border border-slate-700 text-xs rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+
+                  <button
+                    type="submit"
+                    className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-teal-600/30 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <span>➕ Add Node (+10 XP)</span>
+                  </button>
+                </form>
+
+              </div>
+            )}
+
+            {/* VIEW 2: 4-WS & HOW MATRIX */}
+            {viewMode === 'matrix' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-teal-400 uppercase tracking-wider block">1. WHAT is the main problem?</label>
+                  <textarea
+                    rows={3}
+                    value={matrix.what}
+                    onChange={(e) => setMatrix({ ...matrix, what: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-indigo-400 uppercase tracking-wider block">2. WHY does it occur?</label>
+                  <textarea
+                    rows={3}
+                    value={matrix.why}
+                    onChange={(e) => setMatrix({ ...matrix, why: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">3. HOW can we resolve it?</label>
+                  <textarea
+                    rows={3}
+                    value={matrix.how}
+                    onChange={(e) => setMatrix({ ...matrix, how: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                  <label className="text-xs font-bold text-amber-400 uppercase tracking-wider block">4. WHAT will change afterwards?</label>
+                  <textarea
+                    rows={3}
+                    value={matrix.outcome}
+                    onChange={(e) => setMatrix({ ...matrix, outcome: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 2: "PLANNED VS. UNPLANNED" ANALYSIS LAB
+    // =========================================================================
+
+    function Module2AnalysisLab({ data, addXp, soundEnabled, onComplete }) {
+      const [highlighted, setHighlighted] = useState(true);
+      const [userAnswers, setUserAnswers] = useState({});
+      const [quizSubmitted, setQuizSubmitted] = useState(false);
+      const [score, setScore] = useState(null);
+
+      const handleAnswerSelect = (qIdx, optIdx) => {
+        if (quizSubmitted) return;
+        playSoundEffect('click', soundEnabled);
+        setUserAnswers(prev => ({ ...prev, [qIdx]: optIdx }));
+      };
+
+      const handleQuizSubmit = () => {
+        if (quizSubmitted) return;
+        let count = 0;
+        data.quiz.forEach((q, idx) => {
+          if (userAnswers[idx] === q.correct) count++;
+        });
+        setScore(count);
+        setQuizSubmitted(true);
+        addXp(count * 15);
+        onComplete();
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* HEADER */}
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 2 • Comparative Analysis Lab
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">Planned vs. Unplanned Writing Text Lab</h2>
+            </div>
+            <button
+              onClick={() => setHighlighted(!highlighted)}
+              className="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-xs font-bold px-3.5 py-2 rounded-xl transition"
+            >
+              {highlighted ? '✨ Hide Signpost Highlights' : '🔍 Highlight Signposts'}
+            </button>
+          </div>
+
+          {/* SIDE-BY-SIDE DRAFT COMPARISON */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* DRAFT A (UNPLANNED) */}
+            <div className="bg-slate-900/90 rounded-3xl p-6 border border-rose-500/30 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 className="font-bold text-rose-400 text-sm flex items-center gap-2">
+                  <span>❌</span> {data.unplanned.title}
+                </h3>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono">
+                "{data.unplanned.text}"
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <span className="text-[11px] font-bold text-rose-400 uppercase tracking-wider block">Identified Weaknesses:</span>
+                <ul className="space-y-1">
+                  {data.unplanned.flaws.map((flaw, idx) => (
+                    <li key={idx} className="text-xs text-slate-400 flex items-start gap-1.5">
+                      <span className="text-rose-500">•</span>
+                      <span>{flaw}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* DRAFT B (PLANNED) */}
+            <div className="bg-slate-900/90 rounded-3xl p-6 border border-emerald-500/30 shadow-2xl space-y-4">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 className="font-bold text-emerald-300 text-sm flex items-center gap-2">
+                  <span>✅</span> {data.planned.title}
+                </h3>
+              </div>
+
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {highlighted ? (
+                  <span>
+                    In modern student life, chronic stress has become <mark className="bg-teal-500/30 text-teal-200 px-1 rounded font-bold">a major issue</mark> that impacts both health and performance. <mark className="bg-teal-500/30 text-teal-200 px-1 rounded font-bold">One effective way to deal with this</mark> problem is to create a structured daily study plan. <mark className="bg-teal-500/30 text-teal-200 px-1 rounded font-bold">For example</mark>, dividing large assignments into smaller tasks makes them feel more manageable. <mark className="bg-teal-500/30 text-teal-200 px-1 rounded font-bold">Consequently</mark>, students can maintain steady progress without feeling overwhelmed. <mark className="bg-teal-500/30 text-teal-200 px-1 rounded font-bold">In conclusion</mark>, by organizing time effectively, we can overcome pressure.
+                  </span>
+                ) : (
+                  <span>"{data.planned.text}"</span>
+                )}
+              </div>
+
+              <div className="space-y-1.5 pt-2">
+                <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider block">Identified Strengths:</span>
+                <ul className="space-y-1">
+                  {data.planned.strengths.map((s, idx) => (
+                    <li key={idx} className="text-xs text-slate-300 flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          {/* COMPREHENSION QUIZ */}
+          <div className="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6">
+            <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+              <span>📝</span> Analytical Comprehension Check
+            </h3>
+
+            <div className="space-y-6">
+              {data.quiz.map((q, qIdx) => (
+                <div key={qIdx} className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                  <p className="text-xs sm:text-sm font-bold text-slate-200">{qIdx + 1}. {q.question}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {q.options.map((opt, optIdx) => {
+                      const isSelected = userAnswers[qIdx] === optIdx;
+                      let btnStyle = "bg-slate-900 border-slate-800 text-slate-300 hover:border-indigo-500/40";
+
+                      if (isSelected) {
+                        btnStyle = "bg-indigo-600/30 border-indigo-500 text-white font-bold";
+                      }
+
+                      if (quizSubmitted) {
+                        if (optIdx === q.correct) {
+                          btnStyle = "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold";
+                        } else if (isSelected) {
+                          btnStyle = "bg-rose-500/20 border-rose-500 text-rose-300";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={optIdx}
+                          disabled={quizSubmitted}
+                          onClick={() => handleAnswerSelect(qIdx, optIdx)}
+                          className={`p-3 rounded-xl border text-xs text-left transition ${btnStyle}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {quizSubmitted && (
+                    <p className="text-[11px] text-teal-300 italic pt-1 font-mono">
+                      💡 Explanation: {q.explanation}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* QUIZ SUBMIT BUTTON */}
+            <div className="flex justify-end">
+              {!quizSubmitted ? (
+                <button
+                  onClick={handleQuizSubmit}
+                  disabled={Object.keys(userAnswers).length < data.quiz.length}
+                  className={`px-6 py-3 rounded-xl font-bold text-xs sm:text-sm transition shadow-lg ${
+                    Object.keys(userAnswers).length === data.quiz.length
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                      : 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                  }`}
+                >
+                  Verify Analysis (+45 XP)
+                </button>
+              ) : (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 px-5 py-2.5 rounded-xl text-xs font-bold text-emerald-300">
+                  🎉 Completed: {score} / {data.quiz.length} Correct Answers!
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 3: INTERACTIVE OUTLINE BUILDER
+    // =========================================================================
+
+    function Module3OutlineBuilder({
+      nodes,
+      selectedScenario,
+      outline,
+      setOutline,
+      addXp,
+      soundEnabled,
+      onComplete
+    }) {
+      const [assignedNodes, setAssignedNodes] = useState([]);
+
+      const handleAssignToBody = (nodeText) => {
+        if (outline.solutions.includes(nodeText)) return;
+        setOutline(prev => ({
+          ...prev,
+          solutions: [...prev.solutions, nodeText]
+        }));
+        setAssignedNodes([...assignedNodes, nodeText]);
+        addXp(10);
+        playSoundEffect('click', soundEnabled);
+      };
+
+      const handleRemoveFromBody = (nodeText) => {
+        setOutline(prev => ({
+          ...prev,
+          solutions: prev.solutions.filter(s => s !== nodeText)
+        }));
+        setAssignedNodes(assignedNodes.filter(a => a !== nodeText));
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-400 bg-teal-500/10 px-3 py-1 rounded-full border border-teal-500/30">
+                Module 3 • Outline Architect
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">Convert Brainstormed Ideas into a 3-Paragraph Outline</h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* BRAINSTORMED NODES BANK */}
+            <div className="lg:col-span-5 bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                1. Brainstormed Idea Bank (Click to add to body):
+              </span>
+
+              <div className="space-y-2">
+                {nodes.length === 0 && (
+                  <p className="text-xs text-slate-500 italic">No nodes created yet. Return to Module 1 to generate ideas!</p>
+                )}
+                {nodes.map((node, idx) => {
+                  const isAssigned = outline.solutions.includes(node.text);
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => !isAssigned && handleAssignToBody(node.text)}
+                      className={`p-3.5 rounded-2xl border text-xs transition cursor-pointer flex justify-between items-center gap-2 ${
+                        isAssigned
+                          ? 'bg-slate-950/50 border-slate-800 text-slate-600 line-through opacity-60'
+                          : 'bg-slate-950 border-slate-800 hover:border-teal-500 text-slate-200'
+                      }`}
+                    >
+                      <span>{node.text}</span>
+                      <span className="text-teal-400 font-bold">{isAssigned ? '✓ Added' : '➕ Assign'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3-PARAGRAPH OUTLINE STRUCTURE */}
+            <div className="lg:col-span-7 bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-6">
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-400 block">
+                2. Target 3-Paragraph Outline Architecture:
+              </span>
+
+              {/* PARAGRAPH 1: INTRO */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider block font-mono">
+                  Paragraph 1: Introduction (Problem Statement & Hook)
+                </span>
+                <textarea
+                  rows={2}
+                  value={outline.intro}
+                  onChange={(e) => setOutline({ ...outline, intro: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              {/* PARAGRAPH 2: BODY SOLUTIONS */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-teal-500/40 space-y-3">
+                <span className="text-xs font-bold text-teal-300 uppercase tracking-wider block font-mono">
+                  Paragraph 2: Body (Selected Solutions & Supporting Details)
+                </span>
+
+                <div className="space-y-2 min-h-[60px] p-2 bg-slate-900/80 rounded-xl border border-slate-800">
+                  {outline.solutions.length === 0 && (
+                    <p className="text-xs text-slate-500 italic p-2">Click idea nodes on the left to populate your main body solutions...</p>
+                  )}
+                  {outline.solutions.map((sol, idx) => (
+                    <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-teal-500/30 text-xs text-teal-200 flex justify-between items-center">
+                      <span>• {sol}</span>
+                      <button onClick={() => handleRemoveFromBody(sol)} className="text-slate-500 hover:text-rose-400 font-bold">✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* PARAGRAPH 3: CONCLUSION */}
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider block font-mono">
+                  Paragraph 3: Conclusion (Summary & Call to Action)
+                </span>
+                <textarea
+                  rows={2}
+                  value={outline.conclusion}
+                  onChange={(e) => setOutline({ ...outline, conclusion: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => {
+                    addXp(30);
+                    onComplete();
+                  }}
+                  className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-6 py-3 rounded-xl transition shadow-lg shadow-teal-600/30"
+                >
+                  Lock Outline & Proceed to Writing ➔
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 4: GUIDED WRITING & TRANSITION STUDIO
+    // =========================================================================
+
+    function Module4GuidedEditor({
+      selectedScenario,
+      outline,
+      essayText,
+      setEssayText,
+      addXp,
+      soundEnabled,
+      onComplete
+    }) {
+      const [detectedPhrases, setDetectedPhrases] = useState([]);
+
+      // Auto load initial draft from outline if empty
+      useEffect(() => {
+        if (!essayText) {
+          const initialDraft = `${outline.intro}\n\nOne effective way to deal with this problem is to ${
+            outline.solutions[0] || 'implement a daily study routine'
+          }. For example, dividing projects into smaller actions makes them easier. Consequently, students can achieve better results.\n\n${
+            outline.conclusion
+          }`;
+          setEssayText(initialDraft);
+        }
+      }, []);
+
+      // Real-time detector for B1 transition phrases
+      useEffect(() => {
+        const text = essayText.toLowerCase();
+        const found = B1_TRANSITION_PHRASES.filter(item => item.regex.test(text));
+        setDetectedPhrases(found);
+      }, [essayText]);
+
+      const wordCount = essayText.trim().split(/\s+/).filter(Boolean).length;
+
+      const handleInsertPhrase = (phrase) => {
+        setEssayText(prev => prev + " " + phrase + " ");
+        playSoundEffect('click', soundEnabled);
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
+                Module 4 • B1 Transition Studio
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">Draft Your Problem-Solving Essay with Signposts</h2>
+            </div>
+            <div className="text-right font-mono">
+              <span className="text-xs text-slate-400 block">Word Count:</span>
+              <span className={`text-lg font-bold ${wordCount >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {wordCount} / 120 words
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* LIVE EDITOR */}
+            <div className="lg:col-span-8 space-y-4">
+              <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                  Interactive Essay Composition Window:
+                </span>
+
+                <textarea
+                  rows={12}
+                  value={essayText}
+                  onChange={(e) => setEssayText(e.target.value)}
+                  placeholder="Start composing your essay using your outline notes..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+
+                {/* REAL-TIME DETECTED B1 SIGNPOST BADGES */}
+                <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[11px] font-bold text-teal-400 uppercase tracking-wider">
+                      Detected B1 Transition Phrases ({detectedPhrases.length}):
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">Auto-scanned in real time</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {detectedPhrases.length === 0 && (
+                      <span className="text-xs text-slate-600 italic">Type B1 signpost expressions into your essay to activate live tags...</span>
+                    )}
+                    {detectedPhrases.map((p, idx) => (
+                      <span key={idx} className="bg-teal-500/20 text-teal-300 border border-teal-500/40 text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                        <span>✓</span>
+                        <span>{p.phrase}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SIDEBAR: B1 SIGNPOST PALETTE & OUTLINE GUIDE */}
+            <div className="lg:col-span-4 space-y-4">
+              
+              {/* B1 SIGNPOST PALETTE */}
+              <div className="bg-slate-900/90 rounded-3xl p-5 border border-slate-800 shadow-xl space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-teal-300 block flex items-center gap-1">
+                  <span>💡</span> Click to Insert B1 Signpost:
+                </span>
+
+                <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+                  {B1_TRANSITION_PHRASES.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleInsertPhrase(item.phrase)}
+                      className="w-full text-left bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-800 p-2.5 rounded-xl text-xs font-mono transition flex justify-between items-center"
+                    >
+                      <span>"{item.phrase}"</span>
+                      <span className="text-[10px] text-teal-400 font-bold">➕</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* OUTLINE REFERENCE */}
+              <div className="bg-slate-900/90 rounded-3xl p-5 border border-slate-800 shadow-xl space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                  📌 Your Outline Reference:
+                </span>
+                <div className="text-[11px] text-slate-300 space-y-2 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                  <p><strong className="text-indigo-300">Intro:</strong> {outline.intro}</p>
+                  <p><strong className="text-teal-300">Solutions:</strong> {outline.solutions.join(", ") || "None selected"}</p>
+                  <p><strong className="text-emerald-300">Conclusion:</strong> {outline.conclusion}</p>
+                </div>
+              </div>
+
+              {/* FINISH BUTTON */}
+              <button
+                onClick={() => {
+                  addXp(40);
+                  onComplete();
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 rounded-2xl transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2"
+              >
+                <span>Complete Essay (+40 XP) ➔</span>
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 5: VOCABULARY & AUDIO STUDIO
+    // =========================================================================
+
+    function Module5VocabStudio({ vocabList, speakText, addXp, soundEnabled }) {
+      const [searchTerm, setSearchTerm] = useState('');
+
+      const filtered = vocabList.filter(v =>
+        v.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        v.meaning.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
+                Module 5 • Problem-Solving Phrasebook
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">Key B1 Action Verbs & Audio Pronunciation</h2>
+            </div>
+
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search vocabulary..."
+              className="bg-slate-950 border border-slate-800 text-xs rounded-xl px-3.5 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filtered.map((item, idx) => (
+              <div key={idx} className="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-black text-white">{item.word}</h3>
+                      <span className="text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                        {item.pos}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">{item.phonetic}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-1.5">
+                    <button
+                      onClick={() => speakText(item.word, 1.0)}
+                      className="bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/30 px-2.5 py-1.5 rounded-xl text-xs font-bold transition"
+                      title="Normal Speed Speech"
+                    >
+                      🔊 1.0x
+                    </button>
+                    <button
+                      onClick={() => speakText(item.word, 0.75)}
+                      className="bg-slate-950 hover:bg-slate-800 text-teal-300 border border-teal-500/30 px-2.5 py-1.5 rounded-xl text-xs font-bold transition"
+                      title="Slow Speed Pronunciation"
+                    >
+                      🐢 0.75x
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">{item.meaning}</p>
+
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-teal-300 italic">
+                  💬 "{item.example}"
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 6: MASTERY SUMMARY & PRINTABLE CERTIFICATE
+    // =========================================================================
+
+    function Module6MasterySummary({
+      studentName,
+      setStudentName,
+      selectedScenario,
+      nodes,
+      outline,
+      essayText,
+      xp,
+      currentRank,
+      soundEnabled
+    }) {
+      useEffect(() => {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+        playSoundEffect('fanfare', soundEnabled);
+      }, []);
+
+      const handlePrint = () => {
+        window.print();
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          {/* CERTIFICATE HEADER & PRINT ACTIONS */}
+          <div className="bg-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 no-print">
+            <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <h2 className="text-xl font-black text-white">🎓 Official Writing Mastery Certificate</h2>
+                <p className="text-xs text-slate-400">Generate your printable proof of achievement in B1 Pre-Writing & Problem Solving.</p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="text"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="Your Full Name"
+                />
+                <button
+                  onClick={handlePrint}
+                  className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg shadow-teal-600/30 flex items-center gap-2"
+                >
+                  🖨️ Print Certificate
+                </button>
+              </div>
+            </div>
+
+            {/* PRE-WRITING PROCESS SUMMARY */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-teal-400">Your Complete Pre-Writing to Draft Artifact:</h3>
+              
+              <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-slate-400 block font-mono">1. Chosen Problem Topic:</span>
+                <p className="text-sm font-bold text-white">{selectedScenario.title}</p>
+
+                <span className="text-xs font-bold text-slate-400 block font-mono pt-2">2. Final Essay Output:</span>
+                <p className="text-xs font-mono text-teal-200 leading-relaxed whitespace-pre-line bg-slate-900 p-4 rounded-xl border border-slate-800">
+                  {essayText || "No essay drafted yet."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* PRINTABLE CERTIFICATE CARD */}
+          <div 
+            id="printable-certificate"
+            className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-8 sm:p-12 rounded-3xl border-4 border-teal-500/40 text-center space-y-6 relative overflow-hidden shadow-2xl"
+          >
+            <div className="absolute top-4 left-4 text-[10px] font-mono text-teal-400/60">
+              CERT-ID: PS-2026-B1-WRITING
+            </div>
+            <div className="absolute top-4 right-4 text-[10px] font-mono text-teal-400/60">
+              CEFR B1 ENGLISH WRITING PRE-WRITING
+            </div>
+
+            <div className="space-y-2 pt-4">
+              <span className="text-4xl">👑</span>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-widest uppercase text-amber-400">
+                Certificate of Writing Mastery
+              </h2>
+              <p className="text-xs text-slate-300 uppercase tracking-widest font-mono">Problem Solver Studio • Brainstorm & Write</p>
+            </div>
+
+            <div className="py-4 border-y border-teal-500/30 space-y-3">
+              <p className="text-xs text-slate-400">This certifies that</p>
+              <p className="text-2xl sm:text-3xl font-black text-white underline decoration-teal-500 decoration-2">{studentName}</p>
+              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2">
+                has successfully demonstrated proficiency in **CEFR B1 Pre-Writing Strategy**, effectively brainstorming root causes and solutions, organizing 3-paragraph essay outlines, and deploying intermediate signpost transitions in written English.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs">
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Rank Attained</span>
+                <span className="text-xs font-black text-amber-400">{currentRank.title}</span>
+              </div>
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Total XP</span>
+                <span className="text-xs font-black text-teal-300">{xp} Points</span>
+              </div>
+              <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
+                <span className="text-slate-400 block text-[10px]">Status</span>
+                <span className="text-xs font-black text-emerald-400">PASSED</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      );
+    }
+
+    // RENDER APPLICATION
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
