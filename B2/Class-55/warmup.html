@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClauseComment Studio: Sentence-Modifying Relative Clauses</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        indigoGrad: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                            950: '#1e1b4b'
+                        },
+                        violetGrad: {
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce'
+                        },
+                        emeraldAccent: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669'
+                        },
+                        amberTrap: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js for State Management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Glassmorphism effects */
+        .glass-card {
+            background: rgba(30, 27, 75, 0.65);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.08);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Print styles for printable worksheet */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #printable-section, #printable-section * {
+                visibility: visible;
+            }
+            #printable-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white"
+      :class="darkMode ? 'dark bg-slate-950 text-slate-100' : 'light bg-slate-50 text-slate-900'"
+      x-data="clauseApp()" 
+      x-init="initAudio()">
+
+    <!-- TOP HEADER / NAV BAR -->
+    <header class="border-b border-indigo-900/40 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="activeTab = 'inspector'; playSound('click')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl">
+                    ,w
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-lg font-extrabold bg-gradient-to-r from-white via-indigo-200 to-violet-300 bg-clip-text text-transparent leading-none">
+                            ClauseComment Studio
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                            ESL B1/B2 Masterclass
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Sentence-Modifying Relative Clauses (", which")</p>
+                </div>
+            </div>
+
+            <!-- Header Controls: Score + Audio + Dark Mode + Printable -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                
+                <!-- XP / Score Badge -->
+                <div class="px-3 py-1.5 rounded-xl bg-indigo-950/80 border border-indigo-800/60 text-xs font-mono font-bold text-indigo-300 flex items-center gap-1.5">
+                    <span>⚡</span>
+                    <span x-text="`${totalXp} XP`"></span>
+                </div>
+
+                <!-- Audio Toggle -->
+                <button @click="toggleMute()" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs flex items-center gap-1"
+                        :title="soundMuted ? 'Unmute Audio' : 'Mute Audio'">
+                    <span x-text="soundMuted ? '🔇' : '🔊'"></span>
+                </button>
+
+                <!-- Light / Dark Mode Toggle -->
+                <button @click="darkMode = !darkMode" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs"
+                        :title="darkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+                    <span x-text="darkMode ? '🌙' : '☀️'"></span>
+                </button>
+
+                <!-- Export / Print Button -->
+                <button @click="activeTab = 'print'; playSound('click')" 
+                        class="px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500 transition-all flex items-center gap-1.5">
+                    <span>🖨️</span>
+                    <span class="hidden md:inline">Worksheet</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS HUB -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-indigo-900/30 flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar">
+            
+            <button @click="switchTab('inspector')" 
+                    :class="activeTab === 'inspector' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🔬</span>
+                <span>Grammar Visualizer</span>
+            </button>
+
+            <button @click="switchTab('sorting')" 
+                    :class="activeTab === 'sorting' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🎮</span>
+                <span>Noun vs. Sentence Game</span>
+            </button>
+
+            <button @click="switchTab('combiner')" 
+                    :class="activeTab === 'combiner' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🧩</span>
+                <span>Sentence Combiner</span>
+            </button>
+
+            <button @click="switchTab('detective')" 
+                    :class="activeTab === 'detective' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🔍</span>
+                <span>Error Detective</span>
+            </button>
+
+            <button @click="switchTab('studio')" 
+                    :class="activeTab === 'studio' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>✍️</span>
+                <span>Comment Writing Studio</span>
+            </button>
+
+            <button @click="switchTab('print')" 
+                    :class="activeTab === 'print' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>📄</span>
+                <span>Printable Worksheet</span>
+            </button>
+
+        </nav>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- TOAST NOTIFICATION -->
+        <div x-show="toast.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-6 right-6 z-50 glass-card border border-indigo-500/40 text-slate-100 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 no-print">
+            <span class="text-2xl" x-text="toast.icon"></span>
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300" x-text="toast.title"></h4>
+                <p class="text-xs sm:text-sm text-slate-200" x-text="toast.message"></p>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 1: GRAMMAR VISUALIZER & CLAUSE INSPECTOR -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'inspector'" x-transition class="space-y-8">
+            
+            <!-- Hero Concept Banner -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-indigo-800/50">
+                <div class="max-w-3xl space-y-3 relative z-10">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest">
+                        Grammar Core Rule
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                        Commenting on Whole Sentences with <span class="text-indigo-400">", which"</span>
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        In English, a non-defining relative clause starting with <strong class="text-indigo-300 font-mono">", which"</strong> can refer back to an <em>entire situation, action, or idea</em> in the preceding main clause—not just a single noun!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Comparison Cards: Noun-Modifying vs. Sentence-Modifying -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Noun-Modifying Clause -->
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-l-amber-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase">
+                            Noun-Modifying Clause
+                        </span>
+                        <span class="text-xl">🎒</span>
+                    </div>
+
+                    <p class="text-xs text-slate-400">
+                        Here, <code class="text-amber-300 font-mono font-bold">which</code> modifies <em>only one specific noun</em> immediately before the comma.
+                    </p>
+
+                    <div class="p-4 bg-slate-950/80 rounded-xl font-mono text-sm border border-slate-800 leading-relaxed">
+                        He bought a <span class="text-amber-400 underline font-bold">watch</span><span class="text-indigo-400 font-bold">, which</span> <span class="text-slate-300">was very expensive.</span>
+                    </div>
+
+                    <div class="p-3 bg-amber-950/20 rounded-xl border border-amber-500/20 text-xs text-amber-200">
+                        💡 <strong>What was expensive?</strong> Just the <em>watch</em> (the noun).
+                    </div>
+                </div>
+
+                <!-- Sentence-Modifying Clause -->
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono uppercase">
+                            Sentence-Modifying Clause
+                        </span>
+                        <span class="text-xl">🌐</span>
+                    </div>
+
+                    <p class="text-xs text-slate-400">
+                        Here, <code class="text-emerald-300 font-mono font-bold">which</code> modifies the <em>entire main clause / event</em>.
+                    </p>
+
+                    <div class="p-4 bg-slate-950/80 rounded-xl font-mono text-sm border border-slate-800 leading-relaxed">
+                        <span class="text-emerald-400 font-bold underline">He lost his watch</span><span class="text-indigo-400 font-bold">, which</span> <span class="text-slate-300">ruined his entire week.</span>
+                    </div>
+
+                    <div class="p-3 bg-emerald-950/20 rounded-xl border border-emerald-500/20 text-xs text-emerald-200">
+                        💡 <strong>What ruined his week?</strong> The <em>whole situation</em> of losing his watch, not the watch itself.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Color-Coded Anatomy Breakdown Visualizer -->
+            <div class="glass-card rounded-2xl p-6 space-y-6">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                    <span>🔬</span> Sentence Syntax Anatomy Visualizer
+                </h3>
+
+                <div class="p-6 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-4">
+                    
+                    <div class="flex flex-wrap items-center gap-2 font-mono text-base sm:text-lg">
+                        <span class="px-3 py-1.5 rounded-xl bg-indigo-900/60 text-indigo-200 border border-indigo-500/40 font-bold">
+                            The train was delayed by two hours
+                        </span>
+                        <span class="px-3 py-1.5 rounded-xl bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black">
+                            ,
+                        </span>
+                        <span class="px-3 py-1.5 rounded-xl bg-violet-600/60 text-violet-200 border border-violet-400/50 font-bold">
+                            which
+                        </span>
+                        <span class="px-3 py-1.5 rounded-xl bg-emerald-900/60 text-emerald-200 border border-emerald-500/40 font-bold">
+                            ruined all our weekend plans.
+                        </span>
+                    </div>
+
+                    <!-- Syntax Labels Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs pt-2">
+                        <div class="p-2.5 rounded-lg bg-indigo-950/80 border border-indigo-800/60 space-y-1">
+                            <span class="font-bold text-indigo-300 block uppercase text-[10px]">1. Main Clause (Fact)</span>
+                            <p class="text-slate-400">Complete independent sentence expressing the situation.</p>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-amber-950/80 border border-amber-800/60 space-y-1">
+                            <span class="font-bold text-amber-300 block uppercase text-[10px]">2. Essential Comma</span>
+                            <p class="text-slate-400">Crucial pause separator! Never omit this comma.</p>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-violet-950/80 border border-violet-800/60 space-y-1">
+                            <span class="font-bold text-violet-300 block uppercase text-[10px]">3. Pronoun ("which")</span>
+                            <p class="text-slate-400">Refers to the entire preceding clause as a single idea.</p>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-800/60 space-y-1">
+                            <span class="font-bold text-emerald-300 block uppercase text-[10px]">4. Comment / Consequence</span>
+                            <p class="text-slate-400">Your reaction, consequence, evaluation, or result.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- "Test the Rules" Interactive Traps Simulator -->
+            <div class="glass-card rounded-2xl p-6 space-y-6">
+                <div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-widest">
+                        Interactive Rule Lab
+                    </span>
+                    <h3 class="text-xl font-bold text-white mt-2">Test the 3 Critical Grammar Rules</h3>
+                    <p class="text-xs text-slate-400">Click the option variations below to test what happens when learners make common grammar mistakes:</p>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <button @click="selectedRuleTest = 'correct'; playSound('pop')"
+                            :class="selectedRuleTest === 'correct' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-4 py-2 rounded-xl text-xs border border-slate-800 transition-all">
+                        ✅ Option A: ", which surprised everyone." (Correct)
+                    </button>
+                    <button @click="selectedRuleTest = 'that'; playSound('pop')"
+                            :class="selectedRuleTest === 'that' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-4 py-2 rounded-xl text-xs border border-slate-800 transition-all">
+                        ⚠️ Option B: ", that surprised everyone." (Trap 1)
+                    </button>
+                    <button @click="selectedRuleTest = 'what'; playSound('pop')"
+                            :class="selectedRuleTest === 'what' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-4 py-2 rounded-xl text-xs border border-slate-800 transition-all">
+                        ⚠️ Option C: ", what surprised everyone." (Trap 2)
+                    </button>
+                    <button @click="selectedRuleTest = 'nocomma'; playSound('pop')"
+                            :class="selectedRuleTest === 'nocomma' ? 'bg-amber-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-4 py-2 rounded-xl text-xs border border-slate-800 transition-all">
+                        ⚠️ Option D: " which surprised everyone." (Trap 3)
+                    </button>
+                </div>
+
+                <!-- Sentence Display Box -->
+                <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 font-mono text-sm leading-relaxed">
+                    <span>She won the global science competition</span>
+                    <span x-show="selectedRuleTest === 'correct'" class="text-emerald-400 font-bold bg-emerald-950/60 px-2 py-1 rounded border border-emerald-500/40">, which surprised everyone.</span>
+                    <span x-show="selectedRuleTest === 'that'" class="text-rose-400 font-bold line-through bg-rose-950/60 px-2 py-1 rounded border border-rose-500/40">, that surprised everyone.</span>
+                    <span x-show="selectedRuleTest === 'what'" class="text-rose-400 font-bold line-through bg-rose-950/60 px-2 py-1 rounded border border-rose-500/40">, what surprised everyone.</span>
+                    <span x-show="selectedRuleTest === 'nocomma'" class="text-amber-400 font-bold bg-amber-950/60 px-2 py-1 rounded border border-amber-500/40"> which surprised everyone.</span>
+                </div>
+
+                <!-- Diagnostic Explanatory Rule Card -->
+                <div x-show="selectedRuleTest === 'correct'" class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-200 space-y-1">
+                    <h4 class="font-bold text-emerald-400 flex items-center gap-1">
+                        <span>🎉</span> Perfect Grammar!
+                    </h4>
+                    <p>The comma creates a non-defining pause, and <strong>which</strong> acts as a pronoun representing the whole fact ("She won the global science competition").</p>
+                </div>
+
+                <div x-show="selectedRuleTest === 'that'" class="p-4 rounded-xl bg-rose-950/30 border border-rose-500/30 text-xs text-rose-200 space-y-1">
+                    <h4 class="font-bold text-rose-400 flex items-center gap-1">
+                        <span>🛑</span> Trap #1: "that" after a comma
+                    </h4>
+                    <p><strong>Never use "that" after a comma</strong> to make a sentence comment! "That" is only used in defining relative clauses without commas.</p>
+                </div>
+
+                <div x-show="selectedRuleTest === 'what'" class="p-4 rounded-xl bg-rose-950/30 border border-rose-500/30 text-xs text-rose-200 space-y-1">
+                    <h4 class="font-bold text-rose-400 flex items-center gap-1">
+                        <span>🛑</span> Trap #2: Using "what" to link clauses
+                    </h4>
+                    <p><strong>"what" cannot connect two clauses like this.</strong> "What" means "the thing that" and includes its own antecedent (e.g. <em>"I heard what you said."</em>).</p>
+                </div>
+
+                <div x-show="selectedRuleTest === 'nocomma'" class="p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 text-xs text-amber-200 space-y-1">
+                    <h4 class="font-bold text-amber-400 flex items-center gap-1">
+                        <span>⚠️</span> Trap #3: Missing Comma
+                    </h4>
+                    <p>Without a comma, the sentence looks like a restrictive defining clause. Sentence-modifying clauses <strong>MUST always have a comma</strong> before "which".</p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 2: NOUN VS. SENTENCE MODIFIER SORTING GAME -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'sorting'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest">
+                            Interactive Classifier
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Noun vs. Sentence Modifier Sorting Game</h2>
+                        <p class="text-xs text-slate-400">Read each sentence carefully. Is <code class="text-indigo-300 font-mono">", which"</code> modifying just a single noun or commenting on the whole sentence?</p>
+                    </div>
+
+                    <!-- Live Game Metrics -->
+                    <div class="bg-slate-950 px-5 py-3 rounded-2xl border border-slate-800 flex items-center space-x-6 text-xs shrink-0 font-mono">
+                        <div>
+                            <span class="text-slate-400 block text-[10px] uppercase">Card</span>
+                            <span class="font-bold text-indigo-400" x-text="`${sortIndex + 1} / ${sortCards.length}`"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px] uppercase">Streak</span>
+                            <span class="font-bold text-amber-400" x-text="`🔥 ${sortStreak}`"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px] uppercase">Score</span>
+                            <span class="font-bold text-emerald-400" x-text="`${sortScore} pts`"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Game Card -->
+                <template x-if="sortIndex < sortCards.length">
+                    <div class="bg-slate-950/90 p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+                        
+                        <div class="p-6 bg-indigo-950/30 rounded-2xl border border-indigo-800/40 text-center">
+                            <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-2 font-mono">Target Sentence:</span>
+                            <p class="text-base sm:text-xl font-medium text-white leading-relaxed font-mono" x-text="currentSortCard.sentence"></p>
+                        </div>
+
+                        <!-- Classification Decision Buttons -->
+                        <div x-show="!sortAnswered" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button @click="classifySortCard('noun')" 
+                                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-500 hover:bg-amber-950/20 text-slate-200 font-bold text-sm transition-all flex flex-col items-center gap-2 group">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🎒</span>
+                                <span class="group-hover:text-amber-300">Noun Modifier</span>
+                                <span class="text-[11px] font-normal text-slate-400">("which" = one specific noun)</span>
+                            </button>
+
+                            <button @click="classifySortCard('sentence')" 
+                                    class="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-950/20 text-slate-200 font-bold text-sm transition-all flex flex-col items-center gap-2 group">
+                                <span class="text-3xl group-hover:scale-110 transition-transform">🌐</span>
+                                <span class="group-hover:text-emerald-300">Sentence Modifier</span>
+                                <span class="text-[11px] font-normal text-slate-400">("which" = whole action / situation)</span>
+                            </button>
+                        </div>
+
+                        <!-- Feedback Box -->
+                        <div x-show="sortAnswered" x-transition class="p-5 rounded-2xl border text-xs sm:text-sm space-y-4"
+                             :class="sortIsCorrect ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/40 border-rose-500/40 text-rose-200'">
+                            
+                            <div class="flex items-start gap-3">
+                                <span class="text-2xl" x-text="sortIsCorrect ? '🎯' : '💡'"></span>
+                                <div class="space-y-1">
+                                    <h4 class="font-bold text-sm" x-text="sortIsCorrect ? 'Correct Analysis!' : 'Not Quite Right'"></h4>
+                                    <p x-text="currentSortCard.explanation"></p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button @click="nextSortCard()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition-all">
+                                    Next Sentence →
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+
+                <!-- Game Completion Screen -->
+                <template x-if="sortIndex >= sortCards.length">
+                    <div class="bg-slate-950/90 p-8 rounded-3xl border border-slate-800 text-center space-y-6">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center text-4xl shadow-xl shadow-indigo-500/30">
+                            🏆
+                        </div>
+
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Classification Challenge Complete</span>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold text-white" x-text="`Final Score: ${sortScore} / ${sortCards.length * 20} Points`"></h3>
+                            <p class="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">You've trained your eyes to immediately distinguish noun modifiers from sentence comments!</p>
+                        </div>
+
+                        <button @click="restartSortGame()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all">
+                            Play Sorting Game Again
+                        </button>
+                    </div>
+                </template>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 3: SENTENCE COMBINER ENGINE -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'combiner'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest">
+                            Syntax Crafting
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Sentence Combiner Engine</h2>
+                        <p class="text-xs text-slate-400">Combine a Fact sentence and a Comment sentence into one cohesive complex sentence using <code class="text-indigo-300 font-mono">", which"</code>.</p>
+                    </div>
+
+                    <div class="bg-slate-950 px-4 py-2 rounded-2xl border border-slate-800 text-xs font-mono text-indigo-300">
+                        Completed: <span x-text="`${combinerCompletedCount} / ${combinerTasks.length}`"></span>
+                    </div>
+                </div>
+
+                <!-- Exercise List -->
+                <div class="space-y-6">
+                    <template x-for="(task, idx) in combinerTasks" :key="task.id">
+                        <div class="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 space-y-4">
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold font-mono text-indigo-400" x-text="`Exercise #${idx + 1}`"></span>
+                                <span x-show="task.solved" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    ✓ Solved (+25 XP)
+                                </span>
+                            </div>
+
+                            <!-- Source Clauses -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                                    <span class="text-[10px] font-bold text-indigo-300 uppercase block">Fact (Main Clause):</span>
+                                    <p class="text-slate-200 font-mono mt-1" x-text="task.fact"></p>
+                                </div>
+                                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                                    <span class="text-[10px] font-bold text-amber-300 uppercase block">Comment / Result:</span>
+                                    <p class="text-slate-200 font-mono mt-1" x-text="task.comment"></p>
+                                </div>
+                            </div>
+
+                            <!-- Student Input Field -->
+                            <div class="space-y-2">
+                                <label class="block text-xs text-slate-400 font-medium">Type combined sentence below:</label>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" 
+                                           x-model="task.userInput" 
+                                           :placeholder="`e.g., ${task.fact.replace(/\.$/, '')}, which...`"
+                                           class="flex-grow bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-400 font-mono">
+                                    
+                                    <button @click="checkCombinerTask(task)" 
+                                            class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all shrink-0">
+                                        Check Combination
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Validation Result Feedback -->
+                            <div x-show="task.checked" x-transition class="p-4 rounded-xl text-xs space-y-2"
+                                 :class="task.isCorrect ? 'bg-emerald-950/40 border border-emerald-500/40 text-emerald-200' : 'bg-rose-950/40 border border-rose-500/40 text-rose-200'">
+                                <div class="flex items-center justify-between font-bold">
+                                    <span x-text="task.isCorrect ? '✅ Perfect Combination!' : '⚠️ Needs Adjustment'"></span>
+                                </div>
+                                <p x-text="task.feedbackMessage"></p>
+                                <div x-show="!task.isCorrect" class="text-[11px] text-slate-300 font-mono bg-slate-950/80 p-2 rounded border border-slate-800">
+                                    💡 Expected format: <span x-text="task.expectedFormat"></span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 4: ERROR DETECTIVE ("SPOT & FIX THE 4 TRAPS") -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'detective'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-widest">
+                        Grammar Inspector
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Error Detective: Spot & Fix the 4 Traps</h2>
+                    <p class="text-xs text-slate-400">Each sentence below contains one classic B1/B2 error related to <code class="text-indigo-300 font-mono">", which"</code>. Identify and correct the trap!</p>
+                </div>
+
+                <!-- Detective Case Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <template x-for="(caseItem, idx) in detectiveCases" :key="caseItem.id">
+                        <div class="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                            
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-950 text-rose-300 border border-rose-500/30" x-text="`Trap Type: ${caseItem.trapName}`"></span>
+                                    <span class="text-xs font-mono text-slate-500" x-text="`Case #${idx + 1}`"></span>
+                                </div>
+
+                                <div class="p-4 bg-slate-900 rounded-xl border border-slate-800 font-mono text-xs sm:text-sm text-slate-200">
+                                    ❌ <span x-text="caseItem.flawedSentence"></span>
+                                </div>
+
+                                <!-- Multiple Choice Fix Selector -->
+                                <div class="space-y-2">
+                                    <label class="block text-[11px] font-bold uppercase text-slate-400">Select Correct Fix:</label>
+                                    <div class="space-y-1.5">
+                                        <template x-for="(opt, optIdx) in caseItem.options" :key="optIdx">
+                                            <button @click="caseItem.selectedOpt = optIdx; checkDetectiveCase(caseItem)"
+                                                    :class="caseItem.selectedOpt === optIdx ? (opt.correct ? 'bg-emerald-950 border-emerald-500 text-emerald-200' : 'bg-rose-950 border-rose-500 text-rose-200') : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'"
+                                                    class="w-full p-3 rounded-xl border text-left text-xs font-mono transition-all flex items-start space-x-2">
+                                                <span class="font-bold text-slate-500" x-text="['A','B','C'][optIdx] + '.'"></span>
+                                                <span x-text="opt.text"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Feedback Result Card -->
+                            <div x-show="caseItem.selectedOpt !== null" x-transition class="p-3.5 rounded-xl border text-xs space-y-1"
+                                 :class="caseItem.options[caseItem.selectedOpt]?.correct ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/40 border-rose-500/40 text-rose-200'">
+                                <span class="font-bold block text-[10px] uppercase" x-text="caseItem.options[caseItem.selectedOpt]?.correct ? '🎉 Case Solved!' : '🛑 Still Flawed'"></span>
+                                <p x-text="caseItem.explanation"></p>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 5: GUIDED COMMENT WRITING STUDIO WITH REAL-TIME PARSER -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'studio'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-violet-500/20 text-violet-300 border border-violet-500/30 uppercase tracking-widest">
+                        Interactive Writing Lab
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Guided Comment Writing Studio</h2>
+                    <p class="text-xs text-slate-400">Select a real-world scenario prompt and write a full sentence with a <code class="text-indigo-300 font-mono">", which"</code> comment. Our real-time parser inspects your grammar live!</p>
+                </div>
+
+                <!-- Scenario Selector Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-slate-800">
+                    <template x-for="scenario in studioScenarios" :key="scenario.id">
+                        <button @click="selectedStudioScenario = scenario; playSound('click')"
+                                :class="selectedStudioScenario.id === scenario.id ? 'bg-indigo-600 text-white font-bold border-indigo-400 shadow-lg shadow-indigo-600/30' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'"
+                                class="px-4 py-2.5 rounded-xl text-xs whitespace-nowrap border transition-all flex items-center gap-2">
+                            <span x-text="scenario.icon"></span>
+                            <span x-text="scenario.category"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Prompt Scenario Card -->
+                <div class="bg-slate-950/90 p-6 rounded-2xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider font-mono" x-text="`Scenario Prompt: ${selectedStudioScenario.category}`"></span>
+                        <span class="text-xl" x-text="selectedStudioScenario.icon"></span>
+                    </div>
+                    <p class="text-sm font-medium text-white leading-relaxed" x-text="selectedStudioScenario.prompt"></p>
+                    <div class="p-3 bg-indigo-950/30 rounded-xl border border-indigo-800/40 text-xs text-indigo-300">
+                        💡 <strong>Suggested Comment Verbs:</strong> <span font-mono x-text="selectedStudioScenario.suggestedVerbs.join(', ')"></span>
+                    </div>
+                </div>
+
+                <!-- Interactive Real-time Textarea -->
+                <div class="space-y-4">
+                    <label class="block text-xs text-slate-300 font-bold uppercase tracking-wider">Type Your Full Sentence Below:</label>
+                    
+                    <textarea x-model="studioInput" 
+                              @input="parseStudioGrammar()"
+                              rows="3" 
+                              placeholder="e.g. My laptop battery suddenly died during the exam, which made me panic." 
+                              class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-400 font-mono transition-all"></textarea>
+
+                    <!-- Real-time Diagnostic Checkmarks Dashboard -->
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Real-Time Syntax Diagnostics:</h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            
+                            <!-- Diagnostic 1: Comma Present -->
+                            <div class="p-3 rounded-xl border flex items-center space-x-2.5 transition-all"
+                                 :class="studioAnalysis.hasComma ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                <span class="text-base" x-text="studioAnalysis.hasComma ? '✅' : '⚪'"></span>
+                                <span class="font-bold">Comma Separator `,`</span>
+                            </div>
+
+                            <!-- Diagnostic 2: Relative Pronoun "which" -->
+                            <div class="p-3 rounded-xl border flex items-center space-x-2.5 transition-all"
+                                 :class="studioAnalysis.hasWhich ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                <span class="text-base" x-text="studioAnalysis.hasWhich ? '✅' : '⚪'"></span>
+                                <span class="font-bold">Relative Pronoun `which`</span>
+                            </div>
+
+                            <!-- Diagnostic 3: Avoided "that/what" Trap -->
+                            <div class="p-3 rounded-xl border flex items-center space-x-2.5 transition-all"
+                                 :class="studioAnalysis.noThatWhat ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'">
+                                <span class="text-base" x-text="studioAnalysis.noThatWhat ? '✅' : '🛑'"></span>
+                                <span class="font-bold">No `, that` or `, what`</span>
+                            </div>
+
+                            <!-- Diagnostic 4: Action / Comment Verb Detected -->
+                            <div class="p-3 rounded-xl border flex items-center space-x-2.5 transition-all"
+                                 :class="studioAnalysis.hasCommentVerb ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                <span class="text-base" x-text="studioAnalysis.hasCommentVerb ? '✅' : '⚪'"></span>
+                                <span class="font-bold">Comment Verb / Adj</span>
+                            </div>
+
+                        </div>
+
+                        <!-- Overall Feedback Message -->
+                        <div class="pt-2 text-xs font-mono" :class="studioAnalysis.isValid ? 'text-emerald-400' : 'text-amber-400'" x-text="studioAnalysis.feedback"></div>
+                    </div>
+
+                    <!-- Submit Sentence Button -->
+                    <div class="flex justify-end">
+                        <button @click="submitStudioSentence()" 
+                                :disabled="!studioAnalysis.isValid"
+                                :class="studioAnalysis.isValid ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg' : 'bg-slate-800 text-slate-600 cursor-not-allowed'"
+                                class="px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2">
+                            <span>✨ Save Sentence (+30 XP)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 6: PRINTABLE WORKSHEET & ANSWER KEY GENERATOR -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'print'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50 no-print">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest">
+                            Teacher & Student Export Studio
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Printable ESL Grammar Worksheet</h2>
+                        <p class="text-xs text-slate-400">Export or print a clean formatted PDF worksheet with core rules, exercises, and answer keys.</p>
+                    </div>
+
+                    <button @click="window.print()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2">
+                        <span>🖨️</span>
+                        <span>Print PDF Worksheet</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PRINTABLE SECTION (Visible on screen preview and print view) -->
+            <div id="printable-section" class="bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl space-y-8 text-sm leading-relaxed">
+                
+                <!-- Printable Header -->
+                <div class="border-b-2 border-indigo-600 pb-4 flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold text-indigo-950">ClauseComment Studio: Grammar Worksheet</h1>
+                        <p class="text-xs text-slate-600">Sentence-Modifying Relative Clauses starting with <strong class="font-mono text-indigo-700">", which"</strong> (B1/B2 Level)</p>
+                    </div>
+                    <div class="text-right text-xs text-slate-500 font-mono">
+                        <div>Name: ______________________</div>
+                        <div>Date: ______________________</div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Grammar Rule Summary -->
+                <div class="space-y-2">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">1. Grammar Rule Core Summary</h2>
+                    <p class="text-xs text-slate-700">
+                        Use a non-defining relative clause with <strong class="font-mono text-indigo-800">", which"</strong> to comment on an <em>entire sentence, action, or situation</em>.
+                    </p>
+                    <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-mono">
+                        [ Main Clause / Fact ] + <strong>, which</strong> + [ Comment / Reaction / Result ]
+                    </div>
+                    <p class="text-[11px] text-slate-600 italic">
+                        <strong>Important Traps to Avoid:</strong> Never use "that" after a comma for comments. Never use "what" to connect two clauses. Always include the comma!
+                    </p>
+                </div>
+
+                <!-- Section 2: Sentence Combination Exercises -->
+                <div class="space-y-4">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">2. Sentence Combination Exercises</h2>
+                    <p class="text-xs text-slate-600">Combine the Fact and Comment into one sentence using <code class="font-mono text-indigo-800">", which"</code>.</p>
+
+                    <div class="space-y-3 text-xs">
+                        <template x-for="(task, i) in combinerTasks" :key="task.id">
+                            <div class="space-y-1">
+                                <p class="font-bold text-slate-800" x-text="`${i + 1}. Fact: ${task.fact} | Comment: ${task.comment}`"></p>
+                                <div class="border-b border-slate-300 pt-4 w-full"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Section 3: Error Correction Exercises -->
+                <div class="space-y-4">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">3. Error Correction (Spot the Traps)</h2>
+                    <p class="text-xs text-slate-600">Rewrite each incorrect sentence with proper grammar.</p>
+
+                    <div class="space-y-3 text-xs">
+                        <template x-for="(c, i) in detectiveCases" :key="c.id">
+                            <div class="space-y-1">
+                                <p class="font-mono text-slate-800" x-text="`${i + 1}. ❌ ${c.flawedSentence}`"></p>
+                                <div class="border-b border-slate-300 pt-4 w-full"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Section 4: Answer Key (Teacher Section) -->
+                <div class="pt-6 border-t-2 border-indigo-600 space-y-3">
+                    <h2 class="text-base font-bold text-indigo-900">4. Answer Key</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <h3 class="font-bold text-indigo-950 mb-2">Sentence Combiner Solutions:</h3>
+                            <ul class="space-y-1 text-[11px] text-slate-700">
+                                <li>1. ..., which attracted thousands of visitors.</li>
+                                <li>2. ..., which impressed the hiring manager.</li>
+                                <li>3. ..., which made it impossible to finish our work.</li>
+                                <li>4. ..., which made her parents very proud.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-indigo-950 mb-2">Error Detective Solutions:</h3>
+                            <ul class="space-y-1 text-[11px] text-slate-700">
+                                <li>1. Replace ", that" with ", which"</li>
+                                <li>2. Replace ", what" with ", which"</li>
+                                <li>3. Add missing comma before "which"</li>
+                                <li>4. Correct subject-verb agreement: ", which made/makes"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-indigo-900/30 bg-slate-950 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>ClauseComment Studio • Interactive ESL Learning Application for Sentence-Modifying Relative Clauses</p>
+        </div>
+    </footer>
+
+    <!-- ALPINE APP LOGIC SCRIPT -->
+    <script>
+        function clauseApp() {
+            return {
+                activeTab: 'inspector',
+                darkMode: true,
+                soundMuted: false,
+                totalXp: 100,
+                audioCtx: null,
+
+                toast: {
+                    show: false,
+                    icon: '💡',
+                    title: '',
+                    message: ''
+                },
+
+                // Audio Synthesis Engine
+                initAudio() {
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            this.audioCtx = new AudioContext();
+                        }
+                    } catch (e) {
+                        console.log('Web Audio not supported');
+                    }
+                },
+
+                toggleMute() {
+                    this.soundMuted = !this.soundMuted;
+                    this.showToast(
+                        this.soundMuted ? 'Muted' : 'Audio Active',
+                        this.soundMuted ? 'Sound effects disabled.' : 'Synthesized audio feedback enabled.',
+                        this.soundMuted ? '🔇' : '🔊'
+                    );
+                },
+
+                playSound(type) {
+                    if (this.soundMuted || !this.audioCtx) return;
+                    try {
+                        if (this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
+                        const now = this.audioCtx.currentTime;
+
+                        if (type === 'click') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(520, now);
+                            gain.gain.setValueAtTime(0.04, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.04);
+                        } else if (type === 'pop') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(350, now);
+                            osc.frequency.exponentialRampToValueAtTime(700, now + 0.06);
+                            gain.gain.setValueAtTime(0.05, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.06);
+                        } else if (type === 'success') {
+                            const osc1 = this.audioCtx.createOscillator();
+                            const osc2 = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc1.type = 'sine';
+                            osc2.type = 'triangle';
+                            osc1.frequency.setValueAtTime(523.25, now); // C5
+                            osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                            gain.gain.setValueAtTime(0.06, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                            osc1.connect(gain);
+                            osc2.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc1.start(now);
+                            osc1.stop(now + 0.15);
+                            osc2.start(now + 0.08);
+                            osc2.stop(now + 0.3);
+                        } else if (type === 'error') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(180, now);
+                            gain.gain.setValueAtTime(0.06, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.2);
+                        }
+                    } catch (e) {}
+                },
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.playSound('click');
+                },
+
+                showToast(title, message, icon = '💡') {
+                    this.toast = { show: true, title, message, icon };
+                    setTimeout(() => { this.toast.show = false; }, 3200);
+                },
+
+                addXp(amount) {
+                    this.totalXp += amount;
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 1: GRAMMAR INSPECTOR STATE
+                // -----------------------------------------------------------
+                selectedRuleTest: 'correct',
+
+                // -----------------------------------------------------------
+                // MODULE 2: SORTING GAME DATA & METHODS
+                // -----------------------------------------------------------
+                sortIndex: 0,
+                sortScore: 0,
+                sortStreak: 0,
+                sortAnswered: false,
+                sortIsCorrect: false,
+
+                sortCards: [
+                    {
+                        sentence: "He missed the last bus home, which forced him to pay for an expensive taxi.",
+                        type: "sentence",
+                        explanation: "Sentence Modifier! 'which' refers to the whole situation of missing the bus, not just the bus itself."
+                    },
+                    {
+                        sentence: "She gave me a rare antique book, which was printed in 1850.",
+                        type: "noun",
+                        explanation: "Noun Modifier! 'which' refers specifically to the 'rare antique book'."
+                    },
+                    {
+                        sentence: "The company increased salaries by 15%, which boosted employee morale.",
+                        type: "sentence",
+                        explanation: "Sentence Modifier! 'which' refers to the action of increasing salaries."
+                    },
+                    {
+                        sentence: "We stayed in a charming boutique hotel, which was located right near the beach.",
+                        type: "noun",
+                        explanation: "Noun Modifier! 'which' refers specifically to the 'hotel'."
+                    },
+                    {
+                        sentence: "They forgot to lock the front door, which was extremely careless.",
+                        type: "sentence",
+                        explanation: "Sentence Modifier! 'which' refers to the fact/action of forgetting to lock the door."
+                    },
+                    {
+                        sentence: "He bought a brand-new laptop, which has a 16-inch high-definition screen.",
+                        type: "noun",
+                        explanation: "Noun Modifier! 'which' refers specifically to the 'laptop'."
+                    },
+                    {
+                        sentence: "Our flight was cancelled without warning, which caused total chaos at the airport.",
+                        type: "sentence",
+                        explanation: "Sentence Modifier! 'which' refers to the flight cancellation event."
+                    },
+                    {
+                        sentence: "She recommended an Italian restaurant, which serves authentic wood-fired pizza.",
+                        type: "noun",
+                        explanation: "Noun Modifier! 'which' refers specifically to the 'restaurant'."
+                    }
+                ],
+
+                get currentSortCard() {
+                    return this.sortCards[this.sortIndex];
+                },
+
+                classifySortCard(chosenType) {
+                    if (this.sortAnswered) return;
+                    this.sortAnswered = true;
+                    if (chosenType === this.currentSortCard.type) {
+                        this.sortIsCorrect = true;
+                        this.sortScore += 20;
+                        this.sortStreak++;
+                        this.addXp(20);
+                        this.playSound('success');
+                    } else {
+                        this.sortIsCorrect = false;
+                        this.sortStreak = 0;
+                        this.playSound('error');
+                    }
+                },
+
+                nextSortCard() {
+                    this.sortIndex++;
+                    this.sortAnswered = false;
+                    this.playSound('click');
+                },
+
+                restartSortGame() {
+                    this.sortIndex = 0;
+                    this.sortScore = 0;
+                    this.sortStreak = 0;
+                    this.sortAnswered = false;
+                    this.playSound('click');
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 3: SENTENCE COMBINER DATA & METHODS
+                // -----------------------------------------------------------
+                combinerCompletedCount: 0,
+
+                combinerTasks: [
+                    {
+                        id: 1,
+                        fact: "The museum allowed free entry on Sundays.",
+                        comment: "This attracted thousands of visitors.",
+                        userInput: "",
+                        solved: false,
+                        checked: false,
+                        isCorrect: false,
+                        feedbackMessage: "",
+                        expectedFormat: "The museum allowed free entry on Sundays, which attracted thousands of visitors."
+                    },
+                    {
+                        id: 2,
+                        fact: "He spoke fluent French during the interview.",
+                        comment: "This impressed the hiring manager.",
+                        userInput: "",
+                        solved: false,
+                        checked: false,
+                        isCorrect: false,
+                        feedbackMessage: "",
+                        expectedFormat: "He spoke fluent French during the interview, which impressed the hiring manager."
+                    },
+                    {
+                        id: 3,
+                        fact: "The power went out during the thunderstorm.",
+                        comment: "This made it impossible to finish our work.",
+                        userInput: "",
+                        solved: false,
+                        checked: false,
+                        isCorrect: false,
+                        feedbackMessage: "",
+                        expectedFormat: "The power went out during the thunderstorm, which made it impossible to finish our work."
+                    },
+                    {
+                        id: 4,
+                        fact: "She passed all her final exams with top grades.",
+                        comment: "This made her parents very proud.",
+                        userInput: "",
+                        solved: false,
+                        checked: false,
+                        isCorrect: false,
+                        feedbackMessage: "",
+                        expectedFormat: "She passed all her final exams with top grades, which made her parents very proud."
+                    }
+                ],
+
+                checkCombinerTask(task) {
+                    task.checked = true;
+                    const cleanedInput = task.userInput.trim().toLowerCase();
+                    const hasCommaWhich = cleanedInput.includes(', which');
+                    const noThisThatWhat = !cleanedInput.includes(', that') && !cleanedInput.includes(', what') && !cleanedInput.includes(', this');
+                    
+                    if (hasCommaWhich && noThisThatWhat && cleanedInput.length > task.fact.length + 8) {
+                        task.isCorrect = true;
+                        task.feedbackMessage = "Excellent! You properly inserted ', which' and removed the repetitive pronoun 'this'.";
+                        if (!task.solved) {
+                            task.solved = true;
+                            this.combinerCompletedCount++;
+                            this.addXp(25);
+                        }
+                        this.playSound('success');
+                    } else {
+                        task.isCorrect = false;
+                        if (!hasCommaWhich) {
+                            task.feedbackMessage = "Missing ', which'! Remember to use a comma followed by 'which'.";
+                        } else if (cleanedInput.includes(', that')) {
+                            task.feedbackMessage = "Trap detected! Do not use ', that' after a comma for sentence comments.";
+                        } else {
+                            task.feedbackMessage = "Check your combination syntax and ensure 'this' is replaced by ', which'.";
+                        }
+                        this.playSound('error');
+                    }
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 4: ERROR DETECTIVE DATA & METHODS
+                // -----------------------------------------------------------
+                detectiveCases: [
+                    {
+                        id: 1,
+                        trapName: "Using 'that' after comma",
+                        flawedSentence: "She forgot her passport at home, that delayed her departure.",
+                        selectedOpt: null,
+                        explanation: "Never use 'that' after a comma to make a sentence comment. Replace ', that' with ', which'.",
+                        options: [
+                            { text: "She forgot her passport at home, which delayed her departure.", correct: true },
+                            { text: "She forgot her passport at home, what delayed her departure.", correct: false },
+                            { text: "She forgot her passport at home that delayed her departure.", correct: false }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        trapName: "Using 'what' to link clauses",
+                        flawedSentence: "The team won the championship, what made everyone ecstatic.",
+                        selectedOpt: null,
+                        explanation: "'what' cannot link two clauses like a relative pronoun. Use ', which' instead.",
+                        options: [
+                            { text: "The team won the championship, that made everyone ecstatic.", correct: false },
+                            { text: "The team won the championship, which made everyone ecstatic.", correct: true },
+                            { text: "The team won the championship what made everyone ecstatic.", correct: false }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        trapName: "Missing Comma",
+                        flawedSentence: "He admitted his mistake which showed great courage.",
+                        selectedOpt: null,
+                        explanation: "Sentence-modifying relative clauses MUST have a comma before 'which' to separate the main clause.",
+                        options: [
+                            { text: "He admitted his mistake, which showed great courage.", correct: true },
+                            { text: "He admitted his mistake that showed great courage.", correct: false },
+                            { text: "He admitted his mistake, what showed great courage.", correct: false }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        trapName: "Subject-Verb Agreement",
+                        flawedSentence: "The project was completed early, which make the client happy.",
+                        selectedOpt: null,
+                        explanation: "'which' refers to the whole situation (a singular concept), so the verb must be singular ('makes' or 'made').",
+                        options: [
+                            { text: "The project was completed early, which make the client happy.", correct: false },
+                            { text: "The project was completed early, which made the client happy.", correct: true },
+                            { text: "The project was completed early, what makes the client happy.", correct: false }
+                        ]
+                    }
+                ],
+
+                checkDetectiveCase(caseItem) {
+                    const isCorrect = caseItem.options[caseItem.selectedOpt]?.correct;
+                    if (isCorrect) {
+                        this.addXp(20);
+                        this.playSound('success');
+                    } else {
+                        this.playSound('error');
+                    }
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 5: GUIDED COMMENT STUDIO DATA & PARSER
+                // -----------------------------------------------------------
+                selectedStudioScenario: {
+                    id: 1,
+                    category: "Everyday Problems",
+                    icon: "⏰",
+                    prompt: "You overslept and missed your morning alarm, causing you to be late for an important exam.",
+                    suggestedVerbs: ["made", "ruined", "caused", "surprised", "forced"]
+                },
+
+                studioScenarios: [
+                    {
+                        id: 1,
+                        category: "Everyday Problems",
+                        icon: "⏰",
+                        prompt: "You overslept and missed your morning alarm, causing you to be late for an important exam.",
+                        suggestedVerbs: ["made", "ruined", "caused", "surprised", "forced"]
+                    },
+                    {
+                        id: 2,
+                        category: "Technology",
+                        icon: "🔋",
+                        prompt: "Your smartphone battery lasted for 4 full days without needing a single charge.",
+                        suggestedVerbs: ["impressed", "helped", "allowed", "saved", "delighted"]
+                    },
+                    {
+                        id: 3,
+                        category: "Inventions",
+                        icon: "☀️",
+                        prompt: "Engineers designed a portable solar water purifier for remote villages.",
+                        suggestedVerbs: ["improved", "provided", "meant", "helped", "transformed"]
+                    },
+                    {
+                        id: 4,
+                        category: "Creative Achievements",
+                        icon: "🎨",
+                        prompt: "She published her original short story online and received thousands of positive reviews.",
+                        suggestedVerbs: ["encouraged", "inspired", "boosted", "proved", "thrilled"]
+                    }
+                ],
+
+                studioInput: "",
+                studioAnalysis: {
+                    hasComma: false,
+                    hasWhich: false,
+                    noThatWhat: true,
+                    hasCommentVerb: false,
+                    isValid: false,
+                    feedback: "Type a complete sentence with ', which' to inspect your syntax."
+                },
+
+                parseStudioGrammar() {
+                    const val = this.studioInput.trim();
+                    const hasComma = val.includes(',');
+                    const hasWhich = /,[\s]*which\b/i.test(val);
+                    const hasThatOrWhat = /,[\s]*(that|what)\b/i.test(val);
+                    
+                    const verbsRegex = /\b(made|makes|ruined|ruins|caused|causes|surprised|surprises|helped|helps|meant|means|forced|forces|impressed|impresses|proved|proves|showed|shows|was|is|were)\b/i;
+                    const hasCommentVerb = verbsRegex.test(val);
+
+                    this.studioAnalysis.hasComma = hasComma;
+                    this.studioAnalysis.hasWhich = hasWhich;
+                    this.studioAnalysis.noThatWhat = !hasThatOrWhat;
+                    this.studioAnalysis.hasCommentVerb = hasCommentVerb;
+
+                    if (hasWhich && !hasThatOrWhat && hasCommentVerb && val.length > 25) {
+                        this.studioAnalysis.isValid = true;
+                        this.studioAnalysis.feedback = "✨ Outstanding! Your sentence structure is grammatically sound!";
+                    } else if (hasThatOrWhat) {
+                        this.studioAnalysis.isValid = false;
+                        this.studioAnalysis.feedback = "🛑 Trap Warning: Do not use ', that' or ', what' for sentence comments!";
+                    } else if (!hasWhich) {
+                        this.studioAnalysis.isValid = false;
+                        this.studioAnalysis.feedback = "⚠️ Include ', which' to comment on your main clause.";
+                    } else {
+                        this.studioAnalysis.isValid = false;
+                        this.studioAnalysis.feedback = "Ensure you include a main clause and a comment verb after 'which'.";
+                    }
+                },
+
+                submitStudioSentence() {
+                    if (this.studioAnalysis.isValid) {
+                        this.addXp(30);
+                        this.showToast('Sentence Validated!', 'Saved +30 XP to your score.', '🎉');
+                        this.playSound('success');
+                        this.studioInput = "";
+                        this.parseStudioGrammar();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
