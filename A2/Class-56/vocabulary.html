@@ -1,1 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Power: Synonym Matcher & Classifier</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+            --awful-color: #f87171;
+            --wonderful-color: #34d399;
+            --stupid-color: #fbbf24;
+            --strange-color: #a78bfa;
+            --funny-color: #38bdf8;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Module 1: Sorting Board */
+        .word-bank-container {
+            background: var(--card-bg);
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .word-bank-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 50px;
+        }
+
+        .word-chip {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .word-chip:hover {
+            transform: translateY(-2px);
+            background: #c7d2fe;
+        }
+
+        .word-chip.selected {
+            outline: 3px solid var(--primary);
+            background: #a5b4fc;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .category-column {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+
+        .category-header {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .cat-awful { background: #fee2e2; color: #991b1b; }
+        .cat-wonderful { background: #d1fae5; color: #065f46; }
+        .cat-stupid { background: #fef3c7; color: #92400e; }
+        .cat-strange { background: #ede9fe; color: #5b21b6; }
+        .cat-funny { background: #e0f2fe; color: #075985; }
+
+        .drop-zone {
+            flex-grow: 1;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            background: #f1f5f9;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #e2e8f0; color: var(--text); }
+        .btn-secondary:hover { background: #cbd5e1; }
+
+        /* Module 2: Practice Quiz */
+        .quiz-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .quiz-question {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-opt {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .quiz-opt:hover {
+            background: #f1f5f9;
+            border-color: var(--primary);
+        }
+
+        .feedback-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 600;
+        }
+
+        .feedback-box.correct { background: #d1fae5; color: #065f46; display: block; }
+        .feedback-box.incorrect { background: #fee2e2; color: #991b1b; display: block; }
+
+        .sound-icon {
+            cursor: pointer;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        .sound-icon:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Word Power: How Do You Like It?</h1>
+        <p>Master 15 synonyms for Awful, Wonderful, Stupid, Strange, and Funny</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('classifier')">1. Synonym Classifier</button>
+        <button class="tab-btn" onclick="switchTab('quiz')">2. Context Quiz</button>
+    </div>
+
+    <!-- MODULE 1: CLASSIFIER -->
+    <div id="classifier" class="tab-content active">
+        <div class="word-bank-container">
+            <div class="word-bank-title">Word Bank (Click a word, then click a category column)</div>
+            <div class="word-pool" id="wordPool"></div>
+        </div>
+
+        <div class="categories-grid">
+            <div class="category-column" onclick="assignSelected('Awful')">
+                <div class="category-header cat-awful">Awful</div>
+                <div class="drop-zone" id="zone-Awful"></div>
+            </div>
+            <div class="category-column" onclick="assignSelected('Wonderful')">
+                <div class="category-header cat-wonderful">Wonderful</div>
+                <div class="drop-zone" id="zone-Wonderful"></div>
+            </div>
+            <div class="category-column" onclick="assignSelected('Stupid')">
+                <div class="category-header cat-Stupid">Stupid</div>
+                <div class="drop-zone" id="zone-Stupid"></div>
+            </div>
+            <div class="category-column" onclick="assignSelected('Strange')">
+                <div class="category-header cat-strange">Strange</div>
+                <div class="drop-zone" id="zone-Strange"></div>
+            </div>
+            <div class="category-column" onclick="assignSelected('Funny')">
+                <div class="category-header cat-funny">Funny</div>
+                <div class="drop-zone" id="zone-Funny"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="checkAnswers()">Check Answers</button>
+            <button class="btn btn-secondary" onclick="resetBoard()">Reset</button>
+        </div>
+    </div>
+
+    <!-- MODULE 2: CONTEXT QUIZ -->
+    <div id="quiz" class="tab-content">
+        <div class="quiz-card">
+            <div class="quiz-question" id="quizQuestion">Loading question...</div>
+            <div class="quiz-options" id="quizOptions"></div>
+            <div id="quizFeedback" class="feedback-box"></div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="btn btn-primary" onclick="nextQuestion()">Next Question</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wordsData = [
+            { word: 'amusing', category: 'Funny' },
+            { word: 'bizarre', category: 'Strange' },
+            { word: 'disgusting', category: 'Awful' },
+            { word: 'dumb', category: 'Stupid' },
+            { word: 'fantastic', category: 'Wonderful' },
+            { word: 'hilarious', category: 'Funny' },
+            { word: 'horrible', category: 'Awful' },
+            { word: 'hysterical', category: 'Funny' },
+            { word: 'incredible', category: 'Wonderful' },
+            { word: 'odd', category: 'Strange' },
+            { word: 'outstanding', category: 'Wonderful' },
+            { word: 'ridiculous', category: 'Stupid' },
+            { word: 'silly', category: 'Stupid' },
+            { word: 'terrible', category: 'Awful' },
+            { word: 'weird', category: 'Strange' }
+        ];
+
+        let selectedWordEl = null;
+
+        function initClassifier() {
+            const wordPool = document.getElementById('wordPool');
+            wordPool.innerHTML = '';
+            
+            // Shuffle words
+            const shuffled = [...wordsData].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(item => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip';
+                chip.dataset.word = item.word;
+                chip.dataset.category = item.category;
+                chip.innerHTML = `${item.word} <span class="sound-icon" onclick="speak('${item.word}', event)">🔊</span>`;
+                chip.onclick = (e) => selectWord(chip, e);
+                wordPool.appendChild(chip);
+            });
+
+            ['Awful', 'Wonderful', 'Stupid', 'Strange', 'Funny'].forEach(cat => {
+                document.getElementById(`zone-${cat}`).innerHTML = '';
+            });
+        }
+
+        function speak(text, event) {
+            if(event) event.stopPropagation();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function selectWord(chipEl, event) {
+            if(event.target.classList.contains('sound-icon')) return;
+            if (selectedWordEl) selectedWordEl.classList.remove('selected');
+            
+            if (selectedWordEl === chipEl) {
+                selectedWordEl = null;
+            } else {
+                selectedWordEl = chipEl;
+                selectedWordEl.classList.add('selected');
+            }
+        }
+
+        function assignSelected(categoryName) {
+            if (!selectedWordEl) return;
+            const zone = document.getElementById(`zone-${categoryName}`);
+            selectedWordEl.classList.remove('selected');
+            zone.appendChild(selectedWordEl);
+            selectedWordEl = null;
+        }
+
+        function checkAnswers() {
+            let correctCount = 0;
+            const total = wordsData.length;
+
+            wordsData.forEach(item => {
+                const chip = document.querySelector(`[data-word="${item.word}"]`);
+                const parentZone = chip.parentElement.id;
+                const targetZone = `zone-${item.category}`;
+
+                if (parentZone === targetZone) {
+                    correctCount++;
+                    chip.style.border = '2px solid var(--success)';
+                } else {
+                    chip.style.border = '2px solid var(--error)';
+                }
+            });
+
+            alert(`Score: ${correctCount} / ${total} correct!`);
+        }
+
+        function resetBoard() {
+            initClassifier();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            if(tabId === 'quiz') loadQuizQuestion();
+        }
+
+        // Quiz Logic
+        const quizQuestions = [
+            {
+                q: "The stand-up comedian was so __________ that the audience couldn't stop laughing for hours!",
+                options: ["disgusting", "hilarious", "bizarre", "terrible"],
+                answer: "hilarious"
+            },
+            {
+                q: "The team gave an __________ performance and won the championship trophy effortlessly.",
+                options: ["outstanding", "odd", "dumb", "horrible"],
+                answer: "outstanding"
+            },
+            {
+                q: "It felt very __________ that the lights turned on by themselves in the empty house.",
+                options: ["amusing", "bizarre", "silly", "fantastic"],
+                answer: "bizarre"
+            },
+            {
+                q: "The milk left in the sun smelled completely __________.",
+                options: ["incredible", "disgusting", "hysterical", "outstanding"],
+                answer: "disgusting"
+            }
+        ];
+
+        let currentQIndex = 0;
+
+        function loadQuizQuestion() {
+            const q = quizQuestions[currentQIndex];
+            document.getElementById('quizQuestion').innerText = q.q;
+            const optsContainer = document.getElementById('quizOptions');
+            const feedback = document.getElementById('quizFeedback');
+            
+            feedback.className = 'feedback-box';
+            feedback.style.display = 'none';
+            optsContainer.innerHTML = '';
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-opt';
+                btn.innerText = opt;
+                btn.onclick = () => checkQuiz(opt, q.answer);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function checkQuiz(selected, correct) {
+            const feedback = document.getElementById('quizFeedback');
+            if(selected === correct) {
+                feedback.innerText = "✨ Correct! Great vocabulary choice.";
+                feedback.className = "feedback-box correct";
+            } else {
+                feedback.innerText = `❌ Not quite. The best synonym fit is "${correct}".`;
+                feedback.className = "feedback-box incorrect";
+            }
+        }
+
+        function nextQuestion() {
+            currentQIndex = (currentQIndex + 1) % quizQuestions.length;
+            loadQuizQuestion();
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initClassifier();
+        };
+    </script>
+</body>
+</html>
