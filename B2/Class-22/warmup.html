@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PeakState: Mind & Body Routine Tracker & Optimizer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              900: '#134e4a',
+            },
+            accent: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    /* Radial Progress & SVG Transitions */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.35s;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Print Stylesheet for Physical Export */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .card-print {
+        border: 1px solid #ccc !important;
+        background: #fff !important;
+        color: #000 !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col bg-slate-950 font-sans text-slate-100 antialiased selection:bg-teal-500 selection:text-white transition-colors duration-300">
+
+  <!-- TOP APP HEADER -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md px-4 lg:px-8 py-3.5 no-print">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-500 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/20 text-white font-black text-xl">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+            PeakState <span class="text-xs px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 font-semibold tracking-wide">Routine & Circadian Optimizer</span>
+          </h1>
+          <p id="liveDateStr" class="text-xs text-slate-400 font-medium">Monday, Oct 19 • Circadian Alignment Active</p>
+        </div>
+      </div>
+
+      <!-- Controls & Chronotype Selector -->
+      <div class="flex items-center flex-wrap gap-3">
+        <!-- Chronotype Pill Selector -->
+        <div class="flex items-center bg-slate-950/80 border border-slate-800 rounded-xl p-1 text-xs">
+          <span class="px-2.5 text-slate-400 font-semibold hidden sm:inline">🌅 Rhythm:</span>
+          <button id="chronoLark" onclick="setChronotype('lark')" class="px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white transition">Lark</button>
+          <button id="chronoBalanced" onclick="setChronotype('balanced')" class="px-2.5 py-1 rounded-lg bg-teal-600 text-white font-bold transition shadow-sm">Balanced</button>
+          <button id="chronoOwl" onclick="setChronotype('owl')" class="px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white transition">Night Owl</button>
+        </div>
+
+        <!-- Sound FX Toggle -->
+        <button id="soundToggleBtn" onclick="toggleAudio()" class="p-2.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-slate-300 hover:text-white transition flex items-center justify-center" title="Toggle Sound Chimes">
+          <svg id="soundIconOn" class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/></svg>
+          <svg id="soundIconOff" class="w-4 h-4 hidden text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-dasharray="2 2"/></svg>
+        </button>
+
+        <!-- Export/Print Action -->
+        <button onclick="window.print()" class="flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span class="hidden md:inline">Print / Save PDF</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS BAR -->
+  <nav class="bg-slate-900 border-b border-slate-800/80 px-4 lg:px-8 py-2 overflow-x-auto no-print">
+    <div class="max-w-7xl mx-auto flex items-center space-x-2 text-xs font-medium min-w-max">
+      
+      <button onclick="switchTab('timeline')" id="tab-btn-timeline" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/30 font-bold transition">
+        <span>🌅</span>
+        <span>24h Circadian Studio</span>
+      </button>
+
+      <button onclick="switchTab('timer')" id="tab-btn-timer" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/50 transition">
+        <span>⏱️</span>
+        <span>Ultradian Focus & Soundscapes</span>
+      </button>
+
+      <button onclick="switchTab('energy')" id="tab-btn-energy" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/50 transition">
+        <span>📈</span>
+        <span>Energy Curve Analytics</span>
+      </button>
+
+      <button onclick="switchTab('science')" id="tab-btn-science" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/50 transition">
+        <span>🧬</span>
+        <span>Biology Knowledge Vault</span>
+      </button>
+
+      <button onclick="switchTab('summary')" id="tab-btn-summary" class="tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/50 transition">
+        <span>📋</span>
+        <span>Routine Architect & Export</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
+
+    <!-- KPI STATS HERO BAR -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+      
+      <!-- Habit Completion Card -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-lg">
+        <div>
+          <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Habit Completion</span>
+          <div id="statCompletionPct" class="text-2xl font-black text-white mt-1">0%</div>
+          <p id="statHabitRatio" class="text-[11px] text-teal-400 font-medium">0 of 8 completed</p>
+        </div>
+        <div class="relative w-12 h-12 flex items-center justify-center">
+          <svg class="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+            <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <path id="kpiProgressRing" class="text-teal-400 transition-all duration-500" stroke-dasharray="0, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Streak Counter Card -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-lg">
+        <div>
+          <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Consistency Streak</span>
+          <div id="statStreakDays" class="text-2xl font-black text-amber-400 mt-1">1 Day</div>
+          <p class="text-[11px] text-slate-400 font-medium">Active High-Peak Streak</p>
+        </div>
+        <div class="text-3xl p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">🔥</div>
+      </div>
+
+      <!-- Today's Avg Energy -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-lg">
+        <div>
+          <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Avg Daily Energy</span>
+          <div id="statAvgEnergy" class="text-2xl font-black text-emerald-400 mt-1">N/A</div>
+          <p id="statEnergyLogsCount" class="text-[11px] text-slate-400 font-medium">0 Logs Today</p>
+        </div>
+        <div class="text-3xl p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">⚡</div>
+      </div>
+
+      <!-- Chronotype Profile Card -->
+      <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between shadow-lg">
+        <div>
+          <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Chronotype Mode</span>
+          <div id="statChronoName" class="text-lg font-bold text-sky-400 mt-1">Balanced</div>
+          <p id="statChronoWake" class="text-[11px] text-slate-400 font-medium">Wake Window: 6:00 AM</p>
+        </div>
+        <div id="statChronoEmoji" class="text-3xl p-2 bg-sky-500/10 rounded-xl border border-sky-500/20">☀️</div>
+      </div>
+
+    </section>
+
+    <!-- TAB 1: 24-HOUR CIRCADIAN TIMELINE STUDIO -->
+    <section id="tab-content-timeline" class="tab-pane space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+              <span>🌅</span> 24-Hour Circadian & Ultradian Timeline Studio
+            </h2>
+            <p class="text-sm text-slate-400 mt-1">
+              Synchronize daily habits with body temperature, adenosine buildup, cortisol cycles, and melatonin release.
+            </p>
+          </div>
+          <button onclick="resetAllHabitsForDay()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition border border-slate-700">
+            🔄 Reset Today's Checklist
+          </button>
+        </div>
+
+        <!-- Dynamic Chronotype Time Breakdown Grid -->
+        <div id="circadianTimelineGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically populated phase cards -->
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 2: ULTRADIAN 90-MINUTE FOCUS TIMER & AMBIENT SOUNDSCAPES -->
+    <section id="tab-content-timer" class="tab-pane hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Timer Main Centerpiece -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-between space-y-6">
+          
+          <div class="w-full flex items-center justify-between border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>⏱️</span> Ultradian Deep Work Timer
+              </h2>
+              <p class="text-xs text-slate-400">90-minute high-focus work blocks aligned with brain ultradian rhythms.</p>
+            </div>
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+              <button id="btnTimerMode90" onclick="setTimerPreset(90, 'Focus')" class="px-3 py-1 rounded-lg bg-teal-600 text-white transition">90m Focus</button>
+              <button id="btnTimerMode20" onclick="setTimerPreset(20, 'Restoration')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">20m Break</button>
+              <button id="btnTimerMode15" onclick="setTimerPreset(15, 'NSDR')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition">15m NSDR</button>
+            </div>
+          </div>
+
+          <!-- Circular Visual Timer -->
+          <div class="relative w-72 h-72 my-4 flex items-center justify-center">
+            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" class="text-slate-800" stroke-width="6" stroke="currentColor" fill="none"/>
+              <circle id="timerProgressRing" cx="50" cy="50" r="44" class="text-teal-400 progress-ring-circle" stroke-width="6" stroke-dasharray="276.46" stroke-dashoffset="0" stroke-linecap="round" stroke="currentColor" fill="none"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span id="timerLabel" class="text-xs font-mono font-bold uppercase tracking-widest text-teal-400">ULTRADIAN FOCUS</span>
+              <span id="timerDisplay" class="text-5xl font-black font-mono tracking-tight text-white my-1">90:00</span>
+              <span id="timerSubLabel" class="text-[11px] text-slate-400">Peak Attention State</span>
+            </div>
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="flex items-center gap-4">
+            <button id="timerToggleBtn" onclick="toggleTimer()" class="px-8 py-3 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-bold rounded-2xl text-sm shadow-lg shadow-teal-500/20 transition transform hover:-translate-y-0.5 flex items-center gap-2">
+              <svg id="timerPlayIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <svg id="timerPauseIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="timerToggleTxt">Start Session</span>
+            </button>
+
+            <button onclick="resetTimer()" class="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-2xl text-xs font-semibold transition" title="Reset Timer">
+              🔄 Reset
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Ambient Soundscape Synthesizer Engine -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 flex flex-col justify-between">
+          
+          <div>
+            <div class="border-b border-slate-800 pb-4">
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>🎧</span> Web Audio Ambient Noise Generator
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">Pure mathematical audio synthesis to mask external acoustic distractions.</p>
+            </div>
+
+            <div class="space-y-4 mt-6">
+              <!-- Soundscape Selector -->
+              <div class="grid grid-cols-3 gap-2">
+                <button id="noiseBtnWhite" onclick="setNoiseType('white')" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition text-center">
+                  <div class="text-lg mb-1">📻</div>
+                  <span>White Noise</span>
+                </button>
+                <button id="noiseBtnPink" onclick="setNoiseType('pink')" class="p-3 rounded-xl bg-teal-500/20 border border-teal-500/50 text-xs font-bold text-teal-300 transition text-center">
+                  <div class="text-lg mb-1">🌊</div>
+                  <span>Pink Noise</span>
+                </button>
+                <button id="noiseBtnRain" onclick="setNoiseType('rain')" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition text-center">
+                  <div class="text-lg mb-1">🌧️</div>
+                  <span>Soft Rain</span>
+                </button>
+              </div>
+
+              <!-- Volume Control Slider -->
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                  <span class="text-slate-400">Synthesizer Volume</span>
+                  <span id="noiseVolTxt" class="text-teal-400 font-mono">35%</span>
+                </div>
+                <input type="range" id="noiseVolSlider" min="0" max="100" value="35" oninput="updateNoiseVolume(this.value)" class="w-full accent-teal-500 bg-slate-800 rounded-lg h-2 cursor-pointer">
+              </div>
+            </div>
+          </div>
+
+          <!-- Play/Stop Soundscape Button -->
+          <button id="noiseToggleBtn" onclick="toggleNoiseGenerator()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-teal-400 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition">
+            <span>🔊 Start Ambient Soundscape</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 3: ENERGY & FOCUS LOGGER & CANVAS ANALYTICS -->
+    <section id="tab-content-energy" class="tab-pane hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Energy Logging Input Form Card -->
+        <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div class="border-b border-slate-800 pb-4">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>✍️</span> Log Energy & Clarity
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Record subjective mental focus and physical energy levels throughout your day.</p>
+          </div>
+
+          <form onsubmit="handleLogEnergy(event)" class="space-y-4 text-xs">
+            <!-- Time Picker -->
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-300 block">Time of Log:</label>
+              <input type="time" id="logTimeInput" required class="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-2.5 font-mono outline-none focus:border-teal-500 transition">
+            </div>
+
+            <!-- Focus Level Slider -->
+            <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="flex justify-between items-center font-semibold">
+                <span class="text-sky-400">🧠 Mental Focus (1-10)</span>
+                <span id="logFocusVal" class="text-sky-400 font-mono font-bold text-sm">8</span>
+              </div>
+              <input type="range" min="1" max="10" value="8" id="logFocusInput" oninput="document.getElementById('logFocusVal').innerText = this.value" class="w-full accent-sky-400 bg-slate-800 rounded-lg h-2 cursor-pointer">
+            </div>
+
+            <!-- Physical Energy Slider -->
+            <div class="space-y-1 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="flex justify-between items-center font-semibold">
+                <span class="text-emerald-400">⚡ Physical Energy (1-10)</span>
+                <span id="logEnergyVal" class="text-emerald-400 font-mono font-bold text-sm">7</span>
+              </div>
+              <input type="range" min="1" max="10" value="7" id="logEnergyInput" oninput="document.getElementById('logEnergyVal').innerText = this.value" class="w-full accent-emerald-400 bg-slate-800 rounded-lg h-2 cursor-pointer">
+            </div>
+
+            <!-- Note Input -->
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-300 block">Context / Note (Optional):</label>
+              <input type="text" id="logNoteInput" placeholder="e.g. Post 90m deep work session, feels energized" class="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded-xl p-2.5 outline-none focus:border-teal-500 transition">
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-bold rounded-xl text-xs shadow-md transition">
+              Save Energy Entry (+15 XP)
+            </button>
+          </form>
+
+          <button onclick="clearEnergyLogs()" class="w-full py-2 bg-slate-950 hover:bg-slate-800 text-slate-400 rounded-xl text-xs font-semibold border border-slate-800 transition">
+            Clear Logs for Today
+          </button>
+        </div>
+
+        <!-- HTML5 Canvas Energy Analytics Chart -->
+        <div class="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 flex flex-col justify-between">
+          
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>📈</span> Circadian Rhythm vs. Real-time Energy Curve
+              </h2>
+              <p class="text-xs text-slate-400">Comparing your logged focus/energy points against the theoretical biological energy curve.</p>
+            </div>
+            
+            <!-- Chart Legend -->
+            <div class="flex items-center gap-4 text-xs font-semibold">
+              <div class="flex items-center gap-1.5 text-slate-400">
+                <span class="w-3 h-0.5 bg-slate-500 border-dashed"></span>
+                <span>Ideal Rhythm</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-sky-400">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+                <span>Mental Focus</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-emerald-400">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <span>Physical Energy</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Canvas Area -->
+          <div class="relative w-full h-80 bg-slate-950 rounded-xl border border-slate-800 p-2 overflow-hidden flex items-center justify-center">
+            <canvas id="energyCanvas" class="w-full h-full block"></canvas>
+          </div>
+
+          <div class="text-[11px] text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex items-center gap-2">
+            <span>💡 <strong>Biological Insight:</strong> Natural dips occur around 1:00 PM - 3:00 PM due to core body temperature shifts. Use NSDR or walking during this window.</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 4: CIRCADIAN BIOLOGY KNOWLEDGE VAULT -->
+    <section id="tab-content-science" class="tab-pane hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        
+        <div class="border-b border-slate-800 pb-4">
+          <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+            <span>🧬</span> Science & Strategy Knowledge Base
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">
+            Neurobiology and physiology mechanisms explaining why these specific protocols unlock peak brain and body performance.
+          </p>
+        </div>
+
+        <!-- Science Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <!-- Card 1 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">☕</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-amber-400 border border-slate-800 rounded-md">Adenosine Pathway</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Caffeine Timing & 90m Delay</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Sleepiness is driven by adenosine binding to neural receptors. Delaying coffee 60-90 minutes post-waking allows residual adenosine to clear naturally, preventing afternoon energy crashes.
+              </p>
+            </div>
+            <button onclick="speakText('Delaying coffee 60 to 90 minutes post-waking allows residual adenosine to clear naturally, preventing the common afternoon caffeine crash.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-sky-500/10 rounded-xl border border-sky-500/20">🌅</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-sky-400 border border-slate-800 rounded-md">Circadian Entrainment</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Cortisol Awakening Response (CAR)</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Viewing 10-15 minutes of direct morning sunlight stimulates retinal ganglion cells, triggering a healthy cortisol peak, boosting dopamine, and setting your sleep timer for 14 hours later.
+              </p>
+            </div>
+            <button onclick="speakText('Direct sunlight exposure early in the morning anchors your circadian clock, boosts alertness, and sets up natural melatonin release at night.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-sky-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">🏃</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-emerald-400 border border-slate-800 rounded-md">Metabolic Health</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Post-Prandial Glucose Regulation</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                A short 10-15 minute walk immediately after meals activates GLUT4 glucose transporters in skeletal muscle independently of insulin, attenuating blood sugar spikes and fatigue.
+              </p>
+            </div>
+            <button onclick="speakText('Walking after lunch shuttles glucose into muscles without triggering large insulin spikes, maintaining stable mental energy through the afternoon.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-teal-500/10 rounded-xl border border-teal-500/20">🧠</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-teal-400 border border-slate-800 rounded-md">Neural Rhythms</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Ultradian Cognitive Work Cycles</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Human brain wave activity naturally shifts between peak alertness and fatigue in ~90-minute ultradian cycles. Pushing past 90 minutes without rest triggers cognitive decay.
+              </p>
+            </div>
+            <button onclick="speakText('Brain activity operates in 90-minute focus cycles. Structuring intense cognitive work into 90-minute blocks optimizes deep work production.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-teal-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-purple-500/10 rounded-xl border border-purple-500/20">🧘</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-purple-400 border border-slate-800 rounded-md">Parasympathetic Shift</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Non-Sleep Deep Rest (NSDR)</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                10-20 minutes of NSDR or Yoga Nidra guided relaxation restores striatal dopamine levels, calms the autonomic nervous system, and accelerates neuroplastic learning retention.
+              </p>
+            </div>
+            <button onclick="speakText('Non-Sleep Deep Rest rapidly calms your nervous system and replenishes dopamine in under 20 minutes without grogginess.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-purple-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start">
+                <span class="text-3xl p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">🌙</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 text-indigo-400 border border-slate-800 rounded-md">Sleep Architecture</span>
+              </div>
+              <h3 class="font-bold text-white text-base mt-2">Melatonin Ramp & Thermal Drop</h3>
+              <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                Melatonin secretion requires darkness and a ~1°C drop in core body temperature. Blue spectrum overhead lighting tricks the brain into suppressing melatonin by up to 50%.
+              </p>
+            </div>
+            <button onclick="speakText('Dimming overhead lights and cooling your bedroom to 65 degrees Fahrenheit signals your pineal gland to synthesize melatonin naturally.')" class="w-full py-2 bg-slate-900 hover:bg-slate-800 text-indigo-400 text-xs font-semibold rounded-xl border border-slate-800 transition flex items-center justify-center gap-1.5">
+              <span>🗣️ Listen Science Summary</span>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 5: ROUTINE ARCHITECT & EXPORT SUMMARY -->
+    <section id="tab-content-summary" class="tab-pane hidden space-y-6">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+              <span>📋</span> Daily Peak Routine Master Summary
+            </h2>
+            <p class="text-sm text-slate-400 mt-1">Review your customized protocol, active habits, and overall daily progress.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportDataJSON()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition">
+              💾 Export JSON Data
+            </button>
+            <button onclick="window.print()" class="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-lg transition">
+              🖨️ Print Routine Dossier
+            </button>
+          </div>
+        </div>
+
+        <!-- Exportable Printable Dossier Frame -->
+        <div id="printableDossier" class="bg-slate-950 border border-slate-800 rounded-2xl p-8 space-y-6 card-print">
+          
+          <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-4">
+            <div>
+              <h3 class="text-2xl font-black text-white">PEAKSTATE ROUTINE DOSSIER</h3>
+              <p id="summaryDate" class="text-xs text-teal-400 font-mono mt-1">Generated: Monday, Oct 19, 2026</p>
+            </div>
+            <div class="text-right">
+              <span id="summaryChronoBadge" class="text-xs font-bold px-3 py-1 bg-teal-500/10 text-teal-300 border border-teal-500/30 rounded-xl">Chronotype: Balanced</span>
+            </div>
+          </div>
+
+          <!-- Routine Overview Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <span class="text-slate-400 block font-semibold">Habits Completed:</span>
+              <span id="summaryHabitStats" class="text-xl font-bold text-white mt-1">0 / 8 (0%)</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <span class="text-slate-400 block font-semibold">Consistency Streak:</span>
+              <span id="summaryStreak" class="text-xl font-bold text-amber-400 mt-1">1 Day Active</span>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+              <span class="text-slate-400 block font-semibold">Average Energy Score:</span>
+              <span id="summaryAvgEnergy" class="text-xl font-bold text-emerald-400 mt-1">N/A</span>
+            </div>
+          </div>
+
+          <!-- Active Protocol Breakdown -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-bold text-slate-200 uppercase tracking-wider border-b border-slate-800 pb-2">Configured Circadian Phases</h4>
+            <div id="summaryPhasesList" class="space-y-3 text-xs">
+              <!-- Dynamically populated phase habit lists -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    /* ====================================================================
+       1. GLOBAL STATE & LOCAL STORAGE MANAGERS
+       ==================================================================== */
+    const STORAGE_KEY = 'PEAKSTATE_APP_DATA_V1';
+
+    let appState = {
+      chronotype: 'balanced', // 'lark', 'balanced', 'owl'
+      streak: 1,
+      lastActiveDate: new Date().toISOString().slice(0, 10),
+      soundEnabled: true,
+      
+      // Habits state per phase
+      habits: {
+        priming: [
+          { id: 'h1', text: 'Direct Morning Sunlight (10-15m)', done: false, isCore: true },
+          { id: 'h2', text: 'Delay Caffeine 60-90 minutes', done: false, isCore: true },
+          { id: 'h3', text: 'Hydrate with Water & Electrolytes', done: false, isCore: true }
+        ],
+        focus: [
+          { id: 'h4', text: '90-Min Ultradian Deep Work Block', done: false, isCore: true }
+        ],
+        reset: [
+          { id: 'h5', text: '15-Min Post-Lunch Glucose Walk', done: false, isCore: true }
+        ],
+        execution: [
+          { id: 'h6', text: 'Admin & Collaborative Execution', done: false, isCore: false }
+        ],
+        physical: [
+          { id: 'h7', text: 'Resistance or Aerobic Exercise', done: false, isCore: true }
+        ],
+        downshift: [
+          { id: 'h8', text: 'Screen Shutdown & Cool Room Temp', done: false, isCore: true }
+        ]
+      },
+
+      // Energy logs
+      energyLogs: []
+    };
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      updateGlobalUI();
+    }
+
+    function loadState() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          appState = Object.assign(appState, JSON.parse(stored));
+        } catch(e) { console.error('Error loading state', e); }
+      }
+    }
+
+    /* ====================================================================
+       2. CHRONOTYPE & TIMELINE CONFIGURATIONS
+       ==================================================================== */
+    const CHRONO_CONFIGS = {
+      lark: {
+        name: 'Early Lark',
+        emoji: '🌅',
+        wake: '5:00 AM',
+        phases: {
+          priming: { time: '5:00 AM - 7:00 AM', title: 'Circadian Priming', icon: '☀️', desc: 'Cortisol awakening response & hydration' },
+          focus: { time: '7:30 AM - 10:30 AM', title: 'Peak Cognitive Window', icon: '🧠', desc: 'Deep work & complex strategy' },
+          reset: { time: '11:30 AM - 1:00 PM', title: 'Metabolic Reset', icon: '🥗', desc: 'Nutrient dense meal & post-meal walk' },
+          execution: { time: '1:00 PM - 4:00 PM', title: 'Execution & Collaboration', icon: '💻', desc: 'Meetings, admin & email' },
+          physical: { time: '4:30 PM - 6:30 PM', title: 'Physical Decompression', icon: '🏋️', desc: 'Strength or aerobic training' },
+          downshift: { time: '7:30 PM - 9:30 PM', title: 'Melatonin Ramp', icon: '🌙', desc: 'Dim lights & thermal cooling' }
+        }
+      },
+      balanced: {
+        name: 'Balanced',
+        emoji: '☀️',
+        wake: '6:00 AM',
+        phases: {
+          priming: { time: '6:00 AM - 8:00 AM', title: 'Circadian Priming', icon: '☀️', desc: 'Cortisol awakening response & hydration' },
+          focus: { time: '8:30 AM - 11:30 AM', title: 'Peak Cognitive Window', icon: '🧠', desc: 'Deep work & complex strategy' },
+          reset: { time: '12:00 PM - 1:30 PM', title: 'Metabolic Reset', icon: '🥗', desc: 'Nutrient dense meal & post-meal walk' },
+          execution: { time: '1:30 PM - 4:30 PM', title: 'Execution & Collaboration', icon: '💻', desc: 'Meetings, admin & email' },
+          physical: { time: '5:00 PM - 7:00 PM', title: 'Physical Decompression', icon: '🏋️', desc: 'Strength or aerobic training' },
+          downshift: { time: '8:00 PM - 10:30 PM', title: 'Melatonin Ramp', icon: '🌙', desc: 'Dim lights & thermal cooling' }
+        }
+      },
+      owl: {
+        name: 'Night Owl',
+        emoji: '🦉',
+        wake: '8:00 AM',
+        phases: {
+          priming: { time: '8:00 AM - 10:00 AM', title: 'Circadian Priming', icon: '☀️', desc: 'Cortisol awakening response & hydration' },
+          focus: { time: '10:30 AM - 1:30 PM', title: 'Peak Cognitive Window', icon: '🧠', desc: 'Deep work & complex strategy' },
+          reset: { time: '2:00 PM - 3:30 PM', title: 'Metabolic Reset', icon: '🥗', desc: 'Nutrient dense meal & post-meal walk' },
+          execution: { time: '3:30 PM - 6:30 PM', title: 'Execution & Collaboration', icon: '💻', desc: 'Meetings, admin & email' },
+          physical: { time: '7:00 PM - 8:30 PM', title: 'Physical Decompression', icon: '🏋️', desc: 'Strength or aerobic training' },
+          downshift: { time: '10:00 PM - 12:30 AM', title: 'Melatonin Ramp', icon: '🌙', desc: 'Dim lights & thermal cooling' }
+        }
+      }
+    };
+
+    function setChronotype(type) {
+      appState.chronotype = type;
+      saveState();
+      renderCircadianStudio();
+    }
+
+    /* ====================================================================
+       3. WEB AUDIO API SOUND & AMBIENT SYNTHESIZER
+       ==================================================================== */
+    let audioCtx = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      appState.soundEnabled = !appState.soundEnabled;
+      document.getElementById('soundIconOn').classList.toggle('hidden', !appState.soundEnabled);
+      document.getElementById('soundIconOff').classList.toggle('hidden', appState.soundEnabled);
+      saveState();
+    }
+
+    function playChime(freq = 523.25, type = 'sine', duration = 1.2) {
+      if (!appState.soundEnabled) return;
+      try {
+        initAudioContext();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) { console.error(e); }
+    }
+
+    /* Ambient Synthesizer Engine (White/Pink/Rain) */
+    let noiseNode = null;
+    let noiseGainNode = null;
+    let isNoisePlaying = false;
+    let currentNoiseType = 'pink';
+
+    function setNoiseType(type) {
+      currentNoiseType = type;
+      document.getElementById('noiseBtnWhite').className = type === 'white' ? 'p-3 rounded-xl bg-teal-500/20 border border-teal-500/50 text-xs font-bold text-teal-300 transition text-center' : 'p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition text-center';
+      document.getElementById('noiseBtnPink').className = type === 'pink' ? 'p-3 rounded-xl bg-teal-500/20 border border-teal-500/50 text-xs font-bold text-teal-300 transition text-center' : 'p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition text-center';
+      document.getElementById('noiseBtnRain').className = type === 'rain' ? 'p-3 rounded-xl bg-teal-500/20 border border-teal-500/50 text-xs font-bold text-teal-300 transition text-center' : 'p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition text-center';
+
+      if (isNoisePlaying) {
+        stopNoise();
+        startNoise();
+      }
+    }
+
+    function updateNoiseVolume(val) {
+      document.getElementById('noiseVolTxt').innerText = `${val}%`;
+      if (noiseGainNode && audioCtx) {
+        noiseGainNode.gain.setValueAtTime(val / 100 * 0.15, audioCtx.currentTime);
+      }
+    }
+
+    function toggleNoiseGenerator() {
+      if (isNoisePlaying) {
+        stopNoise();
+      } else {
+        startNoise();
+      }
+    }
+
+    function startNoise() {
+      initAudioContext();
+      const bufferSize = audioCtx.sampleRate * 2;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+
+      if (currentNoiseType === 'white') {
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+      } else if (currentNoiseType === 'pink' || currentNoiseType === 'rain') {
+        let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+        for (let i = 0; i < bufferSize; i++) {
+          let white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+          data[i] *= 0.11;
+          b6 = white * 0.115926;
+        }
+      }
+
+      noiseNode = audioCtx.createBufferSource();
+      noiseNode.buffer = buffer;
+      noiseNode.loop = true;
+
+      noiseGainNode = audioCtx.createGain();
+      const vol = parseInt(document.getElementById('noiseVolSlider').value) / 100 * 0.15;
+      noiseGainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+
+      if (currentNoiseType === 'rain') {
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 1000;
+        noiseNode.connect(filter);
+        filter.connect(noiseGainNode);
+      } else {
+        noiseNode.connect(noiseGainNode);
+      }
+
+      noiseGainNode.connect(audioCtx.destination);
+      noiseNode.start();
+      isNoisePlaying = true;
+      document.getElementById('noiseToggleBtn').innerHTML = `<span>⏹️ Stop Ambient Soundscape</span>`;
+      document.getElementById('noiseToggleBtn').className = "w-full py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition";
+    }
+
+    function stopNoise() {
+      if (noiseNode) {
+        try { noiseNode.stop(); } catch(e){}
+        noiseNode = null;
+      }
+      isNoisePlaying = false;
+      document.getElementById('noiseToggleBtn').innerHTML = `<span>🔊 Start Ambient Soundscape</span>`;
+      document.getElementById('noiseToggleBtn').className = "w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-teal-400 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition";
+    }
+
+    /* TTS Speech Engine */
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.lang = 'en-US';
+      window.speechSynthesis.speak(u);
+    }
+
+    /* ====================================================================
+       4. ULTRADIAN FOCUS TIMER LOGIC
+       ==================================================================== */
+    let timerInterval = null;
+    let timerTotalSeconds = 90 * 60;
+    let timerRemainingSeconds = 90 * 60;
+    let isTimerRunning = false;
+    let currentTimerLabel = 'Focus';
+
+    function setTimerPreset(minutes, label) {
+      stopTimer();
+      timerTotalSeconds = minutes * 60;
+      timerRemainingSeconds = minutes * 60;
+      currentTimerLabel = label;
+
+      document.getElementById('timerLabel').innerText = `ULTRADIAN ${label.toUpperCase()}`;
+      document.getElementById('btnTimerMode90').className = minutes === 90 ? 'px-3 py-1 rounded-lg bg-teal-600 text-white transition' : 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('btnTimerMode20').className = minutes === 20 ? 'px-3 py-1 rounded-lg bg-teal-600 text-white transition' : 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+      document.getElementById('btnTimerMode15').className = minutes === 15 ? 'px-3 py-1 rounded-lg bg-teal-600 text-white transition' : 'px-3 py-1 rounded-lg text-slate-400 hover:text-white transition';
+
+      updateTimerDisplay();
+    }
+
+    function toggleTimer() {
+      if (isTimerRunning) {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      initAudioContext();
+      isTimerRunning = true;
+      document.getElementById('timerPlayIcon').classList.add('hidden');
+      document.getElementById('timerPauseIcon').classList.remove('hidden');
+      document.getElementById('timerToggleTxt').innerText = 'Pause Session';
+      playChime(659.25, 'sine', 0.8);
+
+      timerInterval = setInterval(() => {
+        if (timerRemainingSeconds > 0) {
+          timerRemainingSeconds--;
+          updateTimerDisplay();
+        } else {
+          stopTimer();
+          playChime(880, 'sine', 2.0);
+          alert(`🎉 Ultradian ${currentTimerLabel} session complete! Time to shift state.`);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      isTimerRunning = false;
+      if (timerInterval) clearInterval(timerInterval);
+      document.getElementById('timerPlayIcon').classList.remove('hidden');
+      document.getElementById('timerPauseIcon').classList.add('hidden');
+      document.getElementById('timerToggleTxt').innerText = 'Start Session';
+    }
+
+    function resetTimer() {
+      stopTimer();
+      timerRemainingSeconds = timerTotalSeconds;
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerRemainingSeconds / 60);
+      const s = timerRemainingSeconds % 60;
+      document.getElementById('timerDisplay').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      // Update progress SVG circle (circumference = 276.46)
+      const ring = document.getElementById('timerProgressRing');
+      const pct = (timerTotalSeconds - timerRemainingSeconds) / timerTotalSeconds;
+      const offset = 276.46 * (1 - pct);
+      ring.style.strokeDashoffset = offset;
+    }
+
+    /* ====================================================================
+       5. CIRCADIAN TIMELINE & HABIT CHECKLIST ENGINE
+       ==================================================================== */
+    function renderCircadianStudio() {
+      const chrono = CHRONO_CONFIGS[appState.chronotype];
+      const grid = document.getElementById('circadianTimelineGrid');
+      grid.innerHTML = '';
+
+      Object.keys(chrono.phases).forEach(phaseKey => {
+        const phase = chrono.phases[phaseKey];
+        const habitsList = appState.habits[phaseKey] || [];
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-lg';
+
+        let habitsHtml = habitsList.map((h, i) => `
+          <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-800/80 hover:border-slate-700 transition">
+            <label class="flex items-center space-x-2.5 text-xs text-slate-200 cursor-pointer font-medium select-none">
+              <input type="checkbox" ${h.done ? 'checked' : ''} onchange="toggleHabit('${phaseKey}', ${i})" class="w-4 h-4 rounded text-teal-500 bg-slate-800 border-slate-700 focus:ring-teal-500 focus:ring-offset-slate-900">
+              <span class="${h.done ? 'line-through text-slate-500' : ''}">${h.text}</span>
+            </label>
+            ${!h.isCore ? `<button onclick="deleteCustomHabit('${phaseKey}', ${i})" class="text-rose-400 hover:text-rose-300 text-xs px-1">✕</button>` : ''}
+          </div>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div>
+                <span class="text-xs font-mono font-bold text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-md border border-teal-500/20">${phase.time}</span>
+                <h3 class="text-base font-bold text-white mt-1.5 flex items-center gap-1.5">
+                  <span>${phase.icon}</span> ${phase.title}
+                </h3>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 italic">${phase.desc}</p>
+
+            <div class="space-y-2 pt-2">
+              ${habitsHtml}
+            </div>
+          </div>
+
+          <!-- Add Custom Habit Field -->
+          <div class="pt-3 border-t border-slate-800/80">
+            <div class="flex items-center gap-2">
+              <input type="text" id="inputHabit_${phaseKey}" placeholder="Add custom habit..." class="flex-1 bg-slate-900 border border-slate-800 text-white rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 transition">
+              <button onclick="addCustomHabit('${phaseKey}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-teal-400 font-bold rounded-xl text-xs transition border border-slate-700">
+                + Add
+              </button>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      updateGlobalUI();
+    }
+
+    function toggleHabit(phaseKey, index) {
+      appState.habits[phaseKey][index].done = !appState.habits[phaseKey][index].done;
+      if (appState.habits[phaseKey][index].done) {
+        playChime(783.99, 'sine', 0.2);
+      }
+      saveState();
+      renderCircadianStudio();
+    }
+
+    function addCustomHabit(phaseKey) {
+      const input = document.getElementById(`inputHabit_${phaseKey}`);
+      const txt = input.value.trim();
+      if (!txt) return;
+
+      appState.habits[phaseKey].push({
+        id: 'c_' + Date.now(),
+        text: txt,
+        done: false,
+        isCore: false
+      });
+
+      input.value = '';
+      saveState();
+      renderCircadianStudio();
+    }
+
+    function deleteCustomHabit(phaseKey, index) {
+      appState.habits[phaseKey].splice(index, 1);
+      saveState();
+      renderCircadianStudio();
+    }
+
+    function resetAllHabitsForDay() {
+      Object.keys(appState.habits).forEach(pk => {
+        appState.habits[pk].forEach(h => h.done = false);
+      });
+      saveState();
+      renderCircadianStudio();
+    }
+
+    /* ====================================================================
+       6. ENERGY LOGGER & HTML5 CANVAS ANALYTICS
+       ==================================================================== */
+    function handleLogEnergy(e) {
+      e.preventDefault();
+      const time = document.getElementById('logTimeInput').value;
+      const focus = parseInt(document.getElementById('logFocusInput').value);
+      const energy = parseInt(document.getElementById('logEnergyInput').value);
+      const note = document.getElementById('logNoteInput').value;
+
+      appState.energyLogs.push({
+        time,
+        focus,
+        energy,
+        note,
+        timestamp: Date.now()
+      });
+
+      saveState();
+      drawEnergyCanvas();
+      playChime(523.25, 'sine', 0.4);
+      alert('⚡ Energy log entry recorded!');
+    }
+
+    function clearEnergyLogs() {
+      appState.energyLogs = [];
+      saveState();
+      drawEnergyCanvas();
+    }
+
+    function drawEnergyCanvas() {
+      const canvas = document.getElementById('energyCanvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      
+      // Handle high DPI crisp drawing
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid Lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let y = 20; y < h - 30; y += (h - 50) / 4) {
+        ctx.beginPath();
+        ctx.moveTo(40, y);
+        ctx.lineTo(w - 20, y);
+        ctx.stroke();
+      }
+
+      // X Axis Hours Label
+      const hours = ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM', '12 AM'];
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px Inter, sans-serif';
+      hours.forEach((hr, i) => {
+        const x = 40 + (i / (hours.length - 1)) * (w - 60);
+        ctx.fillText(hr, x - 12, h - 10);
+      });
+
+      // Theoretical Ideal Circadian Curve (Dashed Slate Curve)
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+
+      for (let xPixel = 40; xPixel <= w - 20; xPixel++) {
+        const progress = (xPixel - 40) / (w - 60); // 0 to 1 across day
+        // Double-peak sine approximation for circadian energy curve
+        const curveVal = 5 + 3.5 * Math.sin(progress * Math.PI * 2 - Math.PI / 3) - 1.5 * Math.sin(progress * Math.PI * 4);
+        const yPixel = (h - 40) - (curveVal / 10) * (h - 60);
+        if (xPixel === 40) ctx.moveTo(xPixel, yPixel);
+        else ctx.lineTo(xPixel, yPixel);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset line dash
+
+      // Plot User Logs
+      if (appState.energyLogs.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No energy entries logged today yet. Use the form to log your state!', w / 2, h / 2);
+        ctx.textAlign = 'left';
+        return;
+      }
+
+      // Sort logs by time
+      const sorted = [...appState.energyLogs].sort((a,b) => a.time.localeCompare(b.time));
+
+      // Draw Focus Points & Line (Sky Blue)
+      ctx.beginPath();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      sorted.forEach((item, idx) => {
+        const [hh, mm] = item.time.split(':').map(Number);
+        const totalMin = hh * 60 + mm;
+        const startMin = 6 * 60; // 6 AM
+        const rangeMin = 18 * 60; // 18 hours range
+        let normX = (totalMin - startMin) / rangeMin;
+        normX = Math.max(0, Math.min(1, normX));
+
+        const x = 40 + normX * (w - 60);
+        const y = (h - 40) - (item.focus / 10) * (h - 60);
+
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Focus Dots
+      sorted.forEach(item => {
+        const [hh, mm] = item.time.split(':').map(Number);
+        const normX = Math.max(0, Math.min(1, (hh * 60 + mm - 360) / 1080));
+        const x = 40 + normX * (w - 60);
+        const y = (h - 40) - (item.focus / 10) * (h - 60);
+
+        ctx.fillStyle = '#0284c7';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Physical Energy Points & Line (Emerald)
+      ctx.beginPath();
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      sorted.forEach((item, idx) => {
+        const [hh, mm] = item.time.split(':').map(Number);
+        const normX = Math.max(0, Math.min(1, (hh * 60 + mm - 360) / 1080));
+        const x = 40 + normX * (w - 60);
+        const y = (h - 40) - (item.energy / 10) * (h - 60);
+
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Energy Dots
+      sorted.forEach(item => {
+        const [hh, mm] = item.time.split(':').map(Number);
+        const normX = Math.max(0, Math.min(1, (hh * 60 + mm - 360) / 1080));
+        const x = 40 + normX * (w - 60);
+        const y = (h - 40) - (item.energy / 10) * (h - 60);
+
+        ctx.fillStyle = '#059669';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    /* ====================================================================
+       7. UI NAVIGATION & GLOBAL DASHBOARD SYNC
+       ==================================================================== */
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = 'tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/60 text-slate-400 hover:text-slate-200 border border-slate-700/50 transition';
+      });
+      document.getElementById(`tab-btn-${tabId}`).className = 'tab-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/30 font-bold transition';
+
+      if (tabId === 'energy') {
+        setTimeout(drawEnergyCanvas, 100);
+      }
+    }
+
+    function updateGlobalUI() {
+      // Chronotype Buttons Header
+      ['lark', 'balanced', 'owl'].forEach(ct => {
+        const btn = document.getElementById(`chrono${ct.charAt(0).toUpperCase() + ct.slice(1)}`);
+        if (btn) {
+          btn.className = appState.chronotype === ct ? 'px-2.5 py-1 rounded-lg bg-teal-600 text-white font-bold transition shadow-sm' : 'px-2.5 py-1 rounded-lg text-slate-400 font-semibold hover:text-white transition';
+        }
+      });
+
+      const chronoConfig = CHRONO_CONFIGS[appState.chronotype];
+      document.getElementById('statChronoName').innerText = chronoConfig.name;
+      document.getElementById('statChronoWake').innerText = `Wake Window: ${chronoConfig.wake}`;
+      document.getElementById('statChronoEmoji').innerText = chronoConfig.emoji;
+
+      // Habit completion calculation
+      let totalHabits = 0;
+      let doneHabits = 0;
+      Object.keys(appState.habits).forEach(pk => {
+        appState.habits[pk].forEach(h => {
+          totalHabits++;
+          if (h.done) doneHabits++;
+        });
+      });
+
+      const pct = totalHabits > 0 ? Math.round((doneHabits / totalHabits) * 100) : 0;
+      document.getElementById('statCompletionPct').innerText = `${pct}%`;
+      document.getElementById('statHabitRatio').innerText = `${doneHabits} of ${totalHabits} completed`;
+      document.getElementById('kpiProgressRing').setAttribute('stroke-dasharray', `${pct}, 100`);
+
+      // Streak & Energy Stats
+      document.getElementById('statStreakDays').innerText = `${appState.streak} Day${appState.streak > 1 ? 's' : ''}`;
+
+      if (appState.energyLogs.length > 0) {
+        const avg = (appState.energyLogs.reduce((acc, curr) => acc + (curr.focus + curr.energy)/2, 0) / appState.energyLogs.length).toFixed(1);
+        document.getElementById('statAvgEnergy').innerText = `${avg} / 10`;
+        document.getElementById('statEnergyLogsCount').innerText = `${appState.energyLogs.length} Logs Today`;
+        document.getElementById('summaryAvgEnergy').innerText = `${avg} / 10`;
+      } else {
+        document.getElementById('statAvgEnergy').innerText = 'N/A';
+        document.getElementById('statEnergyLogsCount').innerText = '0 Logs Today';
+        document.getElementById('summaryAvgEnergy').innerText = 'N/A';
+      }
+
+      // Summary Dossier View Update
+      document.getElementById('summaryChronoBadge').innerText = `Chronotype: ${chronoConfig.name}`;
+      document.getElementById('summaryHabitStats').innerText = `${doneHabits} / ${totalHabits} (${pct}%)`;
+      document.getElementById('summaryStreak').innerText = `${appState.streak} Day${appState.streak > 1 ? 's' : ''} Active`;
+
+      const summaryList = document.getElementById('summaryPhasesList');
+      if (summaryList) {
+        summaryList.innerHTML = Object.keys(chronoConfig.phases).map(pk => {
+          const p = chronoConfig.phases[pk];
+          const habits = appState.habits[pk] || [];
+          return `
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
+              <div class="flex justify-between items-center font-bold text-teal-400">
+                <span>${p.icon} ${p.title} (${p.time})</span>
+              </div>
+              <ul class="list-disc list-inside text-slate-300 space-y-0.5 pl-1">
+                ${habits.map(h => `<li class="${h.done ? 'text-teal-300 font-semibold' : 'text-slate-400'}">${h.text} ${h.done ? '✓' : ''}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `PeakState_Data_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    /* ====================================================================
+       8. INIT & WINDOW LOAD
+       ==================================================================== */
+    window.onload = function() {
+      loadState();
+
+      // Set live date string
+      const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+      const dateStr = new Date().toLocaleDateString('en-US', options);
+      document.getElementById('liveDateStr').innerText = `${dateStr} • Circadian Alignment Active`;
+      document.getElementById('summaryDate').innerText = `Generated: ${dateStr}`;
+
+      // Default current time in time logger input
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('logTimeInput').value = `${hh}:${mm}`;
+
+      renderCircadianStudio();
+      drawEnergyCanvas();
+
+      // Handle window resize for Canvas chart responsiveness
+      window.addEventListener('resize', () => {
+        drawEnergyCanvas();
+      });
+
+      console.log("PeakState Mind & Body Routine Tracker Initialized Successfully.");
+    };
+  </script>
+</body>
+</html>
