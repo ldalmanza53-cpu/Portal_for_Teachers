@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FamiliAR: B1 Family Reading & Detail Mastery</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & React DOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS for Flip Animations, Tooltips, and Custom Highlighting -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    /* Flashcard Flip CSS */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+
+    /* Highlighter styles */
+    .hl-yellow {
+      background-color: #fef08a;
+      border-radius: 0.2rem;
+      padding: 0 0.15rem;
+    }
+    .hl-green {
+      background-color: #bbf7d0;
+      border-radius: 0.2rem;
+      padding: 0 0.15rem;
+    }
+    .hl-blue {
+      background-color: #bfdbfe;
+      border-radius: 0.2rem;
+      padding: 0 0.15rem;
+    }
+    .search-match {
+      background-color: #fde047;
+      outline: 2px solid #ca8a04;
+      font-weight: 600;
+      border-radius: 0.2rem;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ==========================================
+    // DATA DEFINITIONS (Passages, Vocab, Quizzes)
+    // ==========================================
+
+    const VOCAB_DATABASE = {
+      "close-knit": {
+        term: "close-knit",
+        partOfSpeech: "adjective",
+        definition: "Bound together by strong relationships and mutual support.",
+        example: "They are a close-knit family that eats dinner together every night.",
+        cefr: "B1"
+      },
+      "breadwinner": {
+        term: "breadwinner",
+        partOfSpeech: "noun",
+        definition: "The member of a family who earns the money to support the household.",
+        example: "Suresh became the primary breadwinner after starting his engineering job.",
+        cefr: "B1"
+      },
+      "household": {
+        term: "household",
+        partOfSpeech: "noun",
+        definition: "A house and its occupants regarded as a single unit.",
+        example: "There are seven people living in the Patel household.",
+        cefr: "B1"
+      },
+      "generation gap": {
+        term: "generation gap",
+        partOfSpeech: "noun",
+        definition: "A difference in opinions or values between younger and older generations.",
+        example: "They overcome the generation gap by talking openly about technology.",
+        cefr: "B1"
+      },
+      "blended family": {
+        term: "blended family",
+        partOfSpeech: "noun",
+        definition: "A family that includes children from a previous relationship of one or both parents.",
+        example: "Living in a blended family brought new step-siblings into Elena's life.",
+        cefr: "B1"
+      },
+      "step-sibling": {
+        term: "step-sibling",
+        partOfSpeech: "noun",
+        definition: "The child of one's stepmother or stepfather.",
+        example: "Mateo is Elena's step-sibling.",
+        cefr: "B1"
+      },
+      "in-laws": {
+        term: "in-laws",
+        partOfSpeech: "noun",
+        definition: "Relatives by marriage, such as a spouse's parents or siblings.",
+        example: "During holidays, her in-laws come to visit for dinner.",
+        cefr: "B1"
+      },
+      "host family": {
+        term: "host family",
+        partOfSpeech: "noun",
+        definition: "A family that invites a foreign student to live in their home during an exchange program.",
+        example: "Lucas is staying with a friendly host family in France.",
+        cefr: "B1"
+      },
+      "pediatrician": {
+        term: "pediatrician",
+        partOfSpeech: "noun",
+        definition: "A doctor who specializes in the medical care of children.",
+        example: "Dr. Mei Chen works long shifts as a pediatrician.",
+        cefr: "B1"
+      },
+      "sole earner": {
+        term: "sole earner",
+        partOfSpeech: "noun",
+        definition: "The only person in a family who earns an income.",
+        example: "As the sole earner, she works hard to provide for her twins.",
+        cefr: "B1"
+      }
+    };
+
+    const PASSAGES = [
+      {
+        id: "patel",
+        title: "The Patel Family",
+        type: "Multi-Generational Household",
+        location: "Leicester, UK",
+        avatar: "👨‍👩‍👧‍👦",
+        badgeColor: "bg-indigo-100 text-indigo-800",
+        summary: "A warm multi-generational family of seven sharing responsibilities and cultural traditions under one roof.",
+        text: `Dev Patel is a 16-year-old high school student who lives in Leicester, UK. His household is a classic multi-generational household consisting of seven people. Dev lives with his parents, his paternal grandparents (Aji and Dada), his younger sister Anaya (12), and his uncle Rajiv. 
+
+His father, Suresh, works as a civil engineer and is the primary breadwinner for the family, while his mother, Priya, manages the household and works part-time at a local florist shop. Dev’s grandparents moved from Gujarat, India, over 30 years ago. Although there is sometimes a small generation gap regarding curfew times and smartphone use, Dev considers his family extremely close-knit. 
+
+Every Sunday, the entire family gathers in the kitchen to cook traditional thali meals. Dev loves playing cricket in the backyard with Uncle Rajiv, who works as a graphic designer. They value supporting each other in daily tasks, showing how generations can thrive together under one roof.`,
+        keyFacts: {
+          membersCount: 7,
+          fatherJob: "Civil Engineer",
+          motherJob: "Florist (part-time)",
+          uncleJob: "Graphic Designer",
+          sisterAge: 12,
+          devAge: 16,
+          hobby: "Cricket"
+        }
+      },
+      {
+        id: "santos",
+        title: "The Santos-Miller Family",
+        type: "Blended Family Dynamic",
+        location: "San Diego, USA",
+        avatar: "🏄‍♀️",
+        badgeColor: "bg-teal-100 text-teal-800",
+        summary: "Navigating new relationships, step-siblings, and dual homes with positivity and shared hobbies.",
+        text: `Elena Santos (15) lives in San Diego in a vibrant blended family. Four years after her parents divorced, her father, Carlos, married Sarah, who brought her 14-year-old son, Mateo, into the family. Elena now has a step-sibling, Mateo, as well as a 2-year-old half-sister named Maya.
+
+At first, adapting to two households was challenging. Elena spends weekdays with her father and stepmother in a four-bedroom home near the beach, and weekends with her mother in downtown San Diego. Over time, Elena and Mateo became close friends. While Mateo is passionate about skateboarding, Elena spends her free time playing the cello in her school orchestra.
+
+During major holidays like Thanksgiving, Sarah’s parents visit, and Elena enjoys getting together with her extended in-laws and step-relatives. Communication and mutual respect have turned their complex family dynamic into a source of support and strength.`,
+        keyFacts: {
+          membersCount: 5,
+          elenaAge: 15,
+          mateoAge: 14,
+          halfSisterAge: 2,
+          elenaHobby: "Playing the cello",
+          mateoHobby: "Skateboarding"
+        }
+      },
+      {
+        id: "chen",
+        title: "The Chen Household",
+        type: "Single-Parent & Twin Dynamic",
+        location: "Vancouver, Canada",
+        avatar: "🐶",
+        badgeColor: "bg-amber-100 text-amber-800",
+        summary: "How a single-parent family stays organized through shared duties and twin teamwork.",
+        text: `Lin Chen (17) and her twin brother Leo live in Vancouver, Canada, with their mother, Dr. Mei Chen. Since their father passed away six years ago, Dr. Chen has been the sole earner and a single mother balancing long hours as a hospital pediatrician with family life.
+
+To keep the household running smoothly, the twins share daily household duties. Lin takes charge of grocery shopping and cooking dinner twice a week, whereas Leo handles the laundry and walks their two rescue dogs, Mochi and Boba. 
+
+Lin and Leo share a friendly twin rivalry at school. Lin excels in mathematics and robotics competitions, while Leo is a talented photographer for the school newspaper. Despite their busy schedules, the three of them always save Friday nights for board games and homemade pizza. They describe their household as resilient, cooperative, and loving.`,
+        keyFacts: {
+          membersCount: 3,
+          motherJob: "Pediatrician",
+          pets: "Two dogs (Mochi and Boba)",
+          linAge: 17,
+          leoAge: 17,
+          fridayRoutine: "Board games and pizza"
+        }
+      },
+      {
+        id: "dupont",
+        title: "The Dupont Host Family",
+        type: "Host Family Experience",
+        location: "Lyon, France",
+        avatar: "🥐",
+        badgeColor: "bg-rose-100 text-rose-800",
+        summary: "An international student experiencing cultural immersion and strong family bonds abroad.",
+        text: `Lucas, a 19-year-old exchange student from Brazil, is spending six months living with a French host family in Lyon. His host family, the Duponts, consists of Jean-Luc (52, a high school history teacher), Béatrice (49, an architect), and their 18-year-old daughter Camille, who is studying literature at university.
+
+Living with a host family has given Lucas a real insight into French home life. The household follows structured routines: breakfast together at 7:30 AM with fresh croissants, and evening dinners where everyone discusses news and culture. Béatrice's sister lives next door with her family, so weekends frequently feature large gatherings with aunts, uncles, and distant in-laws.
+
+Although Lucas experienced a slight language barrier in his first few weeks, the Duponts were extremely patient. Lucas regularly cooks Brazilian feijoada for them, creating a rich exchange of traditions across different cultures.`,
+        keyFacts: {
+          lucasAge: 19,
+          hostFatherJob: "History teacher",
+          hostMotherJob: "Architect",
+          daughterAge: 18,
+          city: "Lyon",
+          duration: "6 months"
+        }
+      }
+    ];
+
+    const SCANNING_QUESTIONS = [
+      {
+        id: 1,
+        question: "What is Suresh Patel's profession?",
+        options: ["Graphic Designer", "Civil Engineer", "Florist", "Pediatrician"],
+        correct: 1,
+        passageId: "patel",
+        evidence: "His father, Suresh, works as a civil engineer and is the primary breadwinner..."
+      },
+      {
+        id: 2,
+        question: "How old is Maya, Elena's half-sister?",
+        options: ["14 years old", "15 years old", "2 years old", "6 years old"],
+        correct: 2,
+        passageId: "santos",
+        evidence: "...as well as a 2-year-old half-sister named Maya."
+      },
+      {
+        id: 3,
+        question: "What are the names of the Chen family's rescue dogs?",
+        options: ["Boba and Cha", "Mochi and Boba", "Matcha and Mochi", "Boba and Leo"],
+        correct: 1,
+        passageId: "chen",
+        evidence: "...walks their two rescue dogs, Mochi and Boba."
+      },
+      {
+        id: 4,
+        question: "In which city does the Dupont host family live?",
+        options: ["Paris", "Nice", "Lyon", "Vancouver"],
+        correct: 2,
+        passageId: "dupont",
+        evidence: "...spending six months living with a French host family in Lyon."
+      },
+      {
+        id: 5,
+        question: "Who is responsible for grocery shopping and cooking twice a week in the Chen family?",
+        options: ["Leo", "Dr. Mei Chen", "Lin", "The grandmother"],
+        correct: 2,
+        passageId: "chen",
+        evidence: "Lin takes charge of grocery shopping and cooking dinner twice a week..."
+      },
+      {
+        id: 6,
+        question: "How many people live in Dev Patel's household in Leicester?",
+        options: ["5 people", "6 people", "7 people", "8 people"],
+        correct: 2,
+        passageId: "patel",
+        evidence: "His household is a classic multi-generational household consisting of seven people."
+      },
+      {
+        id: 7,
+        question: "What musical instrument does Elena play in her school orchestra?",
+        options: ["Violin", "Flute", "Cello", "Piano"],
+        correct: 2,
+        passageId: "santos",
+        evidence: "...Elena spends her free time playing the cello in her school orchestra."
+      },
+      {
+        id: 8,
+        question: "What is Béatrice Dupont's job title?",
+        options: ["Architect", "Pediatrician", "Florist", "History teacher"],
+        correct: 0,
+        passageId: "dupont",
+        evidence: "...Béatrice (49, an architect)..."
+      }
+    ];
+
+    const DETECTIVE_GRID = [
+      {
+        id: "d1",
+        family: "Patel Family",
+        person: "Suresh Patel",
+        field: "Occupation",
+        options: ["Civil Engineer", "Florist", "Graphic Designer", "Pediatrician"],
+        correct: "Civil Engineer",
+        passageId: "patel"
+      },
+      {
+        id: "d2",
+        family: "Patel Family",
+        person: "Uncle Rajiv",
+        field: "Favorite Activity",
+        options: ["Playing Cricket", "Cooking Thali", "Gardening", "Skateboarding"],
+        correct: "Playing Cricket",
+        passageId: "patel"
+      },
+      {
+        id: "d3",
+        family: "Santos-Miller",
+        person: "Mateo",
+        field: "Relation & Age",
+        options: ["Step-sibling (14)", "Half-brother (15)", "Cousin (12)", "Exchange Student (19)"],
+        correct: "Step-sibling (14)",
+        passageId: "santos"
+      },
+      {
+        id: "d4",
+        family: "Santos-Miller",
+        person: "Elena",
+        field: "Living Arrangement",
+        options: ["Weekdays with dad/stepmother, weekends with mom", "Lives in Lyon full time", "Boarding school", "Only weekends with father"],
+        correct: "Weekdays with dad/stepmother, weekends with mom",
+        passageId: "santos"
+      },
+      {
+        id: "d5",
+        family: "Chen Family",
+        person: "Dr. Mei Chen",
+        field: "Role & Occupation",
+        options: ["Single Mother & Pediatrician", "Architect & Stepmother", "Florist & Grandmother", "Teacher"],
+        correct: "Single Mother & Pediatrician",
+        passageId: "chen"
+      },
+      {
+        id: "d6",
+        family: "Chen Family",
+        person: "Leo Chen",
+        field: "School Role / Hobby",
+        options: ["School Newspaper Photographer", "Robotics Champion", "Cellist", "Cricket Player"],
+        correct: "School Newspaper Photographer",
+        passageId: "chen"
+      },
+      {
+        id: "d7",
+        family: "Dupont Family",
+        person: "Lucas",
+        field: "Origin & Stay Length",
+        options: ["Brazil (6 months)", "Canada (1 year)", "UK (3 months)", "India (6 months)"],
+        correct: "Brazil (6 months)",
+        passageId: "dupont"
+      },
+      {
+        id: "d8",
+        family: "Dupont Family",
+        person: "Jean-Luc Dupont",
+        field: "Occupation",
+        options: ["High School History Teacher", "Civil Engineer", "Doctor", "Architect"],
+        correct: "High School History Teacher",
+        passageId: "dupont"
+      }
+    ];
+
+    const QUIZ_QUESTIONS = [
+      {
+        id: "q1",
+        type: "tfng", // True / False / Not Given
+        passageId: "patel",
+        question: "Priya Patel works full-time as a civil engineer.",
+        options: ["True", "False", "Not Given"],
+        correct: "False",
+        quote: "His father, Suresh, works as a civil engineer... while his mother, Priya, manages the household and works part-time at a local florist shop.",
+        explanation: "Priya works part-time at a florist shop, not as a civil engineer. Her husband Suresh is the civil engineer."
+      },
+      {
+        id: "q2",
+        type: "mcq",
+        passageId: "patel",
+        question: "Why does Dev consider his household 'close-knit' despite the age differences?",
+        options: [
+          "They never disagree on rules.",
+          "They regularly cook meals together and support each other.",
+          "They all work at the same company.",
+          "They only speak one language."
+        ],
+        correct: 1,
+        quote: "Every Sunday, the entire family gathers in the kitchen to cook traditional thali meals... They value supporting each other in daily tasks...",
+        explanation: "The passage notes that they cook together on Sundays and support each other in daily tasks, showing strong family bonds."
+      },
+      {
+        id: "q3",
+        type: "tfng",
+        passageId: "santos",
+        question: "Elena's mother lives in downtown San Diego.",
+        options: ["True", "False", "Not Given"],
+        correct: "True",
+        quote: "...and weekends with her mother in downtown San Diego.",
+        explanation: "The text explicitly states that Elena spends weekends with her mother in downtown San Diego."
+      },
+      {
+        id: "q4",
+        type: "tfng",
+        passageId: "santos",
+        question: "Mateo wants to become a professional cello player when he grows up.",
+        options: ["True", "False", "Not Given"],
+        correct: "Not Given",
+        quote: "While Mateo is passionate about skateboarding, Elena spends her free time playing the cello...",
+        explanation: "The text mentions Mateo likes skateboarding and Elena plays the cello, but does not state Mateo's future career plans."
+      },
+      {
+        id: "q5",
+        type: "mcq",
+        passageId: "chen",
+        question: "How do the Chen twins help their single mother with household management?",
+        options: [
+          "They hire a cleaning service.",
+          "Lin handles grocery/cooking twice a week, while Leo does laundry and dog walking.",
+          "They work part-time jobs as pediatricians.",
+          "Leo cooks all meals while Lin walks the dogs."
+        ],
+        correct: 1,
+        quote: "Lin takes charge of grocery shopping and cooking dinner twice a week, whereas Leo handles the laundry and walks their two rescue dogs...",
+        explanation: "The tasks are clearly split: Lin cooks/shops twice a week, and Leo takes care of laundry and the two rescue dogs."
+      },
+      {
+        id: "q6",
+        type: "tfng",
+        passageId: "dupont",
+        question: "Lucas cooks a traditional dish called feijoada for his French host family.",
+        options: ["True", "False", "Not Given"],
+        correct: "True",
+        quote: "Lucas regularly cooks Brazilian feijoada for them, creating a rich exchange of traditions...",
+        explanation: "The passage specifically confirms that Lucas cooks Brazilian feijoada for the Duponts."
+      }
+    ];
+
+    // ==========================================
+    // MAIN APP COMPONENT
+    // ==========================================
+
+    function App() {
+      // App Navigation & State
+      const [activeTab, setActiveTab] = useState('reading'); // reading, scanning, detective, quiz, vocab
+      const [selectedPassageId, setSelectedPassageId] = useState('patel');
+      
+      // Gamification State
+      const [score, setScore] = useState(0);
+      const [completedActivities, setCompletedActivities] = useState({
+        scanning: false,
+        detective: false,
+        quiz: false
+      });
+
+      // Text Tool & Filter State
+      const [searchTerm, setSearchTerm] = useState('');
+      const [highlightColor, setHighlightColor] = useState('yellow'); // yellow, green, blue, none
+      const [userHighlights, setUserHighlights] = useState({}); // { sentenceIndex: color }
+      const [speechRate, setSpeechRate] = useState(1.0);
+      const [isPlayingSpeech, setIsPlayingSpeech] = useState(false);
+      
+      // Vocabulary Drawer / Modal Tooltip State
+      const [activeTooltipVocab, setActiveTooltipVocab] = useState(null);
+
+      // Current Selected Passage Object
+      const currentPassage = PASSAGES.find(p => p.id === selectedPassageId) || PASSAGES[0];
+
+      // Audio Synthesis Ref
+      const synthRef = useRef(window.speechSynthesis);
+
+      // Handle Text-to-Speech
+      const speakText = (textToSpeak) => {
+        if (!('speechSynthesis' in window)) {
+          alert('Text-to-speech is not supported in your browser.');
+          return;
+        }
+
+        synthRef.current.cancel(); // Stop ongoing speech
+
+        if (isPlayingSpeech) {
+          setIsPlayingSpeech(false);
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.rate = speechRate;
+        utterance.lang = 'en-US';
+
+        utterance.onend = () => {
+          setIsPlayingSpeech(false);
+        };
+        utterance.onerror = () => {
+          setIsPlayingSpeech(false);
+        };
+
+        setIsPlayingSpeech(true);
+        synthRef.current.speak(utterance);
+      };
+
+      const stopSpeech = () => {
+        if (synthRef.current) {
+          synthRef.current.cancel();
+          setIsPlayingSpeech(false);
+        }
+      };
+
+      // Add points wrapper
+      const addPoints = (pts) => {
+        setScore(prev => prev + pts);
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen">
+          {/* TOP NAV BAR HEADER */}
+          <header className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 text-white shadow-lg sticky top-0 z-30">
+            <div className="max-w-7xl mx-mx auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">👨‍👩‍👧‍👦</span>
+                <div>
+                  <h1 className="text-xl font-extrabold tracking-tight">FamiliAR <span className="text-xs bg-indigo-500/50 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold border border-indigo-300/30">B1 Reading</span></h1>
+                  <p className="text-xs text-indigo-200">Describing Families & Specific Information Mastery</p>
+                </div>
+              </div>
+
+              {/* NAVIGATION TABS */}
+              <nav className="flex items-center space-x-1 sm:space-x-2 bg-indigo-900/50 p-1.5 rounded-xl border border-indigo-500/30">
+                <button
+                  onClick={() => { setActiveTab('reading'); stopSpeech(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 ${activeTab === 'reading' ? 'bg-white text-indigo-900 shadow-md font-bold' : 'text-indigo-200 hover:text-white hover:bg-indigo-700/50'}`}
+                >
+                  📖 Passages
+                </button>
+                <button
+                  onClick={() => { setActiveTab('scanning'); stopSpeech(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 ${activeTab === 'scanning' ? 'bg-white text-indigo-900 shadow-md font-bold' : 'text-indigo-200 hover:text-white hover:bg-indigo-700/50'}`}
+                >
+                  ⚡ Scanning Sprint
+                </button>
+                <button
+                  onClick={() => { setActiveTab('detective'); stopSpeech(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 ${activeTab === 'detective' ? 'bg-white text-indigo-900 shadow-md font-bold' : 'text-indigo-200 hover:text-white hover:bg-indigo-700/50'}`}
+                >
+                  🔍 Family Grid
+                </button>
+                <button
+                  onClick={() => { setActiveTab('quiz'); stopSpeech(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 ${activeTab === 'quiz' ? 'bg-white text-indigo-900 shadow-md font-bold' : 'text-indigo-200 hover:text-white hover:bg-indigo-700/50'}`}
+                >
+                  📝 Detail Quiz
+                </button>
+                <button
+                  onClick={() => { setActiveTab('vocab'); stopSpeech(); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5 ${activeTab === 'vocab' ? 'bg-white text-indigo-900 shadow-md font-bold' : 'text-indigo-200 hover:text-white hover:bg-indigo-700/50'}`}
+                >
+                  🎴 Vocab Vault
+                </button>
+              </nav>
+
+              {/* SCORE & REWARD BADGES */}
+              <div className="flex items-center space-x-3 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20">
+                <div className="flex items-center space-x-1">
+                  <span className="text-yellow-300 text-lg">⭐</span>
+                  <span className="font-bold text-sm sm:text-base">{score} <span className="text-xs text-indigo-200 font-normal">pts</span></span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN CONTENT CONTAINER */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'reading' && (
+              <ReadingPassagesView
+                passages={PASSAGES}
+                currentPassage={currentPassage}
+                setSelectedPassageId={setSelectedPassageId}
+                speakText={speakText}
+                stopSpeech={stopSpeech}
+                isPlayingSpeech={isPlayingSpeech}
+                speechRate={speechRate}
+                setSpeechRate={setSpeechRate}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                highlightColor={highlightColor}
+                setHighlightColor={setHighlightColor}
+                userHighlights={userHighlights}
+                setUserHighlights={setUserHighlights}
+                onSelectVocab={(term) => setActiveTooltipVocab(VOCAB_DATABASE[term.toLowerCase()])}
+              />
+            )}
+
+            {activeTab === 'scanning' && (
+              <ScanningChallengeView
+                questions={SCANNING_QUESTIONS}
+                passages={PASSAGES}
+                addPoints={addPoints}
+                onComplete={() => setCompletedActivities(prev => ({...prev, scanning: true}))}
+              />
+            )}
+
+            {activeTab === 'detective' && (
+              <FamilyDetectiveView
+                gridItems={DETECTIVE_GRID}
+                passages={PASSAGES}
+                addPoints={addPoints}
+                onComplete={() => setCompletedActivities(prev => ({...prev, detective: true}))}
+              />
+            )}
+
+            {activeTab === 'quiz' && (
+              <ComprehensionQuizView
+                questions={QUIZ_QUESTIONS}
+                passages={PASSAGES}
+                addPoints={addPoints}
+                onComplete={() => setCompletedActivities(prev => ({...prev, quiz: true}))}
+              />
+            )}
+
+            {activeTab === 'vocab' && (
+              <VocabVaultView
+                vocabDb={VOCAB_DATABASE}
+                speakText={speakText}
+              />
+            )}
+          </main>
+
+          {/* VOCAB TOOLTIP MODAL */}
+          {activeTooltipVocab && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all animate-bounce-short">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+                      CEFR Level {activeTooltipVocab.cefr} Vocabulary
+                    </span>
+                    <h3 className="text-2xl font-bold text-slate-800 capitalize mt-2 flex items-center gap-2">
+                      {activeTooltipVocab.term}
+                      <button 
+                        onClick={() => speakText(activeTooltipVocab.term)}
+                        className="text-indigo-600 hover:text-indigo-800 text-lg p-1"
+                        title="Listen to pronunciation"
+                      >
+                        🔊
+                      </button>
+                    </h3>
+                    <p className="text-xs italic text-slate-500 font-mono">[{activeTooltipVocab.partOfSpeech}]</p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTooltipVocab(null)}
+                    className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Definition</p>
+                    <p className="text-slate-700 text-sm">{activeTooltipVocab.definition}</p>
+                  </div>
+
+                  <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
+                    <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Context Example</p>
+                    <p className="text-slate-700 text-sm italic">"{activeTooltipVocab.example}"</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setActiveTooltipVocab(null)}
+                    className="bg-indigo-600 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-indigo-700 transition shadow-md"
+                  >
+                    Got it!
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+            <p>FamiliAR B1 English Reading App • Practice Reading for Specific Information</p>
+          </footer>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 1. PASSAGES VIEW COMPONENT
+    // ==========================================
+
+    function ReadingPassagesView({
+      passages,
+      currentPassage,
+      setSelectedPassageId,
+      speakText,
+      stopSpeech,
+      isPlayingSpeech,
+      speechRate,
+      setSpeechRate,
+      searchTerm,
+      setSearchTerm,
+      highlightColor,
+      setHighlightColor,
+      userHighlights,
+      setUserHighlights,
+      onSelectVocab
+    }) {
+
+      // Helper to render text with vocabulary tooltips and search highlights
+      const renderInteractiveText = (text) => {
+        // Break text into sentences for line highlighting
+        const sentences = text.split(/(?<=[.!?])\s+/);
+
+        return sentences.map((sentence, sIdx) => {
+          const passageHighlight = userHighlights[currentPassage.id]?.[sIdx];
+          let colorClass = "";
+          if (passageHighlight === 'yellow') colorClass = "hl-yellow";
+          if (passageHighlight === 'green') colorClass = "hl-green";
+          if (passageHighlight === 'blue') colorClass = "hl-blue";
+
+          // Process vocabulary words in sentence
+          let words = sentence.split(" ");
+          
+          return (
+            <span 
+              key={sIdx} 
+              className={`inline transition-colors duration-200 cursor-pointer rounded px-0.5 my-0.5 ${colorClass}`}
+              onClick={(e) => {
+                // If clicking to apply custom highlight
+                if (highlightColor !== 'none' && !e.target.dataset.vocab) {
+                  setUserHighlights(prev => ({
+                    ...prev,
+                    [currentPassage.id]: {
+                      ...(prev[currentPassage.id] || {}),
+                      [sIdx]: prev[currentPassage.id]?.[sIdx] === highlightColor ? null : highlightColor
+                    }
+                  }));
+                }
+              }}
+              title={highlightColor !== 'none' ? "Click to toggle highlight" : ""}
+            >
+              {words.map((word, wIdx) => {
+                const cleanWord = word.replace(/[^a-zA-Z-]/g, "").toLowerCase();
+                const isVocab = VOCAB_DATABASE[cleanWord];
+                const isSearchMatch = searchTerm.trim().length > 1 && cleanWord.includes(searchTerm.toLowerCase().trim());
+
+                if (isVocab) {
+                  return (
+                    <span key={wIdx}>
+                      <button
+                        data-vocab="true"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectVocab(cleanWord);
+                        }}
+                        className="underline decoration-indigo-500 decoration-2 font-semibold text-indigo-900 hover:bg-indigo-100 hover:text-indigo-700 rounded px-1 transition mx-0.5 inline-block"
+                        title="Click for B1 vocabulary definition"
+                      >
+                        {word}
+                      </button>{" "}
+                    </span>
+                  );
+                }
+
+                if (isSearchMatch) {
+                  return (
+                    <span key={wIdx}>
+                      <mark className="search-match">{word}</mark>{" "}
+                    </span>
+                  );
+                }
+
+                return word + " ";
+              })}
+            </span>
+          );
+        });
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* PASSAGE SELECTION TABS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {passages.map((p) => {
+              const isSelected = p.id === currentPassage.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setSelectedPassageId(p.id);
+                    stopSpeech();
+                  }}
+                  className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-white border-indigo-500 shadow-lg ring-2 ring-indigo-500/20'
+                      : 'bg-white/60 border-slate-200 hover:bg-white hover:border-slate-300 shadow-sm'
+                  }`}
+                >
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-2xl">{p.avatar}</span>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${p.badgeColor}`}>
+                        {p.type.split(" ")[0]}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base">{p.title}</h3>
+                    <p className="text-xs text-slate-500 mt-1">{p.location}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* PASSAGE CONTENT & TOOLBAR PANEL */}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            {/* TOOLBAR */}
+            <div className="bg-slate-50 border-b border-slate-200 p-4 flex flex-wrap items-center justify-between gap-4">
+              {/* Text to Speech controls */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => speakText(currentPassage.text)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm ${
+                    isPlayingSpeech
+                      ? 'bg-amber-500 text-white hover:bg-amber-600'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  {isPlayingSpeech ? '⏸ Pause Audio' : '🔊 Listen to Passage'}
+                </button>
+
+                {isPlayingSpeech && (
+                  <button
+                    onClick={stopSpeech}
+                    className="px-3 py-2 bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-300 transition"
+                  >
+                    ⏹ Stop
+                  </button>
+                )}
+
+                <div className="flex items-center space-x-1 bg-white border border-slate-200 rounded-xl p-1 text-xs font-semibold text-slate-600">
+                  <span className="px-1 text-slate-400">Speed:</span>
+                  {[0.75, 1.0, 1.25].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => setSpeechRate(rate)}
+                      className={`px-2 py-0.5 rounded-lg transition ${
+                        speechRate === rate ? 'bg-indigo-100 text-indigo-700 font-bold' : 'hover:bg-slate-100'
+                      }`}
+                    >
+                      {rate}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fact Finder / Search Tool */}
+              <div className="flex items-center space-x-2 flex-1 max-w-xs">
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    placeholder="Search key facts (e.g., age, job)..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
+                  />
+                  <span className="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Text Highlighter Color Picker */}
+              <div className="flex items-center space-x-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
+                <span className="text-xs font-bold text-slate-500">Highlighter:</span>
+                <button
+                  onClick={() => setHighlightColor('yellow')}
+                  className={`w-5 h-5 rounded-full bg-yellow-300 border ${
+                    highlightColor === 'yellow' ? 'ring-2 ring-indigo-500 ring-offset-1' : ''
+                  }`}
+                  title="Yellow Highlighter"
+                />
+                <button
+                  onClick={() => setHighlightColor('green')}
+                  className={`w-5 h-5 rounded-full bg-green-300 border ${
+                    highlightColor === 'green' ? 'ring-2 ring-indigo-500 ring-offset-1' : ''
+                  }`}
+                  title="Green Highlighter"
+                />
+                <button
+                  onClick={() => setHighlightColor('blue')}
+                  className={`w-5 h-5 rounded-full bg-blue-300 border ${
+                    highlightColor === 'blue' ? 'ring-2 ring-indigo-500 ring-offset-1' : ''
+                  }`}
+                  title="Blue Highlighter"
+                />
+                <button
+                  onClick={() => setHighlightColor('none')}
+                  className={`text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold ${
+                    highlightColor === 'none' ? 'bg-slate-300' : ''
+                  }`}
+                  title="Pointer mode (Off)"
+                >
+                  Off
+                </button>
+              </div>
+            </div>
+
+            {/* PASSAGE READING BODY */}
+            <div className="p-6 sm:p-8 space-y-6">
+              <div className="border-b border-slate-100 pb-4 flex justify-between items-start">
+                <div>
+                  <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${currentPassage.badgeColor}`}>
+                    {currentPassage.type}
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-2">{currentPassage.title}</h2>
+                  <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                    <span>📍</span> {currentPassage.location}
+                  </p>
+                </div>
+                <div className="text-right hidden sm:block">
+                  <span className="text-xs text-slate-400 block font-semibold">Tip for B1 Students</span>
+                  <span className="text-xs text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 inline-block mt-1">
+                    Click underlined terms for definitions
+                  </span>
+                </div>
+              </div>
+
+              {/* Passage Paragraphs */}
+              <div className="prose max-w-none text-slate-700 leading-relaxed text-base sm:text-lg space-y-4">
+                {currentPassage.text.split('\n\n').map((paragraph, idx) => (
+                  <p key={idx} className="p-1">
+                    {renderInteractiveText(paragraph)}
+                  </p>
+                ))}
+              </div>
+
+              {/* QUICK KEY FACTS BOX */}
+              <div className="mt-8 bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                  <span>📌</span> Quick Fact Summary (Scanning Helper)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                  {Object.entries(currentPassage.keyFacts).map(([key, val]) => (
+                    <div key={key} className="bg-white p-2.5 rounded-lg border border-slate-200/80 shadow-sm">
+                      <span className="text-slate-400 font-semibold block capitalize">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </span>
+                      <span className="font-bold text-slate-800">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 2. SCANNING SPRINT VIEW (Rapid Fact Finding)
+    // ==========================================
+
+    function ScanningChallengeView({ questions, passages, addPoints, onComplete }) {
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+      const [timer, setTimer] = useState(0);
+      const [isTimerActive, setIsTimerActive] = useState(true);
+      const [correctCount, setCorrectCount] = useState(0);
+
+      const currentQ = questions[currentIndex];
+      const relatedPassage = passages.find(p => p.id === currentQ.passageId);
+
+      useEffect(() => {
+        let interval = null;
+        if (isTimerActive) {
+          interval = setInterval(() => setTimer(t => t + 1), 1000);
+        } else {
+          clearInterval(interval);
+        }
+        return () => clearInterval(interval);
+      }, [isTimerActive]);
+
+      const handleAnswerSelect = (idx) => {
+        if (isSubmitted) return;
+        setSelectedOption(idx);
+      };
+
+      const handleSubmitAnswer = () => {
+        if (selectedOption === null || isSubmitted) return;
+        setIsSubmitted(true);
+        if (selectedOption === currentQ.correct) {
+          addPoints(15);
+          setCorrectCount(prev => prev + 1);
+        }
+      };
+
+      const handleNextQuestion = () => {
+        if (currentIndex < questions.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setSelectedOption(null);
+          setIsSubmitted(false);
+        } else {
+          setIsTimerActive(false);
+          onComplete();
+        }
+      };
+
+      const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* HEADER STATUS */}
+          <div className="bg-white rounded-2xl shadow-md p-5 border border-slate-200 flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">
+                Reading for Specific Detail
+              </span>
+              <h2 className="text-xl font-bold text-slate-800 mt-1">⚡ Scanning Sprint Challenge</h2>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <span className="text-xs text-slate-400 font-semibold block">Time Elapsed</span>
+                <span className="font-mono text-lg font-bold text-slate-700">⏱ {formatTime(timer)}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-400 font-semibold block">Progress</span>
+                <span className="text-sm font-bold text-indigo-600">{currentIndex + 1} / {questions.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN SPRINT CARD */}
+          {!isTimerActive && currentIndex === questions.length - 1 && isSubmitted ? (
+            /* COMPLETED SUMMARY CARD */
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200 text-center space-y-4">
+              <div className="text-5xl">🏆</div>
+              <h3 className="text-2xl font-extrabold text-slate-800">Scanning Sprint Complete!</h3>
+              <p className="text-slate-600">
+                You found <span className="font-bold text-indigo-600">{correctCount} out of {questions.length}</span> key facts in <span className="font-bold text-slate-800">{formatTime(timer)}</span>!
+              </p>
+              <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 max-w-sm mx-auto">
+                <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider">Scanning Efficiency Rating</p>
+                <p className="text-lg font-bold text-indigo-900 mt-1">
+                  {correctCount === questions.length ? '🥇 Speed Reading Detective' : correctCount >= 5 ? '🥈 Fast Fact Finder' : '🥉 Detail Apprentice'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setCurrentIndex(0);
+                  setSelectedOption(null);
+                  setIsSubmitted(false);
+                  setTimer(0);
+                  setIsTimerActive(true);
+                  setCorrectCount(0);
+                }}
+                className="bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg"
+              >
+                Try Sprint Again
+              </button>
+            </div>
+          ) : (
+            /* ACTIVE QUESTION CARD */
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {/* QUESTION & OPTIONS (7 COLS) */}
+              <div className="md:col-span-7 bg-white rounded-2xl shadow-lg p-6 border border-slate-200 flex flex-col justify-between space-y-6">
+                <div>
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-400 mb-2">
+                    <span>Target Family: <strong className="text-slate-700">{relatedPassage?.title}</strong></span>
+                    <span>Q{currentIndex + 1}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 leading-snug">{currentQ.question}</h3>
+
+                  {/* Options */}
+                  <div className="mt-4 space-y-2.5">
+                    {currentQ.options.map((opt, idx) => {
+                      let btnStyle = "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100";
+                      if (selectedOption === idx) {
+                        btnStyle = "bg-indigo-50 border-indigo-500 text-indigo-900 font-semibold ring-2 ring-indigo-500/20";
+                      }
+                      if (isSubmitted) {
+                        if (idx === currentQ.correct) {
+                          btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold ring-2 ring-emerald-500/20";
+                        } else if (selectedOption === idx) {
+                          btnStyle = "bg-rose-50 border-rose-500 text-rose-900 font-medium";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleAnswerSelect(idx)}
+                          className={`w-full text-left p-3.5 rounded-xl border text-sm transition flex items-center justify-between ${btnStyle}`}
+                        >
+                          <span>{opt}</span>
+                          {isSubmitted && idx === currentQ.correct && <span>✅</span>}
+                          {isSubmitted && selectedOption === idx && idx !== currentQ.correct && <span>❌</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Submit & Next Controls */}
+                <div>
+                  {!isSubmitted ? (
+                    <button
+                      onClick={handleSubmitAnswer}
+                      disabled={selectedOption === null}
+                      className={`w-full py-3 rounded-xl font-bold text-sm transition shadow-md ${
+                        selectedOption !== null
+                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      Confirm Answer
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleNextQuestion}
+                      className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-md flex items-center justify-center gap-2"
+                    >
+                      {currentIndex < questions.length - 1 ? 'Next Question ➔' : 'Finish Sprint'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* REFERENCE TEXT SNIPPET (5 COLS) */}
+              <div className="md:col-span-5 bg-slate-800 text-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Scan Text Context</span>
+                    <span className="text-xs text-slate-400">{relatedPassage?.avatar} {relatedPassage?.title}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+                    "{relatedPassage?.text}"
+                  </p>
+                </div>
+
+                {isSubmitted && (
+                  <div className="mt-4 p-3 rounded-xl bg-slate-700/80 border border-slate-600">
+                    <p className="text-[11px] font-bold text-indigo-300 uppercase tracking-wide">Exact Text Evidence:</p>
+                    <p className="text-xs text-white italic mt-1">"{currentQ.evidence}"</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 3. FAMILY DETECTIVE VIEW (Info Grid Matrix)
+    // ==========================================
+
+    function FamilyDetectiveView({ gridItems, passages, addPoints, onComplete }) {
+      const [userAnswers, setUserAnswers] = useState({});
+      const [checked, setChecked] = useState(false);
+      const [scoreResult, setScoreResult] = useState(null);
+
+      const handleSelectChange = (id, value) => {
+        if (checked) return;
+        setUserAnswers(prev => ({ ...prev, [id]: value }));
+      };
+
+      const handleCheckGrid = () => {
+        let correctCount = 0;
+        gridItems.forEach(item => {
+          if (userAnswers[item.id] === item.correct) {
+            correctCount++;
+          }
+        });
+
+        const totalPoints = correctCount * 10;
+        addPoints(totalPoints);
+        setScoreResult({ correct: correctCount, total: gridItems.length, points: totalPoints });
+        setChecked(true);
+        onComplete();
+      };
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-200">
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">
+              Information Retrieval Matrix
+            </span>
+            <h2 className="text-2xl font-bold text-slate-800 mt-1">🕵️ Family Detective: Profile Completer</h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Scan the reading passages to retrieve missing demographic and family details for each relative in the matrix below.
+            </p>
+          </div>
+
+          {/* GRID OF PROFILE CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {gridItems.map((item) => {
+              const passage = passages.find(p => p.id === item.passageId);
+              const isCorrect = checked && userAnswers[item.id] === item.correct;
+              const isWrong = checked && userAnswers[item.id] !== item.correct;
+
+              return (
+                <div 
+                  key={item.id} 
+                  className={`bg-white rounded-xl p-5 border shadow-sm transition ${
+                    isCorrect 
+                      ? 'border-emerald-500 bg-emerald-50/20' 
+                      : isWrong 
+                      ? 'border-rose-500 bg-rose-50/20' 
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.family}</span>
+                      <h4 className="text-base font-bold text-slate-800">{item.person}</h4>
+                    </div>
+                    <span className="text-xl">{passage?.avatar}</span>
+                  </div>
+
+                  <div className="space-y-2 mt-3">
+                    <label className="text-xs font-semibold text-slate-600 block">
+                      Target Fact: <span className="text-indigo-600 font-bold">{item.field}</span>
+                    </label>
+                    <select
+                      value={userAnswers[item.id] || ''}
+                      onChange={(e) => handleSelectChange(item.id, e.target.value)}
+                      disabled={checked}
+                      className="w-full text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- Select correct information --</option>
+                      {item.options.map((opt, oIdx) => (
+                        <option key={oIdx} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+
+                    {checked && (
+                      <div className="mt-2 text-xs">
+                        {isCorrect ? (
+                          <p className="text-emerald-700 font-bold flex items-center gap-1">
+                            <span>✅ Correct!</span> Matches passage evidence.
+                          </p>
+                        ) : (
+                          <p className="text-rose-700 font-semibold">
+                            ❌ Correct answer: <strong className="underline">{item.correct}</strong>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* CHECK BUTTON & RESULTS */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-lg text-center">
+            {!checked ? (
+              <button
+                onClick={handleCheckGrid}
+                disabled={Object.keys(userAnswers).length < gridItems.length}
+                className={`px-8 py-3 rounded-xl font-bold text-sm transition shadow-md ${
+                  Object.keys(userAnswers).length === gridItems.length
+                    ? 'bg-teal-600 text-white hover:bg-teal-700'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                Check Intelligence Report ({Object.keys(userAnswers).length}/{gridItems.length} filled)
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <h3 className="text-xl font-extrabold text-slate-800">
+                  Detective Report: {scoreResult.correct} / {scoreResult.total} Accurate Facts
+                </h3>
+                <p className="text-sm text-slate-600">
+                  You earned <strong className="text-teal-600 font-bold">+{scoreResult.points} points</strong> for your detailed scanning!
+                </p>
+                <button
+                  onClick={() => {
+                    setUserAnswers({});
+                    setChecked(false);
+                    setScoreResult(null);
+                  }}
+                  className="bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-slate-900 transition"
+                >
+                  Reset Detective Grid
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 4. COMPREHENSION & DETAIL QUIZ VIEW
+    // ==========================================
+
+    function ComprehensionQuizView({ questions, passages, addPoints, onComplete }) {
+      const [answers, setAnswers] = useState({});
+      const [submitted, setSubmitted] = useState(false);
+
+      const handleOptionSelect = (qId, optionVal) => {
+        if (submitted) return;
+        setAnswers(prev => ({ ...prev, [qId]: optionVal }));
+      };
+
+      const handleSubmitQuiz = () => {
+        let correctNum = 0;
+        questions.forEach(q => {
+          const userAns = answers[q.id];
+          if (q.type === 'tfng' && userAns === q.correct) correctNum++;
+          if (q.type === 'mcq' && userAns === q.correct) correctNum++;
+        });
+
+        addPoints(correctNum * 20);
+        setSubmitted(true);
+        onComplete();
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-200">
+            <span className="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+              B1 Reading Evaluation
+            </span>
+            <h2 className="text-2xl font-bold text-slate-800 mt-1">📝 Comprehension & Text Quote Quiz</h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Answer multiple choice and True / False / Not Given questions. Submit to reveal exact textual quotes.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            {questions.map((q, idx) => {
+              const passage = passages.find(p => p.id === q.passageId);
+              const userSelection = answers[q.id];
+              const isCorrect = submitted && userSelection === q.correct;
+              const isWrong = submitted && userSelection !== q.correct;
+
+              return (
+                <div key={q.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Question {idx + 1} • {q.type === 'tfng' ? 'True / False / Not Given' : 'Detail Choice'}
+                      </span>
+                      <h3 className="text-base font-bold text-slate-800 mt-1">{q.question}</h3>
+                    </div>
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold">
+                      {passage?.title}
+                    </span>
+                  </div>
+
+                  {/* Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {q.options.map((opt, oIdx) => {
+                      const optionValue = q.type === 'mcq' ? oIdx : opt;
+                      const isSelected = userSelection === optionValue;
+
+                      let btnStyle = "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100";
+                      if (isSelected) btnStyle = "bg-purple-50 border-purple-500 text-purple-900 font-bold ring-2 ring-purple-500/20";
+                      
+                      if (submitted) {
+                        if (optionValue === q.correct) {
+                          btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold";
+                        } else if (isSelected) {
+                          btnStyle = "bg-rose-50 border-rose-500 text-rose-900 font-medium";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={oIdx}
+                          onClick={() => handleOptionSelect(q.id, optionValue)}
+                          disabled={submitted}
+                          className={`p-3 rounded-xl border text-xs sm:text-sm text-left transition ${btnStyle}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* SUBMITTED FEEDBACK & TEXTUAL QUOTE EVIDENCE */}
+                  {submitted && (
+                    <div className={`p-4 rounded-xl border text-xs space-y-2 ${isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}`}>
+                      <div className="flex items-center gap-2">
+                        <span>{isCorrect ? '✅' : '❌'}</span>
+                        <span className="font-bold text-slate-800">
+                          {isCorrect ? 'Correct!' : `Incorrect (Correct answer: ${q.type === 'mcq' ? q.options[q.correct] : q.correct})`}
+                        </span>
+                      </div>
+                      <p className="text-slate-700 font-medium">{q.explanation}</p>
+                      <div className="bg-white p-3 rounded-lg border border-slate-200/80 mt-2">
+                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
+                          💬 Exact Passage Quote Evidence:
+                        </span>
+                        <p className="italic text-slate-800 text-xs">"{q.quote}"</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center pt-4">
+            {!submitted ? (
+              <button
+                onClick={handleSubmitQuiz}
+                disabled={Object.keys(answers).length < questions.length}
+                className={`px-8 py-3 rounded-xl font-bold text-sm transition shadow-lg ${
+                  Object.keys(answers).length === questions.length
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                Submit B1 Evaluation Quiz ({Object.keys(answers).length}/{questions.length})
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setAnswers({});
+                  setSubmitted(false);
+                }}
+                className="bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl hover:bg-slate-900 transition shadow-md"
+              >
+                Retake Quiz
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 5. VOCABULARY VAULT VIEW (Flashcards)
+    // ==========================================
+
+    function VocabVaultView({ vocabDb, speakText }) {
+      const vocabList = Object.values(vocabDb);
+      const [flippedCards, setFlippedCards] = useState({});
+      const [filterText, setFilterText] = useState('');
+
+      const toggleCardFlip = (term) => {
+        setFlippedCards(prev => ({ ...prev, [term]: !prev[term] }));
+      };
+
+      const filteredList = vocabList.filter(v => 
+        v.term.toLowerCase().includes(filterText.toLowerCase()) ||
+        v.definition.toLowerCase().includes(filterText.toLowerCase())
+      );
+
+      return (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div className="bg-white rounded-2xl shadow-md p-6 border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                Interactive B1 Lexicon
+              </span>
+              <h2 className="text-2xl font-bold text-slate-800 mt-1">🎴 Vocabulary Flashcards & Vault</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Click any card to flip and view definitions & context examples.</p>
+            </div>
+
+            <div className="w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Filter vocabulary..."
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* FLASHCARDS GRID */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {filteredList.map((item) => {
+              const isFlipped = flippedCards[item.term];
+
+              return (
+                <div
+                  key={item.term}
+                  onClick={() => toggleCardFlip(item.term)}
+                  className="perspective-1000 h-56 cursor-pointer group"
+                >
+                  <div className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+                    {/* FRONT OF CARD */}
+                    <div className="absolute inset-0 bg-white rounded-2xl p-6 border border-slate-200 shadow-md backface-hidden flex flex-col justify-between items-center text-center group-hover:border-amber-400 transition">
+                      <div className="w-full flex justify-between items-center text-xs text-slate-400">
+                        <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">{item.cefr}</span>
+                        <span>Click to flip 🔄</span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-2xl font-bold text-slate-800 capitalize">{item.term}</h3>
+                        <span className="text-xs italic text-slate-500">[{item.partOfSpeech}]</span>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          speakText(item.term);
+                        }}
+                        className="text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl hover:bg-indigo-100 transition font-semibold flex items-center gap-1"
+                      >
+                        🔊 Listen Pronunciation
+                      </button>
+                    </div>
+
+                    {/* BACK OF CARD */}
+                    <div className="absolute inset-0 bg-slate-800 text-white rounded-2xl p-6 border border-slate-700 shadow-md backface-hidden rotate-y-180 flex flex-col justify-between text-left">
+                      <div>
+                        <div className="flex justify-between items-center text-[10px] text-amber-400 uppercase tracking-wider font-bold mb-2">
+                          <span>Definition</span>
+                          <span>Click to flip 🔄</span>
+                        </div>
+                        <p className="text-xs text-slate-200 leading-relaxed font-sans">{item.definition}</p>
+                      </div>
+
+                      <div className="bg-slate-700/60 p-2.5 rounded-xl border border-slate-600">
+                        <span className="text-[10px] font-bold text-indigo-300 uppercase block mb-0.5">Context Example:</span>
+                        <p className="text-xs text-slate-300 italic">"{item.example}"</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // RENDER APP
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
