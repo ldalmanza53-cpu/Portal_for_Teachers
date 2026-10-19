@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReportTalk: Reported Speech & Public Behavior Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#06b6d4',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Live Syntax Highlighter Badges */
+        .hl-verb { background-color: rgba(99, 102, 241, 0.35); color: #a5b4fc; border: 1px solid #6366f1; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+        .hl-backshift { background-color: rgba(16, 185, 129, 0.35); color: #6ee7b7; border: 1px solid #10b981; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+        .hl-vocab { background-color: rgba(245, 158, 11, 0.35); color: #fde047; border: 1px solid #f59e0b; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+        .hl-deictic { background-color: rgba(6, 182, 212, 0.35); color: #67e8f9; border: 1px solid #06b6d4; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+
+        /* Print CSS for Certificate */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-card, #certificate-card * {
+                visibility: visible;
+            }
+            #certificate-card {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                border: 4px solid #0284c7 !important;
+                box-shadow: none !important;
+            }
+            #certificate-card h2, #certificate-card h3, #certificate-card p, #certificate-card div, #certificate-card span {
+                color: #0f172a !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation Header & Gamification Bar -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur border-b border-slate-800/80 px-4 py-3 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- App Brand & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    RT
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold bg-gradient-to-r from-cyan-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+                        ReportTalk
+                    </h1>
+                    <p class="text-xs text-slate-400">Reported Speech, Public Behavior & Conversation Studio</p>
+                </div>
+            </div>
+
+            <!-- Stats & System Controls -->
+            <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <!-- XP Score Counter -->
+                <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold">
+                    <span class="text-amber-400">⚡ <span id="xp-display">0</span> XP</span>
+                </div>
+
+                <!-- Day Streak Badge -->
+                <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold">
+                    <span class="text-rose-400">🔥 <span id="streak-display">1</span> Day Streak</span>
+                </div>
+
+                <!-- Rank Title -->
+                <div class="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg font-bold text-cyan-300 flex items-center gap-1.5">
+                    🏆 <span id="rank-display">Reported Speech Novice</span>
+                </div>
+
+                <!-- Interactive Controls -->
+                <div class="flex items-center gap-2 border-l border-slate-800 pl-2.5">
+                    <!-- Web Audio Sound FX Toggle -->
+                    <button id="btn-audio-toggle" onclick="toggleAudio()" class="p-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1" title="Toggle Sound FX">
+                        🔊 <span id="audio-status-text" class="font-mono">ON</span>
+                    </button>
+
+                    <!-- Web Speech TTS Rate Toggle -->
+                    <button id="btn-tts-rate" onclick="toggleTTSRate()" class="p-1.5 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1" title="TTS Speed Rate">
+                        🗣️ <span id="tts-rate-text" class="font-mono">1.0x</span>
+                    </button>
+
+                    <!-- Reference Handbook Trigger Modal -->
+                    <button onclick="toggleHandbookModal(true)" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+                        📖 <span>Handbook</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 flex-grow space-y-6">
+
+        <!-- Tab Navigation Bar -->
+        <nav class="flex space-x-2 overflow-x-auto pb-2 border-b border-slate-800/80 no-scrollbar">
+            <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                1. Etiquette Classifier
+            </button>
+            <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                2. Word-Tile Builder
+            </button>
+            <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                3. Verb Pattern Matcher
+            </button>
+            <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                4. Overheard Detective
+            </button>
+            <button onclick="switchTab('mod5')" id="tab-mod5" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                5. Live Reporter & Scanner
+            </button>
+            <button onclick="switchTab('mod6')" id="tab-mod6" class="tab-btn px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                6. Accreditation Certificate
+            </button>
+        </nav>
+
+        <!-- MODULE 1: Public Space Vocabulary & Etiquette Classifier -->
+        <section id="mod1" class="tab-content block space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🏷️</span> Module 1: Public Space Vocabulary & Etiquette Classifier
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Categorize key public behavior and conversation reporting terms into their accurate pragmatic categories.
+                        </p>
+                    </div>
+                    <button onclick="resetM1Classifier()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700 transition self-start md:self-auto">
+                        🔄 Reset Chips
+                    </button>
+                </div>
+
+                <!-- Unassigned Term Pool -->
+                <div class="mb-6 p-4 bg-slate-950/80 rounded-xl border border-slate-800">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center justify-between">
+                        <span>Unassigned Terminology Pool</span>
+                        <span id="m1-unassigned-count" class="text-slate-400 text-xs font-mono">12 terms remaining</span>
+                    </h3>
+                    <div id="m1-chip-pool" class="flex flex-wrap gap-2.5 min-h-[60px] items-center">
+                        <!-- Term Chips injected by JS -->
+                    </div>
+                </div>
+
+                <!-- 3 Pragmatic Categorization Buckets -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Bucket 1: Positive Social Etiquette -->
+                    <div class="bucket-card bg-slate-950/50 border-2 border-dashed border-emerald-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-emerald-500 cursor-pointer" data-category="positive">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+                                    🌱 Positive Social Etiquette
+                                </h4>
+                                <span class="text-[10px] text-slate-500 font-mono uppercase">Respectful Norms</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Consideration for shared spaces, quietness, spatial boundaries.</p>
+                            <div id="bucket-positive" class="bucket-container min-h-[150px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bucket 2: Disruptive & Anti-Social Behavior -->
+                    <div class="bucket-card bg-slate-950/50 border-2 border-dashed border-rose-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-rose-500 cursor-pointer" data-category="disruptive">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-rose-400 text-sm flex items-center gap-1.5">
+                                    ⚠️ Disruptive & Anti-Social
+                                </h4>
+                                <span class="text-[10px] text-slate-500 font-mono uppercase">Public Infractions</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Loud noise, spatial entitlement, self-absorbed public actions.</p>
+                            <div id="bucket-disruptive" class="bucket-container min-h-[150px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bucket 3: Reporting & Bystander Actions -->
+                    <div class="bucket-card bg-slate-950/50 border-2 border-dashed border-indigo-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-indigo-500 cursor-pointer" data-category="reporting">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-indigo-400 text-sm flex items-center gap-1.5">
+                                    📢 Reporting & Bystander Actions
+                                </h4>
+                                <span class="text-[10px] text-slate-500 font-mono uppercase">Verbal Interventions</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Overhearing, intervening, admonishing, or reporting behavior.</p>
+                            <div id="bucket-reporting" class="bucket-container min-h-[150px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit & Feedback Control Bar -->
+                <div class="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div id="m1-feedback" class="text-xs sm:text-sm font-medium text-slate-300">
+                        Tap a term chip above, then tap a category bucket to assign it.
+                    </div>
+                    <button onclick="verifyM1Classifications()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition text-xs sm:text-sm">
+                        Verify Classifications
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: Tense Backshift & Word-Tile Builder -->
+        <section id="mod2" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🧩</span> Module 2: Tense Backshift & Word-Tile Builder
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Unscramble direct quotes into precise reported speech statements with tense backshifts and deictic transformations.
+                        </p>
+                    </div>
+                    <div class="text-xs bg-slate-900 border border-slate-800 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Challenge <span id="m2-index">1</span> of <span id="m2-total">4</span>
+                    </div>
+                </div>
+
+                <!-- Target Direct Quote Card -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6">
+                    <div class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1 flex items-center gap-1.5">
+                        <span>💬 Direct Speech Quote</span>
+                    </div>
+                    <div id="m2-direct-quote" class="text-sm sm:text-base text-slate-100 font-medium italic border-l-4 border-rose-500 pl-3 py-1">
+                        "I am taking this emergency phone call on speaker right now."
+                    </div>
+                </div>
+
+                <!-- Tile Assembly Zone -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-400">Assembled Reported Speech Sentence:</span>
+                        <button onclick="clearM2Assembly()" class="text-xs text-rose-400 hover:underline">Clear Sentence</button>
+                    </div>
+                    <div id="m2-tile-assembly-zone" class="min-h-[70px] bg-slate-950/90 border-2 border-indigo-500/30 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                        <span class="text-slate-500 text-xs italic select-none">Tap word tiles below to construct the indirect report...</span>
+                    </div>
+                </div>
+
+                <!-- Available Tiles Pool -->
+                <div class="mb-6">
+                    <span class="text-xs font-semibold text-slate-400 mb-2 block">Word & Deictic Shift Tiles:</span>
+                    <div id="m2-tile-pool-zone" class="flex flex-wrap gap-2 min-h-[60px] p-3 bg-slate-950/50 rounded-xl border border-slate-800/80">
+                        <!-- Tiles injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Feedback & Control Bar -->
+                <div id="m2-feedback" class="hidden p-3 rounded-xl border mb-4 text-xs font-medium"></div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+                    <button onclick="checkM2Assembly()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition">
+                        Validate Reported Sentence
+                    </button>
+                    <button onclick="nextM2Challenge()" id="btn-m2-next" class="hidden px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-xl text-white transition">
+                        Next Challenge →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: Reporting Verb & Pattern Matcher -->
+        <section id="mod3" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🎯</span> Module 3: Reporting Verb & Syntactic Pattern Matcher
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Match direct quotes to their governing reporting verb structures: <code class="text-indigo-300 font-mono text-xs">Verb + that</code>, <code class="text-emerald-300 font-mono text-xs">Verb + Object + to + V1</code>, or <code class="text-amber-300 font-mono text-xs">Verb + Prep + -ing</code>.
+                        </p>
+                    </div>
+                    <div class="text-xs bg-slate-900 border border-slate-800 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Question <span id="m3-index">1</span> of <span id="m3-total">4</span>
+                    </div>
+                </div>
+
+                <!-- Target Scenario Card -->
+                <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 mb-6">
+                    <div id="m3-scenario-title" class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">
+                        Incident: Cafe Line Dispute
+                    </div>
+                    <div id="m3-direct-quote" class="text-base text-slate-100 italic border-l-4 border-cyan-500 pl-3 py-1 mb-3">
+                        "You intentionally cut right in front of three waiting customers!"
+                    </div>
+                    <div class="text-xs text-slate-400">
+                        Target Reporting Action: <span id="m3-target-verb" class="font-bold text-amber-400 font-mono">accuse [person] of + -ing</span>
+                    </div>
+                </div>
+
+                <!-- Option Selection List -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-xs sm:text-sm font-semibold text-slate-300">Select the grammatically accurate reported transformation:</h3>
+                    <div id="m3-options-container" class="space-y-2.5">
+                        <!-- Options injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Verb Pattern Feedback -->
+                <div id="m3-feedback" class="hidden p-4 rounded-xl border transition-all duration-300 text-xs sm:text-sm leading-relaxed">
+                    <!-- Feedback content injected here -->
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="mt-6 flex justify-between items-center pt-4 border-t border-slate-800">
+                    <button onclick="prevM3Scenario()" id="btn-m3-prev" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold rounded-lg text-slate-200 transition">
+                        ← Previous Question
+                    </button>
+                    <button onclick="nextM3Scenario()" id="btn-m3-next" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-lg text-white transition shadow-md shadow-indigo-600/20">
+                        Next Question →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: Overheard Dialogue Detective -->
+        <section id="mod4" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🔍</span> Module 4: Overheard Dialogue Detective
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Diagnose grammatical and pragmatic flaws in novice reported speech drafts—such as un-backshifted tenses or bad prepositions.
+                        </p>
+                    </div>
+                    <div class="text-xs bg-slate-900 border border-slate-800 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Case File <span id="m4-index">1</span> of <span id="m4-total">4</span>
+                    </div>
+                </div>
+
+                <!-- Flawed Report Card -->
+                <div class="bg-slate-950 rounded-2xl p-5 border border-slate-800 space-y-4 mb-6">
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1 flex items-center gap-1.5">
+                            ⚠️ Flawed Reported Draft
+                        </div>
+                        <div id="m4-flawed-text" class="p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl text-rose-200 text-xs sm:text-sm font-medium">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-xs font-semibold text-slate-400 mb-1">Overheard Public Context:</div>
+                        <div id="m4-context-text" class="text-xs text-slate-300 italic bg-slate-900 p-3 rounded-lg border border-slate-800">
+                            <!-- Context injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Diagnosis Selection -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-xs sm:text-sm font-semibold text-slate-300">1. Select the Primary Grammatical / Pragmatic Flaw:</h3>
+                    <div id="m4-diagnosis-options" class="space-y-2">
+                        <!-- Diagnostic options injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Step 2: Fix Selection (Hidden initially) -->
+                <div id="m4-fix-section" class="hidden space-y-3 mb-6 pt-4 border-t border-slate-800">
+                    <h3 class="text-xs sm:text-sm font-semibold text-emerald-400">2. Select the Polished & Accurate Correction:</h3>
+                    <div id="m4-fix-options" class="space-y-2">
+                        <!-- Fix options injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Rule Explanation Box -->
+                <div id="m4-explanation" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed mb-6">
+                    <!-- Injected -->
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex justify-between items-center pt-4 border-t border-slate-800">
+                    <button onclick="prevM4Case()" id="btn-m4-prev" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg text-slate-200 transition">
+                        ← Previous Case
+                    </button>
+                    <button onclick="nextM4Case()" id="btn-m4-next" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-lg text-white transition">
+                        Next Case File →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 5: Live Conversation Reporter & Syntax Scanner -->
+        <section id="mod5" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>✍️</span> Module 5: Live Conversation Reporter & Syntax Scanner
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Write indirect speech reports for public incidents. The real-time engine scans your text with Regex to highlight key reporting structures.
+                        </p>
+                    </div>
+                    <!-- Prompt Selector Buttons -->
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="loadM5Prompt(0)" id="btn-m5-pr0" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition">
+                            Prompt 1: Bus Loudspeaker
+                        </button>
+                        <button onclick="loadM5Prompt(1)" id="btn-m5-pr1" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 transition">
+                            Prompt 2: Cafe Counter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left Column: Prompt & Target Checklist -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <!-- Direct Incident Box -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Public Incident Prompt</span>
+                                <button onclick="readM5Prompt()" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                                    🔊 Read
+                                </button>
+                            </div>
+                            <p id="m5-prompt-body" class="text-xs sm:text-sm text-slate-300 leading-relaxed italic border-l-2 border-cyan-500 pl-3 py-1">
+                                <!-- Prompt text injected by JS -->
+                            </p>
+                        </div>
+
+                        <!-- Real-Time Structure Checklist -->
+                        <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+                                <span>Real-Time Syntax Checklist</span>
+                                <span id="m5-score-badge" class="text-amber-400 font-mono">0 / 4 Criteria Met</span>
+                            </h3>
+
+                            <div class="space-y-2 text-xs">
+                                <!-- Reporting Verb -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-verb">❌</span> Reporting Verb
+                                    </span>
+                                    <span class="text-[10px] font-mono text-indigo-400">complained, urged, apologized for, accused of</span>
+                                </div>
+
+                                <!-- Backshifted Tense -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-backshift">❌</span> Backshifted Tense
+                                    </span>
+                                    <span class="text-[10px] font-mono text-emerald-400">was, were, had been, had, could, would</span>
+                                </div>
+
+                                <!-- Public Behavior Vocab -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-vocab">❌</span> Public Etiquette Term
+                                    </span>
+                                    <span class="text-[10px] font-mono text-amber-400">oblivious, spatial awareness, loudspeaker</span>
+                                </div>
+
+                                <!-- Deictic / Time Marker -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-deictic">❌</span> Deictic / Time Shift
+                                    </span>
+                                    <span class="text-[10px] font-mono text-cyan-400">there, then, that day, the next day</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Textarea & Syntax Highlighted View -->
+                    <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">Write Your Indirect Speech Report Summary:</label>
+                            <textarea id="m5-input" oninput="analyzeM5Draft()" rows="6" placeholder="e.g., The conductor urged the passenger to turn off his speaker, complaining that he was being oblivious to others..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition leading-relaxed"></textarea>
+                        </div>
+
+                        <!-- Live Syntax Scanner Highlight View -->
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 min-h-[70px]">
+                            <span class="text-[10px] font-semibold text-slate-500 block mb-1 uppercase tracking-wider">Live Syntax Scanner View:</span>
+                            <div id="m5-highlight-preview" class="text-xs sm:text-sm text-slate-300 leading-relaxed italic">
+                                <span class="text-slate-600">Start typing above to see real-time syntax color-coding...</span>
+                            </div>
+                        </div>
+
+                        <!-- Submission Controls -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                            <span id="m5-status-text" class="text-xs text-slate-400">Drafting mode</span>
+                            <button onclick="submitM5Report()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/20 transition">
+                                Submit Report & Earn XP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 6: Accreditation Certificate & Celebration -->
+        <section id="mod6" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-2xl">
+                <div class="text-center max-w-xl mx-auto mb-8">
+                    <h2 class="text-2xl font-black text-slate-100 mb-2">🏆 Master Accreditation</h2>
+                    <p class="text-xs sm:text-sm text-slate-400">
+                        Complete challenges across all modules to finalize your credentials in public etiquette analysis and reported speech narration.
+                    </p>
+                </div>
+
+                <!-- Printable Certificate Card -->
+                <div id="certificate-card" class="max-w-3xl mx-auto bg-slate-950 border-4 border-indigo-500/40 rounded-3xl p-8 relative shadow-2xl overflow-hidden">
+                    <!-- Glow Overlay Watermark -->
+                    <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Certificate Header -->
+                    <div class="text-center space-y-2 mb-8">
+                        <div class="inline-block px-3 py-1 bg-indigo-500/20 border border-indigo-400/40 rounded-full text-[10px] font-semibold text-indigo-300 uppercase tracking-widest mb-2">
+                            Official Competency Accreditation
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-black text-slate-100 uppercase tracking-wide">
+                            Certificate of Pragmatic Mastery
+                        </h3>
+                        <p class="text-xs text-cyan-400 font-mono">ReportTalk • Reported Speech & Public Behavior Studio</p>
+                    </div>
+
+                    <!-- Certificate Body -->
+                    <div class="text-center space-y-6">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">This is to certify that</p>
+
+                        <!-- Student Name Input -->
+                        <div class="max-w-md mx-auto no-print">
+                            <input type="text" id="cert-student-name" oninput="updateCertName()" placeholder="Enter Your Full Name" class="w-full text-center bg-slate-900 border-b-2 border-indigo-500 py-2 text-xl font-bold text-cyan-300 focus:outline-none focus:border-cyan-400 transition placeholder-slate-700">
+                        </div>
+                        <div id="cert-name-display" class="text-2xl sm:text-3xl font-bold text-cyan-300 underline decoration-indigo-500 decoration-2 underline-offset-8">
+                            [ Your Name Here ]
+                        </div>
+
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+                            Has demonstrated advanced proficiency in categorizing public social behaviors, executing indirect speech backshifts, applying complex reporting verb preposition frames, and generating precise narrative reports.
+                        </p>
+
+                        <!-- Metrics Grid -->
+                        <div class="grid grid-cols-3 gap-4 border-y border-slate-800 py-4 max-w-lg mx-auto my-6 text-center">
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Earned XP</span>
+                                <span id="cert-xp" class="text-lg font-bold text-amber-400">0</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Achieved Rank</span>
+                                <span id="cert-rank" class="text-xs font-bold text-cyan-300">Reported Speech Novice</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Issue Date</span>
+                                <span id="cert-date" class="text-xs font-mono text-slate-300">Oct 2026</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Signatures & Stamp -->
+                    <div class="flex items-end justify-between pt-4 mt-6 border-t border-slate-800 text-left">
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase">Verification Code</div>
+                            <div class="text-xs font-mono text-slate-400" id="cert-hash">RT-8849-REPORTED</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-12 h-12 rounded-full border-2 border-indigo-500/50 flex items-center justify-center text-xl mx-auto mb-1 bg-indigo-950/40">
+                                🏅
+                            </div>
+                            <span class="text-[9px] text-slate-400 uppercase tracking-widest block">Validated</span>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Confetti Overlay -->
+                    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none w-full h-full z-20"></canvas>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex flex-wrap items-center justify-center gap-4 mt-6 no-print">
+                    <button onclick="triggerCelebration()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        🎉 Trigger Celebration
+                    </button>
+                    <button onclick="window.print()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs rounded-xl border border-slate-700 transition flex items-center gap-2">
+                        🖨️ Print Certificate
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive Reference Handbook Modal -->
+    <div id="handbook-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-slate-100 text-sm sm:text-base flex items-center gap-2">
+                    📖 ReportTalk Reference Handbook
+                </h3>
+                <button onclick="toggleHandbookModal(false)" class="text-slate-400 hover:text-white font-bold p-1">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto space-y-6 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <!-- Section 1 -->
+                <div>
+                    <h4 class="font-bold text-cyan-400 text-sm mb-2 border-b border-slate-800 pb-1">1. Public Behavior Terminology</h4>
+                    <ul class="list-disc pl-5 space-y-1.5 text-slate-300 text-xs">
+                        <li><strong class="text-indigo-300">Spatial Awareness</strong>: Consciousness of physical personal space boundaries in crowds.</li>
+                        <li><strong class="text-indigo-300">Loudspeaker Etiquette</strong>: Using audio headphones in public transit instead of external speakers.</li>
+                        <li><strong class="text-indigo-300">Oblivious to</strong>: Unaware of how personal noise or behavior disturbs nearby people.</li>
+                        <li><strong class="text-indigo-300">Commandeer Seats</strong>: Unfairly occupying extra seats with bags or feet.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 2 -->
+                <div>
+                    <h4 class="font-bold text-emerald-400 text-sm mb-2 border-b border-slate-800 pb-1">2. Complete Tense Backshifting Matrix</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px] mt-2">
+                        <div class="p-2 bg-slate-800 rounded border border-slate-700">Present Simple → <span class="text-emerald-400">Past Simple</span></div>
+                        <div class="p-2 bg-slate-800 rounded border border-slate-700">Present Continuous → <span class="text-emerald-400">Past Continuous</span></div>
+                        <div class="p-2 bg-slate-800 rounded border border-slate-700">Present Perfect → <span class="text-emerald-400">Past Perfect</span></div>
+                        <div class="p-2 bg-slate-800 rounded border border-slate-700">Will / Can / May → <span class="text-emerald-400">Would / Could / Might</span></div>
+                    </div>
+                </div>
+
+                <!-- Section 3 -->
+                <div>
+                    <h4 class="font-bold text-amber-400 text-sm mb-2 border-b border-slate-800 pb-1">3. Time & Place Deictic Shifts</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px] mt-2">
+                        <div class="p-2 bg-slate-800 rounded">here → <span class="text-amber-300">there</span></div>
+                        <div class="p-2 bg-slate-800 rounded">now → <span class="text-amber-300">then</span></div>
+                        <div class="p-2 bg-slate-800 rounded">today → <span class="text-amber-300">that day</span></div>
+                        <div class="p-2 bg-slate-800 rounded">tomorrow → <span class="text-amber-300">the next day</span></div>
+                        <div class="p-2 bg-slate-800 rounded">yesterday → <span class="text-amber-300">the day before</span></div>
+                        <div class="p-2 bg-slate-800 rounded">this → <span class="text-amber-300">that</span></div>
+                    </div>
+                </div>
+
+                <!-- Section 4 -->
+                <div>
+                    <h4 class="font-bold text-indigo-400 text-sm mb-2 border-b border-slate-800 pb-1">4. Reporting Verb Preposition Frames</h4>
+                    <div class="space-y-1.5 text-xs">
+                        <p><strong class="text-indigo-300">• Verb + that + Clause</strong>: <em>complain, explain, retort, admit, claim, state</em></p>
+                        <p><strong class="text-indigo-300">• Verb + Object + to + V1</strong>: <em>urged, warned, advised, ordered, reminded</em></p>
+                        <p><strong class="text-indigo-300">• Verb + Preposition + -ing</strong>: <em>accused of, apologized for, insisted on, congratulated on</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 bg-slate-800 border-t border-slate-700 text-right">
+                <button onclick="toggleHandbookModal(false)" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">
+                    Close Handbook
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
+        ReportTalk Studio • Interactive Pragmatic & Indirect Speech Platform
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* ==========================================================================
+           1. GLOBAL STATE & SYNTHESIS ENGINES
+           ========================================================================== */
+        const state = {
+            xp: 0,
+            streak: 1,
+            rankIndex: 0,
+            audioEnabled: true,
+            ttsRate: 1.0,
+            ranks: [
+                "Reported Speech Novice",
+                "Public Behavior Specialist",
+                "Master Dialogue Reporter",
+                "Pragmatic Analyst"
+            ],
+            // Module 1 Data
+            m1: {
+                selectedChipId: null,
+                assignments: {},
+                chips: [
+                    { id: "c1", text: "spatial awareness", cat: "positive" },
+                    { id: "c2", text: "loudspeaker etiquette", cat: "positive" },
+                    { id: "c3", text: "minding one's business", cat: "positive" },
+                    { id: "c4", text: "public decorum", cat: "positive" },
+                    { id: "c5", text: "oblivious to", cat: "disruptive" },
+                    { id: "c6", text: "make a scene", cat: "disruptive" },
+                    { id: "c7", text: "commandeer seats", cat: "disruptive" },
+                    { id: "c8", text: "unruly conduct", cat: "disruptive" },
+                    { id: "c9", text: "eavesdrop on", cat: "reporting" },
+                    { id: "c10", text: "admonish politely", cat: "reporting" },
+                    { id: "c11", text: "bystander apathy", cat: "reporting" },
+                    { id: "c12", text: "retort sharply", cat: "reporting" }
+                ]
+            },
+            // Module 2 Data
+            m2: {
+                currentIndex: 0,
+                challenges: [
+                    {
+                        direct: `"I am taking this emergency call on speaker right now."`,
+                        tiles: ["He", "explained", "that", "he", "was", "taking", "that", "emergency", "call", "on", "speaker", "right", "then."],
+                        solution: "He explained that he was taking that emergency call on speaker right then."
+                    },
+                    {
+                        direct: `"We will clear these extra seats in five minutes!"`,
+                        tiles: ["They", "promised", "that", "they", "would", "clear", "those", "extra", "seats", "in", "five", "minutes."],
+                        solution: "They promised that they would clear those extra seats in five minutes."
+                    },
+                    {
+                        direct: `"I have already reported your unruly conduct to the conductor!"`,
+                        tiles: ["She", "declared", "that", "she", "had", "already", "reported", "his", "unruly", "conduct", "to", "the", "conductor."],
+                        solution: "She declared that she had already reported his unruly conduct to the conductor."
+                    },
+                    {
+                        direct: `"Can you please respect loudspeaker etiquette in this carriage?"`,
+                        tiles: ["The", "commuter", "asked", "if", "they", "could", "respect", "loudspeaker", "etiquette", "in", "that", "carriage."],
+                        solution: "The commuter asked if they could respect loudspeaker etiquette in that carriage."
+                    }
+                ],
+                userTiles: []
+            },
+            // Module 3 Data
+            m3: {
+                currentIndex: 0,
+                scenarios: [
+                    {
+                        title: "Incident: Cafe Line Dispute",
+                        quote: `"You intentionally cut right in front of three waiting customers!"`,
+                        target: "accuse [person] of + -ing",
+                        options: [
+                            { id: "a", text: "She accused him of cutting right in front of three waiting customers.", correct: true },
+                            { id: "b", text: "She accused him to cut right in front of three waiting customers.", correct: false },
+                            { id: "c", text: "She accused that he cuts right in front of customers that day.", correct: false }
+                        ],
+                        explanation: "Reporting verb pattern: 'accuse [someone] of [gerund (-ing)]'. Option A is grammatically flawless."
+                    },
+                    {
+                        title: "Incident: Quiet Train Car Call",
+                        quote: `"Please lower your volume or step into the vestibule immediately."`,
+                        target: "urge [person] to + V1",
+                        options: [
+                            { id: "a", text: "The conductor urged him for lowering his volume or stepping into the vestibule.", correct: false },
+                            { id: "b", text: "The conductor urged him to lower his volume or step into the vestibule immediately.", correct: true },
+                            { id: "c", text: "The conductor urged that he lowers his volume then.", correct: false }
+                        ],
+                        explanation: "Reporting verb pattern: 'urge [someone] to [base verb (V1)]'."
+                    },
+                    {
+                        title: "Incident: Bumping the Barista Tray",
+                        quote: `"I am so sorry that I spilled coffee over your counter!"`,
+                        target: "apologize for + -ing",
+                        options: [
+                            { id: "a", text: "He apologized to spill coffee over the counter.", correct: false },
+                            { id: "b", text: "He apologized for spilling coffee over the counter.", correct: true },
+                            { id: "c", text: "He apologized that he spills coffee that day.", correct: false }
+                        ],
+                        explanation: "Reporting verb pattern: 'apologize for [gerund (-ing)]'."
+                    },
+                    {
+                        title: "Incident: Public Library Loud Music",
+                        quote: `"I insist on studying in total silence without your speaker sound."`,
+                        target: "insist on + -ing",
+                        options: [
+                            { id: "a", text: "She insisted on studying in total silence without his speaker sound.", correct: true },
+                            { id: "b", text: "She insisted to study in total silence without speaker sound.", correct: false },
+                            { id: "c", text: "She insisted for studying in total silence right now.", correct: false }
+                        ],
+                        explanation: "Reporting verb pattern: 'insist on [gerund (-ing)]'."
+                    }
+                ]
+            },
+            // Module 4 Data
+            m4: {
+                currentIndex: 0,
+                cases: [
+                    {
+                        flawed: "The passenger apologized to make a scene on the bus.",
+                        context: "An apologetic commuter after dropping a loud device on a morning bus route.",
+                        diagnoses: [
+                            { id: "d1", text: "Incorrect Preposition: 'Apologize' requires 'for + -ing', not an infinitive 'to make'.", correct: true },
+                            { id: "d2", text: "Tense Backshift Error: Needs 'had made'.", correct: false },
+                            { id: "d3", text: "Deictic Shift Flaw: Missing 'that day'.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "The passenger apologized for making a scene on the bus.", correct: true },
+                            { id: "f2", text: "The passenger apologized to making a scene on the bus.", correct: false }
+                        ],
+                        explanation: "Verbs of expression like 'apologize' take the prepositional gerund pattern: 'apologize for doing something'."
+                    },
+                    {
+                        flawed: "He claimed that he will move his bag tomorrow.",
+                        context: "A passenger occupying two seats on a crowded commuter train.",
+                        diagnoses: [
+                            { id: "d1", text: "Unshifted Modal & Deictic Marker: 'will' should backshift to 'would', and 'tomorrow' to 'the next day'.", correct: true },
+                            { id: "d2", text: "Reporting Verb Structure: 'claimed' should be 'urged'.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "He claimed that he would move his bag the next day.", correct: true },
+                            { id: "f2", text: "He claimed that he will move his bag the next day.", correct: false }
+                        ],
+                        explanation: "In past reported contexts, future modal 'will' shifts to 'would', and time marker 'tomorrow' shifts to 'the next day'."
+                    },
+                    {
+                        flawed: "She reminded him for turning off his loudspeaker.",
+                        context: "A passenger asking a fellow traveler to use headphones.",
+                        diagnoses: [
+                            { id: "d1", text: "Preposition Frame Error: 'Remind' takes 'Object + to + V1', not 'for + -ing'.", correct: true },
+                            { id: "d2", text: "Missing Backshift: 'off' should be 'away'.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "She reminded him to turn off his loudspeaker.", correct: true },
+                            { id: "f2", text: "She reminded him to turning off his loudspeaker.", correct: false }
+                        ],
+                        explanation: "Reporting verbs of direction like 'remind' take 'Object + infinitive (to V1)'."
+                    },
+                    {
+                        flawed: "The commuter said that the train car is quiet right now.",
+                        context: "Overheard comment in a designated quiet zone.",
+                        diagnoses: [
+                            { id: "d1", text: "Unbackshifted Tense & Time Marker: 'is' must shift to 'was', and 'now' to 'then'.", correct: true },
+                            { id: "d2", text: "Wrong Verb: 'said' cannot introduce reported clauses.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "The commuter said that the train car was quiet right then.", correct: true },
+                            { id: "f2", text: "The commuter said that the train car is quiet right then.", correct: false }
+                        ],
+                        explanation: "Present tenses backshift to past tenses ('is' -> 'was') and time adverbs shift ('now' -> 'then')."
+                    }
+                ]
+            },
+            // Module 5 Data
+            m5: {
+                prompts: [
+                    {
+                        id: 0,
+                        title: "Bus Loudspeaker Dispute",
+                        text: `"Turn off that speakerphone now!" - "I am listening to my calls and I won't turn it down!"`
+                    },
+                    {
+                        id: 1,
+                        title: "Cafe Counter Cutting",
+                        text: `"I was standing in line first!" - "I am so sorry, I was oblivious and didn't notice you."`
+                    }
+                ],
+                activePrompt: 0
+            }
+        };
+
+        // Web Audio Synthesizer Engine
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!state.audioEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(420, now);
+                    osc.frequency.exponentialRampToValueAtTime(220, now + 0.05);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(170, now + 0.1);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const subOsc = ctx.createOscillator();
+                        const subGain = ctx.createGain();
+                        subOsc.connect(subGain);
+                        subGain.connect(ctx.destination);
+                        subOsc.type = 'triangle';
+                        subOsc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        subGain.gain.setValueAtTime(0.2, now + idx * 0.1);
+                        subGain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                        subOsc.start(now + idx * 0.1);
+                        subOsc.stop(now + idx * 0.1 + 0.25);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio play exception:", e);
+            }
+        }
+
+        // Web Speech API Synthesis
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.ttsRate;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('audio-status-text').textContent = state.audioEnabled ? 'ON' : 'OFF';
+            playSound('click');
+        }
+
+        function toggleTTSRate() {
+            state.ttsRate = state.ttsRate === 1.0 ? 0.75 : 1.0;
+            document.getElementById('tts-rate-text').textContent = state.ttsRate + 'x';
+            playSound('click');
+        }
+
+        /* ==========================================================================
+           2. GAMIFICATION & NAVIGATION LOGIC
+           ========================================================================== */
+        function addXP(amount) {
+            state.xp += amount;
+            
+            if (state.xp >= 320) state.rankIndex = 3;
+            else if (state.xp >= 200) state.rankIndex = 2;
+            else if (state.xp >= 90) state.rankIndex = 1;
+
+            updateGamificationUI();
+        }
+
+        function updateGamificationUI() {
+            document.getElementById('xp-display').textContent = state.xp;
+            document.getElementById('streak-display').textContent = state.streak;
+            document.getElementById('rank-display').textContent = state.ranks[state.rankIndex];
+
+            // Update Certificate Display
+            document.getElementById('cert-xp').textContent = state.xp;
+            document.getElementById('cert-rank').textContent = state.ranks[state.rankIndex];
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+                btn.classList.add('bg-slate-900', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('bg-slate-900', 'text-slate-400');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+        }
+
+        function toggleHandbookModal(show) {
+            playSound('click');
+            const modal = document.getElementById('handbook-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           3. MODULE 1 LOGIC: ETIQUETTE CLASSIFIER
+           ========================================================================== */
+        function initM1() {
+            renderM1Chips();
+            setupM1BucketListeners();
+        }
+
+        function renderM1Chips() {
+            const pool = document.getElementById('m1-chip-pool');
+            pool.innerHTML = '';
+
+            let unassignedCount = 0;
+
+            state.m1.chips.forEach(chip => {
+                const assignedCat = state.m1.assignments[chip.id];
+                if (!assignedCat) {
+                    unassignedCount++;
+                    const chipEl = document.createElement('div');
+                    chipEl.className = `chip-item px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer transition select-none flex items-center gap-1.5 ${state.m1.selectedChipId === chip.id ? 'ring-2 ring-cyan-400 bg-slate-800' : ''}`;
+                    chipEl.textContent = chip.text;
+                    chipEl.onclick = () => selectM1Chip(chip.id);
+                    pool.appendChild(chipEl);
+                }
+            });
+
+            document.getElementById('m1-unassigned-count').textContent = `${unassignedCount} terms remaining`;
+
+            // Render assigned chips in buckets
+            ['positive', 'disruptive', 'reporting'].forEach(cat => {
+                const container = document.getElementById(`bucket-${cat}`);
+                container.innerHTML = '';
+                Object.keys(state.m1.assignments).forEach(chipId => {
+                    if (state.m1.assignments[chipId] === cat) {
+                        const chip = state.m1.chips.find(c => c.id === chipId);
+                        const bItem = document.createElement('div');
+                        bItem.className = 'px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-md text-xs text-slate-200 flex justify-between items-center';
+                        bItem.innerHTML = `<span>${chip.text}</span> <button onclick="unassignM1Chip('${chip.id}')" class="text-rose-400 hover:text-rose-300 ml-2 font-bold">✕</button>`;
+                        container.appendChild(bItem);
+                    }
+                });
+            });
+        }
+
+        function selectM1Chip(id) {
+            playSound('click');
+            state.m1.selectedChipId = state.m1.selectedChipId === id ? null : id;
+            renderM1Chips();
+        }
+
+        function assignSelectedChipToCategory(category) {
+            if (!state.m1.selectedChipId) return;
+            playSound('click');
+            state.m1.assignments[state.m1.selectedChipId] = category;
+            state.m1.selectedChipId = null;
+            renderM1Chips();
+        }
+
+        function unassignM1Chip(id) {
+            playSound('click');
+            delete state.m1.assignments[id];
+            renderM1Chips();
+        }
+
+        function setupM1BucketListeners() {
+            document.querySelectorAll('.bucket-card').forEach(card => {
+                card.onclick = () => {
+                    const cat = card.getAttribute('data-category');
+                    assignSelectedChipToCategory(cat);
+                };
+            });
+        }
+
+        function resetM1Classifier() {
+            playSound('click');
+            state.m1.assignments = {};
+            state.m1.selectedChipId = null;
+            document.getElementById('m1-feedback').textContent = "Tap a term chip above, then tap a category bucket to assign it.";
+            renderM1Chips();
+        }
+
+        function verifyM1Classifications() {
+            let correctCount = 0;
+            const total = state.m1.chips.length;
+
+            state.m1.chips.forEach(chip => {
+                if (state.m1.assignments[chip.id] === chip.cat) {
+                    correctCount++;
+                }
+            });
+
+            const fb = document.getElementById('m1-feedback');
+
+            if (Object.keys(state.m1.assignments).length < total) {
+                playSound('error');
+                fb.className = "text-xs sm:text-sm font-medium text-amber-400";
+                fb.textContent = `Please assign all ${total} terms before verifying!`;
+                return;
+            }
+
+            if (correctCount === total) {
+                playSound('success');
+                addXP(40);
+                fb.className = "text-xs sm:text-sm font-medium text-emerald-400";
+                fb.textContent = `🎉 Flawless! All ${total} public behavior terms correctly categorized. (+40 XP)`;
+            } else {
+                playSound('error');
+                fb.className = "text-xs sm:text-sm font-medium text-rose-400";
+                fb.textContent = `You scored ${correctCount} out of ${total}. Adjust misallocated terms and re-verify.`;
+            }
+        }
+
+        /* ==========================================================================
+           4. MODULE 2 LOGIC: WORD-TILE BUILDER
+           ========================================================================== */
+        function initM2() {
+            renderM2Challenge();
+        }
+
+        function renderM2Challenge() {
+            const ch = state.m2.challenges[state.m2.currentIndex];
+            document.getElementById('m2-index').textContent = state.m2.currentIndex + 1;
+            document.getElementById('m2-total').textContent = state.m2.challenges.length;
+            document.getElementById('m2-direct-quote').textContent = ch.direct;
+
+            state.m2.userTiles = [];
+            document.getElementById('m2-feedback').classList.add('hidden');
+            document.getElementById('btn-m2-next').classList.add('hidden');
+
+            const shuffled = [...ch.tiles].sort(() => Math.random() - 0.5);
+
+            const poolZone = document.getElementById('m2-tile-pool-zone');
+            poolZone.innerHTML = '';
+            shuffled.forEach((word) => {
+                const tile = document.createElement('button');
+                tile.className = "tile-btn px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium transition cursor-pointer";
+                tile.textContent = word;
+                tile.onclick = () => addTileToAssembly(word, tile);
+                poolZone.appendChild(tile);
+            });
+
+            renderM2Assembly();
+        }
+
+        function addTileToAssembly(word, tileEl) {
+            playSound('click');
+            state.m2.userTiles.push(word);
+            tileEl.classList.add('opacity-30', 'pointer-events-none');
+            renderM2Assembly();
+        }
+
+        function renderM2Assembly() {
+            const assemblyZone = document.getElementById('m2-tile-assembly-zone');
+            if (state.m2.userTiles.length === 0) {
+                assemblyZone.innerHTML = `<span class="text-slate-500 text-xs italic select-none">Tap word tiles below to construct the indirect report...</span>`;
+                return;
+            }
+
+            assemblyZone.innerHTML = '';
+            state.m2.userTiles.forEach((word, idx) => {
+                const item = document.createElement('span');
+                item.className = "px-2.5 py-1 bg-indigo-900/60 border border-indigo-500/50 text-indigo-200 rounded-md text-xs font-semibold flex items-center gap-1 cursor-pointer hover:bg-indigo-800/80";
+                item.innerHTML = `${word} <span class="text-indigo-400 text-[10px]">✕</span>`;
+                item.onclick = () => removeTileFromAssembly(idx);
+                assemblyZone.appendChild(item);
+            });
+        }
+
+        function removeTileFromAssembly(index) {
+            playSound('click');
+            const removedWord = state.m2.userTiles.splice(index, 1)[0];
+            
+            const poolBtns = document.querySelectorAll('#m2-tile-pool-zone .tile-btn');
+            for (let btn of poolBtns) {
+                if (btn.textContent === removedWord && btn.classList.contains('opacity-30')) {
+                    btn.classList.remove('opacity-30', 'pointer-events-none');
+                    break;
+                }
+            }
+
+            renderM2Assembly();
+        }
+
+        function clearM2Assembly() {
+            playSound('click');
+            renderM2Challenge();
+        }
+
+        function checkM2Assembly() {
+            const ch = state.m2.challenges[state.m2.currentIndex];
+            const assembledText = state.m2.userTiles.join(" ");
+            const fb = document.getElementById('m2-feedback');
+            fb.classList.remove('hidden');
+
+            if (assembledText === ch.solution) {
+                playSound('success');
+                addXP(30);
+                fb.className = "p-3 rounded-xl border bg-emerald-950/30 border-emerald-500/40 text-emerald-200 text-xs font-medium";
+                fb.textContent = `🎯 Perfect Reported Sentence Construction! (+30 XP) Verified: "${ch.solution}"`;
+                document.getElementById('btn-m2-next').classList.remove('hidden');
+            } else {
+                playSound('error');
+                fb.className = "p-3 rounded-xl border bg-rose-950/30 border-rose-500/40 text-rose-200 text-xs font-medium";
+                fb.textContent = `Syntax or backshift error detected in tile sequence. Verify word order and try again.`;
+            }
+        }
+
+        function nextM2Challenge() {
+            playSound('click');
+            state.m2.currentIndex = (state.m2.currentIndex + 1) % state.m2.challenges.length;
+            renderM2Challenge();
+        }
+
+        /* ==========================================================================
+           5. MODULE 3 LOGIC: VERB PATTERN MATCHER
+           ========================================================================== */
+        function initM3() {
+            renderM3Scenario();
+        }
+
+        function renderM3Scenario() {
+            const sc = state.m3.scenarios[state.m3.currentIndex];
+            document.getElementById('m3-index').textContent = state.m3.currentIndex + 1;
+            document.getElementById('m3-total').textContent = state.m3.scenarios.length;
+            document.getElementById('m3-scenario-title').textContent = sc.title;
+            document.getElementById('m3-direct-quote').textContent = sc.quote;
+            document.getElementById('m3-target-verb').textContent = sc.target;
+
+            const optsContainer = document.getElementById('m3-options-container');
+            optsContainer.innerHTML = '';
+
+            document.getElementById('m3-feedback').classList.add('hidden');
+
+            sc.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-xs sm:text-sm text-slate-200 transition flex items-start gap-3 group";
+                btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 group-hover:border-cyan-400 group-hover:text-cyan-400 border border-slate-700 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">${opt.id.toUpperCase()}</span><span>${opt.text}</span>`;
+                btn.onclick = () => selectM3Option(opt);
+                optsContainer.appendChild(btn);
+            });
+
+            document.getElementById('btn-m3-prev').disabled = state.m3.currentIndex === 0;
+            document.getElementById('btn-m3-next').disabled = state.m3.currentIndex === state.m3.scenarios.length - 1;
+        }
+
+        function selectM3Option(opt) {
+            const sc = state.m3.scenarios[state.m3.currentIndex];
+            const fb = document.getElementById('m3-feedback');
+            fb.classList.remove('hidden');
+
+            if (opt.correct) {
+                playSound('success');
+                addXP(25);
+                fb.className = "p-4 rounded-xl border bg-emerald-950/30 border-emerald-500/40 text-emerald-200 text-xs sm:text-sm leading-relaxed";
+                fb.innerHTML = `<div class="font-bold mb-1 flex items-center gap-1.5">✅ Accurate Reporting Verb Pattern! (+25 XP)</div><p>${sc.explanation}</p>`;
+            } else {
+                playSound('error');
+                fb.className = "p-4 rounded-xl border bg-rose-950/30 border-rose-500/40 text-rose-200 text-xs sm:text-sm leading-relaxed";
+                fb.innerHTML = `<div class="font-bold mb-1 flex items-center gap-1.5">❌ Preposition / Pattern Flaw</div><p>This option violates the required syntactic frame for '${sc.target}'. Review the pattern and re-select.</p>`;
+            }
+        }
+
+        function prevM3Scenario() {
+            if (state.m3.currentIndex > 0) {
+                playSound('click');
+                state.m3.currentIndex--;
+                renderM3Scenario();
+            }
+        }
+
+        function nextM3Scenario() {
+            if (state.m3.currentIndex < state.m3.scenarios.length - 1) {
+                playSound('click');
+                state.m3.currentIndex++;
+                renderM3Scenario();
+            }
+        }
+
+        /* ==========================================================================
+           6. MODULE 4 LOGIC: OVERHEARD DETECTIVE
+           ========================================================================== */
+        function initM4() {
+            renderM4Case();
+        }
+
+        function renderM4Case() {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            document.getElementById('m4-index').textContent = state.m4.currentIndex + 1;
+            document.getElementById('m4-total').textContent = state.m4.cases.length;
+
+            document.getElementById('m4-flawed-text').textContent = cs.flawed;
+            document.getElementById('m4-context-text').textContent = cs.context;
+
+            document.getElementById('m4-fix-section').classList.add('hidden');
+            document.getElementById('m4-explanation').classList.add('hidden');
+
+            const diagContainer = document.getElementById('m4-diagnosis-options');
+            diagContainer.innerHTML = '';
+            cs.diagnoses.forEach(d => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500 text-xs text-slate-200 transition";
+                btn.textContent = d.text;
+                btn.onclick = () => selectDiagnosis(d);
+                diagContainer.appendChild(btn);
+            });
+
+            document.getElementById('btn-m4-prev').disabled = state.m4.currentIndex === 0;
+            document.getElementById('btn-m4-next').disabled = state.m4.currentIndex === state.m4.cases.length - 1;
+        }
+
+        function selectDiagnosis(d) {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            if (d.correct) {
+                playSound('success');
+                addXP(15);
+                
+                const fixSection = document.getElementById('m4-fix-section');
+                fixSection.classList.remove('hidden');
+
+                const fixContainer = document.getElementById('m4-fix-options');
+                fixContainer.innerHTML = '';
+                cs.fixes.forEach(f => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-400 text-xs text-slate-200 transition";
+                    btn.textContent = f.text;
+                    btn.onclick = () => selectFix(f);
+                    fixContainer.appendChild(btn);
+                });
+            } else {
+                playSound('error');
+                const exp = document.getElementById('m4-explanation');
+                exp.classList.remove('hidden');
+                exp.className = "p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-xs text-rose-200";
+                exp.textContent = "Incorrect diagnosis. Re-examine reporting verb prepositions or tense backshifting rules.";
+            }
+        }
+
+        function selectFix(f) {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            const exp = document.getElementById('m4-explanation');
+            exp.classList.remove('hidden');
+
+            if (f.correct) {
+                playSound('success');
+                addXP(25);
+                exp.className = "p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-200 leading-relaxed";
+                exp.innerHTML = `<strong class="block mb-1 text-emerald-400">🔍 Case Resolved! (+25 XP)</strong>${cs.explanation}`;
+            } else {
+                playSound('error');
+                exp.className = "p-4 rounded-xl bg-rose-950/30 border border-rose-500/40 text-xs text-rose-200 leading-relaxed";
+                exp.innerHTML = `This correction leaves residual grammatical flaws. Select the accurate option.`;
+            }
+        }
+
+        function prevM4Case() {
+            if (state.m4.currentIndex > 0) {
+                playSound('click');
+                state.m4.currentIndex--;
+                renderM4Case();
+            }
+        }
+
+        function nextM4Case() {
+            if (state.m4.currentIndex < state.m4.cases.length - 1) {
+                playSound('click');
+                state.m4.currentIndex++;
+                renderM4Case();
+            }
+        }
+
+        /* ==========================================================================
+           7. MODULE 5 LOGIC: LIVE REPORTER & SYNTAX SCANNER
+           ========================================================================== */
+        function initM5() {
+            loadM5Prompt(0);
+        }
+
+        function loadM5Prompt(index) {
+            playSound('click');
+            state.m5.activePrompt = index;
+            const pr = state.m5.prompts[index];
+            document.getElementById('m5-prompt-body').textContent = pr.text;
+
+            document.getElementById('btn-m5-pr0').className = index === 0 ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition" : "px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 transition";
+            document.getElementById('btn-m5-pr1').className = index === 1 ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition" : "px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 transition";
+
+            analyzeM5Draft();
+        }
+
+        function readM5Prompt() {
+            const pr = state.m5.prompts[state.m5.activePrompt];
+            speakText(pr.text);
+        }
+
+        function analyzeM5Draft() {
+            const input = document.getElementById('m5-input').value;
+            const previewEl = document.getElementById('m5-highlight-preview');
+
+            if (!input.trim()) {
+                previewEl.innerHTML = `<span class="text-slate-600">Start typing above to see real-time syntax color-coding...</span>`;
+                updateM5Checklist(false, false, false, false);
+                return;
+            }
+
+            // Target Detection Regexes
+            const verbRegex = /\b(complained|urged|apologized for|accused of|insisted on|retorted|warned|explained|admitted|stated|declared)\b/gi;
+            const backshiftRegex = /\b(was|were|had been|had|could|would|might|said that)\b/gi;
+            const vocabRegex = /\b(oblivious|spatial awareness|make a scene|loudspeaker|etiquette|decorum|unruly|quiet car|bystander)\b/gi;
+            const deicticRegex = /\b(there|then|that day|the next day|that time|those)\b/gi;
+
+            const hasVerb = verbRegex.test(input);
+            const hasBackshift = backshiftRegex.test(input);
+            const hasVocab = vocabRegex.test(input);
+            const hasDeictic = deicticRegex.test(input);
+
+            updateM5Checklist(hasVerb, hasBackshift, hasVocab, hasDeictic);
+
+            // Highlighted View Generation
+            let highlighted = input;
+            highlighted = highlighted.replace(verbRegex, match => `<span class="hl-verb">${match}</span>`);
+            highlighted = highlighted.replace(backshiftRegex, match => `<span class="hl-backshift">${match}</span>`);
+            highlighted = highlighted.replace(vocabRegex, match => `<span class="hl-vocab">${match}</span>`);
+            highlighted = highlighted.replace(deicticRegex, match => `<span class="hl-deictic">${match}</span>`);
+
+            previewEl.innerHTML = highlighted;
+        }
+
+        function updateM5Checklist(hasVerb, hasBackshift, hasVocab, hasDeictic) {
+            document.getElementById('check-verb').textContent = hasVerb ? '✅' : '❌';
+            document.getElementById('check-backshift').textContent = hasBackshift ? '✅' : '❌';
+            document.getElementById('check-vocab').textContent = hasVocab ? '✅' : '❌';
+            document.getElementById('check-deictic').textContent = hasDeictic ? '✅' : '❌';
+
+            const count = (hasVerb ? 1 : 0) + (hasBackshift ? 1 : 0) + (hasVocab ? 1 : 0) + (hasDeictic ? 1 : 0);
+            document.getElementById('m5-score-badge').textContent = `${count} / 4 Criteria Met`;
+        }
+
+        function submitM5Report() {
+            const input = document.getElementById('m5-input').value;
+            if (input.length < 15) {
+                playSound('error');
+                alert("Draft a complete indirect speech report sentence before submitting.");
+                return;
+            }
+
+            playSound('success');
+            addXP(50);
+            document.getElementById('m5-status-text').textContent = "Report Verified & Logged! (+50 XP)";
+            document.getElementById('m5-status-text').className = "text-xs font-semibold text-emerald-400";
+        }
+
+        /* ==========================================================================
+           8. MODULE 6 LOGIC: ACCREDITATION CERTIFICATE
+           ========================================================================== */
+        function initM6() {
+            const today = new Date();
+            document.getElementById('cert-date').textContent = today.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            updateGamificationUI();
+        }
+
+        function updateCertName() {
+            const name = document.getElementById('cert-student-name').value;
+            document.getElementById('cert-name-display').textContent = name.trim() ? name : '[ Your Name Here ]';
+        }
+
+        function triggerCelebration() {
+            playSound('fanfare');
+            runConfetti();
+        }
+
+        function runConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const particles = [];
+            const colors = ['#06b6d4', '#6366f1', '#10b981', '#f59e0b', '#ec4899'];
+
+            for (let i = 0; i < 90; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.8) * 14,
+                    size: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 100
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+
+                particles.forEach(p => {
+                    if (p.life > 0) {
+                        active = true;
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.22; // Gravity effect
+                        p.life -= 1.4;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                if (active) requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        /* ==========================================================================
+           9. INITIALIZATION
+           ========================================================================== */
+        window.onload = function() {
+            initM1();
+            initM2();
+            initM3();
+            initM4();
+            initM5();
+            initM6();
+        };
+    </script>
+</body>
+</html>
