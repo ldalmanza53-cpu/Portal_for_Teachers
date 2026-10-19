@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReImagine: Everyday Object & Lateral Thinking Studio</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            900: '#134e4a',
+                            950: '#042f2e'
+                        },
+                        amberAccent: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706'
+                        },
+                        neonPurple: {
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#9333ea'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js for Lightweight Reactive State Management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090d16;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #14b8a6;
+        }
+
+        /* Glow Animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(20, 184, 166, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(20, 184, 166, 0.5); }
+        }
+        .glow-active {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        /* Slot Machine Animation */
+        @keyframes slot-blur {
+            0% { transform: translateY(-10px); filter: blur(0px); }
+            50% { transform: translateY(10px); filter: blur(3px); }
+            100% { transform: translateY(0); filter: blur(0px); }
+        }
+        .animate-slot {
+            animation: slot-blur 0.12s infinite linear;
+        }
+
+        /* Printable PDF / Worksheet CSS */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #printable-worksheet, #printable-worksheet * {
+                visibility: visible;
+            }
+            #printable-worksheet {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950"
+      x-data="reImagineApp()" 
+      x-init="initAudio()">
+
+    <!-- TOP NAVIGATION & BRAND BAR -->
+    <header class="border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Studio Tag -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="activeTab = 'explorer'; playSound('click')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-teal-500 to-amberAccent-400 flex items-center justify-center shadow-lg shadow-brand-900/40">
+                    <span class="text-xl">💡</span>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-lg font-extrabold bg-gradient-to-r from-white via-slate-100 to-brand-400 bg-clip-text text-transparent leading-none">
+                            ReImagine
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">
+                            Studio v2.5
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium">Everyday Objects & Lateral Thinking</p>
+                </div>
+            </div>
+
+            <!-- Global Action Controls (Sound, Dark Toggle, Saved Items Counter) -->
+            <div class="flex items-center space-x-3">
+                
+                <!-- Audio Mute Toggle -->
+                <button @click="toggleMute()" 
+                        class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+                        :title="soundMuted ? 'Unmute Web Audio' : 'Mute Web Audio'">
+                    <span x-text="soundMuted ? '🔇' : '🔊'"></span>
+                    <span class="hidden sm:inline text-xs font-semibold" x-text="soundMuted ? 'Muted' : 'Audio On'"></span>
+                </button>
+
+                <!-- Ideas Saved Indicator -->
+                <div class="hidden sm:flex items-center space-x-1.5 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 text-xs">
+                    <span class="text-amberAccent-400">✨</span>
+                    <span class="text-slate-400">Saved Hacks:</span>
+                    <span class="font-bold text-amberAccent-300" x-text="savedIdeas.length + savedScampers.length"></span>
+                </div>
+
+                <!-- Export Quick Access -->
+                <button @click="activeTab = 'export'; playSound('click')" 
+                        class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-teal-600 text-slate-950 font-bold text-xs shadow-lg shadow-brand-500/20 hover:from-brand-400 hover:to-teal-500 transition-all flex items-center gap-1.5">
+                    <span>📄</span>
+                    <span class="hidden md:inline">Export Studio</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS HUB -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800/60 flex space-x-1 sm:space-x-4 overflow-x-auto no-scrollbar">
+            
+            <button @click="switchTab('explorer')" 
+                    :class="activeTab === 'explorer' ? 'border-brand-400 text-brand-300 font-bold bg-brand-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🔍</span>
+                <span>Object Explorer</span>
+            </button>
+
+            <button @click="switchTab('scamper')" 
+                    :class="activeTab === 'scamper' ? 'border-amberAccent-400 text-amberAccent-300 font-bold bg-amberAccent-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>⚡</span>
+                <span>SCAMPER Workbench</span>
+            </button>
+
+            <button @click="switchTab('challenges')" 
+                    :class="activeTab === 'challenges' ? 'border-purple-400 text-purple-300 font-bold bg-purple-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🚀</span>
+                <span>Challenge Lab</span>
+            </button>
+
+            <button @click="switchTab('generator')" 
+                    :class="activeTab === 'generator' ? 'border-pink-400 text-pink-300 font-bold bg-pink-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🎲</span>
+                <span>ReImagine Randomizer</span>
+            </button>
+
+            <button @click="switchTab('quiz')" 
+                    :class="activeTab === 'quiz' ? 'border-emerald-400 text-emerald-300 font-bold bg-emerald-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>🧠</span>
+                <span>Fixedness Test</span>
+            </button>
+
+            <button @click="switchTab('export')" 
+                    :class="activeTab === 'export' ? 'border-blue-400 text-blue-300 font-bold bg-blue-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <span>📄</span>
+                <span>Worksheet & Notes</span>
+            </button>
+
+        </nav>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- FLOATING NOTIFICATION TOAST -->
+        <div x-show="toast.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-6 right-6 z-50 glass-panel border border-brand-500/40 text-slate-100 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 no-print">
+            <span class="text-2xl" x-text="toast.icon"></span>
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-brand-300" x-text="toast.title"></h4>
+                <p class="text-xs sm:text-sm text-slate-200" x-text="toast.message"></p>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 1: OBJECT EXPLORER & DECONSTRUCTION DATABASE -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'explorer'" x-transition class="space-y-8">
+            
+            <!-- Hero Banner -->
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
+                <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="max-w-3xl space-y-3 relative z-10">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-widest">
+                        Lateral Thinking Strategy #1
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                        Deconstruct Objects into Physical Traits
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        Functional fixedness happens when we see an object solely by its original label (e.g., "binder clip"). Break down items into fundamental physical traits like <span class="text-brand-300 font-semibold">spring tension, high friction, conductivity, or absorbency</span> to uncover $0 ingenious everyday hacks!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Controls: Category Pills + Search Filter -->
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                
+                <!-- Category Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
+                    <template x-for="cat in categories" :key="cat">
+                        <button @click="selectedCategory = cat; playSound('click')"
+                                :class="selectedCategory === cat ? 'bg-brand-500 text-slate-950 font-bold border-brand-400 shadow-lg shadow-brand-500/20' : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'"
+                                class="px-3.5 py-2 rounded-xl text-xs whitespace-nowrap border transition-all">
+                            <span x-text="cat"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Live Search Box -->
+                <div class="relative min-w-[280px]">
+                    <span class="absolute inset-y-0 left-3 flex items-center text-slate-500 text-sm">🔍</span>
+                    <input type="text" 
+                           x-model="searchQuery" 
+                           placeholder="Search objects, hacks, or traits (e.g. 'friction')..." 
+                           class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-400 transition-all font-mono-code">
+                </div>
+            </div>
+
+            <!-- Everyday Objects Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="obj in filteredObjects" :key="obj.id">
+                    <div class="glass-card border border-slate-800/80 rounded-2xl p-6 hover:border-brand-500/40 transition-all duration-300 flex flex-col justify-between group">
+                        
+                        <div class="space-y-4">
+                            <!-- Card Header: Icon + Title + Category -->
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                        <span x-text="obj.icon"></span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-extrabold text-white text-base" x-text="obj.name"></h3>
+                                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" x-text="obj.category"></span>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-amberAccent-400 font-mono" x-text="`Cost: $0`"></span>
+                            </div>
+
+                            <!-- Physical Properties Tags -->
+                            <div class="space-y-1.5">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Deconstructed Properties:</span>
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="trait in obj.properties" :key="trait">
+                                        <span class="px-2 py-0.5 rounded-md bg-brand-950/60 border border-brand-500/30 text-[10px] font-mono text-brand-300" x-text="trait"></span>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Alternate Uses Preview -->
+                            <div class="space-y-2 pt-2 border-t border-slate-800/60">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-teal-400">Featured Hack:</span>
+                                <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
+                                    <h4 class="font-bold text-slate-200 text-xs" x-text="obj.hacks[0].title"></h4>
+                                    <p class="text-[11px] text-slate-400 line-clamp-2 mt-1" x-text="obj.hacks[0].instructions"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Open Detailed Inspector Trigger -->
+                        <div class="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-mono" x-text="`${obj.hacks.length} Clever Hacks`"></span>
+                            <button @click="openObjectDetail(obj)" 
+                                    class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-brand-500 hover:text-slate-950 text-slate-200 font-bold text-xs transition-all flex items-center gap-1">
+                                <span>Inspect Hacks</span>
+                                <span>→</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </template>
+            </div>
+
+            <!-- OBJECT DECONSTRUCTION & HACKS MODAL -->
+            <div x-show="activeModalObject" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md no-print"
+                 @keydown.escape.window="activeModalObject = null">
+                
+                <div class="glass-panel border border-slate-700/80 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6 shadow-2xl relative"
+                     @click.away="activeModalObject = null">
+                    
+                    <!-- Close Button -->
+                    <button @click="activeModalObject = null; playSound('click')" 
+                            class="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-base border border-slate-700">
+                        ✕
+                    </button>
+
+                    <!-- Modal Header -->
+                    <template x-if="activeModalObject">
+                        <div class="space-y-6">
+                            
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-brand-500/40 flex items-center justify-center text-4xl shadow-lg">
+                                    <span x-text="activeModalObject.icon"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-extrabold text-white" x-text="activeModalObject.name"></h3>
+                                    <p class="text-xs text-slate-400 font-mono mt-0.5" x-text="`Category: ${activeModalObject.category} • Material Cost: $0`"></p>
+                                </div>
+                            </div>
+
+                            <!-- Physical Traits Inspector Grid -->
+                            <div class="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-brand-400">Physical Property Profile</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="p in activeModalObject.properties" :key="p">
+                                        <div class="px-3 py-1 rounded-lg bg-brand-950/80 border border-brand-500/40 text-xs font-mono text-brand-200 flex items-center gap-1.5">
+                                            <span class="text-brand-400">⚡</span>
+                                            <span x-text="p"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Clever Hacks Detailed Breakdown -->
+                            <div class="space-y-4">
+                                <h4 class="text-sm font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span>💡</span> Unconventional ReImagine Hacks
+                                </h4>
+
+                                <div class="space-y-4">
+                                    <template x-for="(hack, idx) in activeModalObject.hacks" :key="idx">
+                                        <div class="p-5 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-3">
+                                            <div class="flex items-center justify-between">
+                                                <h5 class="font-bold text-white text-sm sm:text-base" x-text="`${idx + 1}. ${hack.title}`"></h5>
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amberAccent-500/20 text-amberAccent-300 border border-amberAccent-500/30" x-text="`Difficulty: ${hack.difficulty}`"></span>
+                                            </div>
+
+                                            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed" x-text="hack.instructions"></p>
+
+                                            <!-- Scientific / Logic Explanation -->
+                                            <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start space-x-2">
+                                                <span class="text-brand-400 text-sm">🔬</span>
+                                                <div>
+                                                    <span class="font-bold text-slate-300">Why it works: </span>
+                                                    <span x-text="hack.whyItWorks"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Save Hack to Custom Studio -->
+                                            <div class="flex justify-end pt-1">
+                                                <button @click="saveHackToNotebook(activeModalObject.name, hack)" 
+                                                        class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-brand-500 hover:text-slate-950 text-slate-300 text-xs font-bold border border-slate-700 transition-all flex items-center gap-1">
+                                                    <span>🔖</span>
+                                                    <span>Save to Notes</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2: SCAMPER WORKBENCH & PROPERTY DECONSTRUCTOR -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'scamper'" x-transition class="space-y-8">
+            
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-amberAccent-500/20 text-amberAccent-300 border border-amberAccent-500/30 uppercase tracking-widest">
+                        Lateral Thinking Tool #2
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">SCAMPER Ideation Matrix</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                        Use the 7 creative operators to re-engineer any standard household object into a breakthrough innovation. Select a default object or enter your own custom item!
+                    </p>
+                </div>
+
+                <!-- Input Item Selector / Custom Item Switch -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/80 p-5 rounded-2xl border border-slate-800">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wide mb-2">Select Target Object:</label>
+                        <select x-model="scamperTargetItem" @change="playSound('click')" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amberAccent-400">
+                            <template x-for="obj in objects" :key="obj.name">
+                                <option :value="obj.name" x-text="`${obj.icon} ${obj.name}`"></option>
+                            </template>
+                            <option value="Custom">✏️ Custom Item...</option>
+                        </select>
+                    </div>
+
+                    <div x-show="scamperTargetItem === 'Custom'">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wide mb-2">Enter Custom Item Name:</label>
+                        <input type="text" x-model="scamperCustomName" placeholder="e.g. Plastic Straw, Glass Jar, Shoelace..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amberAccent-400 font-mono-code">
+                    </div>
+                </div>
+
+                <!-- SCAMPER 7 Operators Form -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    
+                    <!-- Substitute -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-amberAccent-500/20 text-amberAccent-300 flex items-center justify-center font-extrabold text-xs">S</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Substitute</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">What material, component, or part can be swapped out?</p>
+                        <input type="text" x-model="scamperForm.S" placeholder="e.g. Swap metal clip for rubber elastic band..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amberAccent-400 font-mono-code">
+                    </div>
+
+                    <!-- Combine -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-300 flex items-center justify-center font-extrabold text-xs">C</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Combine</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">What unrelated tool or feature can be fused with this?</p>
+                        <input type="text" x-model="scamperForm.C" placeholder="e.g. Fuse binder clip with a magnet to hang on fridge..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-400 font-mono-code">
+                    </div>
+
+                    <!-- Adapt -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-extrabold text-xs">A</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Adapt</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">How can this be tweaked for an entirely different domain?</p>
+                        <input type="text" x-model="scamperForm.A" placeholder="e.g. Adapt pool noodle into a garage car door bumper..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-400 font-mono-code">
+                    </div>
+
+                    <!-- Modify / Magnify / Minify -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-extrabold text-xs">M</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Modify / Magnify</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">What happens if you scale up size, curvature, or thickness?</p>
+                        <input type="text" x-model="scamperForm.M" placeholder="e.g. Fold aluminum foil into 8 thick layers for sharpener..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-400 font-mono-code">
+                    </div>
+
+                    <!-- Put to another use -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-pink-500/20 text-pink-300 flex items-center justify-center font-extrabold text-xs">P</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Put to Another Use</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">How would an astronaut, survivalist, or artist use this?</p>
+                        <input type="text" x-model="scamperForm.P" placeholder="e.g. Use newspaper as an emergency thermal shoe dryer..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-400 font-mono-code">
+                    </div>
+
+                    <!-- Eliminate -->
+                    <div class="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-300 flex items-center justify-center font-extrabold text-xs">E</span>
+                            <h4 class="font-bold text-white text-xs uppercase tracking-wider">Eliminate</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-400">What core feature can be stripped away to simplify it?</p>
+                        <input type="text" x-model="scamperForm.E" placeholder="e.g. Cut off tennis ball fuzz to leave smooth rubber grip..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-blue-400 font-mono-code">
+                    </div>
+
+                </div>
+
+                <!-- Action Toolbar -->
+                <div class="flex flex-wrap items-center justify-between pt-4 border-t border-slate-800 gap-4">
+                    <button @click="resetScamperForm()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-all">
+                        Reset Form
+                    </button>
+
+                    <button @click="saveScamperSession()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amberAccent-500 to-amber-600 text-slate-950 font-bold text-xs shadow-lg shadow-amberAccent-500/20 hover:from-amberAccent-400 hover:to-amber-500 transition-all flex items-center gap-2">
+                        <span>⚡</span>
+                        <span>Save SCAMPER Matrix to Notes</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- PHYSICAL TRAIT COMBINATOR WORKBENCH -->
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>🧪</span> Physical Traits Cross-Domain Re-application
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Select physical traits below to see automated cross-functional hack suggestions:</p>
+                </div>
+
+                <!-- Trait Selection Buttons -->
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="trait in availablePhysicalTraits" :key="trait">
+                        <button @click="toggleTraitFilter(trait); playSound('click')"
+                                :class="selectedTraitFilters.includes(trait) ? 'bg-brand-500 text-slate-950 font-bold border-brand-400' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'"
+                                class="px-3 py-1.5 rounded-xl text-xs border font-mono transition-all">
+                            <span x-text="selectedTraitFilters.includes(trait) ? '✓ ' + trait : '+ ' + trait"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Matching Hacks Display -->
+                <div class="p-5 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-teal-400">Cross-Domain Utility Suggestions:</h4>
+                    
+                    <div x-show="suggestedHacksFromTraits.length === 0" class="text-xs text-slate-500 italic">
+                        Select one or more physical traits above to reveal matched utility hacks!
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-for="item in suggestedHacksFromTraits" :key="item.title">
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-white text-xs" x-text="item.title"></span>
+                                    <span class="text-[10px] font-mono text-brand-300" x-text="item.objectName"></span>
+                                </div>
+                                <p class="text-[11px] text-slate-400" x-text="item.instructions"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 3: CHALLENGE LAB (INTERACTIVE SCENARIOS) -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'challenges'" x-transition class="space-y-8">
+            
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-widest">
+                        Lateral Thinking Module #3
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">The Challenge Lab</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                        Overcome strict real-world constraints ($0 budget, limited supplies) by testing combinations of everyday items to bypass functional fixedness!
+                    </p>
+                </div>
+
+                <!-- Scenario Selector Tabs -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-slate-800">
+                    <template x-for="scenario in challengeScenarios" :key="scenario.id">
+                        <button @click="selectScenario(scenario)"
+                                :class="activeScenario.id === scenario.id ? 'bg-purple-600 text-white font-bold border-purple-400 shadow-lg shadow-purple-900/40' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'"
+                                class="px-4 py-2.5 rounded-xl text-xs whitespace-nowrap border transition-all flex items-center gap-2">
+                            <span x-text="scenario.icon"></span>
+                            <span x-text="scenario.title"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Active Scenario Interactive Workbench -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Left: Scenario Description & Item Inventory (7 Cols) -->
+                    <div class="lg:col-span-7 space-y-5 bg-slate-950/80 p-6 rounded-2xl border border-slate-800">
+                        <div>
+                            <span class="text-[10px] font-bold text-amberAccent-400 uppercase tracking-wider block" x-text="`Constraint Budget: $0 • Time Limit: Critical`"></span>
+                            <h3 class="text-xl font-extrabold text-white mt-1" x-text="activeScenario.title"></h3>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed" x-text="activeScenario.description"></p>
+                        </div>
+
+                        <!-- Item Picker -->
+                        <div class="space-y-3 pt-3 border-t border-slate-800">
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wide">
+                                Available Supplies (Pick items to deploy):
+                            </label>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                <template x-for="item in activeScenario.availableItems" :key="item.id">
+                                    <button @click="toggleScenarioItem(item.id); playSound('click')"
+                                            :class="selectedScenarioItems.includes(item.id) ? 'bg-purple-950 border-purple-500 text-purple-200 font-bold shadow-md' : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'"
+                                            class="p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2">
+                                        <span class="text-lg" x-text="item.icon"></span>
+                                        <span class="line-clamp-1" x-text="item.name"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Deploy Solution Button -->
+                        <div class="flex justify-end pt-2">
+                            <button @click="testScenarioSolution()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-purple-900/40 transition-all flex items-center gap-2">
+                                <span>🚀</span>
+                                <span>Deploy Solution Hypothesis</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Animated Visual Simulation & Result (5 Cols) -->
+                    <div class="lg:col-span-5 bg-slate-900/90 p-6 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Simulation Visual Feedback</h4>
+
+                            <!-- SVG Visual Diagram Display -->
+                            <div class="w-full h-48 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center p-4 relative overflow-hidden">
+                                <template x-if="scenarioResult">
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-center space-y-2">
+                                        <div class="text-5xl animate-bounce" x-text="scenarioResult.success ? '🎉' : '❌'"></div>
+                                        <div class="text-xs font-bold" :class="scenarioResult.success ? 'text-emerald-400' : 'text-rose-400'" x-text="scenarioResult.statusText"></div>
+                                    </div>
+                                </template>
+
+                                <template x-if="!scenarioResult">
+                                    <div class="text-center space-y-2 text-slate-500">
+                                        <div class="text-4xl">🛠️</div>
+                                        <p class="text-xs">Select items from supply list and click Deploy Solution!</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Message -->
+                        <div x-show="scenarioResult" x-transition class="p-4 rounded-xl border text-xs leading-relaxed"
+                             :class="scenarioResult?.success ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200' : 'bg-rose-950/40 border-rose-500/50 text-rose-200'">
+                            <h5 class="font-bold text-sm mb-1" x-text="scenarioResult?.title"></h5>
+                            <p x-text="scenarioResult?.explanation"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 4: REIMAGINE RANDOMIZER & BRAINSTORM STUDIO -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'generator'" x-transition class="space-y-8">
+            
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-pink-500/20 text-pink-300 border border-pink-500/30 uppercase tracking-widest">
+                        Lateral Thinking Tool #4
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">The ReImagine Generator</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                        Forced association triggers unexpected lateral breakthroughs! Spin the wheel to pair an everyday object with an unrelated real-world problem.
+                    </p>
+                </div>
+
+                <!-- Slot Machine / Wheel Display -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-950/90 p-6 sm:p-8 rounded-2xl border border-slate-800 text-center relative overflow-hidden">
+                    
+                    <!-- Object Slot -->
+                    <div class="p-6 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-2" :class="isSpinning ? 'animate-slot' : ''">
+                        <span class="text-[10px] font-bold text-pink-400 uppercase tracking-wider block">Random Object:</span>
+                        <div class="text-4xl" x-text="currentGeneratorObject.icon"></div>
+                        <h4 class="text-lg font-extrabold text-white" x-text="currentGeneratorObject.name"></h4>
+                        <div class="flex flex-wrap justify-center gap-1">
+                            <template x-for="p in currentGeneratorObject.properties" :key="p">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-mono bg-pink-950/60 text-pink-300 border border-pink-500/30" x-text="p"></span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Problem Slot -->
+                    <div class="p-6 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-2" :class="isSpinning ? 'animate-slot' : ''">
+                        <span class="text-[10px] font-bold text-amberAccent-400 uppercase tracking-wider block">Unrelated Problem Domain:</span>
+                        <div class="text-4xl">🎯</div>
+                        <h4 class="text-lg font-extrabold text-white" x-text="currentGeneratorProblem"></h4>
+                        <span class="text-[10px] font-mono text-slate-400">Can you solve this problem using this object?</span>
+                    </div>
+
+                </div>
+
+                <!-- Spin Trigger Button -->
+                <div class="flex justify-center">
+                    <button @click="spinGeneratorWheel()" 
+                            :disabled="isSpinning"
+                            class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base shadow-2xl shadow-pink-900/50 transition-all flex items-center gap-2 transform hover:scale-105 active:scale-95">
+                        <span>🎲</span>
+                        <span x-text="isSpinning ? 'Randomizing Pair...' : 'Spin Generator Wheel!'"></span>
+                    </button>
+                </div>
+
+                <!-- Live Brainstorming Canvas Box -->
+                <div class="p-6 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-4">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Brainstorm Your Solution:</h4>
+
+                    <textarea x-model="brainstormInput" 
+                              rows="3" 
+                              placeholder="Describe your creative hack combining the object and problem above..." 
+                              class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-pink-400 transition-all font-mono-code"></textarea>
+
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        
+                        <!-- Originality Self-Rating -->
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="text-slate-400 font-bold">Originality Rating:</span>
+                            <div class="flex items-center space-x-1">
+                                <template x-for="star in [1,2,3,4,5]" :key="star">
+                                    <button @click="brainstormRating = star; playSound('click')" 
+                                            class="text-base transition-transform hover:scale-125" 
+                                            :class="star <= brainstormRating ? 'text-amberAccent-400' : 'text-slate-700'">
+                                        ★
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Save Brainstorm Button -->
+                        <button @click="saveBrainstormIdea()" class="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-lg shadow-pink-900/40 transition-all flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>Save Idea to Notebook</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 5: FUNCTIONAL FIXEDNESS BRAIN TRAINER QUIZ -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'quiz'" x-transition class="space-y-8">
+            
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-widest">
+                            Lateral Thinking Assessment
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Functional Fixedness Brain Trainer</h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Test your cognitive agility and see how quickly you look past standard object labels to solve real problems!
+                        </p>
+                    </div>
+
+                    <!-- Score Card -->
+                    <div class="bg-slate-950 px-5 py-3 rounded-2xl border border-slate-800 flex items-center space-x-4 text-xs">
+                        <div>
+                            <span class="text-slate-400 block">Progress:</span>
+                            <span class="font-bold text-emerald-400" x-text="`${quizIndex + 1} / ${quizQuestions.length}`"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block">Current Score:</span>
+                            <span class="font-bold text-amberAccent-300" x-text="`${quizScore} XP`"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Question Container -->
+                <template x-if="!quizCompleted">
+                    <div class="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 space-y-6">
+                        
+                        <div class="space-y-2">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider font-mono" x-text="`Question #${quizIndex + 1}`"></span>
+                            <h3 class="text-base sm:text-lg font-bold text-white leading-relaxed" x-text="currentQuizQ.question"></h3>
+                        </div>
+
+                        <!-- Options List -->
+                        <div class="space-y-3">
+                            <template x-for="(opt, idx) in currentQuizQ.options" :key="idx">
+                                <button @click="selectQuizOption(idx)"
+                                        :class="quizSelectedOpt === idx ? 'bg-emerald-950/80 border-emerald-500 text-emerald-100 font-semibold shadow-md' : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'"
+                                        class="w-full p-4 rounded-xl border text-left text-xs sm:text-sm transition-all flex items-start space-x-3">
+                                    <span class="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5" x-text="['A','B','C','D'][idx]"></span>
+                                    <span x-text="opt.text" class="leading-snug"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <!-- Check Answer Trigger -->
+                        <div class="flex justify-end pt-2">
+                            <button @click="checkQuizAnswer()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all">
+                                Submit Answer
+                            </button>
+                        </div>
+
+                        <!-- Feedback Box -->
+                        <div x-show="quizChecked" x-transition class="p-5 rounded-2xl border text-xs sm:text-sm leading-relaxed"
+                             :class="quizCorrect ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200' : 'bg-rose-950/40 border-rose-500/50 text-rose-200'">
+                            <div class="flex items-start space-x-3">
+                                <span class="text-2xl" x-text="quizCorrect ? '🧠' : '💡'"></span>
+                                <div class="space-y-1">
+                                    <h4 class="font-bold text-sm" x-text="quizCorrect ? 'Correct Lateral Logic!' : 'Functional Fixedness Detected'"></h4>
+                                    <p x-text="currentQuizQ.explanation"></p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex justify-end">
+                                <button @click="nextQuizQuestion()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all">
+                                    <span x-text="quizIndex < quizQuestions.length - 1 ? 'Next Question →' : 'View Final Assessment Results'"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+
+                <!-- Completed Quiz Score Certificate Card -->
+                <template x-if="quizCompleted">
+                    <div class="bg-slate-950/90 p-8 rounded-3xl border border-slate-800 text-center space-y-6">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-4xl shadow-xl shadow-emerald-500/20">
+                            🏆
+                        </div>
+
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Assessment Complete</span>
+                            <h3 class="text-2xl sm:text-3xl font-extrabold text-white" x-text="quizRankTitle"></h3>
+                            <p class="text-slate-400 text-xs sm:text-sm max-w-md mx-auto" x-text="`You scored ${quizScore} out of ${quizQuestions.length * 20} points! Your lateral thinking capability exceeds ${quizPercentile}% of test takers.`"></p>
+                        </div>
+
+                        <div class="flex justify-center space-x-3 pt-2">
+                            <button @click="restartQuiz()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all">
+                                Retake Trainer
+                            </button>
+                            <button @click="activeTab = 'export'" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition-all">
+                                View Export & Certificate
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- TAB 6: EXPORT & WORKSHEET STUDIO -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'export'" x-transition class="space-y-8">
+            
+            <div class="glass-panel border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                    <div>
+                        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-widest">
+                            Printable Cheatsheet & Summary
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Export / Worksheet Studio</h2>
+                        <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                            Review and print your compiled lateral thinking hacks, SCAMPER session notes, and achievement badge.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center space-x-3 no-print">
+                        <button @click="copyAllNotesToClipboard()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
+                            <span>📋</span>
+                            <span>Copy All Notes</span>
+                        </button>
+
+                        <button @click="printWorksheet()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5">
+                            <span>🖨️</span>
+                            <span>Print PDF Worksheet</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Aggregated Notes Display Card -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Saved Hacks & Ideas -->
+                    <div class="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 space-y-4">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                            <span>🔖</span> Saved ReImagine Hacks & Brainstorm Ideas
+                        </h3>
+
+                        <div x-show="savedIdeas.length === 0" class="text-xs text-slate-500 italic p-4 text-center">
+                            No saved hacks yet! Browse Object Explorer or ReImagine Randomizer and click "Save to Notes".
+                        </div>
+
+                        <div class="space-y-3">
+                            <template x-for="(idea, idx) in savedIdeas" :key="idx">
+                                <div class="p-3.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1 relative group">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-brand-300 text-xs" x-text="idea.title"></span>
+                                        <button @click="removeSavedIdea(idx)" class="text-slate-600 hover:text-rose-400 text-xs">✕</button>
+                                    </div>
+                                    <p class="text-xs text-slate-300" x-text="idea.content"></p>
+                                    <span class="text-[9px] font-mono text-slate-500 block pt-1" x-text="idea.timestamp"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Saved SCAMPER Matrix Sessions -->
+                    <div class="bg-slate-950/80 p-6 rounded-2xl border border-slate-800 space-y-4">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                            <span>⚡</span> Saved SCAMPER Sessions
+                        </h3>
+
+                        <div x-show="savedScampers.length === 0" class="text-xs text-slate-500 italic p-4 text-center">
+                            No SCAMPER matrices saved yet. Fill out Tab 2 and save your session!
+                        </div>
+
+                        <div class="space-y-3">
+                            <template x-for="(scamp, idx) in savedScampers" :key="idx">
+                                <div class="p-4 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                        <h4 class="font-bold text-amberAccent-300 text-xs" x-text="`Target Item: ${scamp.itemName}`"></h4>
+                                        <span class="text-[9px] font-mono text-slate-500" x-text="scamp.timestamp"></span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-2 text-[10px] font-mono-code text-slate-300">
+                                        <div><span class="text-amberAccent-400 font-bold">S:</span> <span x-text="scamp.form.S || 'N/A'"></span></div>
+                                        <div><span class="text-brand-400 font-bold">C:</span> <span x-text="scamp.form.C || 'N/A'"></span></div>
+                                        <div><span class="text-purple-400 font-bold">A:</span> <span x-text="scamp.form.A || 'N/A'"></span></div>
+                                        <div><span class="text-emerald-400 font-bold">M:</span> <span x-text="scamp.form.M || 'N/A'"></span></div>
+                                        <div><span class="text-pink-400 font-bold">P:</span> <span x-text="scamp.form.P || 'N/A'"></span></div>
+                                        <div><span class="text-blue-400 font-bold">E:</span> <span x-text="scamp.form.E || 'N/A'"></span></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- HIDDEN PRINTABLE WORKSHEET CONTAINER (Used during window.print()) -->
+            <div id="printable-worksheet" class="hidden">
+                <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #000;">
+                    <div style="border-bottom: 2px solid #0d9488; padding-bottom: 10px; margin-bottom: 20px;">
+                        <h1 style="margin: 0; color: #0f766e; font-size: 24px;">ReImagine: Lateral Thinking & Everyday Object Cheatsheet</h1>
+                        <p style="margin-top: 4px; font-size: 13px; color: #475569;">Compiled Worksheet & Brainstorm Session Notes</p>
+                    </div>
+
+                    <!-- Quiz Score Summary -->
+                    <div style="margin-bottom: 20px; background: #f8fafc; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                        <h3 style="margin: 0 0 6px 0; font-size: 15px; color: #1e293b;">Brain Trainer Assessment Summary:</h3>
+                        <p style="margin: 0; font-size: 13px;"><strong>Lateral Thinking Rank:</strong> <span x-text="quizRankTitle || 'Not Taken Yet'"></span></p>
+                        <p style="margin: 4px 0 0 0; font-size: 13px;"><strong>Score:</strong> <span x-text="`${quizScore} XP`"></span></p>
+                    </div>
+
+                    <!-- Saved Hacks List -->
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 16px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Saved ReImagine Hacks:</h3>
+                        <ul style="padding-left: 20px; font-size: 12px;">
+                            <template x-for="idea in savedIdeas" :key="idea.timestamp">
+                                <li style="margin-bottom: 8px;">
+                                    <strong><span x-text="idea.title"></span>:</strong> <span x-text="idea.content"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+
+                    <!-- SCAMPER Sessions -->
+                    <div>
+                        <h3 style="font-size: 16px; color: #d97706; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">SCAMPER Matrix Entries:</h3>
+                        <template x-for="scamp in savedScampers" :key="scamp.timestamp">
+                            <div style="margin-bottom: 12px; font-size: 12px; background: #fffbe3; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
+                                <strong style="color: #92400e;">Object: <span x-text="scamp.itemName"></span></strong>
+                                <div style="margin-top: 4px;">
+                                    <span><strong>Substitute:</strong> <span x-text="scamp.form.S || 'N/A'"></span></span> | 
+                                    <span><strong>Combine:</strong> <span x-text="scamp.form.C || 'N/A'"></span></span> | 
+                                    <span><strong>Adapt:</strong> <span x-text="scamp.form.A || 'N/A'"></span></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>ReImagine Studio • Overcoming Functional Fixedness through Physical Property Deconstruction & SCAMPER Ideation</p>
+        </div>
+    </footer>
+
+    <!-- ALPINE APP APPLICATION LOGIC SCRIPT -->
+    <script>
+        function reImagineApp() {
+            return {
+                activeTab: 'explorer', // 'explorer' | 'scamper' | 'challenges' | 'generator' | 'quiz' | 'export'
+                soundMuted: false,
+                audioCtx: null,
+
+                toast: {
+                    show: false,
+                    icon: '💡',
+                    title: '',
+                    message: ''
+                },
+
+                // Audio Synthesis Initialization (Web Audio API)
+                initAudio() {
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            this.audioCtx = new AudioContext();
+                        }
+                    } catch (e) {
+                        console.log('Web Audio API not supported');
+                    }
+                },
+
+                toggleMute() {
+                    this.soundMuted = !this.soundMuted;
+                    this.showToast(
+                        this.soundMuted ? 'Muted' : 'Audio On',
+                        this.soundMuted ? 'Sound FX disabled.' : 'Web Audio feedback active.',
+                        this.soundMuted ? '🔇' : '🔊'
+                    );
+                },
+
+                playSound(type) {
+                    if (this.soundMuted || !this.audioCtx) return;
+                    try {
+                        if (this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
+                        const now = this.audioCtx.currentTime;
+
+                        if (type === 'click') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(420, now);
+                            gain.gain.setValueAtTime(0.04, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.04);
+                        } else if (type === 'spin') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+                            gain.gain.setValueAtTime(0.03, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.03);
+                        } else if (type === 'success') {
+                            const osc1 = this.audioCtx.createOscillator();
+                            const osc2 = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc1.type = 'sine';
+                            osc2.type = 'triangle';
+                            osc1.frequency.setValueAtTime(523.25, now); // C5
+                            osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                            gain.gain.setValueAtTime(0.08, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                            osc1.connect(gain);
+                            osc2.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc1.start(now);
+                            osc1.stop(now + 0.15);
+                            osc2.start(now + 0.08);
+                            osc2.stop(now + 0.3);
+                        } else if (type === 'error') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(140, now);
+                            gain.gain.setValueAtTime(0.08, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.2);
+                        }
+                    } catch (e) {
+                        // ignore Web Audio context errors
+                    }
+                },
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.playSound('click');
+                },
+
+                showToast(title, message, icon = '💡') {
+                    this.toast = { show: true, title, message, icon };
+                    setTimeout(() => { this.toast.show = false; }, 3500);
+                },
+
+                // -----------------------------------------------------------
+                // TAB 1: OBJECT EXPLORER DATA & METHODS
+                // -----------------------------------------------------------
+                selectedCategory: 'All',
+                searchQuery: '',
+                activeModalObject: null,
+
+                categories: ['All', 'Home & Repairs', 'Tech & Cables', 'Travel & Safety', 'Cleaning & Kitchen', 'Gardening'],
+
+                objects: [
+                    {
+                        id: 1,
+                        name: 'Rubber Band',
+                        icon: '➰',
+                        category: 'Home & Repairs',
+                        properties: ['High Elasticity', 'High Friction Grip', 'Flexible', 'Insulating'],
+                        hacks: [
+                            {
+                                title: 'Stripped Screw Head Gripper',
+                                difficulty: 'Easy',
+                                instructions: 'Place a flat rubber band directly over the stripped screw head before pressing your screwdriver down firm. The elastic rubber conforms into the stripped gaps to provide high-friction turning torque.',
+                                whyItWorks: 'Friction coefficient increases dramatically, filling microscopic stripped metal voids.'
+                            },
+                            {
+                                title: 'Paint Can Drip Line',
+                                difficulty: 'Easy',
+                                instructions: 'Stretch a large rubber band vertically around an open paint can across the middle. Wipe your wet brush against the stretched rubber line instead of the outer metal rim to prevent mess and seal sticking.',
+                                whyItWorks: 'Excess paint falls cleanly back inside the can without filling the outer seal groove.'
+                            },
+                            {
+                                title: 'Slippery Hanger Non-Slip Grips',
+                                difficulty: 'Easy',
+                                instructions: 'Wrap a rubber band around both shoulder ends of slick wooden or plastic clothes hangers.',
+                                whyItWorks: 'High surface friction holds wide-neck dresses and slippery silks in place.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: 'Binder Clip',
+                        icon: '📎',
+                        category: 'Tech & Cables',
+                        properties: ['High Spring Tension', 'Rigid Metal', 'Clamping Force', 'Wire Handles'],
+                        hacks: [
+                            {
+                                title: 'Desk Edge Cable Organizer',
+                                difficulty: 'Easy',
+                                instructions: 'Clamp binder clips to the lip of your desk. Squeeze the silver wire handles and thread your phone, laptop, and watch charging cords through the loops.',
+                                whyItWorks: 'The thick plastic desk lip provides anchor clamping force, while the wire handles hold cable connectors above floor level.'
+                            },
+                            {
+                                title: 'Toothpaste Tube Squeezer',
+                                difficulty: 'Easy',
+                                instructions: 'As toothpaste runs low, roll up the flat bottom end and clip a binder clip over the roll.',
+                                whyItWorks: 'Maintains continuous mechanical compression so paste doesn\'t flow backward.'
+                            },
+                            {
+                                title: 'Instant Smartphone Kickstand',
+                                difficulty: 'Easy',
+                                instructions: 'Pinch two binder clips together or clip one large binder clip onto a rigid cardboard card to prop up your smartphone at an angle.',
+                                whyItWorks: 'Creates a stable triangular tripod base using spring tension.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: 'Aluminum Foil',
+                        icon: '✨',
+                        category: 'Home & Repairs',
+                        properties: ['Electrical Conductive', 'Malleable', 'Reflective', 'Heat Resistant'],
+                        hacks: [
+                            {
+                                title: 'Wi-Fi Antenna Parabolic Reflector',
+                                difficulty: 'Medium',
+                                instructions: 'Curve a sheet of aluminum foil into a parabolic dish and position it behind your Wi-Fi router antenna facing toward dark spots.',
+                                whyItWorks: 'Metallic aluminum acts as a radio frequency mirror, redirecting omnidirectional RF waves in a focused beam.'
+                            },
+                            {
+                                title: 'Scissor Blade Honing Tool',
+                                difficulty: 'Easy',
+                                instructions: 'Fold a sheet of aluminum foil into 6 to 8 thick layers, then make 12 to 15 full cuts through the foil with dull scissors.',
+                                whyItWorks: 'Friction against dense aluminum layers hones micro-burrs off the scissor cutting edge.'
+                            },
+                            {
+                                title: 'Dryer Static Absorber Ball',
+                                difficulty: 'Easy',
+                                instructions: 'Roll foil tightly into a 2-inch sphere and drop it into the clothes dryer with wet laundry.',
+                                whyItWorks: 'Discharges electrostatic build-up by conducting electrons away from fabrics during tumbling.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        name: 'Coffee Filter',
+                        icon: '☕',
+                        category: 'Cleaning & Kitchen',
+                        properties: ['Porous Filter', 'Lint-Free Paper', 'Absorbent', 'High Surface Area'],
+                        hacks: [
+                            {
+                                title: 'Potting Soil Drain Retainer',
+                                difficulty: 'Easy',
+                                instructions: 'Place a single coffee filter inside the bottom of a flower pot over the drainage hole before filling with dirt.',
+                                whyItWorks: 'Microporous paper allows excess water to seep out freely while trapping soil granules inside.'
+                            },
+                            {
+                                title: 'Streak-Free Screen Cleaner',
+                                difficulty: 'Easy',
+                                instructions: 'Use a dry coffee filter with a dab of display cleaner to wipe computer screens and glass windows.',
+                                whyItWorks: '100% virgin paper fibers contain zero adhesive binders or loose lint that cause streaks.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 5,
+                        name: 'Pool Noodle',
+                        icon: '🏊',
+                        category: 'Home & Repairs',
+                        properties: ['Cylindrical Hose', 'Compressible Foam', 'Shock Absorbing', 'Hollow Core'],
+                        hacks: [
+                            {
+                                title: 'Tall Bucket Water Funnel',
+                                difficulty: 'Easy',
+                                instructions: 'Slip one end of a hollow pool noodle over a tight bathroom sink faucet and direct the other end into a large bucket sitting on the floor.',
+                                whyItWorks: 'Transforms a short sink spout into a flexible 3-foot extension hose via water pressure guidance.'
+                            },
+                            {
+                                title: 'Garage Wall Door Bumper',
+                                difficulty: 'Easy',
+                                instructions: 'Cut a pool noodle in half lengthwise and bolt or tape it to your garage wall at car door height.',
+                                whyItWorks: 'Cellular polyethylene foam absorbs kinetic impact energy, saving paint from concrete wall strikes.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 6,
+                        name: 'Wine Cork',
+                        icon: '🍾',
+                        category: 'Home & Repairs',
+                        properties: ['Compressible', 'Buoyant', 'Non-Conductive', 'Soft Grip'],
+                        hacks: [
+                            {
+                                title: 'Cabinet Door Slam Buffer',
+                                difficulty: 'Easy',
+                                instructions: 'Slice thin discs off a cork and glue them to inside corners of wooden cabinet doors.',
+                                whyItWorks: 'Cellular cork structure absorbs closing impact noise.'
+                            },
+                            {
+                                title: 'Boating Floating Keychain',
+                                difficulty: 'Easy',
+                                instructions: 'Screw an eyelet hook into a natural wine cork and attach your boat key.',
+                                whyItWorks: 'Low density of cork provides positive buoyancy for heavy metal keys.'
+                            }
+                        ]
+                    }
+                ],
+
+                get filteredObjects() {
+                    return this.objects.filter(obj => {
+                        const matchesCategory = this.selectedCategory === 'All' || obj.category === this.selectedCategory;
+                        const q = this.searchQuery.toLowerCase().trim();
+                        const matchesSearch = !q || 
+                            obj.name.toLowerCase().includes(q) || 
+                            obj.properties.some(p => p.toLowerCase().includes(q)) ||
+                            obj.hacks.some(h => h.title.toLowerCase().includes(q) || h.instructions.toLowerCase().includes(q));
+                        return matchesCategory && matchesSearch;
+                    });
+                },
+
+                openObjectDetail(obj) {
+                    this.activeModalObject = obj;
+                    this.playSound('click');
+                },
+
+                saveHackToNotebook(objectName, hack) {
+                    this.savedIdeas.unshift({
+                        title: `${objectName}: ${hack.title}`,
+                        content: hack.instructions,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    this.showToast('Hack Saved!', `"${hack.title}" saved to Export Studio.`, '🔖');
+                    this.playSound('success');
+                },
+
+                // -----------------------------------------------------------
+                // TAB 2: SCAMPER WORKBENCH DATA & METHODS
+                // -----------------------------------------------------------
+                scamperTargetItem: 'Binder Clip',
+                scamperCustomName: '',
+                scamperForm: { S: '', C: '', A: '', M: '', P: '', E: '' },
+                savedScampers: [],
+
+                availablePhysicalTraits: [
+                    'High Elasticity', 'High Friction Grip', 'High Spring Tension', 
+                    'Conductive', 'Reflective', 'Porous Filter', 'Compressible Foam', 'Buoyant'
+                ],
+                selectedTraitFilters: [],
+
+                toggleTraitFilter(trait) {
+                    if (this.selectedTraitFilters.includes(trait)) {
+                        this.selectedTraitFilters = this.selectedTraitFilters.filter(t => t !== trait);
+                    } else {
+                        this.selectedTraitFilters.push(trait);
+                    }
+                },
+
+                get suggestedHacksFromTraits() {
+                    if (this.selectedTraitFilters.length === 0) return [];
+                    let results = [];
+                    this.objects.forEach(obj => {
+                        const sharesTrait = obj.properties.some(p => this.selectedTraitFilters.includes(p));
+                        if (sharesTrait) {
+                            obj.hacks.forEach(h => {
+                                results.push({
+                                    objectName: obj.name,
+                                    title: h.title,
+                                    instructions: h.instructions
+                                });
+                            });
+                        }
+                    });
+                    return results.slice(0, 4);
+                },
+
+                resetScamperForm() {
+                    this.scamperForm = { S: '', C: '', A: '', M: '', P: '', E: '' };
+                    this.playSound('click');
+                },
+
+                saveScamperSession() {
+                    const itemName = this.scamperTargetItem === 'Custom' ? (this.scamperCustomName || 'Custom Item') : this.scamperTargetItem;
+                    this.savedScampers.unshift({
+                        itemName,
+                        form: { ...this.scamperForm },
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    this.showToast('SCAMPER Saved!', `SCAMPER matrix for "${itemName}" added to notes.`, '⚡');
+                    this.playSound('success');
+                },
+
+                // -----------------------------------------------------------
+                // TAB 3: CHALLENGE LAB DATA & METHODS
+                // -----------------------------------------------------------
+                selectedScenarioItems: [],
+                scenarioResult: null,
+
+                challengeScenarios: [
+                    {
+                        id: 1,
+                        icon: '🪣',
+                        title: 'The Shallow Sink Bucket Dilemma',
+                        description: 'You need to fill a 5-gallon cleaning bucket with water, but the bathroom sink is too shallow to fit the bucket underneath the faucet spout spout. You have zero budget for hoses.',
+                        availableItems: [
+                            { id: 'noodle', name: 'Pool Noodle', icon: '🏊' },
+                            { id: 'clip', name: 'Binder Clip', icon: '📎' },
+                            { id: 'foil', name: 'Aluminum Foil', icon: '✨' },
+                            { id: 'paperclip', name: 'Paperclip', icon: '📌' }
+                        ],
+                        winningCombo: ['noodle'],
+                        winTitle: 'Fluid Extension Bypass!',
+                        winExplanation: 'Slipping the hollow pool noodle over the spout channels water down into the bucket on the floor seamlessly!'
+                    },
+                    {
+                        id: 2,
+                        icon: '🪛',
+                        title: 'The Stripped Screw Emergency',
+                        description: 'You are repairing a loose door handle and the head of the cross-slot screw is stripped completely smooth. The screwdriver just spins without grabbing.',
+                        availableItems: [
+                            { id: 'rubber', name: 'Rubber Band', icon: '➰' },
+                            { id: 'filter', name: 'Coffee Filter', icon: '☕' },
+                            { id: 'cork', name: 'Wine Cork', icon: '🍾' },
+                            { id: 'foil', name: 'Aluminum Foil', icon: '✨' }
+                        ],
+                        winningCombo: ['rubber'],
+                        winTitle: 'Friction Cushion Engagement!',
+                        winExplanation: 'Pressing a flat rubber band between screw head and screwdriver tip fills stripping gaps and grabs metal with high friction.'
+                    },
+                    {
+                        id: 3,
+                        icon: '🚀',
+                        title: 'Apollo 13 CO2 Scrubber Crisis',
+                        description: 'Historic Challenge: Square lithium hydroxide canisters must be fitted into round socket openings using only trash aboard the spacecraft.',
+                        availableItems: [
+                            { id: 'bag', name: 'Plastic Bag / Cover', icon: '🛍️' },
+                            { id: 'tape', name: 'Duct Tape', icon: '🩹' },
+                            { id: 'noodle', name: 'Pool Noodle', icon: '🏊' },
+                            { id: 'hose', name: 'Spacesuit Hose', icon: '🤿' }
+                        ],
+                        winningCombo: ['bag', 'tape', 'hose'],
+                        winTitle: 'Houston Solution Achieved!',
+                        winExplanation: 'By taping plastic manual covers over the square canisters and sealing suit hoses, CO2 was safely filtered!'
+                    }
+                ],
+
+                get activeScenario() {
+                    return this.challengeScenarios[this.activeScenarioId || 0];
+                },
+
+                activeScenarioId: 0,
+
+                selectScenario(scen) {
+                    const idx = this.challengeScenarios.findIndex(s => s.id === scen.id);
+                    this.activeScenarioId = idx;
+                    this.selectedScenarioItems = [];
+                    this.scenarioResult = null;
+                    this.playSound('click');
+                },
+
+                toggleScenarioItem(itemId) {
+                    if (this.selectedScenarioItems.includes(itemId)) {
+                        this.selectedScenarioItems = this.selectedScenarioItems.filter(id => id !== itemId);
+                    } else {
+                        this.selectedScenarioItems.push(itemId);
+                    }
+                },
+
+                testScenarioSolution() {
+                    const scen = this.activeScenario;
+                    const isWin = scen.winningCombo.every(id => this.selectedScenarioItems.includes(id)) && 
+                                  this.selectedScenarioItems.length === scen.winningCombo.length;
+
+                    if (isWin) {
+                        this.scenarioResult = {
+                            success: true,
+                            statusText: 'SUCCESS: Functional Fixedness Overcome!',
+                            title: scen.winTitle,
+                            explanation: scen.winExplanation
+                        };
+                        this.playSound('success');
+                        this.showToast('Challenge Solved!', 'You successfully bypassed functional fixedness!', '🎉');
+                    } else {
+                        this.scenarioResult = {
+                            success: false,
+                            statusText: 'INCOMPLETE HYPOTHESIS',
+                            title: 'Combination Failed',
+                            explanation: 'That material combination does not provide the required physical capability to solve the constraint.'
+                        };
+                        this.playSound('error');
+                    }
+                },
+
+                // -----------------------------------------------------------
+                // TAB 4: REIMAGINE GENERATOR DATA & METHODS
+                // -----------------------------------------------------------
+                isSpinning: false,
+                generatorObjectIndex: 0,
+                generatorProblemIndex: 0,
+
+                problemDomains: [
+                    'Improving Wi-Fi Signal Strength in Dark Zones',
+                    'Silencing Loud Squeaky Floorboards at Night',
+                    'Preventing Headphone Cables from Tangling in Pocket',
+                    'Diffusing Harsh Smartphone Camera Flash for Portraits',
+                    'Drying Soaked Shoes Quickly Without Heat Damage',
+                    'Protecting Garage Walls from Car Door Strikes'
+                ],
+
+                brainstormInput: '',
+                brainstormRating: 5,
+
+                get currentGeneratorObject() {
+                    return this.objects[this.generatorObjectIndex];
+                },
+
+                get currentGeneratorProblem() {
+                    return this.problemDomains[this.generatorProblemIndex];
+                },
+
+                spinGeneratorWheel() {
+                    this.isSpinning = true;
+                    let counter = 0;
+                    const interval = setInterval(() => {
+                        this.generatorObjectIndex = Math.floor(Math.random() * this.objects.length);
+                        this.generatorProblemIndex = Math.floor(Math.random() * this.problemDomains.length);
+                        this.playSound('spin');
+                        counter++;
+                        if (counter > 12) {
+                            clearInterval(interval);
+                            this.isSpinning = false;
+                            this.playSound('success');
+                        }
+                    }, 100);
+                },
+
+                saveBrainstormIdea() {
+                    if (!this.brainstormInput.trim()) {
+                        this.showToast('Enter Text', 'Please type a brainstorm idea first!', '⚠️');
+                        return;
+                    }
+                    this.savedIdeas.unshift({
+                        title: `Idea: ${this.currentGeneratorObject.name} + ${this.currentGeneratorProblem}`,
+                        content: `${this.brainstormInput} (Originality: ${this.brainstormRating}/5 Stars)`,
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    this.brainstormInput = '';
+                    this.showToast('Idea Saved!', 'Brainstorm entry saved to Export Studio.', '✨');
+                    this.playSound('success');
+                },
+
+                // -----------------------------------------------------------
+                // TAB 5: QUIZ DATA & METHODS
+                // -----------------------------------------------------------
+                quizIndex: 0,
+                quizSelectedOpt: null,
+                quizChecked: false,
+                quizCorrect: false,
+                quizScore: 0,
+                quizCompleted: false,
+
+                quizQuestions: [
+                    {
+                        question: 'In cognitive psychology, what does "functional fixedness" refer to?',
+                        options: [
+                            { text: 'A mental block where you see an object strictly by its conventional intended label.', correct: true },
+                            { text: 'The physical resistance of plastic and metal to breaking under pressure.', correct: false },
+                            { text: 'An inability to remember where household tools are stored.', correct: false },
+                            { text: 'A tool repair technique used in carpentry.', correct: false }
+                        ],
+                        explanation: 'Functional fixedness is a cognitive bias that limits a person to using an object only in the way it is traditionally used.'
+                    },
+                    {
+                        question: 'You need a 45-degree angle marker for a DIY shelf joint, but your protractor is missing. You have a square paper sticky note, a pencil, and a coffee mug. What do you do?',
+                        options: [
+                            { text: 'Fold the square sticky note diagonally in half to form a perfect 45-degree triangle.', correct: true },
+                            { text: 'Trace around the circular rim of the coffee mug.', correct: false },
+                            { text: 'Eyeball the angle by turning the pencil sideways.', correct: false },
+                            { text: 'Wait until you can purchase a plastic protractor.', correct: false }
+                        ],
+                        explanation: 'Folding a square (90 degrees) diagonally in half bisects the angle into two perfect 45-degree guide angles!'
+                    },
+                    {
+                        question: 'You are camping in damp woods and need to light a campfire without dry kindling. Which item serves as effective slow-burning tinder?',
+                        options: [
+                            { text: 'Corn snack chips (e.g. Doritos) due to high starch and oil content.', correct: true },
+                            { text: 'A wet synthetic cleaning sponge.', correct: false },
+                            { text: 'An empty aluminum soda can.', correct: false },
+                            { text: 'Blowing air onto wet pine twigs.', correct: false }
+                        ],
+                        explanation: 'Snack chips are saturated with oil and starch, allowing them to ignite easily and burn steadily like miniature candles.'
+                    }
+                ],
+
+                get currentQuizQ() {
+                    return this.quizQuestions[this.quizIndex];
+                },
+
+                get quizRankTitle() {
+                    if (this.quizScore >= 60) return 'McGyver Mastermind 🏆';
+                    if (this.quizScore >= 40) return 'Creative Strategist ⚡';
+                    return 'Lateral Thinker Apprentice 💡';
+                },
+
+                get quizPercentile() {
+                    if (this.quizScore >= 60) return 98;
+                    if (this.quizScore >= 40) return 82;
+                    return 60;
+                },
+
+                selectQuizOption(idx) {
+                    this.quizSelectedOpt = idx;
+                    this.quizChecked = false;
+                    this.playSound('click');
+                },
+
+                checkQuizAnswer() {
+                    if (this.quizSelectedOpt === null) {
+                        this.showToast('Select Option', 'Please choose an answer first!', '⚠️');
+                        return;
+                    }
+                    this.quizChecked = true;
+                    const isCorrect = this.currentQuizQ.options[this.quizSelectedOpt].correct;
+                    if (isCorrect) {
+                        this.quizCorrect = true;
+                        this.quizScore += 20;
+                        this.playSound('success');
+                    } else {
+                        this.quizCorrect = false;
+                        this.playSound('error');
+                    }
+                },
+
+                nextQuizQuestion() {
+                    if (this.quizIndex < this.quizQuestions.length - 1) {
+                        this.quizIndex++;
+                        this.quizSelectedOpt = null;
+                        this.quizChecked = false;
+                    } else {
+                        this.quizCompleted = true;
+                        this.showToast('Assessment Complete!', 'Check out your Lateral Thinking Rank.', '🏆');
+                    }
+                },
+
+                restartQuiz() {
+                    this.quizIndex = 0;
+                    this.quizSelectedOpt = null;
+                    this.quizChecked = false;
+                    this.quizScore = 0;
+                    this.quizCompleted = false;
+                    this.playSound('click');
+                },
+
+                // -----------------------------------------------------------
+                // TAB 6: EXPORT & NOTES DATA & METHODS
+                // -----------------------------------------------------------
+                savedIdeas: [],
+
+                removeSavedIdea(idx) {
+                    this.savedIdeas.splice(idx, 1);
+                    this.playSound('click');
+                },
+
+                copyAllNotesToClipboard() {
+                    let text = `ReImagine Studio - Saved Notes\n\n`;
+                    text += `SAVED HACKS:\n`;
+                    this.savedIdeas.forEach(i => {
+                        text += `- ${i.title}: ${i.content}\n`;
+                    });
+                    text += `\nSCAMPER SESSIONS:\n`;
+                    this.savedScampers.forEach(s => {
+                        text += `- Item: ${s.itemName} (S:${s.form.S}, C:${s.form.C})\n`;
+                    });
+
+                    const el = document.createElement('textarea');
+                    el.value = text;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+
+                    this.showToast('Copied!', 'All notes copied to clipboard.', '📋');
+                },
+
+                printWorksheet() {
+                    window.print();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
