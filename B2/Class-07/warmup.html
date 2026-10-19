@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tough Talk English: Mastering Difficult Conversations & De-escalation</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18 & React DOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a; /* Slate 900 */
+      color: #f8fafc;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Print styling for Certificate */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-certificate, #printable-certificate * {
+        visibility: visible;
+      }
+      #printable-certificate {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 40px;
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+        border: 4px solid #312e81 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // =========================================================================
+    // DATA DEFINITIONS & DATABASE
+    // =========================================================================
+
+    const CHEAT_SHEET_RULES = [
+      {
+        title: "1. Separate Reaction from Behavior",
+        icon: "🧠",
+        strategy: "Pause for 3 full seconds before replying.",
+        description: "Hostility is usually a reflection of the other person's internal stress, not your worth. Do not absorb their emotional heat.",
+        phraseExample: "Give me a second to process what you just shared."
+      },
+      {
+        title: "2. Validate Without Agreeing",
+        icon: "🤝",
+        strategy: "Acknowledge their emotional intensity first.",
+        description: "People escalate when they feel unheard. You can validate their feelings without agreeing that their claims are factually correct.",
+        phraseExample: "I can see how frustrating this situation feels for you."
+      },
+      {
+        title: "3. Set Low-Drama Boundaries",
+        icon: "🛡️",
+        strategy: "State conditions calmly without insults or shouting.",
+        description: "Clear boundaries sound neutral and matter-of-fact. Use 'I' statements to protect your space and standards.",
+        phraseExample: "I want to work through this, but I won't continue if you raise your voice."
+      },
+      {
+        title: "4. Pivot Directly to Solutions",
+        icon: "🔄",
+        strategy: "Interrupt complaints with concrete next steps.",
+        description: "Difficult personalities loop endlessly in blame. Shift their focus from 'who is to blame' to 'what fix works right now'.",
+        phraseExample: "What is the best possible resolution for you right now?"
+      },
+      {
+        title: "5. Strategic Disengagement",
+        icon: "🚪",
+        strategy: "End conversations when bad faith persists.",
+        description: "You do not need to attend every argument you are invited to. Preserve your peace when someone insists on hostility.",
+        phraseExample: "Let's pause this conversation for today and revisit it tomorrow with fresh eyes."
+      }
+    ];
+
+    const SCENARIOS_DATA = [
+      {
+        id: "s1",
+        title: "The Explosive Coworker",
+        character: "Marcus (Senior Project Coordinator)",
+        avatar: "😡",
+        context: "Marcus storms over to your desk during a high-stakes week, accusing you in front of colleagues of missing a project milestone.",
+        initialQuote: "You completely screwed up the project timeline! The client is furious and it's all your fault for not delivering the report yesterday!",
+        initialConflict: 85,
+        steps: [
+          {
+            options: [
+              {
+                id: "c1_a",
+                type: "Escalating",
+                label: "Hot-headed & Defensive",
+                text: "Don't yell at me! You didn't even send me the necessary financial data on time, so blame yourself!",
+                conflictDelta: 15,
+                xp: 5,
+                feedback: "⚠️ High Conflict! Accusing back triggers a defensive shouting match. Language note: Blaming phrases like 'blame yourself' close off collaboration immediately.",
+                nextQuote: "Don't you turn this around on me! Everyone knows you always make excuses when deadlines come up!"
+              },
+              {
+                id: "c1_b",
+                type: "Passive",
+                label: "Submissive / Doormat",
+                text: "I'm so sorry! Please don't be angry... I'll stay late tonight and fix whatever you want, just don't tell the manager.",
+                conflictDelta: -10,
+                xp: 10,
+                feedback: "⚠️ Doormat Trait: Over-apologizing when you aren't solely responsible invites continuous disrespect. Softening too much damages professional authority.",
+                nextQuote: "Fine, but you better have it ready by 8 AM sharp tomorrow or I'm taking this directly to upper management!"
+              },
+              {
+                id: "c1_c",
+                type: "Strategic",
+                label: "Diplomatic & Assertive (C1 De-escalation)",
+                text: "I hear how stressed you are about the client's reaction. Let's step into the meeting room so we can look at the timeline together and resolve this right away.",
+                conflictDelta: -45,
+                xp: 35,
+                feedback: "✅ Excellent Pragmatics! 'I hear how stressed you are' validates emotion without accepting blame. Moving to a private space lowers public drama.",
+                nextQuote: "...(takes a breath)... Fine. Let's go to the room. But we need a concrete plan for the client immediately."
+              }
+            ]
+          },
+          {
+            options: [
+              {
+                id: "c2_a",
+                type: "Strategic",
+                label: "Solution Pivot & Boundary",
+                text: "Here is where we stand: the core report is ready, but we are awaiting the quarter audit. I will email the preliminary draft to the client now while we verify the rest.",
+                conflictDelta: -30,
+                xp: 40,
+                feedback: "🎯 Outstanding Mastery! Clear, factual 'I will' statements demonstrate control and provide immediate actionable solutions.",
+                nextQuote: "Okay... that preliminary draft will buy us time. Thanks for handling that fast. Let's coordinate the final audit together."
+              },
+              {
+                id: "c2_b",
+                type: "Escalating",
+                label: "Sarcastic / Passive-Aggressive",
+                text: "Well, if you actually checked your inbox before screaming, you'd see the draft was ready hours ago.",
+                conflictDelta: 30,
+                xp: 5,
+                feedback: "❌ Re-escalated! Sarcasm ('screaming', 'if you actually checked') destroys progress made in de-escalation.",
+                nextQuote: "That's it! I'm taking this directly to HR. I will not tolerate your condescending attitude!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: "s2",
+        title: "The Passive-Aggressive In-Law",
+        character: "Evelyn (Spouse's Mother)",
+        avatar: "😒",
+        context: "During a family dinner host night, Evelyn inspects your living room and makes a subtle jab about your hospitality standards.",
+        initialQuote: "Oh, pre-made catering tonight? Must be so nice having so much free time... back in my day, we cared enough to cook family dinners from scratch.",
+        initialConflict: 60,
+        steps: [
+          {
+            options: [
+              {
+                id: "c1_a",
+                type: "Escalating",
+                label: "Snapping Back",
+                text: "Well, nobody asked for your opinion, Evelyn! If you don't like the food, feel free not to eat!",
+                conflictDelta: 25,
+                xp: 5,
+                feedback: "❌ High Family Drama! Snapping directly feeds into her narrative that you are hostile and disrespectful.",
+                nextQuote: "See how they treat me? I was just making an innocent comment and now I'm being attacked in front of everyone!"
+              },
+              {
+                id: "c1_b",
+                type: "Strategic",
+                label: "Reframing & Warm Boundary",
+                text: "I chose catering tonight specifically so I wouldn't be stuck in the kitchen all evening and could enjoy quality conversation with you.",
+                conflictDelta: -35,
+                xp: 35,
+                feedback: "🌟 Brilliant Reframing! Reframing the decision as a desire to spend time *with her* neutralizes her passive-aggressive jab graciously.",
+                nextQuote: "Oh... well, I suppose it is nice to sit down together... The roast chicken does smell quite lovely, actually."
+              },
+              {
+                id: "c1_c",
+                type: "Passive",
+                label: "Apologetic & Flustered",
+                text: "I'm so sorry... work was crazy and I didn't have time to cook. I know I'm not as good at hosting as you are.",
+                conflictDelta: 5,
+                xp: 10,
+                feedback: "⚠️ Reinforces Judgment: Comparing yourself unfavorably gives her validation to continue making backhanded remarks in the future.",
+                nextQuote: "Yes, well, time management is a skill that takes practice dear. Maybe next time I can come over early and teach you."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: "s3",
+        title: "The Demanding Client",
+        character: "Arthur (Corporate Client)",
+        avatar: "💼",
+        context: "Arthur calls your team phone demanding an immediate full refund and free extra work after claiming a minor design draft wasn't perfect.",
+        initialQuote: "This draft is completely unacceptable! You missed two color requirements and I demand a full refund PLUS a free redesign by tomorrow morning or I'll sue!",
+        initialConflict: 80,
+        steps: [
+          {
+            options: [
+              {
+                id: "c1_a",
+                type: "Strategic",
+                label: "Calm Professional Boundary & Pivot",
+                text: "I understand how important these specific color specifications are for your brand. Let's review the agreed scope so we can make those adjustments today.",
+                conflictDelta: -40,
+                xp: 40,
+                feedback: "🎯 Diplomatic Gold Standard! Acknowledging brand importance validates their concern while anchoring the response around the contract 'agreed scope'.",
+                nextQuote: "Well... yes, the color hex codes are crucial. If you can update those two brand assets by 3 PM, we don't need to discuss refunds."
+              },
+              {
+                id: "c1_b",
+                type: "Escalating",
+                label: "Legalistic & Harsh",
+                text: "Read clause 4 of your contract! You don't get a refund for minor revisions, so stop threatening legal action!",
+                conflictDelta: 20,
+                xp: 5,
+                feedback: "❌ Legalistic Confrontation: Aggressive contract waving often forces clients to escalate threats out of ego preservation.",
+                nextQuote: "Don't you lecture me on contracts! My legal team will be contacting your executives by end of day!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: "s4",
+        title: "The Boundary-Pushing Roommate",
+        character: "Jordan (Apartment Roommate)",
+        avatar: "🚪",
+        context: "Jordan borrowed your personal laptop without asking for the third time this week, leaving it on the kitchen counter covered in coffee rings.",
+        initialQuote: "Hey! Thanks for leaving your laptop out, I needed to stream the match. Oh, don't worry about those coffee spots, I wiped most of them off!",
+        initialConflict: 70,
+        steps: [
+          {
+            options: [
+              {
+                id: "c1_a",
+                type: "Strategic",
+                label: "Clear 'I' Boundary & Direct Standard",
+                text: "I'm glad you enjoyed the match, Jordan, but I need to establish a firm boundary: my electronics are off-limits without my explicit permission beforehand.",
+                conflictDelta: -35,
+                xp: 35,
+                feedback: "🛡️ Masterful Boundary Setting! Using clear 'I need' phrasing sets explicit expectations without emotional name-calling.",
+                nextQuote: "Whoa, alright, alright! I didn't think it was such a big deal, but I'll ask next time."
+              },
+              {
+                id: "c1_b",
+                type: "Escalating",
+                label: "Insulting & Aggressive",
+                text: "You are totally inconsiderate and disrespectful! Touch my things again and I'm locking you out of the apartment!",
+                conflictDelta: 25,
+                xp: 5,
+                feedback: "❌ Threatening Escalation: Personal attacks like 'inconsiderate' cause living situations to become toxic and hostile.",
+                nextQuote: "Lock me out? Good luck with that! You don't own this apartment!"
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    const PHRASEBOOK_DATA = [
+      {
+        category: "Validating Emotion",
+        badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40",
+        phrases: [
+          {
+            text: "I can see how much stress this situation has caused you.",
+            pragmatics: "Validates emotional intensity using non-defensive observation.",
+            level: "B2"
+          },
+          {
+            text: "I hear your frustration, and I want to ensure we address your main concern.",
+            pragmatics: "Combines active listening ('I hear') with commitment to action.",
+            level: "C1"
+          },
+          {
+            text: "It is completely understandable that you feel disappointed by this delay.",
+            pragmatics: "Empathizes with the outcome without admitting fault or liability.",
+            level: "C1"
+          }
+        ]
+      },
+      {
+        category: "Setting Boundaries",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+        phrases: [
+          {
+            text: "I want to work through this with you, but I need us to speak calmly.",
+            pragmatics: "Sets a conditional boundary that ties progress to respectful communication.",
+            level: "B2"
+          },
+          {
+            text: "I am happy to assist you, but I won't continue this conversation if you raise your voice.",
+            pragmatics: "Clear, low-drama boundary using 'won't continue if' structure.",
+            level: "C1"
+          },
+          {
+            text: "I respect your perspective, and I ask that you accord me the same courtesy.",
+            pragmatics: "Diplomatic insistence on mutual respect during tense debates.",
+            level: "C1"
+          }
+        ]
+      },
+      {
+        category: "Pivoting to Solutions",
+        badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+        phrases: [
+          {
+            text: "Let me pause you there—what would be the ideal resolution for you right now?",
+            pragmatics: "Respectfully interrupts emotional looping to refocus on practical steps.",
+            level: "B2"
+          },
+          {
+            text: "We can't change what happened yesterday, so let me propose a constructive way forward.",
+            pragmatics: "Shifts conversation frame from past blame to future problem-solving.",
+            level: "C1"
+          },
+          {
+            text: "What specific adjustments can we make today to resolve this to your satisfaction?",
+            pragmatics: "Direct, action-oriented inquiry forcing logic over emotion.",
+            level: "C1"
+          }
+        ]
+      },
+      {
+        category: "Strategic Disengagement",
+        badgeColor: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+        phrases: [
+          {
+            text: "I think we have both said what we can today; let me follow up with you tomorrow by email.",
+            pragmatics: "Gracefully exits an unhelpful loop while maintaining professional accountability.",
+            level: "B2"
+          },
+          {
+            text: "Let's take a short pause to collect our thoughts and reconnect at 3 PM.",
+            pragmatics: "De-escalates emotional overload by introducing time buffer.",
+            level: "B2"
+          },
+          {
+            text: "Since we are currently at an impasse, I suggest we sleep on this before making a decision.",
+            pragmatics: "Uses formal noun 'impasse' and idiom 'sleep on this' to decompress tension.",
+            level: "C1"
+          }
+        ]
+      }
+    ];
+
+    const TRANSFORMER_ITEMS = [
+      {
+        id: "t1",
+        harsh: "Stop shouting at me! You are being totally crazy!",
+        correct: "I want to solve this issue with you, but I need us to maintain a calm tone.",
+        options: [
+          "I want to solve this issue with you, but I need us to maintain a calm tone.",
+          "You need to calm down right now or I am walking away!",
+          "I'm sorry for whatever made you crazy, please stop shouting."
+        ],
+        explanation: "The correct option sets a firm boundary ('I need us to...') while keeping the focus on collaborative problem-solving."
+      },
+      {
+        id: "t2",
+        harsh: "That's not my job, figure it out yourself!",
+        correct: "While that falls outside my primary role, let me direct you to the team member who can help.",
+        options: [
+          "That is completely not my department, so go ask someone else.",
+          "While that falls outside my primary role, let me direct you to the team member who can help.",
+          "I guess I will do your job for you since you don't know how."
+        ],
+        explanation: "Polite refusal requires directing the speaker toward a constructive solution rather than shutting the door abruptly."
+      },
+      {
+        id: "t3",
+        harsh: "You always ruin family dinners with your stupid comments!",
+        correct: "I value our family time together, so I would prefer we avoid sensitive topics at the dinner table.",
+        options: [
+          "You need to keep your stupid comments to yourself during dinner.",
+          "I value our family time together, so I would prefer we avoid sensitive topics at the dinner table.",
+          "Whatever you say, I'm just going to ignore you from now on."
+        ],
+        explanation: "Reframing uses positive value statements ('I value our family time...') followed by a polite preference."
+      },
+      {
+        id: "t4",
+        harsh: "Your demands are completely ridiculous and I won't do them!",
+        correct: "I understand your goals, but those specific terms exceed our agreed project scope.",
+        options: [
+          "I understand your goals, but those specific terms exceed our agreed project scope.",
+          "Your demands make zero sense and nobody in their right mind would agree.",
+          "Fine, I will do what you want even though it's ridiculous."
+        ],
+        explanation: "anchoring the refusal in objective boundaries ('exceed our agreed project scope') avoids subjective arguments."
+      }
+    ];
+
+    const QUIZ_QUESTIONS = [
+      {
+        id: "q1",
+        question: "Which English phrase best exemplifies 'validating emotion without accepting fault'?",
+        options: [
+          { text: "I am so sorry, everything that went wrong is entirely my mistake.", correct: false },
+          { text: "I hear how frustrating this delay has been for your team.", correct: true },
+          { text: "You shouldn't feel frustrated because delays happen all the time.", correct: false },
+          { text: "It's not my fault, so please stop complaining about the schedule.", correct: false }
+        ],
+        explanation: "'I hear how frustrating...' acknowledges feelings directly without admitting legal or procedural liability."
+      },
+      {
+        id: "q2",
+        question: "Why is using 'I' statements preferable to 'You' statements during conflict de-escalation?",
+        options: [
+          { text: "'I' statements sound more aggressive and show dominant power.", correct: false },
+          { text: "'You' statements often trigger defensive reactions by making accusations.", correct: true },
+          { text: "There is no actual pragmatic difference in spoken English.", correct: false },
+          { text: "'I' statements force the other person to apologize instantly.", correct: false }
+        ],
+        explanation: "Phrasing like 'You always...' triggers instant defensiveness. 'I need...' focuses on boundaries and self-ownership."
+      },
+      {
+        id: "q3",
+        question: "What is the primary English pragmatic function of the phrase: 'Let me pause you there—what would be the best resolution right now?'",
+        options: [
+          { text: "To insult the speaker's intelligence.", correct: false },
+          { text: "To surrender and accept all unreasonable demands.", correct: false },
+          { text: "To interrupt emotional looping and pivot directly to problem-solving.", correct: true },
+          { text: "To terminate the contract permanently.", correct: false }
+        ],
+        explanation: "This phrase interrupts cyclical complaining and prompts the logical brain to articulate concrete solutions."
+      }
+    ];
+
+    // =========================================================================
+    // MAIN APP COMPONENT
+    // =========================================================================
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('simulator'); // simulator, phrasebook, transformer, quiz, dashboard
+      const [xp, setXp] = useState(120);
+      const [streak, setStreak] = useState(3);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [showCheatSheet, setShowCheatSheet] = useState(false);
+      const [studentName, setStudentName] = useState('Jordan Lee');
+      const [completedModules, setCompletedModules] = useState({
+        simulator: false,
+        phrasebook: false,
+        transformer: false,
+        quiz: false
+      });
+
+      // Calculate level based on XP
+      const getDiplomaticLevel = (xpVal) => {
+        if (xpVal < 150) return { title: "Level 1: Novice Diplomat", badge: "🕊️", nextXp: 150 };
+        if (xpVal < 300) return { title: "Level 2: Tactful Negotiator", badge: "⚖️", nextXp: 300 };
+        if (xpVal < 500) return { title: "Level 3: Master Peacekeeper", badge: "🛡️", nextXp: 500 };
+        return { title: "Level 4: Master Arbitrator", badge: "👑", nextXp: 1000 };
+      };
+
+      const currentLevel = getDiplomaticLevel(xp);
+
+      const addXp = (amount) => {
+        setXp(prev => prev + amount);
+      };
+
+      const markModuleComplete = (modKey) => {
+        setCompletedModules(prev => ({ ...prev, [modKey]: true }));
+      };
+
+      // Text to Speech Helper
+      const speakText = (text, rate = 1.0) => {
+        if (!soundEnabled || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = rate;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      };
+
+      return (
+        <div className="flex flex-col min-h-screen bg-slate-900 text-slate-100">
+          
+          {/* HEADER & HUB */}
+          <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-40 shadow-xl no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                
+                {/* Brand & Title */}
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-emerald-400 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20">
+                    🛡️
+                  </div>
+                  <div>
+                    <h1 className="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-indigo-300 via-purple-200 to-emerald-300 bg-clip-text text-transparent">
+                      Tough Talk English
+                    </h1>
+                    <p className="text-xs text-slate-400 font-medium">De-escalation & Difficult Conversation Mastery (B1–C1)</p>
+                  </div>
+                </div>
+
+                {/* XP, Level, Sound & Tactical Cheat Sheet Modal Trigger */}
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  {/* Streak */}
+                  <div className="flex items-center space-x-1.5 bg-slate-900/80 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-400 shadow-inner">
+                    <span>🔥</span>
+                    <span>{streak} <span className="text-[10px] text-slate-400 font-normal">day streak</span></span>
+                  </div>
+
+                  {/* Level Badge */}
+                  <div className="hidden md:flex items-center space-x-1.5 bg-slate-900/80 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-300">
+                    <span>{currentLevel.badge}</span>
+                    <span>{currentLevel.title}</span>
+                  </div>
+
+                  {/* XP Indicator */}
+                  <div className="flex items-center space-x-1.5 bg-slate-900/80 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-400">
+                    <span>⭐</span>
+                    <span>{xp} <span className="text-[10px] text-slate-400 font-normal">XP</span></span>
+                  </div>
+
+                  {/* Sound Toggle */}
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className={`p-2 rounded-xl border text-xs transition ${
+                      soundEnabled 
+                        ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/50' 
+                        : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-700'
+                    }`}
+                    title="Toggle Audio / Pronunciation"
+                  >
+                    {soundEnabled ? '🔊' : '🔇'}
+                  </button>
+
+                  {/* Tactical Cheat Sheet Trigger */}
+                  <button
+                    onClick={() => setShowCheatSheet(true)}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
+                  >
+                    💡 Tactical Rules
+                  </button>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="mt-3.5 pt-2 border-t border-slate-700/50 flex items-center justify-between overflow-x-auto no-scrollbar">
+                <nav className="flex items-center gap-2">
+                  {[
+                    { id: 'simulator', label: '🎭 1. Roleplay Simulator', name: 'Simulator' },
+                    { id: 'phrasebook', label: '🗣️ 2. Phrasebook Studio', name: 'Phrasebook' },
+                    { id: 'transformer', label: '🔄 3. Tone Transformer', name: 'Transformer' },
+                    { id: 'quiz', label: '🧩 4. Tactical Quiz', name: 'Quiz' },
+                    { id: 'dashboard', label: '🎓 5. Certificate & Stats', name: 'Dashboard' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                        activeTab === tab.id
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-slate-300 hover:bg-slate-700/60 hover:text-white'
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      {completedModules[tab.id] && (
+                        <span className="text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 rounded-full px-1.5">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          {/* MAIN MODULE CONTENT */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {activeTab === 'simulator' && (
+              <Module1Simulator
+                scenarios={SCENARIOS_DATA}
+                speakText={speakText}
+                addXp={addXp}
+                onComplete={() => markModuleComplete('simulator')}
+              />
+            )}
+
+            {activeTab === 'phrasebook' && (
+              <Module2Phrasebook
+                phrasebookData={PHRASEBOOK_DATA}
+                speakText={speakText}
+                addXp={addXp}
+                onComplete={() => markModuleComplete('phrasebook')}
+              />
+            )}
+
+            {activeTab === 'transformer' && (
+              <Module3Transformer
+                items={TRANSFORMER_ITEMS}
+                addXp={addXp}
+                onComplete={() => markModuleComplete('transformer')}
+              />
+            )}
+
+            {activeTab === 'quiz' && (
+              <Module4Quiz
+                questions={QUIZ_QUESTIONS}
+                addXp={addXp}
+                onComplete={() => markModuleComplete('quiz')}
+              />
+            )}
+
+            {activeTab === 'dashboard' && (
+              <Module5Dashboard
+                xp={xp}
+                currentLevel={currentLevel}
+                completedModules={completedModules}
+                studentName={studentName}
+                setStudentName={setStudentName}
+              />
+            )}
+          </main>
+
+          {/* TACTICAL CHEAT SHEET MODAL */}
+          {showCheatSheet && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-800 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+                <div className="flex justify-between items-start border-b border-slate-700 pb-4 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">💡</span>
+                    <h3 className="text-xl font-extrabold text-white">De-escalation Tactical Cheat Sheet</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowCheatSheet(false)}
+                    className="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {CHEAT_SHEET_RULES.map((rule, idx) => (
+                    <div key={idx} className="bg-slate-900/90 p-4 rounded-2xl border border-slate-700/80 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-indigo-300 flex items-center gap-2">
+                          <span>{rule.icon}</span>
+                          <span>{rule.title}</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                          {rule.strategy}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">{rule.description}</p>
+                      <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 text-xs font-mono text-amber-300">
+                        💬 <span className="italic">"{rule.phraseExample}"</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowCheatSheet(false)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30"
+                  >
+                    Understood! Back to Training
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
+            <p>Tough Talk English • Advanced Pragmatics & Conflict De-escalation Web App</p>
+          </footer>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 1: INTERACTIVE CONVERSATION SIMULATOR
+    // =========================================================================
+
+    function Module1Simulator({ scenarios, speakText, addXp, onComplete }) {
+      const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
+      const [stepIdx, setStepIdx] = useState(0);
+      const [conflictLevel, setConflictLevel] = useState(scenarios[0].initialConflict);
+      const [history, setHistory] = useState([]);
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [isFinished, setIsFinished] = useState(false);
+
+      const currentScenario = scenarios[activeScenarioIdx];
+      const currentStep = currentScenario.steps[stepIdx] || null;
+
+      // Auto TTS on new quote load
+      useEffect(() => {
+        if (currentScenario) {
+          const textToSpeak = history.length === 0 
+            ? currentScenario.initialQuote 
+            : history[history.length - 1].nextQuote;
+          if (textToSpeak) {
+            speakText(textToSpeak, 0.95);
+          }
+        }
+      }, [activeScenarioIdx, stepIdx]);
+
+      const handleSelectOption = (option) => {
+        if (selectedOption) return; // Prevent double click
+        setSelectedOption(option);
+
+        // Update conflict level
+        const newConflict = Math.max(0, Math.min(100, conflictLevel + option.conflictDelta));
+        setConflictLevel(newConflict);
+
+        // Award XP
+        addXp(option.xp);
+
+        // Record history
+        setHistory(prev => [...prev, {
+          userChoice: option.text,
+          feedback: option.feedback,
+          type: option.type,
+          nextQuote: option.nextQuote
+        }]);
+      };
+
+      const handleNextStep = () => {
+        setSelectedOption(null);
+        if (stepIdx + 1 < currentScenario.steps.length) {
+          setStepIdx(prev => prev + 1);
+        } else {
+          setIsFinished(true);
+          onComplete();
+        }
+      };
+
+      const handleResetScenario = (idx) => {
+        setActiveScenarioIdx(idx);
+        setStepIdx(0);
+        setConflictLevel(scenarios[idx].initialConflict);
+        setHistory([]);
+        setSelectedOption(null);
+        setIsFinished(false);
+      };
+
+      // Conflict Meter Color
+      const getConflictColor = (val) => {
+        if (val > 70) return "bg-rose-500 text-rose-300 border-rose-500/50";
+        if (val > 40) return "bg-amber-500 text-amber-300 border-amber-500/50";
+        return "bg-emerald-500 text-emerald-300 border-emerald-500/50";
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* SCENARIO SELECTOR BAR */}
+          <div className="bg-slate-800/80 rounded-3xl p-4 border border-slate-700/80 shadow-xl flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">Select Roleplay Scenario:</span>
+            <div className="flex flex-wrap gap-2">
+              {scenarios.map((sc, idx) => (
+                <button
+                  key={sc.id}
+                  onClick={() => handleResetScenario(idx)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                    activeScenarioIdx === idx
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400'
+                      : 'bg-slate-900/80 text-slate-300 border border-slate-700 hover:border-indigo-500/50'
+                  }`}
+                >
+                  <span>{sc.avatar}</span>
+                  <span>{sc.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SIMULATOR MAIN CARD */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* LEFT COLUMN: SCENARIO & DIALOGUE STREAM (8 COLS) */}
+            <div className="lg:col-span-8 bg-slate-800/90 rounded-3xl p-6 border border-slate-700/80 shadow-2xl flex flex-col justify-between space-y-6">
+              
+              {/* Header Info & Conflict Gauge */}
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-700 pb-4 gap-4">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-2xl">{currentScenario.avatar}</span>
+                    <h2 className="text-lg font-black text-white">{currentScenario.title}</h2>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">{currentScenario.context}</p>
+                </div>
+
+                {/* Conflict Level Meter */}
+                <div className="min-w-[180px]">
+                  <div className="flex justify-between items-center text-xs font-bold mb-1">
+                    <span className="text-slate-400">Conflict Tension:</span>
+                    <span className={`px-2 py-0.5 rounded-md border text-[10px] ${getConflictColor(conflictLevel)}`}>
+                      {conflictLevel}% {conflictLevel > 70 ? 'CRITICAL' : conflictLevel > 40 ? 'ELEVATED' : 'DE-ESCALATED'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        conflictLevel > 70 ? 'bg-rose-500' : conflictLevel > 40 ? 'bg-amber-500' : 'bg-emerald-400'
+                      }`}
+                      style={{ width: `${conflictLevel}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* DIALOGUE STREAM BOX */}
+              <div className="space-y-4 bg-slate-900/80 p-5 rounded-2xl border border-slate-700/80 min-h-[220px]">
+                {/* Initial Quote */}
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-lg flex-shrink-0">
+                    {currentScenario.avatar}
+                  </div>
+                  <div className="flex-1 bg-slate-800/90 p-4 rounded-2xl border border-slate-700">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-rose-400">{currentScenario.character}</span>
+                      <button
+                        onClick={() => speakText(currentScenario.initialQuote, 0.9)}
+                        className="text-xs text-slate-400 hover:text-indigo-300"
+                        title="Listen Audio"
+                      >
+                        🔊 Listen
+                      </button>
+                    </div>
+                    <p className="text-sm font-medium text-slate-100 italic">"{currentScenario.initialQuote}"</p>
+                  </div>
+                </div>
+
+                {/* History Stream */}
+                {history.map((item, idx) => (
+                  <div key={idx} className="space-y-3 pt-2 border-t border-slate-800">
+                    {/* User Choice */}
+                    <div className="flex items-start justify-end gap-3">
+                      <div className="flex-1 bg-indigo-950/60 p-4 rounded-2xl border border-indigo-500/40 text-right">
+                        <span className="text-[10px] uppercase font-bold text-indigo-300 block mb-1">Your Tactical Response ({item.type})</span>
+                        <p className="text-sm text-indigo-100 font-medium">"{item.userChoice}"</p>
+                      </div>
+                      <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                        YOU
+                      </div>
+                    </div>
+
+                    {/* NPC Next Response */}
+                    {item.nextQuote && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-lg flex-shrink-0">
+                          {currentScenario.avatar}
+                        </div>
+                        <div className="flex-1 bg-slate-800/90 p-4 rounded-2xl border border-slate-700">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-bold text-rose-400">{currentScenario.character}</span>
+                            <button
+                              onClick={() => speakText(item.nextQuote, 0.9)}
+                              className="text-xs text-slate-400 hover:text-indigo-300"
+                            >
+                              🔊 Listen
+                            </button>
+                          </div>
+                          <p className="text-sm font-medium text-slate-100 italic">"{item.nextQuote}"</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* TACTICAL OPTIONS (IF NOT FINISHED) */}
+              {!isFinished && currentStep && (
+                <div className="space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Choose your response strategy:</span>
+                  <div className="space-y-2.5">
+                    {currentStep.options.map((option) => {
+                      const isSelected = selectedOption?.id === option.id;
+                      let btnBorder = "border-slate-700 bg-slate-900 hover:border-indigo-500/60";
+                      
+                      if (selectedOption) {
+                        if (option.type === "Strategic") btnBorder = "border-emerald-500 bg-emerald-500/10 text-emerald-200";
+                        else if (option.type === "Escalating") btnBorder = "border-rose-500 bg-rose-500/10 text-rose-200";
+                        else btnBorder = "border-amber-500 bg-amber-500/10 text-amber-200";
+                      }
+
+                      return (
+                        <button
+                          key={option.id}
+                          disabled={selectedOption !== null}
+                          onClick={() => handleSelectOption(option)}
+                          className={`w-full text-left p-4 rounded-2xl border transition flex flex-col space-y-1 ${btnBorder}`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-indigo-300 border border-slate-700">
+                              {option.label}
+                            </span>
+                            <span className="text-xs font-bold text-indigo-400">+{option.xp} XP</span>
+                          </div>
+                          <p className="text-xs sm:text-sm font-medium leading-relaxed">"{option.text}"</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* NEXT STEP OR RESTART BUTTON */}
+              {selectedOption && !isFinished && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleNextStep}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+                  >
+                    <span>Continue Conversation ➔</span>
+                  </button>
+                </div>
+              )}
+
+              {isFinished && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 p-5 rounded-2xl text-center space-y-3">
+                  <span className="text-3xl">🎉</span>
+                  <h3 className="text-lg font-bold text-emerald-300">Roleplay Completed!</h3>
+                  <p className="text-xs text-slate-300">You navigated this high-stakes scenario using English de-escalation pragmatics.</p>
+                  <button
+                    onClick={() => handleResetScenario(activeScenarioIdx)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md"
+                  >
+                    Replay Scenario
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN: PRAGMATIC FEEDBACK PANEL (4 COLS) */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="bg-slate-800/90 rounded-3xl p-6 border border-slate-700/80 shadow-2xl space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                  <span>🧐</span>
+                  <span>Pragmatic Analysis</span>
+                </h3>
+
+                {selectedOption ? (
+                  <div className="space-y-3">
+                    <div className="bg-slate-900 p-4 rounded-2xl border border-slate-700 space-y-2">
+                      <span className="text-xs font-bold text-amber-300 block">Tactical Tone Impact:</span>
+                      <p className="text-xs text-slate-200 leading-relaxed">{selectedOption.feedback}</p>
+                    </div>
+
+                    <div className="bg-indigo-950/40 p-4 rounded-2xl border border-indigo-500/30 space-y-2">
+                      <span className="text-xs font-bold text-indigo-300 block">Language Tip:</span>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Notice how high-level B2-C1 softeners like <code className="bg-slate-900 px-1 rounded text-emerald-400">I hear...</code> or <code className="bg-slate-900 px-1 rounded text-emerald-400">Let's look at...</code> maintain authority while de-escalating anger.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-slate-500 text-xs">
+                    <span className="text-3xl block mb-2">👈</span>
+                    Select a tactical response on the left to inspect language analysis and tone feedback.
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 2: DE-ESCALATION PHRASEBOOK & AUDIO STUDIO
+    // =========================================================================
+
+    function Module2Phrasebook({ phrasebookData, speakText, addXp, onComplete }) {
+      const [recordingIndex, setRecordingIndex] = useState(null);
+      const [transcription, setTranscription] = useState("");
+      const [recordingStatus, setRecordingStatus] = useState("idle"); // idle, listening, success
+      const [activeCategory, setActiveCategory] = useState("Validating Emotion");
+
+      const handleSpeechRecognition = (targetText, indexKey) => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+          alert("Web Speech Recognition API is not supported in this browser version. You can still practice reading aloud!");
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        setRecordingIndex(indexKey);
+        setRecordingStatus("listening");
+        setTranscription("Listening... Speak now!");
+
+        recognition.start();
+
+        recognition.onresult = (event) => {
+          const spokenText = event.results[0][0].transcript;
+          setTranscription(`"${spokenText}"`);
+          setRecordingStatus("success");
+          addXp(15);
+          onComplete();
+        };
+
+        recognition.onerror = () => {
+          setTranscription("Could not detect audio. Try speaking closer to the microphone.");
+          setRecordingStatus("idle");
+        };
+      };
+
+      const filteredCategory = phrasebookData.find(c => c.category === activeCategory) || phrasebookData[0];
+
+      return (
+        <div className="space-y-6">
+          {/* HEADER & CATEGORY TABS */}
+          <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80 shadow-xl flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                Module 2 • Spoken Studio
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">🗣️ Essential De-escalation Phrasebook</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Master natural pronunciation, rhythm, and pragmatic English softeners.</p>
+            </div>
+
+            {/* Category Selector */}
+            <div className="flex flex-wrap gap-2">
+              {phrasebookData.map((cat) => (
+                <button
+                  key={cat.category}
+                  onClick={() => setActiveCategory(cat.category)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+                    activeCategory === cat.category
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                      : 'bg-slate-900 text-slate-400 border border-slate-700 hover:text-white'
+                  }`}
+                >
+                  {cat.category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* PHRASE CARDS GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredCategory.phrases.map((phrase, idx) => {
+              const cardKey = `${activeCategory}-${idx}`;
+              const isRecordingThis = recordingIndex === cardKey;
+
+              return (
+                <div
+                  key={idx}
+                  className="bg-slate-800/90 rounded-3xl p-6 border border-slate-700/80 shadow-xl flex flex-col justify-between space-y-4 hover:border-indigo-500/40 transition"
+                >
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${filteredCategory.badgeColor}`}>
+                        {phrase.level} Level
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400 uppercase">Tactical Softener</span>
+                    </div>
+
+                    <p className="text-base font-bold text-white leading-relaxed">"{phrase.text}"</p>
+
+                    <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 text-xs text-slate-300">
+                      <span className="text-[10px] font-bold text-indigo-400 block mb-0.5 uppercase">Pragmatic Function:</span>
+                      {phrase.pragmatics}
+                    </div>
+                  </div>
+
+                  {/* AUDIO CONTROLS & SPEECH RECOGNITION */}
+                  <div className="pt-2 border-t border-slate-700/60 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => speakText(phrase.text, 1.0)}
+                        className="flex-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1.5"
+                      >
+                        🔊 Normal (1x)
+                      </button>
+                      <button
+                        onClick={() => speakText(phrase.text, 0.75)}
+                        className="flex-1 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1.5"
+                      >
+                        🐢 Slow (0.75x)
+                      </button>
+                    </div>
+
+                    {/* Speech Recognition Practice */}
+                    <button
+                      onClick={() => handleSpeechRecognition(phrase.text, cardKey)}
+                      className={`w-full text-xs font-bold py-2.5 rounded-xl border transition flex items-center justify-center gap-2 ${
+                        isRecordingThis && recordingStatus === "listening"
+                          ? 'bg-rose-600 text-white animate-pulse border-rose-400'
+                          : 'bg-slate-900 hover:bg-slate-700 text-emerald-300 border-emerald-500/40'
+                      }`}
+                    >
+                      <span>🎙️</span>
+                      <span>
+                        {isRecordingThis && recordingStatus === "listening"
+                          ? "Listening... Speak Now"
+                          : "Practice Voice Shadowing"}
+                      </span>
+                    </button>
+
+                    {isRecordingThis && (
+                      <div className="bg-slate-900 p-3 rounded-xl border border-emerald-500/40 text-xs text-emerald-300 text-center font-mono">
+                        {transcription}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 3: TONE & REPHRASING TRANSFORMER
+    // =========================================================================
+
+    function Module3Transformer({ items, addXp, onComplete }) {
+      const [currentIdx, setCurrentIdx] = useState(0);
+      const [selectedChoice, setSelectedChoice] = useState(null);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+
+      const currentItem = items[currentIdx];
+
+      const handleSubmit = () => {
+        if (!selectedChoice || isSubmitted) return;
+        setIsSubmitted(true);
+
+        if (selectedChoice === currentItem.correct) {
+          addXp(25);
+        }
+      };
+
+      const handleNext = () => {
+        setSelectedChoice(null);
+        setIsSubmitted(false);
+        if (currentIdx + 1 < items.length) {
+          setCurrentIdx(prev => prev + 1);
+        } else {
+          onComplete();
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/30">
+                Module 3 • Pragmatic Reframing
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">🔄 Tone & Rephrasing Transformer</h2>
+            </div>
+            <span className="text-xs font-bold text-purple-400 font-mono">
+              Item {currentIdx + 1} of {items.length}
+            </span>
+          </div>
+
+          <div className="bg-slate-800/90 rounded-3xl p-6 sm:p-8 border border-slate-700/80 shadow-2xl space-y-6">
+            {/* HARSH PROMPT */}
+            <div>
+              <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block mb-1">
+                🚫 Harsh / Defensive Phrase:
+              </span>
+              <div className="bg-slate-900 p-4 rounded-2xl border border-rose-500/30 text-lg font-bold text-rose-200 italic">
+                "{currentItem.harsh}"
+              </div>
+            </div>
+
+            {/* REPHRASING OPTIONS */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                Select the Assertive, Diplomatic Rephrasing:
+              </span>
+              <div className="space-y-2.5">
+                {currentItem.options.map((opt, idx) => {
+                  const isSelected = selectedChoice === opt;
+                  let btnStyle = "bg-slate-900 border-slate-700 text-slate-200 hover:border-purple-500/50";
+
+                  if (isSelected) {
+                    btnStyle = "bg-purple-600/30 border-purple-500 text-white ring-2 ring-purple-500/50";
+                  }
+
+                  if (isSubmitted) {
+                    if (opt === currentItem.correct) {
+                      btnStyle = "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold";
+                    } else if (isSelected) {
+                      btnStyle = "bg-rose-500/20 border-rose-500 text-rose-300";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      disabled={isSubmitted}
+                      onClick={() => setSelectedChoice(opt)}
+                      className={`w-full text-left p-4 rounded-2xl border text-sm transition flex justify-between items-center ${btnStyle}`}
+                    >
+                      <span>"{opt}"</span>
+                      {isSubmitted && opt === currentItem.correct && <span>✅</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* EXPLANATION */}
+            {isSubmitted && (
+              <div className={`p-4 rounded-2xl border text-xs leading-relaxed space-y-1 ${
+                selectedChoice === currentItem.correct ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200' : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+              }`}>
+                <p className="font-bold">
+                  {selectedChoice === currentItem.correct ? '🎉 Diplomatic Excellence!' : '❌ Not Quite Ideal'}
+                </p>
+                <p className="text-slate-300">{currentItem.explanation}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              {!isSubmitted ? (
+                <button
+                  onClick={handleSubmit}
+                  disabled={!selectedChoice}
+                  className={`px-6 py-3 rounded-xl font-bold text-xs sm:text-sm transition shadow-lg ${
+                    selectedChoice ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30' : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  Verify Reframing
+                </button>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-purple-600/30 flex items-center gap-2"
+                >
+                  {currentIdx + 1 < items.length ? 'Next Item ➔' : 'Complete Module'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 4: TACTICAL QUIZ
+    // =========================================================================
+
+    function Module4Quiz({ questions, addXp, onComplete }) {
+      const [qIdx, setQIdx] = useState(0);
+      const [selectedOptionIdx, setSelectedOptionIdx] = useState(null);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+
+      const currentQ = questions[qIdx];
+
+      const handleSubmit = () => {
+        if (selectedOptionIdx === null || isSubmitted) return;
+        setIsSubmitted(true);
+
+        if (currentQ.options[selectedOptionIdx].correct) {
+          addXp(30);
+        }
+      };
+
+      const handleNext = () => {
+        setSelectedOptionIdx(null);
+        setIsSubmitted(false);
+        if (qIdx + 1 < questions.length) {
+          setQIdx(prev => prev + 1);
+        } else {
+          onComplete();
+        }
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80 shadow-xl flex justify-between items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
+                Module 4 • Pragmatic Assessment
+              </span>
+              <h2 className="text-xl font-black text-white mt-1">🧩 Tactical Strategy & Pragmatics Quiz</h2>
+            </div>
+            <span className="text-xs font-bold text-emerald-400 font-mono">
+              Question {qIdx + 1} / {questions.length}
+            </span>
+          </div>
+
+          <div className="bg-slate-800/90 rounded-3xl p-6 sm:p-8 border border-slate-700/80 shadow-2xl space-y-6">
+            <h3 className="text-base sm:text-lg font-bold text-white leading-relaxed">
+              {currentQ.question}
+            </h3>
+
+            <div className="space-y-3">
+              {currentQ.options.map((opt, idx) => {
+                const isSelected = selectedOptionIdx === idx;
+                let btnStyle = "bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500/50";
+
+                if (isSelected) {
+                  btnStyle = "bg-emerald-600/30 border-emerald-500 text-white ring-2 ring-emerald-500/50 font-bold";
+                }
+
+                if (isSubmitted) {
+                  if (opt.correct) {
+                    btnStyle = "bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold";
+                  } else if (isSelected) {
+                    btnStyle = "bg-rose-500/20 border-rose-500 text-rose-300";
+                  }
+                }
+
+                return (
+                  <button
+                    key={idx}
+                    disabled={isSubmitted}
+                    onClick={() => setSelectedOptionIdx(idx)}
+                    className={`w-full text-left p-4 rounded-2xl border text-sm transition flex justify-between items-center ${btnStyle}`}
+                  >
+                    <span>{opt.text}</span>
+                    {isSubmitted && opt.correct && <span>✅</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {isSubmitted && (
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700 text-xs sm:text-sm space-y-1">
+                <span className="font-bold text-emerald-400 block">Strategic Logic:</span>
+                <p className="text-slate-300 leading-relaxed">{currentQ.explanation}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              {!isSubmitted ? (
+                <button
+                  onClick={handleSubmit}
+                  disabled={selectedOptionIdx === null}
+                  className={`px-6 py-3 rounded-xl font-bold text-xs sm:text-sm transition shadow-lg ${
+                    selectedOptionIdx !== null ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  Submit Answer
+                </button>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-xl transition shadow-lg shadow-emerald-600/30 flex items-center gap-2"
+                >
+                  {qIdx + 1 < questions.length ? 'Next Question ➔' : 'Complete Module'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // MODULE 5: DASHBOARD & PRINTABLE CERTIFICATE
+    // =========================================================================
+
+    function Module5Dashboard({ xp, currentLevel, completedModules, studentName, setStudentName }) {
+      useEffect(() => {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 }
+          });
+        }
+      }, []);
+
+      const handlePrint = () => {
+        window.print();
+      };
+
+      const completedCount = Object.values(completedModules).filter(Boolean).length;
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          {/* STATS OVERVIEW */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-slate-800/90 rounded-3xl p-5 border border-slate-700/80 shadow-xl flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl">
+                ⭐
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 block font-bold uppercase">Total Earned XP</span>
+                <span className="text-xl font-black text-white">{xp} Points</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-800/90 rounded-3xl p-5 border border-slate-700/80 shadow-xl flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl">
+                🛡️
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 block font-bold uppercase">Diplomatic Level</span>
+                <span className="text-sm font-black text-emerald-300">{currentLevel.title}</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-800/90 rounded-3xl p-5 border border-slate-700/80 shadow-xl flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-2xl">
+                ✅
+              </div>
+              <div>
+                <span className="text-xs text-slate-400 block font-bold uppercase">Modules Verified</span>
+                <span className="text-xl font-black text-purple-300">{completedCount} / 4</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CERTIFICATE GENERATOR CARD */}
+          <div className="bg-slate-800/90 rounded-3xl p-6 sm:p-8 border border-slate-700/80 shadow-2xl space-y-6">
+            <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-700 pb-4">
+              <div>
+                <h3 className="text-xl font-black text-white">🎓 Certificate of Achievement</h3>
+                <p className="text-xs text-slate-400">Customize your official proof of mastery in English De-escalation.</p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <input
+                  type="text"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Your Full Name"
+                />
+                <button
+                  onClick={handlePrint}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
+                >
+                  🖨️ Print Certificate
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE CERTIFICATE TEMPLATE */}
+            <div 
+              id="printable-certificate"
+              className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-8 sm:p-12 rounded-3xl border-4 border-indigo-500/40 text-center space-y-6 relative overflow-hidden shadow-2xl"
+            >
+              <div className="absolute top-4 left-4 text-xs font-mono text-indigo-400/60">
+                CERT-ID: TTE-2026-DEESC
+              </div>
+              <div className="absolute top-4 right-4 text-xs font-mono text-indigo-400/60">
+                CEFR B1-C1 PRAGMATICS
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <span className="text-4xl">👑</span>
+                <h2 className="text-2xl sm:text-3xl font-black tracking-widest uppercase text-amber-400">
+                  Certificate of Achievement
+                </h2>
+                <p className="text-xs text-slate-300 uppercase tracking-widest font-mono">Tough Talk English • De-escalation Mastery</p>
+              </div>
+
+              <div className="py-4 border-y border-indigo-500/30 space-y-3">
+                <p className="text-xs text-slate-400">This certifies that</p>
+                <p className="text-2xl sm:text-3xl font-black text-white underline decoration-indigo-500 decoration-2">{studentName}</p>
+                <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2">
+                  has successfully demonstrated mastery in **English De-escalation Pragmatics**, including setting low-drama boundaries, emotional validation, tone reframing, and solution pivoting during high-stakes difficult conversations.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs">
+                <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Rank Attained</span>
+                  <span className="text-xs font-black text-amber-400">{currentLevel.title}</span>
+                </div>
+                <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Total XP</span>
+                  <span className="text-xs font-black text-indigo-300">{xp} Points</span>
+                </div>
+                <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Verification</span>
+                  <span className="text-xs font-black text-emerald-400">PASSED</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    // RENDER APP
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
