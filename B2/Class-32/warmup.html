@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConvoSummary: Overheard Topic Framing & Conversation Summarization Lab</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#06b6d4',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Target Highlight Badges */
+        .hl-frame { background-color: rgba(99, 102, 241, 0.25); color: #818cf8; border: 1px solid #6366f1; }
+        .hl-verb { background-color: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid #10b981; }
+        .hl-prep { background-color: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid #f59e0b; }
+
+        /* Certificate Print CSS */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-card, #certificate-card * {
+                visibility: visible;
+            }
+            #certificate-card {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                border: 4px solid #0284c7 !important;
+                box-shadow: none !important;
+            }
+            #certificate-card h2, #certificate-card p, #certificate-card div {
+                color: #0f172a !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation & Gamification Dashboard -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Brand & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    CS
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-cyan-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">
+                        ConvoSummary Lab
+                    </h1>
+                    <p class="text-xs text-slate-400">Overheard Topic Framing & Pragmatic Summarization</p>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats & Tools -->
+            <div class="flex flex-wrap items-center gap-3 text-sm">
+                <!-- XP Badge -->
+                <div class="bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="text-amber-400 font-bold">⚡ <span id="xp-display">0</span> XP</span>
+                </div>
+
+                <!-- Streak Badge -->
+                <div class="bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="text-rose-400 font-bold">🔥 <span id="streak-display">0</span> Streak</span>
+                </div>
+
+                <!-- Rank Badge -->
+                <div class="bg-slate-800 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-300">
+                    🏆 <span id="rank-display">Eavesdropper Novice</span>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center gap-2 border-l border-slate-700 pl-3">
+                    <!-- Web Audio Toggle -->
+                    <button id="btn-audio-toggle" onclick="toggleAudio()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Toggle Sound FX">
+                        🔊 <span id="audio-status-text" class="text-xs font-mono">ON</span>
+                    </button>
+
+                    <!-- Speech Rate Toggle -->
+                    <button id="btn-tts-rate" onclick="toggleTTSRate()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="TTS Speed Rate">
+                        🗣️ <span id="tts-rate-text" class="text-xs font-mono">1.0x</span>
+                    </button>
+
+                    <!-- Handbook Trigger -->
+                    <button onclick="toggleHandbookModal(true)" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5">
+                        📖 <span>Handbook</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 flex-grow">
+
+        <!-- Module Navigation Tabs -->
+        <nav class="flex space-x-2 overflow-x-auto pb-3 mb-6 border-b border-slate-800 no-scrollbar">
+            <button onclick="switchTab('mod1')" id="tab-mod1" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                1. Tone & Verb Classifier
+            </button>
+            <button onclick="switchTab('mod2')" id="tab-mod2" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200">
+                2. Dialogue Transformer
+            </button>
+            <button onclick="switchTab('mod3')" id="tab-mod3" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200">
+                3. Tile Builder
+            </button>
+            <button onclick="switchTab('mod4')" id="tab-mod4" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200">
+                4. Overheard Detective
+            </button>
+            <button onclick="switchTab('mod5')" id="tab-mod5" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200">
+                5. Live Writing Studio
+            </button>
+            <button onclick="switchTab('mod6')" id="tab-mod6" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition flex items-center gap-2 bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-slate-200">
+                6. Accreditation Certificate
+            </button>
+        </nav>
+
+        <!-- MODULE 1: Tone & Verb Classifier -->
+        <section id="mod1" class="tab-content block space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🏷️</span> Module 1: Tone & Pragmatic Verb Classifier
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Categorize topic-framing verbs and idioms into their correct functional registers to accurately summarize overheard conversations.
+                        </p>
+                    </div>
+                    <button onclick="resetClassifier()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 rounded-lg border border-slate-600 transition self-start md:self-auto">
+                        🔄 Reset Chips
+                    </button>
+                </div>
+
+                <!-- Unassigned Verb Chips Pool -->
+                <div class="mb-8 p-4 bg-slate-900/80 rounded-xl border border-slate-700/50">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-cyan-400 mb-3 flex items-center justify-between">
+                        <span>Unassigned Topic Framing Verbs & Expressions</span>
+                        <span id="unassigned-count" class="text-slate-400 text-xs">12 remaining</span>
+                    </h3>
+                    <div id="chip-pool" class="flex flex-wrap gap-2.5 min-h-[60px] items-center">
+                        <!-- Chips dynamically rendered here -->
+                    </div>
+                </div>
+
+                <!-- 4 Target Categorization Buckets -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Casual / Social -->
+                    <div class="bucket-card bg-slate-900/60 border-2 border-dashed border-sky-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-sky-500/80" data-category="casual">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-sky-400 text-sm flex items-center gap-1.5">
+                                    💬 Casual / Social
+                                </h4>
+                                <span class="text-xs text-slate-500 font-mono"> Informal</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Friendly banter, nostalgia, informal catching up, small talk.</p>
+                            <div id="bucket-casual" class="bucket-container min-h-[140px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Professional / Task-Oriented -->
+                    <div class="bucket-card bg-slate-900/60 border-2 border-dashed border-emerald-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-emerald-500/80" data-category="professional">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-emerald-400 text-sm flex items-center gap-1.5">
+                                    💼 Professional / Task
+                                </h4>
+                                <span class="text-xs text-slate-500 font-mono"> Workplace</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Work details, planning, strategy, resolving bugs, alignment.</p>
+                            <div id="bucket-professional" class="bucket-container min-h-[140px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Debate / Conflict -->
+                    <div class="bucket-card bg-slate-900/60 border-2 border-dashed border-amber-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-amber-500/80" data-category="debate">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-amber-400 text-sm flex items-center gap-1.5">
+                                    ⚔️ Debate / Conflict
+                                </h4>
+                                <span class="text-xs text-slate-500 font-mono"> Friction</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Disagreements, disputes over resources, arguments, clashing views.</p>
+                            <div id="bucket-debate" class="bucket-container min-h-[140px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Emotional / Supportive -->
+                    <div class="bucket-card bg-slate-900/60 border-2 border-dashed border-rose-500/40 rounded-xl p-4 flex flex-col justify-between transition hover:border-rose-500/80" data-category="emotional">
+                        <div>
+                            <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
+                                <h4 class="font-bold text-rose-400 text-sm flex items-center gap-1.5">
+                                    ❤️ Emotional / Support
+                                </h4>
+                                <span class="text-xs text-slate-500 font-mono"> Cathartic</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-3">Shared frustration, venting, empathy, airing complaints.</p>
+                            <div id="bucket-emotional" class="bucket-container min-h-[140px] flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit & Feedback Bar -->
+                <div class="mt-6 pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div id="classifier-feedback" class="text-sm font-medium text-slate-300">
+                        Select a verb chip above, then tap a category bucket to assign it.
+                    </div>
+                    <button onclick="checkClassification()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition">
+                        Check Classification
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 2: Dialogue-to-Summary Transformer -->
+        <section id="mod2" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>⚡</span> Module 2: Dialogue-to-Summary Transformer
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Analyze raw overheard exchanges and select the most precise, concise, and pragmatically accurate summary statement.
+                        </p>
+                    </div>
+                    <!-- Scenario Counter -->
+                    <div class="text-xs bg-slate-900 border border-slate-700 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Scenario <span id="m2-index">1</span> of <span id="m2-total">3</span>
+                    </div>
+                </div>
+
+                <!-- Dialogue Prompt Box -->
+                <div class="bg-slate-900/90 rounded-xl p-5 border border-slate-700/80 relative mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                            🎧 Overheard Audio Transcript
+                        </span>
+                        <button id="btn-read-dialogue" onclick="readCurrentDialogue()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-md border border-slate-700 transition flex items-center gap-1">
+                            🔊 Read Dialogue
+                        </button>
+                    </div>
+                    <div id="m2-dialogue-text" class="text-slate-200 text-base leading-relaxed italic border-l-4 border-indigo-500 pl-4 py-1">
+                        <!-- Dialogue injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Multiple Choice Options -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-sm font-semibold text-slate-300">Select the best polished topic summary:</h3>
+                    <div id="m2-options-container" class="space-y-2.5">
+                        <!-- Options injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Detailed Pragmatic Feedback Box -->
+                <div id="m2-feedback" class="hidden p-4 rounded-xl border transition-all duration-300 text-sm">
+                    <!-- Feedback content injected here -->
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="mt-6 flex justify-between items-center pt-4 border-t border-slate-700/80">
+                    <button onclick="prevM2Scenario()" id="btn-m2-prev" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold rounded-lg text-slate-200 transition">
+                        ← Previous Case
+                    </button>
+                    <button onclick="nextM2Scenario()" id="btn-m2-next" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-lg text-white transition shadow-md shadow-indigo-600/20">
+                        Next Case →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 3: Preposition & Collocation Tile Builder -->
+        <section id="mod3" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🧩</span> Module 3: Preposition & Collocation Tile Builder
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Construct target summary sentences by arranging tiles in the correct order, placing special emphasis on preposition collocations.
+                        </p>
+                    </div>
+                    <div class="text-xs bg-slate-900 border border-slate-700 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Challenge <span id="m3-index">1</span> of <span id="m3-total">3</span>
+                    </div>
+                </div>
+
+                <!-- Prompt Target Hint -->
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-700/60 mb-6">
+                    <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">Target Scenario</div>
+                    <p id="m3-scenario-desc" class="text-sm text-slate-300">
+                        <!-- Target scenario prompt -->
+                    </p>
+                </div>
+
+                <!-- Assembly Area -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-400">Your Sentence Structure:</span>
+                        <button onclick="clearTileAssembly()" class="text-xs text-rose-400 hover:underline">Clear Area</button>
+                    </div>
+                    <div id="tile-assembly-zone" class="min-h-[70px] bg-slate-900/90 border-2 border-indigo-500/30 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                        <span class="text-slate-500 text-xs italic select-none">Tap word tiles below to assemble summary...</span>
+                    </div>
+                </div>
+
+                <!-- Available Tiles Pool -->
+                <div class="mb-6">
+                    <span class="text-xs font-semibold text-slate-400 mb-2 block">Word & Preposition Tiles:</span>
+                    <div id="tile-pool-zone" class="flex flex-wrap gap-2 min-h-[60px] p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <!-- Tiles injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Feedback & Action Bar -->
+                <div id="m3-feedback" class="hidden p-3 rounded-xl border mb-4 text-xs font-medium"></div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-slate-700/80">
+                    <button onclick="checkM3Assembly()" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition">
+                        Validate Construction
+                    </button>
+                    <button onclick="nextM3Challenge()" id="btn-m3-next" class="hidden px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-xl text-white transition">
+                        Next Challenge →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: Overheard Dialogue Detective -->
+        <section id="mod4" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>🔍</span> Module 4: Overheard Dialogue Detective
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Diagnose structural flaws in novice conversation summaries—such as redundant prepositions, misaligned registers, or weak topic framing.
+                        </p>
+                    </div>
+                    <div class="text-xs bg-slate-900 border border-slate-700 text-cyan-400 px-3 py-1.5 rounded-lg font-mono">
+                        Case File <span id="m4-index">1</span> of <span id="m4-total">3</span>
+                    </div>
+                </div>
+
+                <!-- Diagnostic Case Card -->
+                <div class="bg-slate-900/90 rounded-2xl p-5 border border-slate-700/80 space-y-4 mb-6">
+                    <!-- Flawed Summary Box -->
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-1 flex items-center gap-1.5">
+                            ⚠️ Flawed Summary Submitted by Novice Observer
+                        </div>
+                        <div id="m4-flawed-text" class="p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl text-rose-200 text-sm font-medium">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Overheard Context -->
+                    <div>
+                        <div class="text-xs font-semibold text-slate-400 mb-1">Overheard Context:</div>
+                        <div id="m4-context-text" class="text-xs text-slate-300 italic bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+                            <!-- Context injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnosis Selection -->
+                <div class="space-y-3 mb-6">
+                    <h3 class="text-sm font-semibold text-slate-300">Diagnose the Primary Flaw:</h3>
+                    <div id="m4-diagnosis-options" class="space-y-2">
+                        <!-- Diagnostic options injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Fix Selection (Hidden until diagnosis is picked) -->
+                <div id="m4-fix-section" class="hidden space-y-3 mb-6 pt-4 border-t border-slate-700/80">
+                    <h3 class="text-sm font-semibold text-emerald-400">Select the Polished Correction:</h3>
+                    <div id="m4-fix-options" class="space-y-2">
+                        <!-- Fix options injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Case File Explanation Modal/Box -->
+                <div id="m4-explanation" class="hidden p-4 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-300 leading-relaxed mb-6">
+                    <!-- Injected -->
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex justify-between items-center pt-4 border-t border-slate-700/80">
+                    <button onclick="prevM4Case()" id="btn-m4-prev" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg text-slate-200 transition">
+                        ← Previous Case
+                    </button>
+                    <button onclick="nextM4Case()" id="btn-m4-next" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded-lg text-white transition">
+                        Next Case File →
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 5: Live Summary Writing Studio & Target Scanner -->
+        <section id="mod5" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <span>✍️</span> Module 5: Live Writing Studio & Target Scanner
+                        </h2>
+                        <p class="text-sm text-slate-400 mt-1">
+                            Draft your own concise topic summary from transcript prompts. The live engine scans your text in real time for framing verbs and prepositions.
+                        </p>
+                    </div>
+                    <!-- Transcript Selector -->
+                    <div class="flex gap-2">
+                        <button onclick="loadM5Transcript(0)" id="btn-m5-tr0" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition">
+                            Transcript 1: Corporate
+                        </button>
+                        <button onclick="loadM5Transcript(1)" id="btn-m5-tr1" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-700 text-slate-300 transition">
+                            Transcript 2: Social
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left Column: Transcript & Live Scanner Output -->
+                    <div class="lg:col-span-6 space-y-4">
+                        <!-- Dialogue Transcript Box -->
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Overheard Transcript</span>
+                                <button onclick="readM5Transcript()" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                                    🔊 Read
+                                </button>
+                            </div>
+                            <p id="m5-transcript-body" class="text-xs text-slate-300 leading-relaxed italic border-l-2 border-cyan-500 pl-3 py-1">
+                                <!-- Transcript injected by JS -->
+                            </p>
+                        </div>
+
+                        <!-- Target Checklist Detector -->
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 space-y-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+                                <span>Real-time Target Detector</span>
+                                <span id="m5-score-badge" class="text-amber-400 font-mono">0 Target Elements</span>
+                            </h3>
+
+                            <div class="space-y-2 text-xs">
+                                <!-- Framing Frame -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-800/60 border border-slate-700/50">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-frame">❌</span> Framing Structure
+                                    </span>
+                                    <span class="text-[10px] font-mono text-indigo-400">e.g., revolved around, centered their discussion on, main point was</span>
+                                </div>
+
+                                <!-- Pragmatic Verb -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-800/60 border border-slate-700/50">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-verb">❌</span> Tone-Based Topic Verb / Idiom
+                                    </span>
+                                    <span class="text-[10px] font-mono text-emerald-400">e.g., talking shop, commiserating, bickering, hashing out</span>
+                                </div>
+
+                                <!-- Preposition Collocation -->
+                                <div class="flex items-center justify-between p-2 rounded bg-slate-800/60 border border-slate-700/50">
+                                    <span class="text-slate-300 flex items-center gap-1.5">
+                                        <span id="check-prep">❌</span> Preposition / Noun Clause
+                                    </span>
+                                    <span class="text-[10px] font-mono text-amber-400">e.g., over, about, regarding, on, whether to</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Interactive Editor & Feedback -->
+                    <div class="lg:col-span-6 flex flex-col justify-between space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">Write Your Polished One-Sentence Topic Summary:</label>
+                            <textarea id="m5-input" oninput="analyzeM5Summary()" rows="5" placeholder="e.g., They centered their discussion on hashing out software bugs and commiserating over recent project deadlines..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition leading-relaxed"></textarea>
+                        </div>
+
+                        <!-- Live Visual Highlight Render -->
+                        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 min-h-[60px]">
+                            <span class="text-[10px] font-semibold text-slate-500 block mb-1 uppercase tracking-wider">Live Pragmatic Highlight View:</span>
+                            <div id="m5-highlight-preview" class="text-xs text-slate-300 leading-relaxed italic">
+                                <span class="text-slate-600">Start typing above to see real-time syntax color-coding...</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex items-center justify-between pt-2">
+                            <span id="m5-status-text" class="text-xs text-slate-400">Drafting mode</span>
+                            <button onclick="submitM5Summary()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/20 transition">
+                                Submit & Earn XP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 6: Summary Analyst Accreditation Certificate -->
+        <section id="mod6" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="text-center max-w-xl mx-auto mb-8">
+                    <h2 class="text-2xl font-black text-slate-100 mb-2">🏆 Master Summarization Accreditation</h2>
+                    <p class="text-sm text-slate-400">
+                        Complete lab challenges across all modules to finalize your credentials in conversation topic framing and pragmatic reporting.
+                    </p>
+                </div>
+
+                <!-- Printable Certificate Container -->
+                <div id="certificate-card" class="max-w-3xl mx-auto bg-slate-900 border-4 border-indigo-500/40 rounded-3xl p-8 relative shadow-2xl overflow-hidden">
+                    <!-- Background Watermark Pattern -->
+                    <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Certificate Header -->
+                    <div class="text-center space-y-2 mb-8">
+                        <div class="inline-block px-3 py-1 bg-indigo-500/20 border border-indigo-400/40 rounded-full text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-2">
+                            Official Competency Accreditation
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-100 uppercase tracking-wide">
+                            Certificate of Pragmatic Mastery
+                        </h3>
+                        <p class="text-xs text-cyan-400 font-mono">ConvoSummary Lab • Topic Framing & Summarization Standard</p>
+                    </div>
+
+                    <!-- Certificate Body -->
+                    <div class="text-center space-y-6">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">This is to certify that</p>
+
+                        <!-- Student Name Field -->
+                        <div class="max-w-md mx-auto no-print">
+                            <input type="text" id="cert-student-name" oninput="updateCertName()" placeholder="Enter Your Full Name" class="w-full text-center bg-slate-800/90 border-b-2 border-indigo-500 py-2 text-xl font-bold text-cyan-300 focus:outline-none focus:border-cyan-400 transition placeholder-slate-600">
+                        </div>
+                        <div id="cert-name-display" class="text-2xl sm:text-3xl font-bold text-cyan-300 underline decoration-indigo-500 decoration-2 underline-offset-8">
+                            [ Your Name Here ]
+                        </div>
+
+                        <p class="text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+                            Has demonstrated advanced proficiency in categorizing conversation tones, applying reporting verb collocations, and framing overheard dialogue into concise, pragmatically rich summary statements.
+                        </p>
+
+                        <!-- Certificate Metrics Grid -->
+                        <div class="grid grid-cols-3 gap-4 border-y border-slate-800 py-4 max-w-lg mx-auto my-6 text-center">
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Earned XP</span>
+                                <span id="cert-xp" class="text-lg font-bold text-amber-400">0</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Achieved Rank</span>
+                                <span id="cert-rank" class="text-xs font-bold text-cyan-300">Novice</span>
+                            </div>
+                            <div>
+                                <span class="block text-[10px] text-slate-500 uppercase tracking-wider">Issue Date</span>
+                                <span id="cert-date" class="text-xs font-mono text-slate-300">Oct 2026</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Signatures / Seal -->
+                    <div class="flex items-end justify-between pt-4 mt-6 border-t border-slate-800/80 text-left">
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase">Verification Code</div>
+                            <div class="text-xs font-mono text-slate-400" id="cert-hash">CS-8892-PRAG</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-12 h-12 rounded-full border-2 border-indigo-500/50 flex items-center justify-center text-xl mx-auto mb-1 bg-indigo-950/40">
+                                🎖️
+                            </div>
+                            <span class="text-[9px] text-slate-400 uppercase tracking-widest block">Validated</span>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Confetti Overlay -->
+                    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none w-full h-full z-20"></canvas>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex flex-wrap items-center justify-center gap-4 mt-6 no-print">
+                    <button onclick="triggerCelebration()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+                        🎉 Trigger Celebration
+                    </button>
+                    <button onclick="window.print()" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold text-xs rounded-xl border border-slate-600 transition flex items-center gap-2">
+                        🖨️ Print Certificate
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive Reference Handbook Modal -->
+    <div id="handbook-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-slate-100 text-base flex items-center gap-2">
+                    📖 Pragmatic Topic Framing Reference Handbook
+                </h3>
+                <button onclick="toggleHandbookModal(false)" class="text-slate-400 hover:text-white text-lg font-bold p-1">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Modal Scrollable Content -->
+            <div class="p-6 overflow-y-auto space-y-6 text-xs text-slate-300 leading-relaxed">
+                <!-- Section 1 -->
+                <div>
+                    <h4 class="font-bold text-cyan-400 text-sm mb-2 border-b border-slate-800 pb-1">1. Essential Topic Framing Patterns</h4>
+                    <p class="mb-2">Avoid repetitive verbs like "said" or "talked about". Frame topics using anchor phrases:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-300">
+                        <li><strong class="text-indigo-300">Their conversation revolved around + [Noun / Gerund]</strong>: <em>"Their conversation revolved around finding affordable housing."</em></li>
+                        <li><strong class="text-indigo-300">They centered their discussion on + [Noun Phrase]</strong>: <em>"They centered their discussion on Q4 budget reallocations."</em></li>
+                        <li><strong class="text-indigo-300">They touched upon [Topic A], but mostly focused on [Topic B]</strong>: <em>"They touched upon weekend plans, but mostly focused on Monday's presentation."</em></li>
+                    </ul>
+                </div>
+
+                <!-- Section 2 -->
+                <div>
+                    <h4 class="font-bold text-emerald-400 text-sm mb-2 border-b border-slate-800 pb-1">2. Tone Categorization Matrix</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                        <div class="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+                            <span class="font-bold text-sky-400 block mb-1">💬 Casual / Social</span>
+                            <p class="text-[11px] text-slate-400">reminiscing about, shooting the breeze, catching up on, bantering about.</p>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+                            <span class="font-bold text-emerald-400 block mb-1">💼 Professional / Task</span>
+                            <p class="text-[11px] text-slate-400">talking shop, hashing out, aligning on, deliberating over.</p>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+                            <span class="font-bold text-amber-400 block mb-1">⚔️ Debate / Conflict</span>
+                            <p class="text-[11px] text-slate-400">bickering over, clashing over, wrangling over, arguing regarding.</p>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-lg border border-slate-700">
+                            <span class="font-bold text-rose-400 block mb-1">❤️ Emotional / Support</span>
+                            <p class="text-[11px] text-slate-400">commiserating over, venting about, airing grievances regarding.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3 -->
+                <div>
+                    <h4 class="font-bold text-amber-400 text-sm mb-2 border-b border-slate-800 pb-1">3. Preposition & Noun Clause Collocations</h4>
+                    <p class="mb-2">Pair verbs with their precise preposition or embedded wh- clause:</p>
+                    <div class="space-y-1 font-mono text-[11px]">
+                        <p>• Bickering / Clashing + <span class="text-amber-300">over</span> / <span class="text-amber-300">about</span></p>
+                        <p>• Conferring / Aligning + <span class="text-amber-300">on</span> / <span class="text-amber-300">regarding</span></p>
+                        <p>• Speculating + <span class="text-amber-300">about</span> / <span class="text-amber-300">on</span></p>
+                        <p>• Debating + <span class="text-amber-300">whether to</span> / <span class="text-amber-300">whether...</span></p>
+                        <p>• Discussing + <span class="text-amber-300">how to / why / what...</span> (Note: Never "discussing about")</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 bg-slate-800 border-t border-slate-700 text-right">
+                <button onclick="toggleHandbookModal(false)" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">
+                    Close Handbook
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
+        ConvoSummary Lab • Overheard Topic Framing & Pragmatic Conversation Summarization Application
+    </footer>
+
+    <!-- JavaScript Application Engine -->
+    <script>
+        /* ==========================================================================
+           1. GLOBAL APP STATE & AUDIO SYNTHESIZER
+           ========================================================================== */
+        const state = {
+            xp: 0,
+            streak: 0,
+            rankIndex: 0,
+            audioEnabled: true,
+            ttsRate: 1.0,
+            ranks: [
+                "Eavesdropper Novice",
+                "Overheard Observer",
+                "Pragmatic Summarizer",
+                "Dialogue Analyst",
+                "ConvoSummary Master"
+            ],
+            // Module Data States
+            m1: {
+                selectedChipId: null,
+                assignments: {}, // chipId -> category
+                chips: [
+                    { id: "c1", text: "talking shop", cat: "professional" },
+                    { id: "c2", text: "bickering over", cat: "debate" },
+                    { id: "c3", text: "commiserating over", cat: "emotional" },
+                    { id: "c4", text: "shooting the breeze", cat: "casual" },
+                    { id: "c5", text: "hashing out", cat: "professional" },
+                    { id: "c6", text: "reminiscing about", cat: "casual" },
+                    { id: "c7", text: "venting about", cat: "emotional" },
+                    { id: "c8", text: "clashing over", cat: "debate" },
+                    { id: "c9", text: "aligning on", cat: "professional" },
+                    { id: "c10", text: "catching up on", cat: "casual" },
+                    { id: "c11", text: "airing grievances", cat: "emotional" },
+                    { id: "c12", text: "wrangling over", cat: "debate" }
+                ]
+            },
+            m2: {
+                currentIndex: 0,
+                scenarios: [
+                    {
+                        dialogue: `"Did you see the Q3 figures? Sales dropped 15%. If this keeps up, leadership might freeze hiring or delay our bonuses." - "I know, we really need to figure out how to pull in three new key clients before Friday's report."`,
+                        options: [
+                            { id: "a", text: "They were talking shop and expressing concern over declining quarterly revenue and potential hiring freezes.", correct: true },
+                            { id: "b", text: "They were bickering over who should be fired for the 15% drop in sales.", correct: false },
+                            { id: "c", text: "They were shooting the breeze about Friday's corporate lunch party.", correct: false },
+                            { id: "d", text: "They were commiserating over their personal weekend expenditures.", correct: false }
+                        ],
+                        explanation: "The speakers are in a workplace setting discussing work metrics and strategy. 'Talking shop' and 'expressing concern over' accurately captures professional worry without exaggerating interpersonal conflict."
+                    },
+                    {
+                        dialogue: `"I can't believe the manager assigned three more client tickets at 4:55 PM!" - "Tell me about it! My brain is fried, and I've worked overtime three nights in a row. I am so sick of this schedule."`,
+                        options: [
+                            { id: "a", text: "They were discussing about how to write computer code faster.", correct: false },
+                            { id: "b", text: "They spent their break commiserating over excessive workloads and venting about last-minute assignments.", correct: true },
+                            { id: "c", text: "They were clashing over who deserves a promotion next month.", correct: false },
+                            { id: "d", text: "They centered their discussion on debating whether to buy new computers.", correct: false }
+                        ],
+                        explanation: "'Commiserating over' and 'venting about' perfectly encapsulate shared emotional frustration and mutual sympathy regarding workload stress."
+                    },
+                    {
+                        dialogue: `"No way, $50,000 for marketing is way too high!" - "Well, if we don't spend it now, we won't hit our target audience in November. Your budget cuts are ridiculous."`,
+                        options: [
+                            { id: "a", text: "They were catching up on old marketing campaigns over coffee.", correct: false },
+                            { id: "b", text: "They were bickering over resource allocations and clashing over marketing spending.", correct: true },
+                            { id: "c", text: "They were airing dirty laundry about their personal finances.", correct: false },
+                            { id: "d", text: "Their conversation revolved around shooting the breeze about November weather.", correct: false }
+                        ],
+                        explanation: "The friction and dispute over financial allocations is best framed using debate/conflict topic verbs like 'bickering over' and 'clashing over'."
+                    }
+                ]
+            },
+            m3: {
+                currentIndex: 0,
+                challenges: [
+                    {
+                        scenario: "Two software developers discussing how to patch bugs during their lunch break.",
+                        tiles: ["The", "engineers", "were", "talking", "shop", "and", "hashing", "out", "software", "bugs."],
+                        solution: "The engineers were talking shop and hashing out software bugs."
+                    },
+                    {
+                        scenario: "Project leads arguing intensely over who gets the larger share of the department budget.",
+                        tiles: ["They", "spent", "the", "afternoon", "bickering", "over", "minor", "budget", "details."],
+                        solution: "They spent the afternoon bickering over minor budget details."
+                    },
+                    {
+                        scenario: "Executives having a slow, deliberate discussion regarding a prospective company merger.",
+                        tiles: ["The", "board", "is", "currently", "chewing", "the", "cud", "over", "the", "proposed", "merger."],
+                        solution: "The board is currently chewing the cud over the proposed merger."
+                    }
+                ],
+                userTiles: []
+            },
+            m4: {
+                currentIndex: 0,
+                cases: [
+                    {
+                        flawedSummary: "They were discussing about how to fix the broken database server.",
+                        context: "Two IT specialists discussing server recovery steps after an outage.",
+                        diagnoses: [
+                            { id: "d1", text: "Redundant Preposition: 'Discuss' takes a direct object or clause; using 'about' is incorrect.", correct: true },
+                            { id: "d2", text: "Tone Mismatch: 'Discussing' is too informal for IT servers.", correct: false },
+                            { id: "d3", text: "Missing Idiom: Should always use 'shooting the breeze' for work topics.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "They were discussing how to fix the broken database server.", correct: true },
+                            { id: "f2", text: "They were discussing about the server fixing procedures.", correct: false },
+                            { id: "f3", text: "They were talking shop about how server database broken.", correct: false }
+                        ],
+                        explanation: "The verb 'discuss' is transitive in standard pragmatics when followed by a noun or Wh- clause (e.g., 'discussing how to...'). Adding 'about' after 'discuss' is a classic preposition redundancy error."
+                    },
+                    {
+                        flawedSummary: "The contract lawyers were bickering on who should sign first.",
+                        context: "Two attorneys debating contract terms in a courtroom hallway.",
+                        diagnoses: [
+                            { id: "d1", text: "Preposition Misallocation: 'Bicker' collocates with 'over' or 'about', not 'on'.", correct: true },
+                            { id: "d2", text: "Tone Flaw: Lawyers cannot be described as bickering.", correct: false },
+                            { id: "d3", text: "Clause Error: 'Who' should be changed to 'whom'.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "The contract lawyers were bickering over who should sign first.", correct: true },
+                            { id: "f2", text: "The contract lawyers were bickering on top of signing.", correct: false }
+                        ],
+                        explanation: "The verb 'bicker' requires the prepositions 'over' or 'about' when describing the subject of a petty dispute."
+                    },
+                    {
+                        flawedSummary: "In the executive suite, they were shooting the breeze regarding layoffs.",
+                        context: "Senior HR executives solemnly deliberating emergency company downsizing.",
+                        diagnoses: [
+                            { id: "d1", text: "Register/Tone Mismatch: 'Shooting the breeze' implies trivial small talk, which conflicts with solemn corporate downsizing.", correct: true },
+                            { id: "d2", text: "Grammar Error: 'Regarding' cannot follow 'shooting the breeze'.", correct: false }
+                        ],
+                        fixes: [
+                            { id: "f1", text: "In the executive suite, they were deliberating over upcoming workforce reductions.", correct: true },
+                            { id: "f2", text: "In the executive suite, they were bantering about corporate layoffs.", correct: false }
+                        ],
+                        explanation: "'Shooting the breeze' is an informal idiom for non-essential small talk. High-stakes corporate downsizing demands formal/task-oriented framing like 'deliberating over'."
+                    }
+                ]
+            },
+            m5: {
+                transcripts: [
+                    {
+                        id: 0,
+                        title: "Corporate Budgeting",
+                        text: `"Look, we need to hash out this software licensing budget before 5 PM. I know we're all frustrated with IT costs, but arguing about every $100 line item isn't helping us align on the main roadmap."`
+                    },
+                    {
+                        id: 1,
+                        title: "Social Memory",
+                        text: `"Remember that road trip to Montreal back in sophomore year? We got two flat tires and had to sleep in the back of the station wagon!" - "Oh man, I haven't thought about that in years!"`
+                    }
+                ],
+                activeTranscript: 0
+            }
+        };
+
+        // Web Audio Context
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!state.audioEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(180, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'fanfare') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const subOsc = ctx.createOscillator();
+                        const subGain = ctx.createGain();
+                        subOsc.connect(subGain);
+                        subGain.connect(ctx.destination);
+                        subOsc.type = 'triangle';
+                        subOsc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        subGain.gain.setValueAtTime(0.2, now + idx * 0.1);
+                        subGain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                        subOsc.start(now + idx * 0.1);
+                        subOsc.stop(now + idx * 0.1 + 0.25);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        // Web Speech API
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = state.ttsRate;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('audio-status-text').textContent = state.audioEnabled ? 'ON' : 'OFF';
+            playSound('click');
+        }
+
+        function toggleTTSRate() {
+            state.ttsRate = state.ttsRate === 1.0 ? 0.75 : 1.0;
+            document.getElementById('tts-rate-text').textContent = state.ttsRate + 'x';
+            playSound('click');
+        }
+
+        /* ==========================================================================
+           2. GAMIFICATION & UI NAVIGATION
+           ========================================================================== */
+        function addXP(amount) {
+            state.xp += amount;
+            state.streak += 1;
+            
+            // Check Rank
+            if (state.xp >= 300) state.rankIndex = 4;
+            else if (state.xp >= 200) state.rankIndex = 3;
+            else if (state.xp >= 120) state.rankIndex = 2;
+            else if (state.xp >= 50) state.rankIndex = 1;
+
+            updateGamificationUI();
+        }
+
+        function resetStreak() {
+            state.streak = 0;
+            updateGamificationUI();
+        }
+
+        function updateGamificationUI() {
+            document.getElementById('xp-display').textContent = state.xp;
+            document.getElementById('streak-display').textContent = state.streak;
+            document.getElementById('rank-display').textContent = state.ranks[state.rankIndex];
+
+            // Update Certificate view
+            document.getElementById('cert-xp').textContent = state.xp;
+            document.getElementById('cert-rank').textContent = state.ranks[state.rankIndex];
+        }
+
+        function switchTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+                btn.classList.add('bg-slate-800', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById('tab-' + tabId);
+            activeBtn.classList.remove('bg-slate-800', 'text-slate-400');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-500/20');
+        }
+
+        function toggleHandbookModal(show) {
+            playSound('click');
+            const modal = document.getElementById('handbook-modal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           3. MODULE 1 LOGIC: TONE & VERB CLASSIFIER
+           ========================================================================== */
+        function initM1() {
+            renderM1Chips();
+            setupBucketListeners();
+        }
+
+        function renderM1Chips() {
+            const pool = document.getElementById('chip-pool');
+            pool.innerHTML = '';
+
+            let unassignedCount = 0;
+
+            state.m1.chips.forEach(chip => {
+                const assignedCat = state.m1.assignments[chip.id];
+                if (!assignedCat) {
+                    unassignedCount++;
+                    const chipEl = document.createElement('div');
+                    chipEl.className = `chip-item px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-medium cursor-pointer transition select-none flex items-center gap-1.5 ${state.m1.selectedChipId === chip.id ? 'ring-2 ring-cyan-400 bg-slate-700' : ''}`;
+                    chipEl.textContent = chip.text;
+                    chipEl.onclick = () => selectM1Chip(chip.id);
+                    pool.appendChild(chipEl);
+                }
+            });
+
+            document.getElementById('unassigned-count').textContent = `${unassignedCount} remaining`;
+
+            // Render assigned items into buckets
+            ['casual', 'professional', 'debate', 'emotional'].forEach(cat => {
+                const container = document.getElementById(`bucket-${cat}`);
+                container.innerHTML = '';
+                Object.keys(state.m1.assignments).forEach(chipId => {
+                    if (state.m1.assignments[chipId] === cat) {
+                        const chip = state.m1.chips.find(c => c.id === chipId);
+                        const bItem = document.createElement('div');
+                        bItem.className = 'px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-md text-xs text-slate-200 flex justify-between items-center';
+                        bItem.innerHTML = `<span>${chip.text}</span> <button onclick="unassignM1Chip('${chip.id}')" class="text-rose-400 hover:text-rose-300 ml-2 font-bold">✕</button>`;
+                        container.appendChild(bItem);
+                    }
+                });
+            });
+        }
+
+        function selectM1Chip(id) {
+            playSound('click');
+            state.m1.selectedChipId = state.m1.selectedChipId === id ? null : id;
+            renderM1Chips();
+        }
+
+        function assignSelectedChipToCategory(category) {
+            if (!state.m1.selectedChipId) return;
+            playSound('click');
+            state.m1.assignments[state.m1.selectedChipId] = category;
+            state.m1.selectedChipId = null;
+            renderM1Chips();
+        }
+
+        function unassignM1Chip(id) {
+            playSound('click');
+            delete state.m1.assignments[id];
+            renderM1Chips();
+        }
+
+        function setupBucketListeners() {
+            document.querySelectorAll('.bucket-card').forEach(card => {
+                card.onclick = () => {
+                    const cat = card.getAttribute('data-category');
+                    assignSelectedChipToCategory(cat);
+                };
+            });
+        }
+
+        function resetClassifier() {
+            playSound('click');
+            state.m1.assignments = {};
+            state.m1.selectedChipId = null;
+            document.getElementById('classifier-feedback').textContent = "Select a verb chip above, then tap a category bucket to assign it.";
+            renderM1Chips();
+        }
+
+        function checkClassification() {
+            let correctCount = 0;
+            const total = state.m1.chips.length;
+
+            state.m1.chips.forEach(chip => {
+                if (state.m1.assignments[chip.id] === chip.cat) {
+                    correctCount++;
+                }
+            });
+
+            const feedbackEl = document.getElementById('classifier-feedback');
+
+            if (Object.keys(state.m1.assignments).length < total) {
+                playSound('error');
+                feedbackEl.className = "text-sm font-medium text-amber-400";
+                feedbackEl.textContent = `Please assign all ${total} chips before checking!`;
+                return;
+            }
+
+            if (correctCount === total) {
+                playSound('success');
+                addXP(40);
+                feedbackEl.className = "text-sm font-medium text-emerald-400";
+                feedbackEl.textContent = `🎉 Flawless! All ${total} topic verbs accurately categorized. (+40 XP)`;
+            } else {
+                playSound('error');
+                resetStreak();
+                feedbackEl.className = "text-sm font-medium text-rose-400";
+                feedbackEl.textContent = `You got ${correctCount} out of ${total} correct. Review your assignments and try again!`;
+            }
+        }
+
+        /* ==========================================================================
+           4. MODULE 2 LOGIC: DIALOGUE TRANSFORMER
+           ========================================================================== */
+        function initM2() {
+            renderM2Scenario();
+        }
+
+        function renderM2Scenario() {
+            const sc = state.m2.scenarios[state.m2.currentIndex];
+            document.getElementById('m2-index').textContent = state.m2.currentIndex + 1;
+            document.getElementById('m2-total').textContent = state.m2.scenarios.length;
+            document.getElementById('m2-dialogue-text').textContent = sc.dialogue;
+
+            const optsContainer = document.getElementById('m2-options-container');
+            optsContainer.innerHTML = '';
+
+            document.getElementById('m2-feedback').classList.add('hidden');
+
+            sc.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-750 border border-slate-700/80 text-xs sm:text-sm text-slate-200 transition flex items-start gap-3 group";
+                btn.innerHTML = `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-400 group-hover:border-cyan-400 group-hover:text-cyan-400 border border-slate-600 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">${opt.id.toUpperCase()}</span><span>${opt.text}</span>`;
+                btn.onclick = () => selectM2Option(opt);
+                optsContainer.appendChild(btn);
+            });
+
+            // Update nav button states
+            document.getElementById('btn-m2-prev').disabled = state.m2.currentIndex === 0;
+            document.getElementById('btn-m2-next').disabled = state.m2.currentIndex === state.m2.scenarios.length - 1;
+        }
+
+        function selectM2Option(opt) {
+            const sc = state.m2.scenarios[state.m2.currentIndex];
+            const fb = document.getElementById('m2-feedback');
+            fb.classList.remove('hidden');
+
+            if (opt.correct) {
+                playSound('success');
+                addXP(25);
+                fb.className = "p-4 rounded-xl border bg-emerald-950/30 border-emerald-500/40 text-emerald-200 text-xs leading-relaxed";
+                fb.innerHTML = `<div class="font-bold mb-1 flex items-center gap-1.5">✅ Correct Topic Summary (+25 XP)</div><p>${sc.explanation}</p>`;
+            } else {
+                playSound('error');
+                resetStreak();
+                fb.className = "p-4 rounded-xl border bg-rose-950/30 border-rose-500/40 text-rose-200 text-xs leading-relaxed";
+                fb.innerHTML = `<div class="font-bold mb-1 flex items-center gap-1.5">❌ Incorrect Option</div><p>This selection fails to accurately capture the pragmatic tone or verb collocation of the overheard exchange. Try again!</p>`;
+            }
+        }
+
+        function readCurrentDialogue() {
+            const sc = state.m2.scenarios[state.m2.currentIndex];
+            speakText(sc.dialogue);
+        }
+
+        function prevM2Scenario() {
+            if (state.m2.currentIndex > 0) {
+                playSound('click');
+                state.m2.currentIndex--;
+                renderM2Scenario();
+            }
+        }
+
+        function nextM2Scenario() {
+            if (state.m2.currentIndex < state.m2.scenarios.length - 1) {
+                playSound('click');
+                state.m2.currentIndex++;
+                renderM2Scenario();
+            }
+        }
+
+        /* ==========================================================================
+           5. MODULE 3 LOGIC: TILE BUILDER
+           ========================================================================== */
+        function initM3() {
+            renderM3Challenge();
+        }
+
+        function renderM3Challenge() {
+            const ch = state.m3.challenges[state.m3.currentIndex];
+            document.getElementById('m3-index').textContent = state.m3.currentIndex + 1;
+            document.getElementById('m3-total').textContent = state.m3.challenges.length;
+            document.getElementById('m3-scenario-desc').textContent = ch.scenario;
+
+            state.m3.userTiles = [];
+            document.getElementById('m3-feedback').classList.add('hidden');
+            document.getElementById('btn-m3-next').classList.add('hidden');
+
+            // Shuffle tiles for display
+            const shuffled = [...ch.tiles].sort(() => Math.random() - 0.5);
+
+            const poolZone = document.getElementById('tile-pool-zone');
+            poolZone.innerHTML = '';
+            shuffled.forEach((word, idx) => {
+                const tile = document.createElement('button');
+                tile.className = "tile-btn px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-medium transition cursor-pointer";
+                tile.textContent = word;
+                tile.onclick = () => addTileToAssembly(word, tile);
+                poolZone.appendChild(tile);
+            });
+
+            renderM3Assembly();
+        }
+
+        function addTileToAssembly(word, tileEl) {
+            playSound('click');
+            state.m3.userTiles.push(word);
+            tileEl.classList.add('opacity-30', 'pointer-events-none');
+            renderM3Assembly();
+        }
+
+        function renderM3Assembly() {
+            const assemblyZone = document.getElementById('tile-assembly-zone');
+            if (state.m3.userTiles.length === 0) {
+                assemblyZone.innerHTML = `<span class="text-slate-500 text-xs italic select-none">Tap word tiles below to assemble summary...</span>`;
+                return;
+            }
+
+            assemblyZone.innerHTML = '';
+            state.m3.userTiles.forEach((word, idx) => {
+                const item = document.createElement('span');
+                item.className = "px-2.5 py-1 bg-indigo-900/60 border border-indigo-500/50 text-indigo-200 rounded-md text-xs font-semibold flex items-center gap-1 cursor-pointer hover:bg-indigo-800/80";
+                item.innerHTML = `${word} <span class="text-indigo-400 text-[10px]">✕</span>`;
+                item.onclick = () => removeTileFromAssembly(idx);
+                assemblyZone.appendChild(item);
+            });
+        }
+
+        function removeTileFromAssembly(index) {
+            playSound('click');
+            const removedWord = state.m3.userTiles.splice(index, 1)[0];
+            
+            // Re-enable in pool
+            const poolBtns = document.querySelectorAll('#tile-pool-zone .tile-btn');
+            for (let btn of poolBtns) {
+                if (btn.textContent === removedWord && btn.classList.contains('opacity-30')) {
+                    btn.classList.remove('opacity-30', 'pointer-events-none');
+                    break;
+                }
+            }
+
+            renderM3Assembly();
+        }
+
+        function clearTileAssembly() {
+            playSound('click');
+            renderM3Challenge();
+        }
+
+        function checkM3Assembly() {
+            const ch = state.m3.challenges[state.m3.currentIndex];
+            const assembledText = state.m3.userTiles.join(" ");
+            const fb = document.getElementById('m3-feedback');
+            fb.classList.remove('hidden');
+
+            if (assembledText === ch.solution) {
+                playSound('success');
+                addXP(30);
+                fb.className = "p-3 rounded-xl border bg-emerald-950/30 border-emerald-500/40 text-emerald-200 text-xs font-medium";
+                fb.textContent = `🎯 Perfect Construction! (+30 XP) Target collocation verified: "${ch.solution}"`;
+                document.getElementById('btn-m3-next').classList.remove('hidden');
+            } else {
+                playSound('error');
+                resetStreak();
+                fb.className = "p-3 rounded-xl border bg-rose-950/30 border-rose-500/40 text-rose-200 text-xs font-medium";
+                fb.textContent = `Incorrect word order or missing prepositions. Re-examine the sentence structure and try again.`;
+            }
+        }
+
+        function nextM3Challenge() {
+            playSound('click');
+            state.m3.currentIndex = (state.m3.currentIndex + 1) % state.m3.challenges.length;
+            renderM3Challenge();
+        }
+
+        /* ==========================================================================
+           6. MODULE 4 LOGIC: OVERHEARD DETECTIVE
+           ========================================================================== */
+        function initM4() {
+            renderM4Case();
+        }
+
+        function renderM4Case() {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            document.getElementById('m4-index').textContent = state.m4.currentIndex + 1;
+            document.getElementById('m4-total').textContent = state.m4.cases.length;
+
+            document.getElementById('m4-flawed-text').textContent = cs.flawedSummary;
+            document.getElementById('m4-context-text').textContent = cs.context;
+
+            document.getElementById('m4-fix-section').classList.add('hidden');
+            document.getElementById('m4-explanation').classList.add('hidden');
+
+            // Render Diagnoses
+            const diagContainer = document.getElementById('m4-diagnosis-options');
+            diagContainer.innerHTML = '';
+            cs.diagnoses.forEach(d => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500 text-xs text-slate-200 transition";
+                btn.textContent = d.text;
+                btn.onclick = () => selectDiagnosis(d);
+                diagContainer.appendChild(btn);
+            });
+
+            // Navigation states
+            document.getElementById('btn-m4-prev').disabled = state.m4.currentIndex === 0;
+            document.getElementById('btn-m4-next').disabled = state.m4.currentIndex === state.m4.cases.length - 1;
+        }
+
+        function selectDiagnosis(d) {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            if (d.correct) {
+                playSound('success');
+                addXP(15);
+                
+                // Show Fix Section
+                const fixSection = document.getElementById('m4-fix-section');
+                fixSection.classList.remove('hidden');
+
+                const fixContainer = document.getElementById('m4-fix-options');
+                fixContainer.innerHTML = '';
+                cs.fixes.forEach(f => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-emerald-400 text-xs text-slate-200 transition";
+                    btn.textContent = f.text;
+                    btn.onclick = () => selectFix(f);
+                    fixContainer.appendChild(btn);
+                });
+            } else {
+                playSound('error');
+                resetStreak();
+                alert("Incorrect diagnosis. Review the summary for preposition redundancies or tone mismatches.");
+            }
+        }
+
+        function selectFix(f) {
+            const cs = state.m4.cases[state.m4.currentIndex];
+            const exp = document.getElementById('m4-explanation');
+            exp.classList.remove('hidden');
+
+            if (f.correct) {
+                playSound('success');
+                addXP(25);
+                exp.className = "p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs text-emerald-200 leading-relaxed";
+                exp.innerHTML = `<strong class="block mb-1 text-emerald-400">🔍 Case Solved! (+25 XP)</strong>${cs.explanation}`;
+            } else {
+                playSound('error');
+                resetStreak();
+                exp.className = "p-4 rounded-xl bg-rose-950/30 border border-rose-500/40 text-xs text-rose-200 leading-relaxed";
+                exp.innerHTML = `This correction still leaves structural flaws in the summary. Try another fix option.`;
+            }
+        }
+
+        function prevM4Case() {
+            if (state.m4.currentIndex > 0) {
+                playSound('click');
+                state.m4.currentIndex--;
+                renderM4Case();
+            }
+        }
+
+        function nextM4Case() {
+            if (state.m4.currentIndex < state.m4.cases.length - 1) {
+                playSound('click');
+                state.m4.currentIndex++;
+                renderM4Case();
+            }
+        }
+
+        /* ==========================================================================
+           7. MODULE 5 LOGIC: LIVE WRITING STUDIO & TARGET SCANNER
+           ========================================================================== */
+        function initM5() {
+            loadM5Transcript(0);
+        }
+
+        function loadM5Transcript(index) {
+            playSound('click');
+            state.m5.activeTranscript = index;
+            const tr = state.m5.transcripts[index];
+            document.getElementById('m5-transcript-body').textContent = tr.text;
+
+            document.getElementById('btn-m5-tr0').className = index === 0 ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition" : "px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-700 text-slate-300 transition";
+            document.getElementById('btn-m5-tr1').className = index === 1 ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white transition" : "px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-700 text-slate-300 transition";
+
+            analyzeM5Summary();
+        }
+
+        function readM5Transcript() {
+            const tr = state.m5.transcripts[state.m5.activeTranscript];
+            speakText(tr.text);
+        }
+
+        function analyzeM5Summary() {
+            const input = document.getElementById('m5-input').value;
+            const previewEl = document.getElementById('m5-highlight-preview');
+
+            if (!input.trim()) {
+                previewEl.innerHTML = `<span class="text-slate-600">Start typing above to see real-time syntax color-coding...</span>`;
+                updateM5Checklist(false, false, false);
+                return;
+            }
+
+            // Regex Detectors
+            const frameRegex = /(revolved around|centered their discussion on|touched upon|focused on|main point of discussion was|main topic was)/i;
+            const verbRegex = /(reminisc|talking shop|bicker|commiserat|hash|vent|shoot|clash|align|deliberat|speculat|confer|airing grievances)/i;
+            const prepRegex = /( over | about | regarding | on | whether to | whether | how to | why | what )/i;
+
+            const hasFrame = frameRegex.test(input);
+            const hasVerb = verbRegex.test(input);
+            const hasPrep = prepRegex.test(input);
+
+            updateM5Checklist(hasFrame, hasVerb, hasPrep);
+
+            // Construct Highlight Render
+            let highlighted = input;
+            highlighted = highlighted.replace(frameRegex, match => `<span class="hl-frame px-1 rounded">${match}</span>`);
+            highlighted = highlighted.replace(verbRegex, match => `<span class="hl-verb px-1 rounded">${match}</span>`);
+            highlighted = highlighted.replace(prepRegex, match => `<span class="hl-prep px-1 rounded">${match}</span>`);
+
+            previewEl.innerHTML = highlighted;
+        }
+
+        function updateM5Checklist(hasFrame, hasVerb, hasPrep) {
+            document.getElementById('check-frame').textContent = hasFrame ? '✅' : '❌';
+            document.getElementById('check-verb').textContent = hasVerb ? '✅' : '❌';
+            document.getElementById('check-prep').textContent = hasPrep ? '✅' : '❌';
+
+            const score = (hasFrame ? 1 : 0) + (hasVerb ? 1 : 0) + (hasPrep ? 1 : 0);
+            document.getElementById('m5-score-badge').textContent = `${score} / 3 Targets Met`;
+        }
+
+        function submitM5Summary() {
+            const input = document.getElementById('m5-input').value;
+            if (input.length < 15) {
+                playSound('error');
+                alert("Please write a complete summary sentence before submitting.");
+                return;
+            }
+
+            playSound('success');
+            addXP(50);
+            document.getElementById('m5-status-text').textContent = "Summary Verified & Recorded! (+50 XP)";
+            document.getElementById('m5-status-text').className = "text-xs font-semibold text-emerald-400";
+        }
+
+        /* ==========================================================================
+           8. MODULE 6 LOGIC: CERTIFICATE & CONFETTI
+           ========================================================================== */
+        function initM6() {
+            const today = new Date();
+            document.getElementById('cert-date').textContent = today.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            updateGamificationUI();
+        }
+
+        function updateCertName() {
+            const name = document.getElementById('cert-student-name').value;
+            document.getElementById('cert-name-display').textContent = name.trim() ? name : '[ Your Name Here ]';
+        }
+
+        function triggerCelebration() {
+            playSound('fanfare');
+            runConfetti();
+        }
+
+        function runConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const particles = [];
+            const colors = ['#06b6d4', '#6366f1', '#10b981', '#f59e0b', '#ec4899'];
+
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.8) * 12,
+                    size: Math.random() * 6 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 100
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+
+                particles.forEach(p => {
+                    if (p.life > 0) {
+                        active = true;
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.2; // gravity
+                        p.life -= 1.5;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                if (active) requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        /* ==========================================================================
+           9. APP INITIALIZATION
+           ========================================================================== */
+        window.onload = function() {
+            initM1();
+            initM2();
+            initM3();
+            initM4();
+            initM5();
+            initM6();
+        };
+    </script>
+</body>
+</html>
