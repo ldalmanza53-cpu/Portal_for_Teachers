@@ -490,4 +490,562 @@
                 </div>
 
                 <!-- Chat Box Screen -->
-                <div id="chat-messages" class="bg-slate-50 rounded-2xl p
+                <div id="chat-messages" class="bg-slate-50 rounded-2xl p-4 md:p-6 min-h-[360px] max-h-[480px] overflow-y-auto space-y-4 border border-slate-200 mb-4">
+                    <!-- Messages injected here -->
+                </div>
+
+                <!-- Interactive Response Options Area -->
+                <div id="chat-options-container" class="space-y-2">
+                    <!-- Dynamic buttons -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: QUIZ CHALLENGE -->
+        <section id="section-quiz" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl p-6 md:p-8 border-2 border-indigo-100 shadow-sm max-w-3xl mx-auto">
+                <!-- Quiz Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span id="quiz-question-number" class="text-xs font-bold uppercase text-indigo-600">Question 1 of 6</span>
+                        <span id="quiz-score-badge" class="text-xs font-extrabold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">Score: 0</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                        <div id="quiz-progress-bar" class="bg-indigo-600 h-full w-1/6 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- Quiz Question Box -->
+                <div id="quiz-box" class="space-y-6">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <p>Grammar World ESL Studio • Interactive Possessive Adjectives Unit</p>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ===================================================================
+           GLOBAL STATE & UTILITIES
+        =================================================================== */
+        let globalStars = 0;
+        let globalStreak = 0;
+        let isMuted = false;
+
+        // Web Audio API Synthesizer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.exponentialRampToValueAtTime(164.81, now + 0.2); // E3
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'flip') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+        }
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            document.getElementById('audio-icon').className = isMuted 
+                ? 'fa-solid fa-volume-xmark text-rose-500' 
+                : 'fa-solid fa-volume-high';
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.rate = 0.9;
+                u.lang = 'en-US';
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function addStars(num) {
+            globalStars += num;
+            globalStreak += 1;
+            document.getElementById('global-stars').innerText = globalStars;
+            document.getElementById('global-streak').innerText = globalStreak;
+        }
+
+        function resetStreak() {
+            globalStreak = 0;
+            document.getElementById('global-streak').innerText = globalStreak;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.className = 'nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 text-slate-600 hover:bg-slate-200';
+            });
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = 'nav-tab px-4 py-2.5 rounded-t-xl font-bold text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-sm';
+            }
+
+            if (tabId === 'memory') initMemoryGame();
+            if (tabId === 'roleplay' && roleplayStep === 0) startRoleplay();
+            if (tabId === 'quiz' && currentQuizIdx === 0) renderQuizQuestion();
+            playSound('flip');
+        }
+
+        /* ===================================================================
+           SECTION 1: CHARACTER GALLERY & ARTWORK GENERATION
+        =================================================================== */
+        const characters = [
+            { name: 'Carlos', gender: 'male', pronoun: 'his', icon: '👦', desc: 'His name is Carlos.' },
+            { name: 'Akina', gender: 'female', pronoun: 'her', icon: '👧', desc: 'Her name is Akina.' },
+            { name: 'Ethan', gender: 'male', pronoun: 'his', icon: '🧑', desc: 'His name is Ethan.' },
+            { name: 'Caroline', gender: 'female', pronoun: 'her', icon: '👩', desc: 'Her name is Caroline.' },
+            { name: 'Alex', gender: 'neutral', pronoun: 'my', icon: '🙋‍♂️', desc: 'My name is Alex.' },
+            { name: 'Isabella', gender: 'female', pronoun: 'her', icon: '👧', desc: 'Her name is Isabella.' }
+        ];
+
+        function renderGallery() {
+            const container = document.getElementById('character-gallery');
+            container.innerHTML = characters.map(c => `
+                <div onclick="speakText('${c.desc}')" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center cursor-pointer hover:border-indigo-400 hover:shadow-md transition">
+                    <div class="text-4xl mb-2">${c.icon}</div>
+                    <h4 class="font-bold text-slate-800 text-sm">${c.name}</h4>
+                    <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full inline-block mt-1">${c.pronoun}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderArtworks() {
+            // Artwork 1: Handshake
+            document.getElementById('artwork-ex1').innerHTML = `
+                <svg viewBox="0 0 400 160" class="w-full h-full">
+                    <rect width="400" height="160" fill="#E0F2FE" rx="12"/>
+                    <!-- Character A (Akina) -->
+                    <circle cx="120" cy="55" r="28" fill="#F472B6"/>
+                    <circle cx="120" cy="50" r="20" fill="#FDE047"/>
+                    <path d="M 90 140 Q 120 90 150 140 Z" fill="#EC4899"/>
+                    <text x="120" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F172A">Akina</text>
+                    <!-- Character B (Carlos) -->
+                    <circle cx="280" cy="55" r="28" fill="#60A5FA"/>
+                    <circle cx="280" cy="50" r="20" fill="#FDE047"/>
+                    <path d="M 250 140 Q 280 90 310 140 Z" fill="#2563EB"/>
+                    <text x="280" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F172A">Carlos</text>
+                    <!-- Handshake line -->
+                    <path d="M 145 100 Q 200 85 255 100" stroke="#0284C7" stroke-width="6" stroke-linecap="round" fill="none"/>
+                </svg>
+            `;
+
+            // Artwork 2: Group Scene
+            document.getElementById('artwork-ex2').innerHTML = `
+                <svg viewBox="0 0 400 160" class="w-full h-full">
+                    <rect width="400" height="160" fill="#F3E8FF" rx="12"/>
+                    <!-- Ethan -->
+                    <circle cx="110" cy="60" r="24" fill="#FB923C"/>
+                    <path d="M 85 140 Q 110 95 135 140 Z" fill="#EA580C"/>
+                    <text x="110" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F172A">Ethan (♂️)</text>
+                    <!-- Caroline -->
+                    <circle cx="290" cy="60" r="24" fill="#F472B6"/>
+                    <path d="M 265 140 Q 290 95 315 140 Z" fill="#DB2777"/>
+                    <text x="290" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F172A">Caroline (♀️)</text>
+                    <!-- Speaker pointing -->
+                    <circle cx="200" cy="70" r="20" fill="#A855F7"/>
+                    <path d="M 180 140 Q 200 100 220 140 Z" fill="#7E22CE"/>
+                </svg>
+            `;
+        }
+
+        /* ===================================================================
+           SECTION 2: TEXTBOOK EXERCISES LOGIC
+        =================================================================== */
+        const correctAnswers = {
+            'ex1-blank1': 'your',
+            'ex1-blank2': 'my',
+            'ex1-blank3': 'your',
+            'ex1-blank4': 'my',
+            'ex2-blank1': 'his',
+            'ex2-blank2': 'his',
+            'ex2-blank3': 'her',
+            'ex2-blank4': 'her'
+        };
+
+        function checkTextbookAnswers() {
+            let ex1Correct = 0;
+            let ex2Correct = 0;
+
+            // Check Conversation 1
+            ['ex1-blank1', 'ex1-blank2', 'ex1-blank3', 'ex1-blank4'].forEach(id => {
+                const select = document.getElementById(id);
+                const val = select.value.toLowerCase();
+                if (val === correctAnswers[id]) {
+                    select.className = "ex-select bg-emerald-100 border-2 border-emerald-500 rounded-lg px-2 py-1 font-bold text-emerald-800";
+                    ex1Correct++;
+                } else {
+                    select.className = "ex-select bg-rose-100 border-2 border-rose-500 rounded-lg px-2 py-1 font-bold text-rose-800";
+                }
+            });
+
+            // Check Conversation 2
+            ['ex2-blank1', 'ex2-blank2', 'ex2-blank3', 'ex2-blank4'].forEach(id => {
+                const select = document.getElementById(id);
+                const val = select.value.toLowerCase();
+                if (val === correctAnswers[id]) {
+                    select.className = "ex-select bg-emerald-100 border-2 border-emerald-500 rounded-lg px-2 py-1 font-bold text-emerald-800";
+                    ex2Correct++;
+                } else {
+                    select.className = "ex-select bg-rose-100 border-2 border-rose-500 rounded-lg px-2 py-1 font-bold text-rose-800";
+                }
+            });
+
+            // Display Feedback 1
+            const fb1 = document.getElementById('ex1-feedback');
+            fb1.classList.remove('hidden');
+            if (ex1Correct === 4) {
+                fb1.className = 'mt-4 p-3 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+                fb1.innerText = "✨ Perfect! Conversation 1 is completely correct!";
+            } else {
+                fb1.className = 'mt-4 p-3 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300';
+                fb1.innerText = `⚠️ You got ${ex1Correct}/4 correct. Remember: 'your' when asking, 'my' when answering!`;
+            }
+
+            // Display Feedback 2
+            const fb2 = document.getElementById('ex2-feedback');
+            fb2.classList.remove('hidden');
+            if (ex2Correct === 4) {
+                fb2.className = 'mt-4 p-3 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+                fb2.innerText = "✨ Perfect! Conversation 2 is completely correct!";
+            } else {
+                fb2.className = 'mt-4 p-3 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300';
+                fb2.innerText = `⚠️ You got ${ex2Correct}/4 correct. Remember: 'his' for boys (Ethan), 'her' for girls (Caroline)!`;
+            }
+
+            if (ex1Correct === 4 && ex2Correct === 4) {
+                playSound('correct');
+                addStars(10);
+                confetti({ particleCount: 50, spread: 60 });
+            } else {
+                playSound('wrong');
+            }
+        }
+
+        function resetTextbookExercise() {
+            document.querySelectorAll('.ex-select').forEach(s => {
+                s.value = "";
+                s.className = "ex-select bg-white border-2 border-indigo-300 rounded-lg px-2 py-1 font-bold text-indigo-700 focus:outline-none focus:border-indigo-600";
+            });
+            document.getElementById('ex1-feedback').classList.add('hidden');
+            document.getElementById('ex2-feedback').classList.add('hidden');
+        }
+
+        function playConversationAudio(num) {
+            if (num === 1) {
+                speakText("A: Hello. What's your name? B: Hi. My name is Carlos. What's your name? A: My name is Akina.");
+            } else {
+                speakText("A: What's his name? B: His name is Ethan. A: And what's her name? B: Her name is Caroline.");
+            }
+        }
+
+        /* ===================================================================
+           SECTION 3: MEMORY MATCH GAME
+        =================================================================== */
+        const memoryCardsData = [
+            { id: 1, type: 'char', text: '👦 Carlos (Male)', matchId: 101 },
+            { id: 101, type: 'text', text: 'His name is Carlos.', matchId: 1 },
+            { id: 2, type: 'char', text: '👧 Akina (Female)', matchId: 102 },
+            { id: 102, type: 'text', text: 'Her name is Akina.', matchId: 2 },
+            { id: 3, type: 'char', text: '🧑 Ethan (Male)', matchId: 103 },
+            { id: 103, type: 'text', text: 'His name is Ethan.', matchId: 3 },
+            { id: 4, type: 'char', text: '👩 Caroline (Female)', matchId: 104 },
+            { id: 104, type: 'text', text: 'Her name is Caroline.', matchId: 4 }
+        ];
+
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let memoryMoves = 0;
+
+        function initMemoryGame() {
+            matchedPairs = 0;
+            memoryMoves = 0;
+            flippedCards = [];
+            document.getElementById('memory-moves').innerText = '0';
+
+            const shuffled = [...memoryCardsData].sort(() => Math.random() - 0.5);
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = shuffled.map((card, idx) => `
+                <div onclick="flipMemoryCard(${idx}, ${card.id}, ${card.matchId})" id="mem-card-${idx}" class="perspective-1000 h-28 cursor-pointer">
+                    <div class="card-inner transform-style-3d relative w-full h-full rounded-2xl shadow-md border-2 border-purple-200 bg-white flex items-center justify-center p-3 text-center">
+                        <div class="card-front absolute inset-0 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                            ❓
+                        </div>
+                        <div class="card-back absolute inset-0 bg-purple-50 rounded-2xl flex items-center justify-center p-2 font-bold text-xs text-purple-900 border-2 border-purple-400 rotate-y-180 backface-hidden">
+                            ${card.text}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function flipMemoryCard(idx, id, matchId) {
+            const cardEl = document.getElementById(`mem-card-${idx}`);
+            if (flippedCards.length >= 2 || cardEl.classList.contains('flipped')) return;
+
+            cardEl.querySelector('.card-inner').classList.add('rotate-y-180');
+            cardEl.classList.add('flipped');
+            playSound('flip');
+
+            flippedCards.push({ idx, id, matchId });
+
+            if (flippedCards.length === 2) {
+                memoryMoves++;
+                document.getElementById('memory-moves').innerText = memoryMoves;
+
+                const [c1, c2] = flippedCards;
+                if (c1.id === c2.matchId) {
+                    // Match found
+                    playSound('correct');
+                    matchedPairs++;
+                    flippedCards = [];
+                    if (matchedPairs === 4) {
+                        addStars(15);
+                        confetti({ particleCount: 80, spread: 70 });
+                    }
+                } else {
+                    // Not a match
+                    setTimeout(() => {
+                        document.getElementById(`mem-card-${c1.idx}`).querySelector('.card-inner').classList.remove('rotate-y-180');
+                        document.getElementById(`mem-card-${c2.idx}`).querySelector('.card-inner').classList.remove('rotate-y-180');
+                        document.getElementById(`mem-card-${c1.idx}`).classList.remove('flipped');
+                        document.getElementById(`mem-card-${c2.idx}`).classList.remove('flipped');
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        /* ===================================================================
+           SECTION 4: INTERACTIVE ROLEPLAY CHAT
+        =================================================================== */
+        let roleplayStep = 0;
+
+        const roleplayDialogue = [
+            {
+                alex: "Hi there! 👋 I'm Alex. What's your name?",
+                options: [
+                    { text: "My name is [Student].", next: 1, correct: true },
+                    { text: "His name is Alex.", next: 1, correct: false }
+                ]
+            },
+            {
+                alex: "Nice to meet you! Look at that boy over there. What's his name?",
+                options: [
+                    { text: "His name is Ethan.", next: 2, correct: true },
+                    { text: "Her name is Ethan.", next: 2, correct: false }
+                ]
+            },
+            {
+                alex: "Awesome! And what about that girl standing next to him? What's her name?",
+                options: [
+                    { text: "Her name is Caroline.", next: 3, correct: true },
+                    { text: "My name is Caroline.", next: 3, correct: false }
+                ]
+            },
+            {
+                alex: "You're fantastic at English possessives! Thanks for chatting! 🎉",
+                options: []
+            }
+        ];
+
+        function startRoleplay() {
+            roleplayStep = 0;
+            const msgBox = document.getElementById('chat-messages');
+            msgBox.innerHTML = '';
+            renderRoleplayStep();
+        }
+
+        function renderRoleplayStep() {
+            const step = roleplayDialogue[roleplayStep];
+            const msgBox = document.getElementById('chat-messages');
+
+            // Alex Message
+            const alexDiv = document.createElement('div');
+            alexDiv.className = 'flex items-start gap-3 animate-pop';
+            alexDiv.innerHTML = `
+                <div class="w-9 h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">A</div>
+                <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm text-sm text-slate-800 max-w-[80%] font-medium">
+                    ${step.alex}
+                </div>
+            `;
+            msgBox.appendChild(alexDiv);
+            msgBox.scrollTop = msgBox.scrollHeight;
+            speakText(step.alex);
+
+            // Render Options
+            const optBox = document.getElementById('chat-options-container');
+            optBox.innerHTML = '';
+
+            if (step.options.length > 0) {
+                step.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-3.5 bg-slate-100 hover:bg-indigo-50 hover:border-indigo-300 border border-slate-200 rounded-xl font-semibold text-sm transition text-slate-800 flex items-center justify-between';
+                    btn.innerHTML = `<span>${opt.text}</span> <i class="fa-solid fa-chevron-right text-xs text-indigo-400"></i>`;
+                    btn.onclick = () => selectRoleplayOption(opt);
+                    optBox.appendChild(btn);
+                });
+            } else {
+                optBox.innerHTML = `
+                    <button onclick="startRoleplay()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> Start Conversation Again
+                    </button>
+                `;
+            }
+        }
+
+        function selectRoleplayOption(opt) {
+            const msgBox = document.getElementById('chat-messages');
+
+            // User Message
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex items-start gap-3 justify-end animate-pop';
+            userDiv.innerHTML = `
+                <div class="bg-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-none text-sm font-medium max-w-[80%] shadow-sm">
+                    ${opt.text}
+                </div>
+                <div class="w-9 h-9 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0"> You </div>
+            `;
+            msgBox.appendChild(userDiv);
+
+            if (opt.correct) {
+                playSound('correct');
+                addStars(5);
+                roleplayStep = opt.next;
+                setTimeout(renderRoleplayStep, 800);
+            } else {
+                playSound('wrong');
+                resetStreak();
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'p-2 bg-rose-100 text-rose-800 rounded-lg text-xs font-bold text-center animate-pop';
+                alertDiv.innerText = "Oops! Check your possessive pronoun (my vs his vs her) and try again!";
+                msgBox.appendChild(alertDiv);
+                msgBox.scrollTop = msgBox.scrollHeight;
+            }
+        }
+
+        function restartRoleplay() {
+            startRoleplay();
+        }
+
+        /* ===================================================================
+           SECTION 5: QUIZ CHALLENGE
+        =================================================================== */
+        const quizQuestions = [
+            { q: "Asking a person directly: 'What's ______ name?'", options: ["my", "your", "his", "her"], answer: "your" },
+            { q: "Talking about a girl: '______ name is Isabella.'", options: ["His", "My", "Her", "Your"], answer: "Her" },
+            { q: "Talking about a boy: '______ name is Ethan.'", options: ["His", "Her", "Your", "My"], answer: "His" },
+            { q: "Introducing yourself: '______ name is Carlos.'", options: ["Your", "His", "Her", "My"], answer: "My" },
+            { q: "Choose the correct question for a male teacher:", options: ["What's her name?", "What's his name?", "What's my name?"], answer: "What's his name?" },
+            { q: "What is the short contraction of 'What is'?", options: ["What're", "What's", "Name's"], answer: "What's" }
+        ];
+
+        let currentQuizIdx = 0;
+        let quizScore = 0;
+
+        function renderQuizQuestion() {
+            const qData = quizQuestions[currentQuizIdx];
+            document.getElementById('quiz-question-number').innerText = `Question ${currentQuizIdx + 1} of ${quizQuestions.length}`;
+            document.getElementById('quiz-progress-bar').style.width = `${((currentQuizIdx + 1) / quizQuestions.length) * 100}%`;
+
+            const box = document.getElementById('quiz-box');
+            box.innerHTML = `
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">${qData.q}</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${qData.options.map(opt => `
+                            <button onclick="handleQuizAnswer('${opt}')" class="p-4 bg-white hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 rounded-xl font-bold text-indigo-900 transition text-left shadow-sm">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleQuizAnswer(selected) {
+            const qData = quizQuestions[currentQuizIdx];
+            if (selected === qData.answer) {
+                playSound('correct');
+                quizScore += 10;
+                addStars(5);
+                document.getElementById('quiz-score-badge').innerText = `Score: ${quizScore}`;
+            } else {
+                playSound('wrong');
+                resetStreak();
+            }
+
+            currentQuizIdx++;
+            if (currentQuizIdx < quizQuestions.length) {
+                renderQuizQuestion();
+            } else {
+                // Quiz Finish
+                confetti({ particleCount: 100, spread: 80 });
+                const box = document.getElementById('quiz-box');
+                box.innerHTML = `
+                    <div class="text-center p-8 bg-indigo-50 rounded-2xl border-2 border-indigo-200 space-y-4">
+                        <div class="text-5xl">🏆</div>
+                        <h3 class="text-2xl font-extrabold text-indigo-900">Quiz Completed!</h3>
+                        <p class="text-sm font-semibold text-indigo-700">You scored ${quizScore} points!</p>
+                        <button onclick="restartQuiz()" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition">
+                            Try Quiz Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function restartQuiz() {
+            currentQuizIdx = 0;
+            quizScore = 0;
+            document.getElementById('quiz-score-badge').innerText = `Score: 0`;
+            renderQuizQuestion();
+        }
+
+        /* ===================================================================
+           INITIALIZATION
+        =================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderGallery();
+            renderArtworks();
+        });
+    </script>
+</body>
+</html>
