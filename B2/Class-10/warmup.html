@@ -1,1944 +1,1448 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Experience & Incident Lab: Mistakes, Regrets & Problem Solving</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              400: '#2dd4bf',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              900: '#134e4a',
-              950: '#042f2e'
-            }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- React 18 & ReactDOM CDNs -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-
-  <!-- Babel Standalone CDN -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Canvas Confetti CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-  <!-- Google Fonts: Inter & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    .font-mono-code {
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* 3D Flip Card Styles */
-    .perspective-1000 {
-      perspective: 1000px;
-    }
-    .transform-style-3d {
-      transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .backface-hidden {
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-    .rotate-y-180 {
-      transform: rotateY(180deg);
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(100, 116, 139, 0.3);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(13, 148, 136, 0.6);
-    }
-
-    /* Print Styles for Certificate */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printable-certificate, #printable-certificate * {
-        visibility: visible;
-      }
-      #printable-certificate {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 40px;
-        background: #ffffff !important;
-        color: #0f172a !important;
-        box-shadow: none !important;
-        border: 8px double #0d9488 !important;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
-</head>
-<body class="min-h-screen bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
-
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-
-    // =========================================================================
-    // AUDIO SYNTHESIZER HELPER (NO EXTERNAL AUDIO FILES)
-    // =========================================================================
-    const playSoundEffect = (type, enabled = true) => {
-      if (!enabled) return;
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-
-        if (type === 'correct') {
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(ctx.destination);
-
-          osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-          osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-
-          gain.gain.setValueAtTime(0.12, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-
-          osc1.start(ctx.currentTime);
-          osc2.start(ctx.currentTime + 0.1);
-          osc1.stop(ctx.currentTime + 0.3);
-          osc2.stop(ctx.currentTime + 0.3);
-        } else if (type === 'wrong') {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.setValueAtTime(260, ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.25);
-          gain.gain.setValueAtTime(0.12, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.25);
-        } else if (type === 'click') {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.setValueAtTime(450, ctx.currentTime);
-          gain.gain.setValueAtTime(0.05, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.04);
-        } else if (type === 'fanfare') {
-          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
-            gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.09);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.28);
-            osc.start(ctx.currentTime + idx * 0.09);
-            osc.stop(ctx.currentTime + idx * 0.09 + 0.28);
-          });
-        }
-      } catch (e) {
-        console.warn("Audio synthesizer error:", e);
-      }
-    };
-
-    // Speech Synthesis TTS Helper
-    const speakText = (text, rate = 1.0) => {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = rate;
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
-    };
-
-    // =========================================================================
-    // STATIC DATA
-    // =========================================================================
-
-    // MODULE 1 DATA: Sentence Transformer
-    const SENTENCE_BUILDER_DATA = [
-      {
-        id: 1,
-        title: "Expressing Past Regrets & Mistakes",
-        hint: "We failed to perform a stress test before launching.",
-        correctSentence: ["We", "should", "have", "run", "a", "full", "stress", "test", "before", "the", "product", "launch", "."],
-        grammarFocus: "should have + V3 (Past Regret)"
-      },
-      {
-        id: 2,
-        title: "Unfulfilled Past Obligations",
-        hint: "They had a scheduled task yesterday afternoon that was not done.",
-        correctSentence: ["They", "were", "supposed", "to", "submit", "the", "incident", "report", "yesterday", "afternoon", "."],
-        grammarFocus: "was/were supposed to + V1"
-      },
-      {
-        id: 3,
-        title: "Explaining Problems with Cause Linkers",
-        hint: "The delay happened because of an unexpected technical glitch.",
-        correctSentence: ["The", "project", "delay", "occurred", "due", "to", "an", "unexpected", "technical", "failure", "."],
-        grammarFocus: "due to + Noun Phrase"
-      },
-      {
-        id: 4,
-        title: "Hypothetical Past Regret",
-        hint: "I strongly wish we had listened to the lead engineer.",
-        correctSentence: ["If", "only", "we", "had", "listened", "to", "the", "lead", "developer", "'s", "warning", "."],
-        grammarFocus: "wish / If only + Past Perfect"
-      },
-      {
-        id: 5,
-        title: "Actionable Problem Solving",
-        hint: "We held an urgent meeting so that we could solve the conflict.",
-        correctSentence: ["In", "order", "to", "resolve", "the", "conflict", ",", "we", "held", "an", "emergency", "meeting", "."],
-        grammarFocus: "in order to + V1 (Purpose)"
-      }
-    ];
-
-    // MODULE 2 DATA: Error Detective
-    const ERROR_DETECTIVE_DATA = [
-      {
-        id: 1,
-        sentence: "We shouldn't of ignored the warning lights on the database server.",
-        highlight: "shouldn't of",
-        options: ["shouldn't of", "shouldn't have", "shouldn't to have", "should not of"],
-        correctIndex: 1,
-        explanation: "'Shouldn't of' is a common phonetic spelling mistake. The correct modal verb phrase for past regrets is 'should not have' + Past Participle (V3)."
-      },
-      {
-        id: 2,
-        sentence: "To tackle with this client issue, we hired an external communications specialist.",
-        highlight: "tackle with",
-        options: ["tackle with", "tackle to", "tackle", "tackled with"],
-        correctIndex: 2,
-        explanation: "'Tackle' is a direct transitive verb meaning 'to deal with a problem'. It takes a direct object without the preposition 'with' (e.g., 'tackle the problem')."
-      },
-      {
-        id: 3,
-        sentence: "I have seen that major system failure yesterday afternoon during the demo.",
-        highlight: "have seen",
-        options: ["have seen", "saw", "was seeing", "had seen"],
-        correctIndex: 1,
-        explanation: "When referencing a specific, finished time in the past ('yesterday afternoon'), use the Past Simple ('saw'), not the Present Perfect ('have seen')."
-      },
-      {
-        id: 4,
-        sentence: "The project team was suppose to deliver the prototypes by Monday.",
-        highlight: "was suppose to",
-        options: ["was suppose to", "was supposed to", "were suppose to", "supposed to"],
-        correctIndex: 1,
-        explanation: "The structure expressing unfulfilled past expectation is 'was/were supposed to' (always ending in '-d')."
-      },
-      {
-        id: 5,
-        sentence: "The meeting was delayed because the unexpected power outage.",
-        highlight: "because",
-        options: ["because", "due to", "in order to", "as a result"],
-        correctIndex: 1,
-        explanation: "'Because' must be followed by a full subject-verb clause. For a direct noun phrase ('the unexpected power outage'), use 'due to' or 'because of'."
-      }
-    ];
-
-    // MODULE 3 DATA: Workplace Roleplay Simulator
-    const ROLEPLAY_SCENARIOS = [
-      {
-        id: "app_crash",
-        title: "Crisis 1: The App Launch Collapse",
-        subtitle: "10 minutes after launch, 15,000 users are locked out and the Vice President calls you.",
-        initialSatisfaction: 40,
-        initialResolution: 10,
-        stages: [
-          {
-            step: 1,
-            prompt: "VP of Operations: 'The launch is failing! How could this happen without anyone noticing?'",
-            choices: [
-              {
-                text: "We should have run a stress test on high server load last week. I take full responsibility.",
-                satDelta: +20,
-                resDelta: +25,
-                feedback: "Excellent! Admitting past mistakes with 'should have + V3' demonstrates accountability and clear insight.",
-                grammarTag: "Correct: should have + V3"
-              },
-              {
-                text: "I have seen the server crash yesterday, so it is not my personal issue.",
-                satDelta: -20,
-                resDelta: -10,
-                feedback: "Poor grammar and attitude. 'I have seen yesterday' is incorrect tense usage, and blaming others damages morale.",
-                grammarTag: "Incorrect: Present Perfect with 'yesterday'"
-              },
-              {
-                text: "The server was suppose to handle this traffic automatically.",
-                satDelta: -10,
-                resDelta: +0,
-                feedback: "Grammar mistake ('was suppose to' missing '-d') and passive stance.",
-                grammarTag: "Incorrect: was suppose to"
-              }
-            ]
-          },
-          {
-            step: 2,
-            prompt: "VP: 'Okay, what are we doing right now to address this critical obstacle?'",
-            choices: [
-              {
-                text: "In order to resolve the server bottleneck, our team is deploying temporary cloud nodes.",
-                satDelta: +25,
-                resDelta: +40,
-                feedback: "Great leadership! Using 'In order to + V1' clearly communicates purposeful action.",
-                grammarTag: "Correct: in order to resolve"
-              },
-              {
-                text: "We plan to tackle with the glitch tomorrow when developers are rested.",
-                satDelta: -25,
-                resDelta: -20,
-                feedback: "Unacceptable delay and grammatical error ('tackle with').",
-                grammarTag: "Incorrect: tackle with"
-              },
-              {
-                text: "The outage occurred due to high traffic, so we are waiting for traffic to decrease.",
-                satDelta: -5,
-                resDelta: +10,
-                feedback: "Accurate cause linker ('due to'), but passive approach doesn't resolve the crisis.",
-                grammarTag: "Partial: passive stance"
-              }
-            ]
-          },
-          {
-            step: 3,
-            prompt: "VP: 'How do we ensure we never encounter such a setback again?'",
-            choices: [
-              {
-                text: "To prevent future setbacks, we will implement mandatory pre-launch audits and automated rollback tools.",
-                satDelta: +20,
-                resDelta: +25,
-                feedback: "Outstanding closing plan! Combines clear target vocabulary ('setback', 'implement') with concrete action.",
-                grammarTag: "Mastery Level"
-              },
-              {
-                text: "I wish we didn't launch today. That is my only comment.",
-                satDelta: -15,
-                resDelta: -10,
-                feedback: "Incorrect past wish structure. For past regrets, use 'wish + Past Perfect' ('wish we hadn't launched').",
-                grammarTag: "Incorrect: past wish structure"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        id: "client_delay",
-        title: "Crisis 2: The Key Client Pitch Disappointment",
-        subtitle: "A vital client waited 40 minutes because of conflicting room schedules and unupdated slides.",
-        initialSatisfaction: 35,
-        initialResolution: 15,
-        stages: [
-          {
-            step: 1,
-            prompt: "Account Director: 'The client was furious about waiting! Why weren't the presentation rooms pre-booked?'",
-            choices: [
-              {
-                text: "The booking oversight occurred due to a scheduling software synchronization glitch.",
-                satDelta: +15,
-                resDelta: +20,
-                feedback: "Clear and precise! Uses 'oversight' and 'due to + Noun Phrase' accurately.",
-                grammarTag: "Correct: due to + NP"
-              },
-              {
-                text: "We were suppose to double-check the calendar, but everyone forgot.",
-                satDelta: -15,
-                resDelta: -5,
-                feedback: "Grammar mistake ('was suppose to' instead of 'was supposed to') and lacks professional tone.",
-                grammarTag: "Incorrect: was suppose to"
-              }
-            ]
-          },
-          {
-            step: 2,
-            prompt: "Account Director: 'How will you regain the client's confidence right now?'",
-            choices: [
-              {
-                text: "We could have sent the summary slides earlier; however, I am emailing them a tailored project proposal now to resolve their concerns.",
-                satDelta: +30,
-                resDelta: +35,
-                feedback: "Brilliant recovery! Uses 'could have + V3' to acknowledge past possibilities and offers immediate action.",
-                grammarTag: "Correct: could have + V3"
-              },
-              {
-                text: "I shouldn't of let the intern handle the calendar.",
-                satDelta: -20,
-                resDelta: -15,
-                feedback: "Phonetic grammar mistake ('shouldn't of') and passes blame downward.",
-                grammarTag: "Incorrect: shouldn't of"
-              }
-            ]
-          }
-        ]
-      }
-    ];
-
-    // MODULE 4 DATA: Vocabulary Items
-    const VOCABULARY_ITEMS = [
-      {
-        word: "accomplishment",
-        category: "Experiences",
-        pos: "noun",
-        phonetic: "/əˈkʌm.plɪʃ.mənt/",
-        meaning: "Something successful achieved through skill, effort, or courage.",
-        example: "Completing the system migration ahead of schedule was our team's greatest accomplishment this quarter."
-      },
-      {
-        word: "milestone",
-        category: "Experiences",
-        pos: "noun",
-        phonetic: "/ˈmaɪl.stəʊn/",
-        meaning: "An important event or stage in the development or history of something.",
-        example: "Reaching 100,000 active users marked a major milestone for the app."
-      },
-      {
-        word: "oversight",
-        category: "Mistakes",
-        pos: "noun",
-        phonetic: "/ˈəʊ.və.saɪt/",
-        meaning: "An unintentional failure to notice or do something; a mistake caused by forgetfulness.",
-        example: "Failing to check the server logs before launch was a costly oversight."
-      },
-      {
-        word: "setback",
-        category: "Mistakes",
-        pos: "noun",
-        phonetic: "/ˈset.bæk/",
-        meaning: "A problem that delays progress or makes a situation worse.",
-        example: "The sudden server crash was a temporary setback for our launch timeline."
-      },
-      {
-        word: "obstacle",
-        category: "Problems & Actions",
-        pos: "noun",
-        phonetic: "/ˈɒb.stə.kəl/",
-        meaning: "A situation, thing, or condition that blocks movement or prevents progress.",
-        example: "Lack of funding was the main obstacle we had to overcome."
-      },
-      {
-        word: "encounter",
-        category: "Problems & Actions",
-        pos: "verb",
-        phonetic: "/ɪnˈkaʊn.tər/",
-        meaning: "To unexpectedly experience or face a difficulty or problem.",
-        example: "During stress testing, we encountered several security vulnerabilities."
-      },
-      {
-        word: "tackle",
-        category: "Problems & Actions",
-        pos: "verb",
-        phonetic: "/ˈtæk.əl/",
-        meaning: "To make a determined effort to deal with a difficult problem or task.",
-        example: "Our engineers worked through the night to tackle the database bug."
-      },
-      {
-        word: "resolve",
-        category: "Problems & Actions",
-        pos: "verb",
-        phonetic: "/rɪˈzɒlv/",
-        meaning: "To find an effective solution to a problem, conflict, or issue.",
-        example: "By deploying a hotfix, we were able to resolve the issue within two hours."
-      }
-    ];
-
-    // MODULE 5 DATA: Incident Report Gap-Fill
-    const INCIDENT_REPORT_DATA = {
-      title: "Incident Investigation Report: App Launch Delay",
-      textParts: [
-        "Last month, our technical department ",
-        " [gap 1: experienced] ",
-        " one of the most severe system disruptions in recent history. We ",
-        " [gap 2: were supposed to launch] ",
-        " our new client portal on October 1st, but an unexpected glitch locked out thousands of users.\n\nLooking back, our engineering leads ",
-        " [gap 3: should have run] ",
-        " a comprehensive stress test prior to deployment. Because of this critical ",
-        " [gap 4: oversight] ",
-        ", initial traffic overwhelmed database capacity.\n\nIn order to ",
-        " [gap 5: tackle] ",
-        " this crisis, our senior developers worked continuously for 24 hours. As a ",
-        " [gap 6: result] ",
-        " of their rapid intervention, we successfully ",
-        " [gap 7: resolved] ",
-        " the login issue and restored normal operations. Overall, although I ",
-        " [gap 8: had never encountered] ",
-        " such a complex crash before, it reinforced the crucial need for thorough pre-launch protocols."
-      ],
-      gaps: [
-        { id: 1, correct: "experienced", options: ["experienced", "have experienced", "was experiencing", "experience"] },
-        { id: 2, correct: "were supposed to launch", options: ["were supposed to launch", "was suppose to launch", "should launch", "suppose to launch"] },
-        { id: 3, correct: "should have run", options: ["should have run", "should of run", "should ran", "must run"] },
-        { id: 4, correct: "oversight", options: ["oversight", "accomplishment", "milestone", "resolution"] },
-        { id: 5, correct: "tackle", options: ["tackle", "tackle with", "tackled to", "tackling with"] },
-        { id: 6, correct: "result", options: ["result", "reason", "purpose", "cause"] },
-        { id: 7, correct: "resolved", options: ["resolved", "were resolved", "resolving", "have resolve"] },
-        { id: 8, correct: "had never encountered", options: ["had never encountered", "have never encountered", "never encounter", "didn't encountered"] }
-      ]
-    };
-
-    // =========================================================================
-    // MAIN APP COMPONENT
-    // =========================================================================
-    function App() {
-      // User Progress & Settings State
-      const [xp, setXp] = useState(60);
-      const [streak, setStreak] = useState(3);
-      const [soundEnabled, setSoundEnabled] = useState(true);
-      const [darkMode, setDarkMode] = useState(true);
-      const [activeTab, setActiveTab] = useState('builder'); // builder, detective, roleplay, vocab, report, journal
-      const [showRulesModal, setShowRulesModal] = useState(false);
-      const [studentName, setStudentName] = useState('Alex Morgan');
-
-      // Rank calculation
-      const getRank = (points) => {
-        if (points < 120) return { title: "Junior Investigator", icon: "🔍", color: "text-amber-400 border-amber-500/30 bg-amber-500/10" };
-        if (points < 260) return { title: "Incident Investigator", icon: "🕵️", color: "text-teal-400 border-teal-500/30 bg-teal-500/10" };
-        if (points < 420) return { title: "Crisis Manager", icon: "💼", color: "text-indigo-400 border-indigo-500/30 bg-indigo-500/10" };
-        return { title: "Master Resolver", icon: "👑", color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" };
-      };
-
-      const currentRank = getRank(xp);
-
-      const addXp = (amount) => {
-        setXp(prev => prev + amount);
-        playSoundEffect('correct', soundEnabled);
-      };
-
-      // Apply Dark Mode Class to Root HTML
-      useEffect(() => {
-        if (darkMode) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }, [darkMode]);
-
-      return (
-        <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
-          
-          {/* HEADER & PROGRESS HUB */}
-          <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm no-print">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                
-                {/* Brand Logo & Title */}
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-500 via-indigo-600 to-emerald-400 flex items-center justify-center text-xl shadow-md shadow-teal-500/20 text-white font-bold">
-                    ⚖️
-                  </div>
-                  <div>
-                    <h1 className="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-teal-600 via-indigo-600 to-emerald-500 dark:from-teal-300 dark:via-indigo-200 dark:to-emerald-300 bg-clip-text text-transparent">
-                      Experience & Incident Lab
-                    </h1>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">B1–B2 ESL • Mistakes, Regrets & Problem Solving</p>
-                  </div>
-                </div>
-
-                {/* Dashboard Stats & Controls */}
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  
-                  {/* Streak Indicator */}
-                  <div className="hidden sm:flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-500" title="Daily Practice Streak">
-                    <span>🔥</span>
-                    <span>{streak} <span className="text-[10px] text-slate-400 font-normal">days</span></span>
-                  </div>
-
-                  {/* Rank Badge */}
-                  <div className={`hidden md:flex items-center space-x-1.5 border px-3 py-1.5 rounded-xl text-xs font-bold ${currentRank.color}`}>
-                    <span>{currentRank.icon}</span>
-                    <span>{currentRank.title}</span>
-                  </div>
-
-                  {/* XP Counter */}
-                  <div className="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-950 border border-teal-500/30 px-3 py-1.5 rounded-xl text-xs font-bold text-teal-600 dark:text-teal-300">
-                    <span>⭐</span>
-                    <span>{xp} <span className="text-[10px] text-slate-400 font-normal">XP</span></span>
-                  </div>
-
-                  {/* Quick Rule Cheat Sheet Trigger */}
-                  <button
-                    onClick={() => {
-                      setShowRulesModal(true);
-                      playSoundEffect('click', soundEnabled);
-                    }}
-                    className="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
-                  >
-                    <span>📖</span>
-                    <span className="hidden sm:inline">Grammar Rules</span>
-                  </button>
-
-                  {/* Theme Toggle */}
-                  <button
-                    onClick={() => {
-                      setDarkMode(!darkMode);
-                      playSoundEffect('click', soundEnabled);
-                    }}
-                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-600 dark:text-slate-300"
-                    title="Toggle Dark/Light Mode"
-                  >
-                    {darkMode ? '☀️' : '🌙'}
-                  </button>
-
-                  {/* Sound Toggle */}
-                  <button
-                    onClick={() => {
-                      setSoundEnabled(!soundEnabled);
-                      playSoundEffect('click', !soundEnabled);
-                    }}
-                    className={`p-2 rounded-xl border text-xs transition ${
-                      soundEnabled 
-                        ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-300 dark:border-teal-700 text-teal-600 dark:text-teal-300' 
-                        : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-400'
-                    }`}
-                    title="Toggle Audio Effects"
-                  >
-                    {soundEnabled ? '🔊' : '🔇'}
-                  </button>
-
-                </div>
-              </div>
-
-              {/* Navigation Tabs */}
-              <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between overflow-x-auto no-scrollbar">
-                <nav className="flex items-center gap-1.5">
-                  {[
-                    { id: 'builder', label: '1. Sentence Builder', icon: '🧩' },
-                    { id: 'detective', label: '2. Error Detective', icon: '🕵️‍♂️' },
-                    { id: 'roleplay', label: '3. Incident Roleplay', icon: '🏢' },
-                    { id: 'vocab', label: '4. Flashcards & Sorting', icon: '🎴' },
-                    { id: 'report', label: '5. Incident Report', icon: '📝' },
-                    { id: 'journal', label: '6. Journal & Certificate', icon: '🎓' }
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        playSoundEffect('click', soundEnabled);
-                      }}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
-                        activeTab === tab.id
-                          ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30'
-                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      <span>{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </div>
-          </header>
-
-          {/* MAIN CONTENT WORKSPACE */}
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-            {activeTab === 'builder' && (
-              <Module1SentenceBuilder
-                data={SENTENCE_BUILDER_DATA}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-                speakText={speakText}
-              />
-            )}
-
-            {activeTab === 'detective' && (
-              <Module2ErrorDetective
-                data={ERROR_DETECTIVE_DATA}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-              />
-            )}
-
-            {activeTab === 'roleplay' && (
-              <Module3RoleplaySimulator
-                scenarios={ROLEPLAY_SCENARIOS}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-              />
-            )}
-
-            {activeTab === 'vocab' && (
-              <Module4VocabClassifier
-                items={VOCABULARY_ITEMS}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-                speakText={speakText}
-              />
-            )}
-
-            {activeTab === 'report' && (
-              <Module5IncidentReport
-                data={INCIDENT_REPORT_DATA}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-                speakText={speakText}
-              />
-            )}
-
-            {activeTab === 'journal' && (
-              <Module6ReflectionCertificate
-                studentName={studentName}
-                setStudentName={setStudentName}
-                xp={xp}
-                currentRank={currentRank}
-                addXp={addXp}
-                soundEnabled={soundEnabled}
-              />
-            )}
-          </main>
-
-          {/* GRAMMAR & LINKER CHEAT SHEET MODAL */}
-          {showRulesModal && (
-            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
-                
-                <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl">📖</span>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Quick Language & Grammar Guide</h3>
-                  </div>
-                  <button
-                    onClick={() => setShowRulesModal(false)}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-white bg-slate-100 dark:bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center transition"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-5 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                  
-                  {/* Rule 1: Present Perfect vs Past Simple */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                    <h4 className="font-bold text-teal-600 dark:text-teal-300 flex items-center gap-1.5">
-                      <span>1.</span> Present Perfect vs. Past Simple
-                    </h4>
-                    <ul className="space-y-1 text-xs">
-                      <li>• <strong>Present Perfect (have/has + V3):</strong> Unspecified life experiences or past actions with present result. <em>"I have handled server crashes before."</em></li>
-                      <li>• <strong>Past Simple (V2):</strong> Finished actions at a specific past time. <em>"Yesterday at 3 PM, the server crashed."</em></li>
-                    </ul>
-                  </div>
-
-                  {/* Rule 2: Past Modals of Regret */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                    <h4 className="font-bold text-indigo-600 dark:text-indigo-300 flex items-center gap-1.5">
-                      <span>2.</span> Modals of Past Regret & Unfulfilled Obligation
-                    </h4>
-                    <ul className="space-y-1.5 text-xs font-mono">
-                      <li>• <strong>should have + V3:</strong> Past mistake/criticism. <em>"We should have run a stress test."</em></li>
-                      <li>• <strong>was/were supposed to + V1:</strong> Expected past action that did not happen. <em>"They were supposed to log off."</em></li>
-                      <li>• <strong>wish + Past Perfect (had + V3):</strong> Imagined past situation. <em>"I wish we had listened to the engineer."</em></li>
-                      <li className="text-rose-500 dark:text-rose-400 font-sans italic">⚠️ Avoid "shouldn't of" — always write "should not have"!</li>
-                    </ul>
-                  </div>
-
-                  {/* Rule 3: Cause/Effect Linkers */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-                    <h4 className="font-bold text-emerald-600 dark:text-emerald-300 flex items-center gap-1.5">
-                      <span>3.</span> Cause, Effect & Purpose Connectors
-                    </h4>
-                    <ul className="space-y-1.5 text-xs">
-                      <li>• <strong>due to / because of + Noun Phrase:</strong> <em>"The outage was due to heavy network traffic."</em></li>
-                      <li>• <strong>as a result / consequently + Clause:</strong> <em>"We updated the server; as a result, performance improved."</em></li>
-                      <li>• <strong>in order to + Base Verb:</strong> <em>"In order to resolve the bug, developers deployed a hotfix."</em></li>
-                      <li className="text-amber-600 dark:text-amber-400 font-sans italic">⚠️ 'Tackle' takes a direct object without 'with' (e.g. "tackle the issue").</li>
-                    </ul>
-                  </div>
-
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => setShowRulesModal(false)}
-                    className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md shadow-teal-600/30"
-                  >
-                    Got it! Back to Practice
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* FOOTER */}
-          <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 text-center text-xs text-slate-500 no-print">
-            <p>Experience & Incident Lab • CEFR B1–B2 Interactive English Learning Environment</p>
-          </footer>
-
-        </div>
-      );
-    }
-
-    // =========================================================================
-    // MODULE 1: WORD-TILE SENTENCE BUILDER
-    // =========================================================================
-    function Module1SentenceBuilder({ data, addXp, soundEnabled, speakText }) {
-      const [currentIndex, setCurrentIndex] = useState(0);
-      const [availableTiles, setAvailableTiles] = useState([]);
-      const [constructedSentence, setConstructedSentence] = useState([]);
-      const [isCorrect, setIsCorrect] = useState(null);
-      const [completed, setCompleted] = useState({});
-      const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-
-      const currentItem = data[currentIndex];
-
-      // Shuffle tiles whenever currentItem changes
-      useEffect(() => {
-        if (!currentItem) return;
-        const shuffled = [...currentItem.correctSentence].sort(() => Math.random() - 0.5);
-        setAvailableTiles(shuffled);
-        setConstructedSentence([]);
-        setIsCorrect(null);
-      }, [currentIndex]);
-
-      const handleAddTile = (word, index) => {
-        playSoundEffect('click', soundEnabled);
-        setConstructedSentence([...constructedSentence, word]);
-        setAvailableTiles(availableTiles.filter((_, idx) => idx !== index));
-        setIsCorrect(null);
-      };
-
-      const handleRemoveTile = (word, index) => {
-        playSoundEffect('click', soundEnabled);
-        setAvailableTiles([...availableTiles, word]);
-        setConstructedSentence(constructedSentence.filter((_, idx) => idx !== index));
-        setIsCorrect(null);
-      };
-
-      const handleCheck = () => {
-        const userStr = constructedSentence.join(" ");
-        const correctStr = currentItem.correctSentence.join(" ");
-
-        if (userStr === correctStr) {
-          setIsCorrect(true);
-          if (!completed[currentItem.id]) {
-            setCompleted({ ...completed, [currentItem.id]: true });
-            addXp(15);
-          } else {
-            playSoundEffect('correct', soundEnabled);
-          }
-        } else {
-          setIsCorrect(false);
-          playSoundEffect('wrong', soundEnabled);
-        }
-      };
-
-      const handleReset = () => {
-        playSoundEffect('click', soundEnabled);
-        const shuffled = [...currentItem.correctSentence].sort(() => Math.random() - 0.5);
-        setAvailableTiles(shuffled);
-        setConstructedSentence([]);
-        setIsCorrect(null);
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-6">
-          
-          {/* Header Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-3 py-1 rounded-full border border-teal-200 dark:border-teal-500/30">
-                Module 1 • Word-Tile Unscrambler
-              </span>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                Construct Target Sentences
-              </h2>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex items-center gap-1.5">
-              {data.map((item, idx) => (
-                <button
-                  key={item.id}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center ${
-                    currentIndex === idx
-                      ? 'bg-teal-600 text-white'
-                      : completed[item.id]
-                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Main Interactive Challenge */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-            
-            {/* Target Concept & Hint */}
-            <div className="space-y-2 border-b border-slate-100 dark:border-slate-800/80 pb-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                  Target Grammar: {currentItem.grammarFocus}
-                </span>
-                <span className="text-xs text-slate-400">Task {currentIndex + 1} of {data.length}</span>
-              </div>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                "{currentItem.title}"
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 italic">
-                💡 Context Hint: {currentItem.hint}
-              </p>
-            </div>
-
-            {/* Construction Target Drop Area */}
-            <div className={`min-h-[110px] p-4 sm:p-6 rounded-2xl border-2 transition flex flex-wrap gap-2 items-center align-content-start ${
-              isCorrect === true
-                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500'
-                : isCorrect === false
-                ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-500'
-                : 'bg-slate-50 dark:bg-slate-950 border-dashed border-slate-300 dark:border-slate-800'
-            }`}>
-              {constructedSentence.length === 0 && (
-                <span className="text-xs text-slate-400 italic">Click available word tiles below to build the sentence...</span>
-              )}
-              {constructedSentence.map((word, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleRemoveTile(word, idx)}
-                  className="bg-teal-600 hover:bg-teal-700 text-white font-mono text-xs sm:text-sm font-bold px-3 py-2 rounded-xl shadow-md transition transform hover:-translate-y-0.5 flex items-center gap-1"
-                >
-                  <span>{word}</span>
-                  <span className="text-[10px] opacity-70">✕</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Available Word Tiles Bank */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                Available Word Bank:
-              </span>
-              <div className="flex flex-wrap gap-2 min-h-[60px] p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
-                {availableTiles.map((word, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleAddTile(word, idx)}
-                    className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-mono text-xs sm:text-sm font-bold px-3 py-2 rounded-xl shadow-sm transition transform hover:-translate-y-0.5"
-                  >
-                    {word}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Validation Feedback & Action Buttons */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleCheck}
-                  disabled={constructedSentence.length === 0}
-                  className={`px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-md ${
-                    constructedSentence.length > 0
-                      ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-teal-600/30'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  Check Sentence (+15 XP)
-                </button>
-
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
-                >
-                  🔄 Reset
-                </button>
-              </div>
-
-              {/* TTS Speech Controls if Correct */}
-              {isCorrect === true && (
-                <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-1.5 rounded-2xl text-xs font-bold text-emerald-600 dark:text-emerald-300">
-                  <span>🎉 Correct! Hear Audio:</span>
-                  <button
-                    onClick={() => speakText(constructedSentence.join(" "), 1.0)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg transition"
-                  >
-                    🔊 1.0x
-                  </button>
-                  <button
-                    onClick={() => speakText(constructedSentence.join(" "), 0.75)}
-                    className="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1 rounded-lg transition"
-                  >
-                    🐢 0.75x
-                  </button>
-                </div>
-              )}
-
-              {isCorrect === false && (
-                <span className="text-xs font-bold text-rose-500 bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded-xl">
-                  ❌ Not quite right yet. Try reordering the tiles!
-                </span>
-              )}
-            </div>
-
-          </div>
-        </div>
-      );
-    }
-
-    // =========================================================================
-    // MODULE 2: INCIDENT ERROR DETECTIVE
-    // =========================================================================
-    function Module2ErrorDetective({ data, addXp, soundEnabled }) {
-      const [userSelections, setUserSelections] = useState({});
-      const [checkedItems, setCheckedItems] = useState({});
-
-      const handleSelectOption = (itemIdx, optionIdx) => {
-        setUserSelections({ ...userSelections, [itemIdx]: optionIdx });
-        playSoundEffect('click', soundEnabled);
-      };
-
-      const handleVerifyItem = (itemIdx, correctIdx) => {
-        const isRight = userSelections[itemIdx] === correctIdx;
-        setCheckedItems({ ...checkedItems, [itemIdx]: isRight });
-
-        if (isRight) {
-          addXp(15);
-        } else {
-          playSoundEffect('wrong', soundEnabled);
-        }
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-6">
-          
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-200 dark:border-indigo-500/30">
-              Module 2 • ESL Error Detective
-            </span>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
-              Spot & Repair Incident Log Grammar Bugs
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Identify common errors in past modal structures, prepositions, and time markers.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {data.map((item, itemIdx) => {
-              const selectedOpt = userSelections[itemIdx];
-              const isVerified = checkedItems[itemIdx] !== undefined;
-              const isCorrect = checkedItems[itemIdx] === true;
-
-              return (
-                <div
-                  key={item.id}
-                  className={`bg-white dark:bg-slate-900 rounded-3xl p-6 border transition shadow-lg space-y-4 ${
-                    isVerified
-                      ? isCorrect
-                        ? 'border-emerald-500 ring-1 ring-emerald-500/30'
-                        : 'border-rose-500 ring-1 ring-rose-500/30'
-                      : 'border-slate-200 dark:border-slate-800'
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-xl">
-                      Bug Report #{itemIdx + 1}
-                    </span>
-                    {isVerified && (
-                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                        isCorrect ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'
-                      }`}>
-                        {isCorrect ? '✓ Repaired (+15 XP)' : '❌ Incorrect Selection'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Incident Sentence */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-800 dark:text-slate-200 leading-relaxed">
-                    "{item.sentence.split(item.highlight)[0]}
-                    <mark className="bg-rose-500/30 text-rose-700 dark:text-rose-300 px-1 rounded font-bold underline underline-offset-2">
-                      {item.highlight}
-                    </mark>
-                    {item.sentence.split(item.highlight)[1]}"
-                  </div>
-
-                  {/* Multiple Choice Options */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {item.options.map((opt, optIdx) => {
-                      const isSelected = selectedOpt === optIdx;
-                      let btnStyle = "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400";
-
-                      if (isSelected) {
-                        btnStyle = "bg-indigo-600 text-white font-bold border-indigo-600";
-                      }
-
-                      if (isVerified) {
-                        if (optIdx === item.correctIndex) {
-                          btnStyle = "bg-emerald-600 text-white font-bold border-emerald-600";
-                        } else if (isSelected && !isCorrect) {
-                          btnStyle = "bg-rose-600 text-white font-bold border-rose-600";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExperienceLab Studio: Validating Experiences, Mistakes & Problems</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        audit: {
+                            blue: '#3b82f6',
+                            amber: '#f59e0b',
+                            purple: '#8b5cf6',
+                            emerald: '#10b981',
+                            rose: '#f43f5e'
                         }
-                      }
-
-                      return (
-                        <button
-                          key={optIdx}
-                          disabled={isVerified}
-                          onClick={() => handleSelectOption(itemIdx, optIdx)}
-                          className={`p-3 rounded-xl border text-xs text-left transition font-mono ${btnStyle}`}
-                        >
-                          {optIdx + 1}. {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Verification Button & Feedback */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                    {!isVerified ? (
-                      <button
-                        onClick={() => handleVerifyItem(itemIdx, item.correctIndex)}
-                        disabled={selectedOpt === undefined}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition ${
-                          selectedOpt !== undefined
-                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        Verify Correction
-                      </button>
-                    ) : (
-                      <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 leading-relaxed w-full">
-                        <span className="font-bold text-teal-600 dark:text-teal-400 block mb-1">💡 Detective Notes:</span>
-                        {item.explanation}
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
-
-        </div>
-      );
-    }
-
-    // =========================================================================
-    // MODULE 3: WORKPLACE INCIDENT ROLEPLAY SIMULATOR
-    // =========================================================================
-    function Module3RoleplaySimulator({ scenarios, addXp, soundEnabled }) {
-      const [selectedScenarioIdx, setSelectedScenarioIdx] = useState(0);
-      const [currentStep, setCurrentStep] = useState(0);
-      const [satisfaction, setSatisfaction] = useState(scenarios[0].initialSatisfaction);
-      const [resolution, setResolution] = useState(scenarios[0].initialResolution);
-      const [history, setHistory] = useState([]);
-      const [isFinished, setIsFinished] = useState(false);
-
-      const scenario = scenarios[selectedScenarioIdx];
-
-      const handleSelectScenario = (idx) => {
-        setSelectedScenarioIdx(idx);
-        setCurrentStep(0);
-        setSatisfaction(scenarios[idx].initialSatisfaction);
-        setResolution(scenarios[idx].initialResolution);
-        setHistory([]);
-        setIsFinished(false);
-        playSoundEffect('click', soundEnabled);
-      };
-
-      const handleChooseOption = (choice) => {
-        const nextSat = Math.max(0, Math.min(100, satisfaction + choice.satDelta));
-        const nextRes = Math.max(0, Math.min(100, resolution + choice.resDelta));
-
-        setSatisfaction(nextSat);
-        setResolution(nextRes);
-        setHistory([...history, { step: currentStep, choice }]);
-
-        if (currentStep + 1 < scenario.stages.length) {
-          setCurrentStep(currentStep + 1);
-          playSoundEffect('click', soundEnabled);
-        } else {
-          setIsFinished(true);
-          addXp(35);
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
         }
-      };
-
-      const stage = scenario.stages[currentStep];
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-6">
-          
-          {/* Header & Scenario Selector */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-500/30">
-                Module 3 • Workplace Crisis Simulator
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {scenarios.map((sc, idx) => (
-                <button
-                  key={sc.id}
-                  onClick={() => handleSelectScenario(idx)}
-                  className={`p-4 rounded-2xl border text-left transition ${
-                    selectedScenarioIdx === idx
-                      ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-500 text-slate-900 dark:text-white ring-2 ring-teal-500/30'
-                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  <h3 className="font-bold text-xs sm:text-sm">{sc.title}</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{sc.subtitle}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Dynamic Gauges Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Team Satisfaction Gauge */}
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
-              <div className="flex justify-between text-xs font-bold">
-                <span className="text-slate-700 dark:text-slate-300">👥 Executive Satisfaction:</span>
-                <span className={`${satisfaction >= 60 ? 'text-emerald-500' : 'text-amber-500'}`}>{satisfaction}%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500"
-                  style={{ width: `${satisfaction}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Resolution Meter */}
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
-              <div className="flex justify-between text-xs font-bold">
-                <span className="text-slate-700 dark:text-slate-300">🛠️ Crisis Resolution Gauge:</span>
-                <span className="text-teal-500">{resolution}%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-teal-500 to-indigo-500 transition-all duration-500"
-                  style={{ width: `${resolution}%` }}
-                />
-              </div>
-            </div>
-
-          </div>
-
-          {/* Active Interactive Stage */}
-          {!isFinished ? (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-              
-              <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest">
-                  Branching Decision point {currentStep + 1} of {scenario.stages.length}
-                </span>
-                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-800 dark:text-slate-100">
-                  {stage.prompt}
-                </div>
-              </div>
-
-              {/* Choices list */}
-              <div className="space-y-3">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">Select your response strategy:</span>
-                {stage.choices.map((choice, cIdx) => (
-                  <button
-                    key={cIdx}
-                    onClick={() => handleChooseOption(choice)}
-                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:border-teal-500 dark:hover:border-teal-400 text-left transition space-y-1 group"
-                  >
-                    <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-medium group-hover:text-teal-600 dark:group-hover:text-teal-300">
-                      "{choice.text}"
-                    </p>
-                    <span className="text-[10px] font-mono text-slate-400 block">Focus: {choice.grammarTag}</span>
-                  </button>
-                ))}
-              </div>
-
-            </div>
-          ) : (
-            /* Simulation Outcome Report */
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6 text-center">
-              <span className="text-4xl">🏆</span>
-              <h3 className="text-xl font-black text-slate-900 dark:text-white">Crisis Simulation Completed!</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                You earned <strong>+35 XP</strong> for managing this incident through professional grammar structures.
-              </p>
-
-              {/* Decision Log Review */}
-              <div className="space-y-3 text-left pt-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Performance Feedback Log:</span>
-                {history.map((h, idx) => (
-                  <div key={idx} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
-                    <span className="font-bold text-teal-600 dark:text-teal-400">Decision #{idx + 1}:</span>
-                    <p className="text-slate-700 dark:text-slate-300 italic">"{h.choice.text}"</p>
-                    <p className="text-slate-500 dark:text-slate-400 font-mono text-[11px] pt-1">💡 {h.choice.feedback}</p>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => handleSelectScenario(selectedScenarioIdx)}
-                className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold px-6 py-3 rounded-xl transition shadow-md shadow-teal-600/30"
-              >
-                🔄 Replay Scenario
-              </button>
-            </div>
-          )}
-
-        </div>
-      );
-    }
-
-    // =========================================================================
-    // MODULE 4: VOCABULARY FLASHCARDS & CATEGORY CLASSIFIER
-    // =========================================================================
-    function Module4VocabClassifier({ items, addXp, soundEnabled, speakText }) {
-      const [viewMode, setViewMode] = useState('flashcards'); // flashcards, classifier
-      const [flippedCards, setFlippedCards] = useState({});
-      
-      // Classifier Game State
-      const [unsortedItems, setUnsortedItems] = useState(items);
-      const [buckets, setBuckets] = useState({
-        "Experiences": [],
-        "Mistakes": [],
-        "Problems & Actions": []
-      });
-      const [classifierCompleted, setClassifierCompleted] = useState(false);
-
-      const handleFlip = (idx) => {
-        setFlippedCards({ ...flippedCards, [idx]: !flippedCards[idx] });
-        playSoundEffect('click', soundEnabled);
-      };
-
-      const handleSortCard = (item, targetCategory) => {
-        if (item.category === targetCategory) {
-          playSoundEffect('correct', soundEnabled);
-          setBuckets(prev => ({ ...prev, [targetCategory]: [...prev[targetCategory], item] }));
-          setUnsortedItems(prev => prev.filter(i => i.word !== item.word));
-
-          if (unsortedItems.length === 1) {
-            setClassifierCompleted(true);
-            addXp(30);
-          }
-        } else {
-          playSoundEffect('wrong', soundEnabled);
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
-      };
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.6);
+        }
 
-      const handleResetClassifier = () => {
-        setUnsortedItems(items);
-        setBuckets({ "Experiences": [], "Mistakes": [], "Problems & Actions": [] });
-        setClassifierCompleted(false);
-        playSoundEffect('click', soundEnabled);
-      };
+        /* Glassmorphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
 
-      return (
-        <div className="max-w-5xl mx-auto space-y-6">
-          
-          {/* Header & Mode Switch */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-500/30">
-                Module 4 • Incident Phrasebook & Classifier
-              </span>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                Master B1–B2 Workplace Vocabulary
-              </h2>
-            </div>
+        /* Print Media Styles for Official Audit Dossier */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .dossier-print-container {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                width: 100% !important;
+            }
+        }
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <button
-                onClick={() => setViewMode('flashcards')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  viewMode === 'flashcards' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                🎴 3D Flashcards
-              </button>
-              <button
-                onClick={() => setViewMode('classifier')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
-                  viewMode === 'classifier' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                🏷️ Category Classifier
-              </button>
-            </div>
-          </div>
+    <!-- Toast Notification Banner -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
-          {/* VIEW 1: 3D FLASHCARDS */}
-          {viewMode === 'flashcards' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {items.map((item, idx) => {
-                const isFlipped = flippedCards[idx];
+    <!-- MAIN APP CONTAINER -->
+    <div class="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 no-print">
 
-                return (
-                  <div
-                    key={idx}
-                    className="h-64 perspective-1000 cursor-pointer"
-                    onClick={() => handleFlip(idx)}
-                  >
-                    <div className={`relative w-full h-full transform-style-3d rounded-3xl shadow-lg border border-slate-200 dark:border-slate-800 ${
-                      isFlipped ? 'rotate-y-180' : ''
-                    }`}>
-                      
-                      {/* FRONT FACE */}
-                      <div className="absolute inset-0 backface-hidden bg-white dark:bg-slate-900 p-6 rounded-3xl flex flex-col justify-between items-center text-center">
-                        <div className="w-full flex justify-between items-center">
-                          <span className="text-[10px] font-mono font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                            {item.category}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              speakText(item.word);
-                            }}
-                            className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white p-2 rounded-xl transition"
-                            title="Pronounce Word"
-                          >
-                            🔊
-                          </button>
-                        </div>
-
-                        <div>
-                          <h3 className="text-xl font-black text-slate-900 dark:text-white">{item.word}</h3>
-                          <span className="text-xs font-mono text-slate-400">{item.phonetic} • {item.pos}</span>
-                        </div>
-
-                        <span className="text-[10px] text-slate-400 font-mono">Tap to flip card 🔄</span>
-                      </div>
-
-                      {/* BACK FACE */}
-                      <div className="absolute inset-0 backface-hidden rotate-y-180 bg-slate-900 text-slate-100 p-6 rounded-3xl flex flex-col justify-between text-left border border-slate-700">
-                        <div className="space-y-2">
-                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Meaning:</span>
-                          <p className="text-xs leading-relaxed text-slate-200">{item.meaning}</p>
-                        </div>
-
-                        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-[11px] font-mono text-teal-300 italic">
-                          "{item.example}"
-                        </div>
-                      </div>
-
+        <!-- HEADER BAR -->
+        <header class="glass-card rounded-2xl p-4 sm:p-5 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3 sm:gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-audit-blue text-white flex items-center justify-center text-2xl shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">B1 ESL Proficiency</span>
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400"><i class="fa-solid fa-building-shield mr-1"></i>Bureau of Learning Audits</span>
                     </div>
-                  </div>
-                );
-              })}
+                    <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-slate-900 via-brand-700 to-audit-blue dark:from-white dark:via-brand-400 dark:to-audit-blue bg-clip-text text-transparent">
+                        ExperienceLab Studio
+                    </h1>
+                </div>
             </div>
-          )}
 
-          {/* VIEW 2: CATEGORY CLASSIFIER */}
-          {viewMode === 'classifier' && (
-            <div className="space-y-6">
-              
-              {/* Cards Bank to Sort */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Remaining Unsorted Vocabulary ({unsortedItems.length}):
-                  </span>
-                  {classifierCompleted && (
-                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/30">
-                      🎉 Sorted All Correctly! (+30 XP)
+            <!-- Header Controls & Status -->
+            <div class="flex items-center justify-between md:justify-end gap-3 flex-wrap">
+                <!-- Audio Sound Toggle -->
+                <button id="sound-toggle-btn" onclick="toggleSound()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300" title="Toggle Sound Audio Tones">
+                    <i class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+
+                <!-- Theme Toggle Button -->
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-300" title="Toggle Dark/Light Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+
+                <!-- Compact Header Audit Clock Indicator -->
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div id="mini-clock-pulse" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
+                    <span id="mini-timer-display" class="font-mono font-bold text-sm">10:00</span>
+                    <span id="mini-stage-badge" class="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">Stage 1</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="flex items-center gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar border-b border-slate-200 dark:border-slate-800">
+            <button onclick="switchTab('timer')" id="tab-btn-timer" class="nav-tab active flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap bg-brand-600 text-white shadow-md shadow-brand-600/20">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span>1. Audit Timer & Roles</span>
+            </button>
+            <button onclick="switchTab('grammar')" id="tab-btn-grammar" class="nav-tab flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all whitespace-nowrap">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>2. Tri-Grammar Hub</span>
+            </button>
+            <button onclick="switchTab('deck')" id="tab-btn-deck" class="nav-tab flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all whitespace-nowrap">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>3. 20 Outcome Prompts</span>
+                <span class="px-1.5 py-0.5 text-xs rounded-full bg-slate-200 dark:bg-slate-800 font-mono">20</span>
+            </button>
+            <button onclick="switchTab('studio')" id="tab-btn-studio" class="nav-tab flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all whitespace-nowrap">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>4. Case Audit Studio</span>
+                <span class="w-2 h-2 rounded-full bg-audit-blue"></span>
+            </button>
+            <button onclick="switchTab('scorecard')" id="tab-btn-scorecard" class="nav-tab flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all whitespace-nowrap">
+                <i class="fa-solid fa-file-signature"></i>
+                <span>5. Peer Scorecard</span>
+            </button>
+        </nav>
+
+        <!-- VIEW PANEL 1: AUDIT TIMER & ROLES -->
+        <div id="view-timer" class="tab-view flex flex-col gap-6">
+            <!-- Context Briefing Banner -->
+            <div class="glass-card rounded-2xl p-6 border-l-4 border-l-brand-500 relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-5 dark:opacity-10 text-9xl pointer-events-none text-brand-600">
+                    <i class="fa-solid fa-building-shield"></i>
+                </div>
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 uppercase tracking-widest">Global Audit Context</span>
+                    <span class="text-xs text-slate-500"><i class="fa-solid fa-clock mr-1"></i>Total Duration: 10 Minutes</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">The Global Incident & Learning Audit Bureau</h2>
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-sm sm:text-base max-w-4xl">
+                    You are acting as international Quality Assurance Officers. Your mission is to conduct a pair-based <strong>Past Incident Audit</strong>. Evaluate how your partner recounts past experiences, explains past mistakes or unmet obligations, and articulates problem-solving strategies.
+                </p>
+            </div>
+
+            <!-- Roles Breakdown Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Role A -->
+                <div id="role-card-a" class="glass-card rounded-2xl p-6 border-2 border-audit-blue/40 relative transition-all">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-audit-blue/10 text-audit-blue flex items-center justify-center font-bold text-lg">A</div>
+                            <div>
+                                <h3 class="font-bold text-lg">Role A: Lead Case Auditor</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Round 1 Interviewer (Min 2:00 – 5:00)</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-audit-blue/10 text-audit-blue">Auditor</span>
+                    </div>
+                    <ul class="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-blue mt-1"></i>
+                            <span>Select prompts from the <strong>20 Outcome Prompts Deck</strong> and ask Role B.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-blue mt-1"></i>
+                            <span>Listen closely for <strong>Present Perfect vs. Past Simple</strong> tense transitions.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-blue mt-1"></i>
+                            <span>Check for past obligation modals (<em>was supposed to, had to, should have</em>).</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Role B -->
+                <div id="role-card-b" class="glass-card rounded-2xl p-6 border-2 border-audit-purple/40 relative transition-all">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-audit-purple/10 text-audit-purple flex items-center justify-center font-bold text-lg">B</div>
+                            <div>
+                                <h3 class="font-bold text-lg">Role B: Case Representative</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Round 1 Interviewee (Min 2:00 – 5:00)</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-audit-purple/10 text-audit-purple">Interviewee</span>
+                    </div>
+                    <ul class="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-purple mt-1"></i>
+                            <span>Recount a personal, academic, or work case history honestly.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-purple mt-1"></i>
+                            <span>Explain what went wrong using cause connectors (<em>due to, caused by</em>).</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-audit-purple mt-1"></i>
+                            <span>Detail the resolution using <em>managed to</em> or <em>succeeded in</em>.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 10-MINUTE TIMER CONTROL CENTER -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col items-center text-center shadow-lg relative overflow-hidden">
+                <!-- Visual Stage Progress Bar -->
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-3 rounded-full mb-6 overflow-hidden flex">
+                    <div id="stage-bar-1" class="h-full bg-amber-500 transition-all duration-500" style="width: 20%;" title="Stage 1: Prep (0-2m)"></div>
+                    <div id="stage-bar-2" class="h-full bg-audit-blue transition-all duration-500" style="width: 30%; opacity: 0.3;" title="Stage 2: Audit R1 (2-5m)"></div>
+                    <div id="stage-bar-3" class="h-full bg-audit-purple transition-all duration-500" style="width: 30%; opacity: 0.3;" title="Stage 3: Audit R2 Swap (5-8m)"></div>
+                    <div id="stage-bar-4" class="h-full bg-brand-500 transition-all duration-500" style="width: 20%; opacity: 0.3;" title="Stage 4: Scorecard (8-10m)"></div>
+                </div>
+
+                <!-- Active Stage Header -->
+                <div id="stage-banner" class="px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-compass animate-spin"></i>
+                    <span>STAGE 1: TRI-GRAMMAR PREP & REVIEW (0:00 – 2:00)</span>
+                </div>
+
+                <p id="stage-instructions" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xl">
+                    Review target structures in Tab 2. Role A chooses initial questions from Tab 3.
+                </p>
+
+                <!-- Timer Large Clock Display -->
+                <div class="my-2">
+                    <span id="main-timer-display" class="font-mono text-6xl sm:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white drop-shadow-sm">
+                        10:00
                     </span>
-                  )}
                 </div>
 
-                <div className="flex flex-wrap gap-2 min-h-[60px]">
-                  {unsortedItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-amber-500 text-white font-bold text-xs px-3.5 py-2 rounded-2xl shadow-md font-mono flex items-center gap-2"
-                    >
-                      <span>{item.word}</span>
-                    </div>
-                  ))}
-                  {unsortedItems.length === 0 && (
-                    <span className="text-xs text-slate-400 italic">All terms sorted into categories!</span>
-                  )}
+                <!-- Timer Controls -->
+                <div class="flex items-center gap-3 mt-6 flex-wrap justify-center">
+                    <button id="timer-start-btn" onclick="toggleTimer()" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-brand-600/30">
+                        <i class="fa-solid fa-play"></i>
+                        <span id="timer-btn-text">Start Audit Timer</span>
+                    </button>
+                    <button onclick="resetTimer()" class="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition-all text-slate-600 dark:text-slate-300">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                    </button>
                 </div>
-              </div>
 
-              {/* 3 Sorting Category Buckets */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {["Experiences", "Mistakes", "Problems & Actions"].map((category) => (
-                  <div
-                    key={category}
-                    className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-lg space-y-3 min-h-[220px]"
-                  >
-                    <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
-                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>📂</span> {category}
-                      </h4>
-                    </div>
+                <!-- Stage Jump Selector Buttons -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-2xl mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                    <button onclick="jumpToStage(1)" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-amber-500 transition-colors text-left flex flex-col gap-1">
+                        <span class="text-amber-600 dark:text-amber-400">Stage 1 (0-2m)</span>
+                        <span class="text-slate-500 text-[11px]">Grammar Prep</span>
+                    </button>
+                    <button onclick="jumpToStage(2)" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-audit-blue transition-colors text-left flex flex-col gap-1">
+                        <span class="text-audit-blue">Stage 2 (2-5m)</span>
+                        <span class="text-slate-500 text-[11px]">Audit Round 1</span>
+                    </button>
+                    <button onclick="jumpToStage(3)" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-audit-purple transition-colors text-left flex flex-col gap-1">
+                        <span class="text-audit-purple">Stage 3 (5-8m)</span>
+                        <span class="text-slate-500 text-[11px]">🔄 SWAP ROLES!</span>
+                    </button>
+                    <button onclick="jumpToStage(4)" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold hover:border-brand-500 transition-colors text-left flex flex-col gap-1">
+                        <span class="text-brand-500">Stage 4 (8-10m)</span>
+                        <span class="text-slate-500 text-[11px]">Peer Scorecard</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                    {/* Target Drop Button */}
-                    {unsortedItems.length > 0 && (
-                      <button
-                        onClick={() => handleSortCard(unsortedItems[0], category)}
-                        className="w-full bg-slate-50 dark:bg-slate-950 hover:bg-amber-500/10 border border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 text-xs font-bold text-slate-600 dark:text-slate-400 py-2.5 rounded-xl transition"
-                      >
-                        ➕ Place "{unsortedItems[0]?.word}" Here
-                      </button>
-                    )}
+        <!-- VIEW PANEL 2: TRI-GRAMMAR MASTERCLASS HUB -->
+        <div id="view-grammar" class="tab-view hidden flex flex-col gap-6">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold">Tri-Grammar Masterclass</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Target B1 structures for describing past events, mistakes, and problem resolution.</p>
+                </div>
+                <button onclick="switchTab('studio')" class="px-4 py-2 rounded-xl bg-audit-blue hover:bg-blue-600 text-white font-semibold text-xs flex items-center gap-2 transition-all shadow-md">
+                    <span>Test Syntax in Studio</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
 
-                    {/* Sorted List */}
-                    <div className="space-y-1.5 pt-1">
-                      {buckets[category].map((item, idx) => (
-                        <div key={idx} className="bg-slate-100 dark:bg-slate-950 px-3 py-2 rounded-xl text-xs font-mono text-teal-600 dark:text-teal-300 border border-teal-500/30 flex justify-between items-center">
-                          <span>{item.word}</span>
-                          <span className="text-emerald-500">✓</span>
+            <!-- 3 Language Pillar Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Pillar 1: Experiences -->
+                <div class="glass-card rounded-2xl p-6 border-t-4 border-t-audit-blue flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-audit-blue px-2.5 py-1 rounded-md bg-audit-blue/10">Pillar 1</span>
+                            <i class="fa-solid fa-clock-rotate-left text-audit-blue text-xl"></i>
                         </div>
-                      ))}
+                        <h3 class="text-xl font-bold mb-2">Describing Experiences</h3>
+                        <p class="text-xs text-slate-500 mb-4">Present Perfect vs. Past Simple</p>
+                        
+                        <div class="space-y-3 text-xs sm:text-sm">
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-audit-blue block mb-1">Present Perfect (Unspecified Time / Life Experience)</span>
+                                <p class="text-slate-600 dark:text-slate-300 font-mono text-xs">have / has + Past Participle (V3)</p>
+                                <p class="italic text-slate-500 mt-1">"I <strong>have managed</strong> several cross-cultural projects."</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-audit-blue block mb-1">Past Simple (Specific Time Marker)</span>
+                                <p class="text-slate-600 dark:text-slate-300 font-mono text-xs">Verb-ed / Irregular Past + (last year, in 2023, ago)</p>
+                                <p class="italic text-slate-500 mt-1">"Last month, I <strong>handled</strong> a major complaint in London."</p>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {classifierCompleted && (
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleResetClassifier}
-                    className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition"
-                  >
-                    🔄 Play Sorting Challenge Again
-                  </button>
+                    <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                        <strong class="text-slate-700 dark:text-slate-300">Audit Rule:</strong> Start with Present Perfect to introduce experience, then shift to Past Simple for details!
+                    </div>
                 </div>
-              )}
 
+                <!-- Pillar 2: Mistakes & Obligations -->
+                <div class="glass-card rounded-2xl p-6 border-t-4 border-t-audit-amber flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-audit-amber px-2.5 py-1 rounded-md bg-audit-amber/10">Pillar 2</span>
+                            <i class="fa-solid fa-triangle-exclamation text-audit-amber text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Mistakes & Obligations</h3>
+                        <p class="text-xs text-slate-500 mb-4">Past Obligations & Missed Expectations</p>
+
+                        <div class="space-y-3 text-xs sm:text-sm">
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-audit-amber block mb-1">was / were supposed to (Unmet Plan)</span>
+                                <p class="italic text-slate-500">"We <strong>were supposed to deliver</strong> the report on Friday, but we missed it."</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-audit-amber block mb-1">had to (Forced Past Necessity)</span>
+                                <p class="italic text-slate-500">"Because of the outage, I <strong>had to call</strong> every client individually."</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-audit-amber block mb-1">should have + V3 (Past Regret / Critique)</span>
+                                <p class="italic text-slate-500">"I <strong>should have checked</strong> the itinerary before leaving."</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                        <strong class="text-slate-700 dark:text-slate-300">Audit Rule:</strong> Express responsibility without blame by using target past modals!
+                    </div>
+                </div>
+
+                <!-- Pillar 3: Problems & Solutions -->
+                <div class="glass-card rounded-2xl p-6 border-t-4 border-t-brand-500 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-brand-500 px-2.5 py-1 rounded-md bg-brand-500/10">Pillar 3</span>
+                            <i class="fa-solid fa-gears text-brand-500 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Problems & Solutions</h3>
+                        <p class="text-xs text-slate-500 mb-4">Root Causes & Successful Actions</p>
+
+                        <div class="space-y-3 text-xs sm:text-sm">
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-brand-500 block mb-1">due to / caused by (Root Cause)</span>
+                                <p class="italic text-slate-500">"The initial delay was <strong>due to bad weather</strong>."</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-brand-500 block mb-1">managed to + Infinitive (Overcoming Challenge)</span>
+                                <p class="italic text-slate-500">"Despite the bug, we <strong>managed to fix</strong> the code."</p>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <span class="font-bold text-brand-500 block mb-1">succeeded in + Verb-ing (Achievement)</span>
+                                <p class="italic text-slate-500">"We finally <strong>succeeded in negotiating</strong> a discount."</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                        <strong class="text-slate-700 dark:text-slate-300">Audit Rule:</strong> Use <em>managed to</em> when effort was required to overcome difficulty!
+                    </div>
+                </div>
             </div>
-          )}
-
         </div>
-      );
-    }
 
-    // =========================================================================
-    // MODULE 5: INTERACTIVE INCIDENT REPORT GAP-FILL
-    // =========================================================================
-    function Module5IncidentReport({ data, addXp, soundEnabled, speakText }) {
-      const [userGaps, setUserGaps] = useState({});
-      const [isSubmitted, setIsSubmitted] = useState(false);
-      const [score, setScore] = useState(0);
+        <!-- VIEW PANEL 3: 20 OUTCOME PROMPTS DECK -->
+        <div id="view-deck" class="tab-view hidden flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold">20 Outcome Question Prompts Deck</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Standardized Audit Question Prompts for B1 Oral Interviews.</p>
+                </div>
 
-      const handleSelectGap = (gapId, val) => {
-        setUserGaps({ ...userGaps, [gapId]: val });
-        playSoundEffect('click', soundEnabled);
-      };
-
-      const handleCheckReport = () => {
-        let correctCount = 0;
-        data.gaps.forEach((g) => {
-          if (userGaps[g.id] === g.correct) {
-            correctCount++;
-          }
-        });
-        setScore(correctCount);
-        setIsSubmitted(true);
-        addXp(correctCount * 5);
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-6">
-          
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-wrap justify-between items-center gap-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-3 py-1 rounded-full border border-teal-200 dark:border-teal-500/30">
-                Module 5 • Contextual Gap-Fill
-              </span>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                {data.title}
-              </h2>
+                <!-- Category Filter Buttons -->
+                <div id="category-filter-container" class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                    <!-- Filters rendered via JS -->
+                </div>
             </div>
 
-            {isSubmitted && (
-              <button
-                onClick={() => speakText("Incident Investigation Report. Last month, our technical department experienced one of the most severe system disruptions in recent history...", 0.9)}
-                className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5"
-              >
-                <span>🔊 Read Full Report</span>
-              </button>
-            )}
-          </div>
+            <!-- PROMPT CARD CONTAINER -->
+            <div class="glass-card rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl relative flex flex-col justify-between min-h-[380px]">
+                
+                <!-- Prompt Card Top Meta -->
+                <div class="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span id="prompt-number-badge" class="px-3 py-1 rounded-lg bg-brand-500 text-white font-mono font-bold text-sm">
+                            #01 / 20
+                        </span>
+                        <span id="prompt-category-badge" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                            Work & Projects
+                        </span>
+                    </div>
 
-          {/* Interactive Gap-Fill Reading Article */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-            
-            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed space-y-4 font-sans">
-              <p>
-                Last month, our technical department{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[1] || ''}
-                  onChange={(e) => handleSelectGap(1, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[1] === data.gaps[0].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 1 ]</option>
-                  {data.gaps[0].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}one of the most severe system disruptions in recent history. We{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[2] || ''}
-                  onChange={(e) => handleSelectGap(2, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[2] === data.gaps[1].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 2 ]</option>
-                  {data.gaps[1].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}our new client portal on October 1st, but an unexpected glitch locked out thousands of users.
-              </p>
+                    <div class="flex items-center gap-2">
+                        <!-- TTS Button -->
+                        <button onclick="speakCurrentPrompt()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors text-slate-600 dark:text-slate-300 text-sm flex items-center gap-1.5" title="Listen to prompt (Text-To-Speech)">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span class="hidden sm:inline text-xs font-semibold">Listen</span>
+                        </button>
+                    </div>
+                </div>
 
-              <p>
-                Looking back, our engineering leads{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[3] || ''}
-                  onChange={(e) => handleSelectGap(3, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[3] === data.gaps[2].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 3 ]</option>
-                  {data.gaps[2].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}a comprehensive stress test prior to deployment. Because of this critical{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[4] || ''}
-                  onChange={(e) => handleSelectGap(4, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[4] === data.gaps[3].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 4 ]</option>
-                  {data.gaps[3].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {", initial traffic overwhelmed database capacity."}
-              </p>
+                <!-- Prompt Title & Question Text -->
+                <div class="my-auto py-4">
+                    <h3 id="prompt-title" class="text-2xl sm:text-3xl font-extrabold mb-4 text-slate-900 dark:text-white">
+                        Challenging Project
+                    </h3>
+                    <p id="prompt-text" class="text-lg sm:text-xl text-slate-700 dark:text-slate-200 leading-relaxed font-normal">
+                        What is the most challenging project or job experience you have ever had, and what made it so difficult?
+                    </p>
+                </div>
 
-              <p>
-                In order to{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[5] || ''}
-                  onChange={(e) => handleSelectGap(5, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[5] === data.gaps[4].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 5 ]</option>
-                  {data.gaps[4].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}this crisis, our senior developers worked continuously. As a{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[6] || ''}
-                  onChange={(e) => handleSelectGap(6, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[6] === data.gaps[5].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 6 ]</option>
-                  {data.gaps[5].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}of their rapid intervention, we successfully{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[7] || ''}
-                  onChange={(e) => handleSelectGap(7, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[7] === data.gaps[6].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 7 ]</option>
-                  {data.gaps[6].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}the login issue. Overall, although I{" "}
-                <select
-                  disabled={isSubmitted}
-                  value={userGaps[8] || ''}
-                  onChange={(e) => handleSelectGap(8, e.target.value)}
-                  className={`inline-block mx-1 font-mono font-bold rounded-xl px-2.5 py-1 text-xs focus:outline-none border ${
-                    isSubmitted
-                      ? userGaps[8] === data.gaps[7].correct
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                        : 'bg-rose-500/20 border-rose-500 text-rose-400'
-                      : 'bg-slate-100 dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-teal-600 dark:text-teal-300'
-                  }`}
-                >
-                  <option value="">[ Select 8 ]</option>
-                  {data.gaps[7].options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-                </select>
-                {" "}such a complex crash before, it reinforced the crucial need for thorough pre-launch testing protocols.
-              </p>
+                <!-- Target Focus & Starter Chips -->
+                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Target Focus Grammar:</span>
+                        <span id="prompt-target-focus" class="text-xs font-bold px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                            Experience + Problem
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-wrap" id="prompt-starters-container">
+                        <!-- Clickable phrase chips generated via JS -->
+                    </div>
+                </div>
+
+                <!-- Deck Navigation Controls -->
+                <div class="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <button onclick="prevPrompt()" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        <span>Previous</span>
+                    </button>
+
+                    <button onclick="randomPrompt()" class="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-semibold text-sm transition-all text-slate-700 dark:text-slate-300 flex items-center gap-2" title="Pick Random Prompt">
+                        <i class="fa-solid fa-shuffle"></i>
+                        <span class="hidden sm:inline">Randomize</span>
+                    </button>
+
+                    <button onclick="nextPrompt()" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-all flex items-center gap-2 shadow-md">
+                        <span>Next Prompt</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW PANEL 4: CASE AUDIT STUDIO & SYNTAX PARSER -->
+        <div id="view-studio" class="tab-view hidden flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold">Live Case Audit Studio</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Transcribe or draft case debriefs. The real-time RegEx parser verifies required B1 structures.</p>
+                </div>
+
+                <!-- Target Indicators Badge Bar -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="badge-exp" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-400 text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <i class="fa-solid fa-circle text-[10px]"></i> Experiences
+                    </span>
+                    <span id="badge-mistake" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-400 text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <i class="fa-solid fa-circle text-[10px]"></i> Mistakes/Modals
+                    </span>
+                    <span id="badge-solution" class="px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-400 text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <i class="fa-solid fa-circle text-[10px]"></i> Problems/Solutions
+                    </span>
+                </div>
             </div>
 
-            <div className="flex justify-end pt-4">
-              {!isSubmitted ? (
-                <button
-                  onClick={handleCheckReport}
-                  disabled={Object.keys(userGaps).length < 8}
-                  className={`px-6 py-3 rounded-xl text-xs font-bold transition shadow-md ${
-                    Object.keys(userGaps).length === 8
-                      ? 'bg-teal-600 hover:bg-teal-500 text-white shadow-teal-600/30'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  Submit Incident Report Gap-Fill
+            <!-- Quick Phrase Insertion Toolbar -->
+            <div class="glass-card rounded-xl p-3 flex items-center gap-2 overflow-x-auto text-xs">
+                <span class="font-bold text-slate-400 whitespace-nowrap mr-1"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i>Quick Insert:</span>
+                <button onclick="insertTextAtCursor('I have managed to ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    I have managed to...
                 </button>
-              ) : (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 px-5 py-2.5 rounded-2xl text-xs font-bold text-emerald-600 dark:text-emerald-300">
-                  🎉 Completed Report: {score} / 8 Correct Answers!
-                </div>
-              )}
+                <button onclick="insertTextAtCursor('We were supposed to ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    We were supposed to...
+                </button>
+                <button onclick="insertTextAtCursor('I had to ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    I had to...
+                </button>
+                <button onclick="insertTextAtCursor('I should have ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    I should have...
+                </button>
+                <button onclick="insertTextAtCursor('Due to ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    Due to...
+                </button>
+                <button onclick="insertTextAtCursor('The main obstacle was ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    The main obstacle was...
+                </button>
+                <button onclick="insertTextAtCursor('We succeeded in ')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white transition-colors whitespace-nowrap font-medium">
+                    We succeeded in...
+                </button>
             </div>
 
-          </div>
+            <!-- Workspace Text Area and Real-time Analyzer -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Main Editor Area -->
+                <div class="lg:col-span-2 flex flex-col gap-3">
+                    <div class="relative">
+                        <textarea id="audit-editor" oninput="handleAuditInput()" placeholder="Type or transcribe the Case Incident Debrief here... E.g., 'I have worked in customer service for two years. Last week, we were supposed to launch our new website, but due to a server error, we had to delay it. We should have tested the database earlier, but we managed to fix the issue within two hours...'" class="w-full h-72 sm:h-80 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-sans text-sm sm:text-base leading-relaxed text-slate-900 dark:text-slate-100 shadow-inner"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <div class="flex items-center gap-4">
+                            <span>Words: <strong id="metric-word-count" class="text-slate-800 dark:text-slate-200 font-mono">0</strong></span>
+                            <span>Sentences: <strong id="metric-sentence-count" class="text-slate-800 dark:text-slate-200 font-mono">0</strong></span>
+                        </div>
+                        <button onclick="clearAuditEditor()" class="text-slate-400 hover:text-rose-500 transition-colors">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Clear Workspace
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Real-time RegEx Syntax Diagnostic Column -->
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-base mb-3 flex items-center justify-between">
+                            <span>Syntax Audit Diagnostics</span>
+                            <span id="syntax-score-badge" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-500">0 / 100</span>
+                        </h3>
+
+                        <!-- Live Category Checklist -->
+                        <div class="space-y-3 text-xs">
+                            <!-- Pillar 1 Check -->
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                                <i id="check-icon-exp" class="fa-solid fa-circle-xmark text-rose-500 text-base mt-0.5"></i>
+                                <div>
+                                    <strong class="block text-slate-800 dark:text-slate-200">1. Past Experiences Tense</strong>
+                                    <p id="check-desc-exp" class="text-slate-500 mt-0.5">Missing Present Perfect (have/has + V3) or Past Simple time anchor.</p>
+                                </div>
+                            </div>
+
+                            <!-- Pillar 2 Check -->
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                                <i id="check-icon-mistake" class="fa-solid fa-circle-xmark text-rose-500 text-base mt-0.5"></i>
+                                <div>
+                                    <strong class="block text-slate-800 dark:text-slate-200">2. Past Obligation Modals</strong>
+                                    <p id="check-desc-mistake" class="text-slate-500 mt-0.5">Missing 'was/were supposed to', 'had to', or 'should have + V3'.</p>
+                                </div>
+                            </div>
+
+                            <!-- Pillar 3 Check -->
+                            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                                <i id="check-icon-solution" class="fa-solid fa-circle-xmark text-rose-500 text-base mt-0.5"></i>
+                                <div>
+                                    <strong class="block text-slate-800 dark:text-slate-200">3. Cause & Solution Connectors</strong>
+                                    <p id="check-desc-solution" class="text-slate-500 mt-0.5">Missing 'due to', 'caused by', 'managed to', or 'succeeded in'.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="transferDebriefToScorecard()" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md">
+                        <i class="fa-solid fa-file-export"></i>
+                        <span>Transfer Debrief to Scorecard</span>
+                    </button>
+                </div>
+            </div>
         </div>
-      );
-    }
 
-    // =========================================================================
-    // MODULE 6: REFLECTION JOURNAL & PRINTABLE CERTIFICATE
-    // =========================================================================
-    function Module6ReflectionCertificate({ studentName, setStudentName, xp, currentRank, addXp, soundEnabled }) {
-      const [journalText, setJournalText] = useState(
-        "Last month, our team experienced a project delay due to an unexpected technical obstacle. Looking back, we should have performed a stress test earlier. In order to resolve the situation, we held an emergency meeting and tackled the issue immediately."
-      );
-      const [detectedTags, setDetectedTags] = useState([]);
+        <!-- VIEW PANEL 5: PEER EVALUATION SCORECARD & PRINTABLE DOSSIER -->
+        <div id="view-scorecard" class="tab-view hidden flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold">Auditor's Evaluation & Dossier</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">Fill out the peer verification rubric to generate the official printable Audit Report.</p>
+                </div>
 
-      const TARGET_TRIGGERS = [
-        { label: "should have / shouldn't have", regex: /should (have|not have|n't have)/i },
-        { label: "due to / because of", regex: /(due to|because of)/i },
-        { label: "was/were supposed to", regex: /(was|were) supposed to/i },
-        { label: "in order to / to resolve", regex: /(in order to|to resolve)/i },
-        { label: "tackle / resolve", regex: /(tackle|resolve)/i },
-        { label: "experienced / encountered", regex: /(experienced|encountered)/i },
-        { label: "wish / if only", regex: /(wish|if only)/i }
-      ];
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs flex items-center gap-2 transition-all shadow-md">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Print Official Dossier</span>
+                    </button>
+                </div>
+            </div>
 
-      // Auto scan for grammar signposts
-      useEffect(() => {
-        const text = journalText;
-        const found = TARGET_TRIGGERS.filter(item => item.regex.test(text));
-        setDetectedTags(found);
-      }, [journalText]);
+            <!-- Scorecard Form Inputs -->
+            <div class="glass-card rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-md">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Lead Case Auditor (Role A)</label>
+                        <input type="text" id="input-auditor-name" value="Officer Alex Turner" oninput="syncDossier()" class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Case Representative (Role B)</label>
+                        <input type="text" id="input-rep-name" value="Officer Jordan Lee" oninput="syncDossier()" class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
 
-      const handlePrint = () => {
-        window.print();
-      };
+                <!-- Criteria Checklist Table -->
+                <h3 class="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3">Evaluation Criteria Checklist</h3>
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="chk-crit-1" checked onchange="syncDossier()" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+                            <div>
+                                <span class="text-sm font-semibold block">Experience Clarity (Tense Accuracy)</span>
+                                <span class="text-xs text-slate-500">Distinguishes between Present Perfect for experiences and Past Simple for specific times.</span>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-brand-500">+25 pts</span>
+                    </label>
 
-      useEffect(() => {
-        if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.6 }
-          });
+                    <label class="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="chk-crit-2" checked onchange="syncDossier()" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+                            <div>
+                                <span class="text-sm font-semibold block">Mistakes & Obligations Analysis</span>
+                                <span class="text-xs text-slate-500">Uses past modals (was/were supposed to, had to, should have + V3) accurately.</span>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-brand-500">+25 pts</span>
+                    </label>
+
+                    <label class="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="chk-crit-3" checked onchange="syncDossier()" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+                            <div>
+                                <span class="text-sm font-semibold block">Problem & Solution Vocabulary</span>
+                                <span class="text-xs text-slate-500">Connects cause and effect cleanly using 'due to', 'managed to', or 'succeeded in'.</span>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-brand-500">+25 pts</span>
+                    </label>
+
+                    <label class="flex items-center justify-between p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="chk-crit-4" checked onchange="syncDossier()" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+                            <div>
+                                <span class="text-sm font-semibold block">Fluency & Interactive Recount</span>
+                                <span class="text-xs text-slate-500">Maintains smooth dialogue, responds to auditor prompts, and explains clearly.</span>
+                            </div>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-brand-500">+25 pts</span>
+                    </label>
+                </div>
+
+                <!-- Verdict & Feedback -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Official Audit Verdict</label>
+                        <select id="select-verdict" onchange="syncDossier()" class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="Certified Audit - Full B1 Mastery">Certified Audit - Full B1 Mastery</option>
+                            <option value="Conditional Approval - Minor Grammar Revisions Needed">Conditional Approval - Minor Grammar Revisions</option>
+                            <option value="Audit Pending - Requires Follow-up Interview">Audit Pending - Requires Follow-up</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Auditor Recommendations / Notes</label>
+                        <input type="text" id="input-audit-notes" value="Great use of 'managed to' and past modals. Remember to check irregular past participles." oninput="syncDossier()" class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE PREVIEW OF DOSSIER -->
+            <div class="mt-4">
+                <h3 class="font-bold text-sm uppercase tracking-wider text-slate-400 mb-3"><i class="fa-solid fa-eye mr-1"></i>Official Dossier Preview</h3>
+                
+                <div id="dossier-preview" class="glass-card rounded-2xl p-6 sm:p-8 border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xl relative font-sans">
+                    <!-- Dossier Official Stamp Header -->
+                    <div class="flex items-center justify-between border-b-2 border-slate-900 dark:border-slate-100 pb-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold tracking-widest uppercase text-brand-600 dark:text-brand-400">Global Incident & Learning Audit Bureau</span>
+                            <h2 class="text-2xl font-black uppercase tracking-tight">Official Case Audit Dossier</h2>
+                            <p class="text-xs text-slate-500">Ref: EXP-AUDIT-2026-B1</p>
+                        </div>
+                        <div class="w-16 h-16 rounded-full border-4 border-brand-600 flex items-center justify-center text-brand-600 font-black text-xs uppercase tracking-tighter text-center rotate-12">
+                            VERIFIED<br>AUDIT
+                        </div>
+                    </div>
+
+                    <!-- Dossier Metadata -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs mb-6 p-4 rounded-xl bg-slate-100 dark:bg-slate-800/50">
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Auditor:</span>
+                            <strong id="dos-auditor" class="text-slate-800 dark:text-slate-200">Officer Alex Turner</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Representative:</span>
+                            <strong id="dos-rep" class="text-slate-800 dark:text-slate-200">Officer Jordan Lee</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Audit Score:</span>
+                            <strong id="dos-score" class="text-brand-600 font-bold text-sm">100 / 100 PTS</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Date:</span>
+                            <strong id="dos-date" class="text-slate-800 dark:text-slate-200">Oct 2026</strong>
+                        </div>
+                    </div>
+
+                    <!-- Dossier Debrief Transcript -->
+                    <div class="mb-6">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Transcribed Case Incident Summary:</h4>
+                        <div id="dos-transcript" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 min-h-[80px]">
+                            [No debrief transferred yet. Write or transcribe in Tab 4 and click 'Transfer Debrief']
+                        </div>
+                    </div>
+
+                    <!-- Dossier Verdict & Notes -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 text-xs">
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Audit Verdict:</span>
+                            <span id="dos-verdict" class="font-bold text-brand-600 text-sm">Certified Audit - Full B1 Mastery</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block font-semibold">Auditor Notes:</span>
+                            <span id="dos-notes" class="italic text-slate-600 dark:text-slate-300">Great use of 'managed to' and past modals.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto py-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 no-print">
+        <p>ExperienceLab Studio &bull; B1 ESL Validating Experiences, Mistakes & Problems &bull; Global Incident Audit Bureau</p>
+    </footer>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        /* ==========================================================================
+           STATE & DATA CONFIGURATION
+           ========================================================================== */
+        const state = {
+            soundEnabled: true,
+            timerSeconds: 600, // 10 Minutes Total
+            timerRunning: false,
+            timerInterval: null,
+            currentStage: 1,
+            activeTab: 'timer',
+            promptIndex: 0,
+            promptFilter: 'All',
+            auditText: '',
+            regexScore: 0,
+            criteriaScore: 100
+        };
+
+        // 20 Outcome Question Prompts Dataset
+        const PROMPTS_DATA = [
+            {
+                id: 1,
+                title: "Challenging Project",
+                category: "Work & Projects",
+                text: "What is the most challenging project or job experience you have ever had, and what made it so difficult?",
+                targetFocus: "Experience + Problem",
+                starters: ["I have worked on...", "We were supposed to finish...", "Due to a tight deadline...", "We managed to solve it by..."]
+            },
+            {
+                id: 2,
+                title: "Travel Mishap",
+                category: "Travel & Life",
+                text: "Have you ever experienced a major travel delay or lost item? What were you supposed to do, and how did you resolve it?",
+                targetFocus: "Experience + Obligation + Problem",
+                starters: ["I have traveled to...", "I was supposed to catch...", "The main problem was...", "I had to call..."]
+            },
+            {
+                id: 3,
+                title: "Misunderstood Instructions",
+                category: "Communication",
+                text: "Describe a time when you misunderstood directions or instructions. What should you have done differently?",
+                targetFocus: "Mistake + Past Regret",
+                starters: ["I misunderstood...", "I was supposed to submit...", "I should have asked...", "As a result, I had to..."]
+            },
+            {
+                id: 4,
+                title: "Technical Failure",
+                category: "Technology",
+                text: "Have you ever faced a sudden technical failure during an important task? How did you manage to fix it?",
+                targetFocus: "Problem + Solution",
+                starters: ["My system crashed when...", "The failure was caused by...", "We had to restart...", "We managed to restore..."]
+            },
+            {
+                id: 5,
+                title: "Budget Oversight",
+                category: "Work & Projects",
+                text: "Describe a situation where you spent more money or time than you were supposed to. How did you handle the consequence?",
+                targetFocus: "Mistake + Obligation",
+                starters: ["I spent more because...", "I was supposed to keep...", "I should have double-checked...", "I managed to cover..."]
+            },
+            {
+                id: 6,
+                title: "Difficult Teammate",
+                category: "Work & Projects",
+                text: "What experience do you have working with a difficult partner, and what was the ultimate outcome?",
+                targetFocus: "Experience + Problem",
+                starters: ["I have worked with...", "The main issue was...", "We were supposed to share...", "We succeeded in finishing..."]
+            },
+            {
+                id: 7,
+                title: "Missed Deadline",
+                category: "Work & Projects",
+                text: "Have you ever missed an important deadline? What had to be done to compensate for the delay?",
+                targetFocus: "Mistake + Forced Action",
+                starters: ["I missed the deadline because...", "I had to work extra hours...", "Due to unexpected delay...", "I should have planned..."]
+            },
+            {
+                id: 8,
+                title: "Cultural Obstacle",
+                category: "Travel & Life",
+                text: "Have you ever lived, traveled, or worked in an unfamiliar environment? What unexpected problems arose?",
+                targetFocus: "Experience + Problem",
+                starters: ["I have visited...", "The main obstacle was...", "I had to adapt to...", "I succeeded in learning..."]
+            },
+            {
+                id: 9,
+                title: "Customer Crisis",
+                category: "Communication",
+                text: "Describe an experience where a customer or client was furious. How did you de-escalate the issue?",
+                targetFocus: "Experience + Problem/Solution",
+                starters: ["I have handled a client who...", "The issue was caused by...", "I was supposed to deliver...", "I managed to satisfy them..."]
+            },
+            {
+                id: 10,
+                title: "Choice & Regret",
+                category: "Travel & Life",
+                text: "What is one past decision you made that turned out to be a mistake? What should you have done instead?",
+                targetFocus: "Mistake + Past Regret",
+                starters: ["I decided to buy/go...", "I should have researched...", "I was supposed to wait...", "I had to accept..."]
+            },
+            {
+                id: 11,
+                title: "Unprepared Presentation",
+                category: "Communication",
+                text: "Have you ever had to give a speech or presentation when you felt completely unprepared? What happened?",
+                targetFocus: "Experience + Problem",
+                starters: ["I had to present when...", "I was supposed to prepare...", "Due to sudden notice...", "I managed to improvise..."]
+            },
+            {
+                id: 12,
+                title: "Lost in Transit",
+                category: "Travel & Life",
+                text: "Describe a time when you got lost or arrived at the wrong destination. What were you supposed to do?",
+                targetFocus: "Mistake + Unmet Expectation",
+                starters: ["I got lost when...", "I was supposed to turn...", "The mistake was caused by...", "I had to ask for help..."]
+            },
+            {
+                id: 13,
+                title: "Conflicting Priorities",
+                category: "Work & Projects",
+                text: "Have you ever faced two urgent problems at the exact same time? How did you prioritize them?",
+                targetFocus: "Problem + Solution Strategy",
+                starters: ["I had two problems when...", "I was supposed to finish both...", "Due to urgency...", "I succeeded in prioritizing..."]
+            },
+            {
+                id: 14,
+                title: "Communication Breakdown",
+                category: "Communication",
+                text: "Describe a time when miscommunication caused a serious problem between friends or colleagues.",
+                targetFocus: "Problem + Cause",
+                starters: ["The problem was caused by...", "We were supposed to meet...", "I should have confirmed...", "We managed to clarify..."]
+            },
+            {
+                id: 15,
+                title: "Organizing an Event",
+                category: "Work & Projects",
+                text: "Have you ever been in charge of organizing an event or gathering? What unexpected obstacles occurred?",
+                targetFocus: "Experience + Problem",
+                starters: ["I have organized...", "The main issue was...", "We had to change...", "We managed to host..."]
+            },
+            {
+                id: 16,
+                title: "Forgotten Duty",
+                category: "Travel & Life",
+                text: "Describe a mistake where you forgot a critical obligation (e.g., keys, appointment, document). What had to be done?",
+                targetFocus: "Mistake + Forced Action",
+                starters: ["I forgot my...", "I was supposed to bring...", "I had to go back...", "I should have set a reminder..."]
+            },
+            {
+                id: 17,
+                title: "Hard Skill Struggle",
+                category: "Technology",
+                text: "What is a skill or subject you struggled to learn at first? What problems did you overcome?",
+                targetFocus: "Experience + Solution",
+                starters: ["I have tried learning...", "The main obstacle was...", "I had to practice...", "I succeeded in mastering..."]
+            },
+            {
+                id: 18,
+                title: "Accidental Damage",
+                category: "Travel & Life",
+                text: "Have you ever damaged or broken something that belonged to someone else? How did you fix the mistake?",
+                targetFocus: "Mistake + Forced Action",
+                starters: ["I accidentally broke...", "I was supposed to handle it...", "I had to replace...", "I managed to apologize..."]
+            },
+            {
+                id: 19,
+                title: "Unplanned Disruptions",
+                category: "Travel & Life",
+                text: "Describe a time when bad weather or unexpected events ruined your plans. How did you adapt?",
+                targetFocus: "Problem + Solution",
+                starters: ["Our plans were ruined due to...", "We were supposed to go...", "We had to stay...", "We managed to enjoy..."]
+            },
+            {
+                id: 20,
+                title: "Proudest Resolution",
+                category: "Work & Projects",
+                text: "Looking back at your past experiences, what is the most complex problem you have ever successfully solved?",
+                targetFocus: "Synthesis (Experience + Solution)",
+                starters: ["I have solved...", "The main issue was caused by...", "We were supposed to deal with...", "We succeeded in overcoming..."]
+            }
+        ];
+
+        /* ==========================================================================
+           AUDIO SOUND SYNTHESIZER (Web Audio API)
+           ========================================================================== */
+        function playSound(type) {
+            if (!state.soundEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'tick') {
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.02, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.04);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.04);
+                } else if (type === 'stage') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12); // E5
+                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.24); // G5
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else if (type === 'complete') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.8);
+                }
+            } catch (e) {
+                console.log("Audio not supported or interaction required");
+            }
         }
-        playSoundEffect('fanfare', soundEnabled);
-      }, []);
 
-      const wordCount = journalText.trim().split(/\s+/).filter(Boolean).length;
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.innerHTML = state.soundEnabled ? 
+                '<i class="fa-solid fa-volume-high text-lg"></i>' : 
+                '<i class="fa-solid fa-volume-xmark text-lg text-rose-500"></i>';
+            showToast(state.soundEnabled ? "Audio chime effects enabled" : "Audio muted");
+        }
 
-      return (
-        <div className="max-w-4xl mx-auto space-y-8">
-          
-          {/* Reflection Journal Section */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 no-print">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-500/30">
-                Module 6 • Incident Reflection Studio
-              </span>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white mt-1">
-                Draft Your Incident & Solution Case Summary
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Describe a past mistake, regret, or obstacle. Use target past modals and linkers!
-              </p>
-            </div>
+        /* ==========================================================================
+           TOAST NOTIFICATION SYSTEM
+           ========================================================================== */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-3.5 rounded-xl text-xs font-semibold text-white shadow-xl flex items-center gap-2 pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0 ${
+                type === 'stage' ? 'bg-audit-blue' : type === 'swap' ? 'bg-audit-purple' : 'bg-slate-800'
+            }`;
+            toast.innerHTML = `<i class="fa-solid fa-bell"></i> <span>${message}</span>`;
+            container.appendChild(toast);
 
-            {/* Live Text Area */}
-            <textarea
-              rows={5}
-              value={journalText}
-              onChange={(e) => setJournalText(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-100 font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
 
-            {/* Target Grammar Detector Chips */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-                  Live Target Grammar Detector ({detectedTags.length} / 7):
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono">Word Count: {wordCount} words</span>
-              </div>
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
 
-              <div className="flex flex-wrap gap-2">
-                {detectedTags.map((tag, idx) => (
-                  <span key={idx} className="bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-500/40 text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                    <span>✓</span>
-                    <span>{tag.label}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+        /* ==========================================================================
+           NAVIGATION & TABS LOGIC
+           ========================================================================== */
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('bg-brand-600', 'text-white', 'shadow-md', 'shadow-brand-600/20');
+                el.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
 
-          {/* PRINTABLE CERTIFICATE CARD */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 no-print">
-            <div className="flex flex-wrap justify-between items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">🎓 Official Completion Certificate</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Export or print your verified proof of achievement in B1–B2 problem-solving grammar.</p>
-              </div>
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            const activeView = document.getElementById(`view-${tabId}`);
+            
+            if (activeView) activeView.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md', 'shadow-brand-600/20');
+                activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+            }
+        }
 
-              <div className="flex items-center space-x-3">
-                <input
-                  type="text"
-                  value={studentName}
-                  onChange={(e) => setStudentName(e.target.value)}
-                  className="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="Your Full Name"
-                />
-                <button
-                  onClick={handlePrint}
-                  className="bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-md shadow-teal-600/30 flex items-center gap-2"
-                >
-                  🖨️ Print Certificate
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.className = 'fa-solid fa-sun text-lg text-amber-500';
+            } else {
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-moon text-lg';
+            }
+        }
+
+        /* ==========================================================================
+           10-MINUTE TIMER & STAGE SYSTEM
+           ========================================================================== */
+        function formatTime(totalSec) {
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay() {
+            const timeStr = formatTime(state.timerSeconds);
+            document.getElementById('main-timer-display').innerText = timeStr;
+            document.getElementById('mini-timer-display').innerText = timeStr;
+            updateStageState();
+        }
+
+        function updateStageState() {
+            // Stage Boundaries (600s total)
+            // Stage 1: 600s - 480s (10:00 - 8:00 remaining -> Prep)
+            // Stage 2: 480s - 300s (8:00 - 5:00 remaining -> Audit Round 1)
+            // Stage 3: 300s - 120s (5:00 - 2:00 remaining -> Audit Round 2 SWAP ROLES)
+            // Stage 4: 120s - 0s   (2:00 - 0:00 remaining -> Peer Scorecard)
+
+            let newStage = 1;
+            const sec = state.timerSeconds;
+
+            if (sec > 480) newStage = 1;
+            else if (sec > 300) newStage = 2;
+            else if (sec > 120) newStage = 3;
+            else newStage = 4;
+
+            if (newStage !== state.currentStage) {
+                state.currentStage = newStage;
+                playSound('stage');
+                triggerStageNotification(newStage);
+            }
+
+            // Update Progress Bars & Banners
+            const stageBanner = document.getElementById('stage-banner');
+            const stageInstr = document.getElementById('stage-instructions');
+            const miniStage = document.getElementById('mini-stage-badge');
+
+            // Role Card Highlighting
+            const cardA = document.getElementById('role-card-a');
+            const cardB = document.getElementById('role-card-b');
+
+            // Opacity resets
+            document.getElementById('stage-bar-1').style.opacity = newStage >= 1 ? '1' : '0.3';
+            document.getElementById('stage-bar-2').style.opacity = newStage >= 2 ? '1' : '0.3';
+            document.getElementById('stage-bar-3').style.opacity = newStage >= 3 ? '1' : '0.3';
+            document.getElementById('stage-bar-4').style.opacity = newStage >= 4 ? '1' : '0.3';
+
+            if (newStage === 1) {
+                stageBanner.className = "px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2";
+                stageBanner.innerHTML = `<i class="fa-solid fa-compass animate-spin"></i> STAGE 1: TRI-GRAMMAR PREP & REVIEW (0:00 – 2:00)`;
+                stageInstr.innerText = "Review target structures in Tab 2. Role A chooses initial questions from Tab 3.";
+                miniStage.innerText = "Stage 1";
+                miniStage.className = "text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium";
+                cardA.classList.remove('ring-4', 'ring-audit-blue');
+                cardB.classList.remove('ring-4', 'ring-audit-purple');
+            } else if (newStage === 2) {
+                stageBanner.className = "px-4 py-1.5 rounded-full bg-audit-blue/10 text-audit-blue font-bold text-sm tracking-wide mb-2 flex items-center gap-2";
+                stageBanner.innerHTML = `<i class="fa-solid fa-comments"></i> STAGE 2: AUDIT ROUND 1 - ROLE A INTERVIEWS ROLE B (2:00 – 5:00)`;
+                stageInstr.innerText = "Role A asks prompts from Tab 3. Role B recounts past case histories using target grammar.";
+                miniStage.innerText = "Stage 2";
+                miniStage.className = "text-xs px-2 py-0.5 rounded bg-audit-blue/10 text-audit-blue font-medium";
+                cardA.classList.add('ring-4', 'ring-audit-blue');
+                cardB.classList.remove('ring-4', 'ring-audit-purple');
+            } else if (newStage === 3) {
+                stageBanner.className = "px-4 py-1.5 rounded-full bg-audit-purple/10 text-audit-purple font-bold text-sm tracking-wide mb-2 flex items-center gap-2";
+                stageBanner.innerHTML = `<i class="fa-solid fa-right-left"></i> STAGE 3: AUDIT ROUND 2 - 🔄 SWAP ROLES! (5:00 – 8:00)`;
+                stageInstr.innerText = "SWAP ROLES NOW! Role B becomes Lead Auditor and interviews Role A using new prompts.";
+                miniStage.innerText = "Stage 3 (SWAP)";
+                miniStage.className = "text-xs px-2 py-0.5 rounded bg-audit-purple/10 text-audit-purple font-medium";
+                cardA.classList.remove('ring-4', 'ring-audit-blue');
+                cardB.classList.add('ring-4', 'ring-audit-purple');
+            } else if (newStage === 4) {
+                stageBanner.className = "px-4 py-1.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-sm tracking-wide mb-2 flex items-center gap-2";
+                stageBanner.innerHTML = `<i class="fa-solid fa-square-check"></i> STAGE 4: PEER SCORECARD & OFFICIAL REPORT (8:00 – 10:00)`;
+                stageInstr.innerText = "Transcribe debriefs in Tab 4 and complete the peer verification scorecard in Tab 5.";
+                miniStage.innerText = "Stage 4";
+                miniStage.className = "text-xs px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 font-medium";
+                cardA.classList.remove('ring-4', 'ring-audit-blue');
+                cardB.classList.remove('ring-4', 'ring-audit-purple');
+            }
+        }
+
+        function triggerStageNotification(stageNum) {
+            if (stageNum === 2) {
+                showToast("Stage 2 Started: Role A interviews Role B!", 'stage');
+            } else if (stageNum === 3) {
+                showToast("🔄 STAGE 3 ROLE SWAP! Role B is now the Lead Auditor!", 'swap');
+            } else if (stageNum === 4) {
+                showToast("Stage 4: Time to complete Peer Scorecard & Print Dossier!", 'stage');
+            }
+        }
+
+        function toggleTimer() {
+            if (state.timerRunning) {
+                clearInterval(state.timerInterval);
+                state.timerRunning = false;
+                document.getElementById('timer-btn-text').innerText = "Resume Timer";
+                document.getElementById('timer-start-btn').classList.replace('bg-rose-600', 'bg-brand-600');
+            } else {
+                state.timerRunning = true;
+                document.getElementById('timer-btn-text').innerText = "Pause Timer";
+                document.getElementById('timer-start-btn').classList.replace('bg-brand-600', 'bg-rose-600');
+                
+                state.timerInterval = setInterval(() => {
+                    if (state.timerSeconds > 0) {
+                        state.timerSeconds--;
+                        updateTimerDisplay();
+                        if (state.timerSeconds % 60 === 0) playSound('tick');
+                    } else {
+                        clearInterval(state.timerInterval);
+                        state.timerRunning = false;
+                        playSound('complete');
+                        showToast("10-Minute Audit Session Complete!", 'stage');
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(state.timerInterval);
+            state.timerRunning = false;
+            state.timerSeconds = 600;
+            state.currentStage = 1;
+            document.getElementById('timer-btn-text').innerText = "Start Audit Timer";
+            document.getElementById('timer-start-btn').className = "px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-brand-600/30";
+            updateTimerDisplay();
+        }
+
+        function jumpToStage(stageNum) {
+            if (stageNum === 1) state.timerSeconds = 600;
+            else if (stageNum === 2) state.timerSeconds = 480;
+            else if (stageNum === 3) state.timerSeconds = 300;
+            else if (stageNum === 4) state.timerSeconds = 120;
+            updateTimerDisplay();
+        }
+
+        /* ==========================================================================
+           20 OUTCOME PROMPTS DECK LOGIC
+           ========================================================================== */
+        function renderCategories() {
+            const categories = ["All", "Work & Projects", "Travel & Life", "Communication", "Technology"];
+            const container = document.getElementById('category-filter-container');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="filterPrompts('${cat}')" class="px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    state.promptFilter === cat ? 'bg-brand-600 text-white shadow' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300'
+                }">
+                    ${cat}
                 </button>
-              </div>
-            </div>
-          </div>
+            `).join('');
+        }
 
-          {/* FORMAL CERTIFICATE ELEMENT */}
-          <div 
-            id="printable-certificate"
-            className="bg-slate-950 p-8 sm:p-12 rounded-3xl border-4 border-teal-500/40 text-center space-y-6 relative overflow-hidden shadow-2xl text-slate-100"
-          >
-            <div className="absolute top-4 left-4 text-[10px] font-mono text-teal-400/60">
-              CERT-ID: LAB-2026-B2-INCIDENT
-            </div>
-            <div className="absolute top-4 right-4 text-[10px] font-mono text-teal-400/60">
-              CEFR B1–B2 INTERMEDIATE ENGLISH
-            </div>
+        function filterPrompts(category) {
+            state.promptFilter = category;
+            renderCategories();
+            state.promptIndex = 0;
+            renderCurrentPrompt();
+        }
 
-            <div className="space-y-2 pt-4">
-              <span className="text-4xl">👑</span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-widest uppercase text-amber-400">
-                Certificate of Competency
-              </h2>
-              <p className="text-xs text-slate-300 uppercase tracking-widest font-mono">
-                Experience & Incident Lab • Mistakes, Regrets & Problem Solving
-              </p>
-            </div>
+        function getFilteredPrompts() {
+            if (state.promptFilter === "All") return PROMPTS_DATA;
+            return PROMPTS_DATA.filter(p => p.category === state.promptFilter);
+        }
 
-            <div className="py-4 border-y border-teal-500/30 space-y-3">
-              <p className="text-xs text-slate-400">This certifies that</p>
-              <p className="text-2xl sm:text-3xl font-black text-white underline decoration-teal-500 decoration-2">{studentName}</p>
-              <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed pt-2">
-                has successfully completed all diagnostic modules, demonstrating mastery in **CEFR B1–B2 past modals of regret**, cause and effect sentence structures, workplace incident navigation, and professional problem-solving vocabulary.
-              </p>
-            </div>
+        function renderCurrentPrompt() {
+            const filtered = getFilteredPrompts();
+            if (filtered.length === 0) return;
+            const prompt = filtered[state.promptIndex];
 
-            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto text-center text-xs">
-              <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px]">Rank Achieved</span>
-                <span className="text-xs font-black text-amber-400">{currentRank.title}</span>
-              </div>
-              <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px]">Total Score</span>
-                <span className="text-xs font-black text-teal-300">{xp} XP Points</span>
-              </div>
-              <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800">
-                <span className="text-slate-400 block text-[10px]">Status</span>
-                <span className="text-xs font-black text-emerald-400">VERIFIED PASSED</span>
-              </div>
-            </div>
-          </div>
+            document.getElementById('prompt-number-badge').innerText = `#${String(prompt.id).padStart(2, '0')} / 20`;
+            document.getElementById('prompt-category-badge').innerText = prompt.category;
+            document.getElementById('prompt-title').innerText = prompt.title;
+            document.getElementById('prompt-text').innerText = prompt.text;
+            document.getElementById('prompt-target-focus').innerText = prompt.targetFocus;
 
-        </div>
-      );
-    }
+            // Render Starter Chips
+            const startersContainer = document.getElementById('prompt-starters-container');
+            startersContainer.innerHTML = prompt.starters.map(starter => `
+                <button onclick="copyStarter('${starter.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-amber-500/20 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1">
+                    <i class="fa-solid fa-quote-left text-[10px] text-amber-500"></i>
+                    <span>"${starter}"</span>
+                </button>
+            `).join('');
+        }
 
-    // RENDER APPLICATION
-    const rootElement = document.getElementById('root');
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(<App />);
-  </script>
+        function nextPrompt() {
+            const filtered = getFilteredPrompts();
+            state.promptIndex = (state.promptIndex + 1) % filtered.length;
+            renderCurrentPrompt();
+        }
+
+        function prevPrompt() {
+            const filtered = getFilteredPrompts();
+            state.promptIndex = (state.promptIndex - 1 + filtered.length) % filtered.length;
+            renderCurrentPrompt();
+        }
+
+        function randomPrompt() {
+            const filtered = getFilteredPrompts();
+            state.promptIndex = Math.floor(Math.random() * filtered.length);
+            renderCurrentPrompt();
+        }
+
+        function speakCurrentPrompt() {
+            const promptText = document.getElementById('prompt-text').innerText;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(promptText);
+                utterance.rate = 0.9; // Clear B1 tempo
+                utterance.pitch = 1.0;
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+                showToast("Playing Prompt Speech Audio", 'info');
+            } else {
+                showToast("Speech Synthesis not supported on browser", 'info');
+            }
+        }
+
+        function copyStarter(phrase) {
+            insertTextAtCursor(phrase);
+            showToast(`Copied phrase to Studio Editor: "${phrase}"`);
+            switchTab('studio');
+        }
+
+        /* ==========================================================================
+           LIVE CASE AUDIT STUDIO & REGEX SYNTAX PARSER
+           ========================================================================== */
+        function insertTextAtCursor(text) {
+            const editor = document.getElementById('audit-editor');
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const val = editor.value;
+            editor.value = val.substring(0, start) + text + val.substring(end);
+            editor.focus();
+            editor.selectionStart = editor.selectionEnd = start + text.length;
+            handleAuditInput();
+        }
+
+        function clearAuditEditor() {
+            document.getElementById('audit-editor').value = '';
+            handleAuditInput();
+        }
+
+        function handleAuditInput() {
+            const text = document.getElementById('audit-editor').value;
+            state.auditText = text;
+
+            // Word & Sentence Metrics
+            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const sentences = text.trim() ? text.split(/[.!?]+/).filter(Boolean).length : 0;
+
+            document.getElementById('metric-word-count').innerText = words;
+            document.getElementById('metric-sentence-count').innerText = sentences;
+
+            // REGEX SYNTAX PATTERN CHECKERS
+            // 1. Present Perfect / Experience Tense RegEx:
+            // Matches: have/has + V3/ed OR past time anchors (last year, ago, in 2023)
+            const regexExp = /\b(have|has|'ve|'s)\s+([a-z]+ed|been|done|seen|had|made|gone|taken|written|spoken|built|run|met|found|given|known|thought|felt|led|brought|kept|lost|paid)\b|\b(last\s+(year|month|week)|in\s+\d{4}|\d+\s+days?\s+ago|yesterday)\b/i;
+
+            // 2. Mistake / Past Obligation Modals RegEx:
+            // Matches: was/were supposed to, had to, should have, should've, wasn't supposed to
+            const regexMistake = /\b(was|were)\s+(not\s+)?supposed\s+to\b|\bhad\s+to\b|\bshould('ve|\s+have)\b/i;
+
+            // 3. Problem / Solution Connectors RegEx:
+            // Matches: due to, caused by, managed to, succeeded in, the main obstacle/issue/problem
+            const regexSolution = /\bdue\s+to\b|\bcaused\s+by\b|\bmanaged\s+to\b|\bsucceeded\s+in\b|\bthe\s+main\s+(issue|obstacle|problem|challenge)\b/i;
+
+            const hasExp = regexExp.test(text);
+            const hasMistake = regexMistake.test(text);
+            const hasSolution = regexSolution.test(text);
+
+            // Update Studio Target Indicators
+            updateCheckUI('exp', hasExp, "Present Perfect / Past Experience tense detected!", "Missing Present Perfect (have/has + V3) or Past Simple time anchor.");
+            updateCheckUI('mistake', hasMistake, "Past Obligation Modal detected (was supposed to / had to / should have)!", "Missing 'was/were supposed to', 'had to', or 'should have + V3'.");
+            updateCheckUI('solution', hasSolution, "Cause / Solution Connector detected (due to / managed to)!", "Missing 'due to', 'caused by', 'managed to', or 'succeeded in'.");
+
+            // Calculate Syntax Diagnostic Score
+            let score = 0;
+            if (hasExp) score += 35;
+            if (hasMistake) score += 35;
+            if (hasSolution) score += 30;
+
+            state.regexScore = score;
+            const scoreBadge = document.getElementById('syntax-score-badge');
+            scoreBadge.innerText = `${score} / 100`;
+
+            if (score === 100) {
+                scoreBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-brand-500 text-white";
+            } else if (score >= 35) {
+                scoreBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-500 text-white";
+            } else {
+                scoreBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-500";
+            }
+        }
+
+        function updateCheckUI(pillar, passed, successMsg, failMsg) {
+            const icon = document.getElementById(`check-icon-${pillar}`);
+            const desc = document.getElementById(`check-desc-${pillar}`);
+            const badge = document.getElementById(`badge-${pillar}`);
+
+            if (passed) {
+                icon.className = "fa-solid fa-circle-check text-brand-500 text-base mt-0.5";
+                desc.innerText = successMsg;
+                desc.className = "text-brand-600 dark:text-brand-400 font-medium mt-0.5";
+                badge.className = "px-3 py-1 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-semibold flex items-center gap-1 transition-colors border border-brand-500/20";
+            } else {
+                icon.className = "fa-solid fa-circle-xmark text-rose-500 text-base mt-0.5";
+                desc.innerText = failMsg;
+                desc.className = "text-slate-500 mt-0.5";
+                badge.className = "px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-400 text-xs font-semibold flex items-center gap-1 transition-colors";
+            }
+        }
+
+        function transferDebriefToScorecard() {
+            const text = document.getElementById('audit-editor').value;
+            if (!text.trim()) {
+                showToast("Workspace is empty! Write or transcribe a debrief first.");
+                return;
+            }
+            syncDossier();
+            switchTab('scorecard');
+            showToast("Transcribed Debrief Transferred to Official Scorecard!");
+        }
+
+        /* ==========================================================================
+           PEER EVALUATION SCORECARD & PRINTABLE DOSSIER LOGIC
+           ========================================================================== */
+        function syncDossier() {
+            const auditor = document.getElementById('input-auditor-name').value || "Officer Alex Turner";
+            const rep = document.getElementById('input-rep-name').value || "Officer Jordan Lee";
+            const verdict = document.getElementById('select-verdict').value;
+            const notes = document.getElementById('input-audit-notes').value || "None";
+            const transcript = document.getElementById('audit-editor').value || "[No transcribed case incident debrief recorded]";
+
+            // Calculate Checklist Score
+            let calcScore = 0;
+            if (document.getElementById('chk-crit-1').checked) calcScore += 25;
+            if (document.getElementById('chk-crit-2').checked) calcScore += 25;
+            if (document.getElementById('chk-crit-3').checked) calcScore += 25;
+            if (document.getElementById('chk-crit-4').checked) calcScore += 25;
+
+            state.criteriaScore = calcScore;
+
+            // Sync Preview UI Elements
+            document.getElementById('dos-auditor').innerText = auditor;
+            document.getElementById('dos-rep').innerText = rep;
+            document.getElementById('dos-score').innerText = `${calcScore} / 100 PTS`;
+            document.getElementById('dos-transcript').innerText = transcript;
+            document.getElementById('dos-verdict').innerText = verdict;
+            document.getElementById('dos-notes').innerText = notes;
+
+            // Date Stamp
+            const now = new Date();
+            document.getElementById('dos-date').innerText = `${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}`;
+        }
+
+        /* ==========================================================================
+           INITIALIZATION ON WINDOW LOAD
+           ========================================================================== */
+        window.onload = function () {
+            renderCategories();
+            renderCurrentPrompt();
+            handleAuditInput();
+            syncDossier();
+            console.log("ExperienceLab Studio Initialized Successfully.");
+        };
+    </script>
 </body>
 </html>
