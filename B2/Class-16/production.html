@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CityPulse 360°: 10-Minute Travel Pitcher</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            sights: '#3b82f6',
+            food: '#f59e0b',
+            culture: '#a855f7',
+            logistics: '#10b981',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+
+    /* Waveform visualizer pulse */
+    @keyframes pulse-bar {
+      0%, 100% { height: 8px; }
+      50% { height: 28px; }
+    }
+    .recording-bar {
+      animation: pulse-bar 0.8s infinite ease-in-out;
+    }
+    .recording-bar:nth-child(2) { animation-delay: 0.15s; }
+    .recording-bar:nth-child(3) { animation-delay: 0.3s; }
+    .recording-bar:nth-child(4) { animation-delay: 0.45s; }
+
+    /* Print Styles for Pitch Summary Export */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-area, #print-area * {
+        visibility: visible;
+      }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000 !important;
+        background: #fff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-x-hidden">
+
+  <!-- TOP CONTEXT BANNER -->
+  <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-indigo-900/40 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Scenario context -->
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-indigo-500 to-sky-400 p-2 rounded-xl text-slate-950 shadow-md">
+          <i data-lucide="compass" class="w-6 h-6 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-2 py-0.5 rounded-md border border-indigo-500/30">
+              Wanderlust Digital Editorial Team
+            </span>
+            <span class="text-xs text-slate-400 hidden sm:inline">B1 Travel Pitcher</span>
+          </div>
+          <h1 class="text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+            CityPulse 360° <span class="text-indigo-400 text-sm font-normal">| 10-Minute Challenge</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Action Utilities -->
+      <div class="flex items-center gap-2">
+        <button onclick="loadBarcelonaDemo()" class="flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-lg transition">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Load Barcelona Demo</span>
+        </button>
+        <button onclick="openSummaryModal()" class="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition shadow-md">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+          <span class="hidden md:inline">View Final</span> Pitch Deck
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4">
+
+    <!-- TEAM SETUP & TIMER CONTROL BAR -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-md">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+        
+        <!-- City Selector & Custom Input -->
+        <div class="lg:col-span-4 space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i>
+            Target City Pitch
+          </label>
+          <div class="flex items-center gap-2">
+            <select id="citySelect" onchange="handleCityChange()" class="bg-slate-950 text-white border border-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-2.5 flex-1 font-medium">
+              <option value="Barcelona">Barcelona 🇪🇸</option>
+              <option value="Tokyo">Tokyo 🇯🇵</option>
+              <option value="Bogota">Bogotá 🇨🇴</option>
+              <option value="Paris">Paris 🇫🇷</option>
+              <option value="London">London 🇬🇧</option>
+              <option value="CUSTOM">+ Custom City...</option>
+            </select>
+            <input type="text" id="customCityInput" placeholder="Enter city name..." oninput="updateCustomCityName()" class="hidden bg-slate-950 text-white border border-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-indigo-500 p-2.5 flex-1">
+          </div>
+        </div>
+
+        <!-- Role Badges & Team Members -->
+        <div class="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-slate-800 pt-3 lg:pt-0 lg:pl-4">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+            <span>Team Roles (Group of 3)</span>
+            <span class="text-[10px] text-indigo-400 font-normal">Assign specialists</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <!-- Role 1 -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-1.5">
+              <div class="flex items-center gap-1 text-[10px] font-bold text-sky-400 truncate">
+                <i data-lucide="eye" class="w-3 h-3 shrink-0"></i>
+                <span>Sights Specialist</span>
+              </div>
+              <input type="text" id="roleSightsName" value="Student 1" class="bg-transparent text-xs text-slate-200 focus:outline-none w-full mt-0.5 border-b border-transparent focus:border-indigo-500">
+            </div>
+            <!-- Role 2 -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-1.5">
+              <div class="flex items-center gap-1 text-[10px] font-bold text-amber-400 truncate">
+                <i data-lucide="utensils" class="w-3 h-3 shrink-0"></i>
+                <span>Food Specialist</span>
+              </div>
+              <input type="text" id="roleFoodName" value="Student 2" class="bg-transparent text-xs text-slate-200 focus:outline-none w-full mt-0.5 border-b border-transparent focus:border-indigo-500">
+            </div>
+            <!-- Role 3 -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-lg p-1.5">
+              <div class="flex items-center gap-1 text-[10px] font-bold text-emerald-400 truncate">
+                <i data-lucide="navigation" class="w-3 h-3 shrink-0"></i>
+                <span>Logistics Specialist</span>
+              </div>
+              <input type="text" id="roleLogisticsName" value="Student 3" class="bg-transparent text-xs text-slate-200 focus:outline-none w-full mt-0.5 border-b border-transparent focus:border-indigo-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- 10-Minute Timer & Phase Control -->
+        <div class="lg:col-span-3 border-t lg:border-t-0 lg:border-l border-slate-800 pt-3 lg:pt-0 lg:pl-4 flex flex-col items-center justify-center">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Pitch Challenge Timer</span>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <div id="timerDisplay" class="text-2xl font-black font-mono tracking-tight text-indigo-400 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800">
+              10:00
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button id="startTimerBtn" onclick="toggleTimer()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition shadow">
+                <i id="playIcon" data-lucide="play" class="w-4 h-4"></i>
+              </button>
+              <button onclick="resetTimer()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Phase Progress Tracker -->
+      <div class="mt-4 pt-3 border-t border-slate-800/80">
+        <div class="flex justify-between items-center text-xs text-slate-400 mb-1.5">
+          <span class="font-semibold text-slate-300 flex items-center gap-1">
+            Current Phase: <span id="currentPhaseLabel" class="text-indigo-400 font-bold">Phase 1: Brainstorming</span>
+          </span>
+          <span id="phaseTimeHint" class="text-[11px] text-slate-500">00:00 - 02:00</span>
+        </div>
+        
+        <!-- 4 Step Phase Bar -->
+        <div class="grid grid-cols-4 gap-1.5">
+          <div id="phaseStep1" class="h-2 rounded-full bg-indigo-500 transition-all duration-300 relative group cursor-pointer" onclick="jumpToPhase(1)" title="Phase 1: Brainstorm (0-2m)">
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-slate-900 border border-slate-700 text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-20">1. Brainstorm (0-2m)</span>
+          </div>
+          <div id="phaseStep2" class="h-2 rounded-full bg-slate-800 transition-all duration-300 relative group cursor-pointer" onclick="jumpToPhase(2)" title="Phase 2: Classify (2-6m)">
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-slate-900 border border-slate-700 text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-20">2. Classify (2-6m)</span>
+          </div>
+          <div id="phaseStep3" class="h-2 rounded-full bg-slate-800 transition-all duration-300 relative group cursor-pointer" onclick="jumpToPhase(3)" title="Phase 3: Connect (6-8m)">
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-slate-900 border border-slate-700 text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-20">3. Connect (6-8m)</span>
+          </div>
+          <div id="phaseStep4" class="h-2 rounded-full bg-slate-800 transition-all duration-300 relative group cursor-pointer" onclick="jumpToPhase(4)" title="Phase 4: Pitch (8-10m)">
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] bg-slate-900 border border-slate-700 text-white px-2 py-0.5 rounded shadow whitespace-nowrap z-20">4. Pitch (8-10m)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- WORKSPACE: PROMPTS ACCORDION & WORKSPACE BOARDS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+      
+      <!-- LEFT COLUMN: 20 OUTCOME QUESTION PROMPTS SIDEBAR -->
+      <div class="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col h-[680px] shadow-lg">
+        
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+          <div>
+            <h2 class="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="help-circle" class="w-4 h-4 text-indigo-400"></i>
+              20 Outcome Prompts
+            </h2>
+            <p class="text-[11px] text-slate-400">Click a prompt to quickly add an idea card</p>
+          </div>
+          <span id="promptsAnsweredCount" class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">0/20</span>
+        </div>
+
+        <!-- Freeform Custom Card Creator -->
+        <div class="mb-3 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+          <div class="text-[11px] font-semibold text-slate-300 mb-1 flex items-center gap-1">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+            Quick Custom Idea Card
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="customIdeaInput" placeholder="Type a custom fact or idea..." class="bg-slate-900 border border-slate-700 text-xs text-slate-100 rounded-lg p-2 flex-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+            <button onclick="addCustomIdeaCard()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 rounded-lg font-medium transition shrink-0">
+              Add
+            </button>
+          </div>
+        </div>
+
+        <!-- Prompts Scrollable Accordion Categories -->
+        <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="promptsAccordionContainer">
+          <!-- Populated by JavaScript -->
+        </div>
+
+      </div>
+
+
+      <!-- RIGHT COLUMN: CLASSIFICATION BOARD & TRANSITIONS -->
+      <div class="lg:col-span-8 flex flex-col gap-4">
+        
+        <!-- PHASE 3 HELPER BANNER: B1 TRANSITION STARTERS DRAWER -->
+        <div class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-3 shadow-md">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="bg-indigo-500/20 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-500/30 uppercase tracking-wider">B1 Transition Helper</span>
+              <h3 class="text-xs font-bold text-slate-200">Linking Sentence Connectors</h3>
+            </div>
+            <span class="text-[11px] text-slate-400 hidden sm:inline">Attach these to cards in Phase 3!</span>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="selectTransition('The main reason to visit is...')" class="transition-chip bg-slate-950 hover:bg-indigo-900/40 border border-slate-700 hover:border-indigo-500/50 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition text-left flex items-center gap-1">
+              <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> "The main reason to visit is..."
+            </button>
+            <button onclick="selectTransition('In addition to that,...')" class="transition-chip bg-slate-950 hover:bg-indigo-900/40 border border-slate-700 hover:border-indigo-500/50 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition text-left flex items-center gap-1">
+              <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> "In addition to that,..."
+            </button>
+            <button onclick="selectTransition('If you like..., then you should...')" class="transition-chip bg-slate-950 hover:bg-indigo-900/40 border border-slate-700 hover:border-indigo-500/50 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition text-left flex items-center gap-1">
+              <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> "If you like..., then..."
+            </button>
+            <button onclick="selectTransition('One important thing to keep in mind is...')" class="transition-chip bg-slate-950 hover:bg-indigo-900/40 border border-slate-700 hover:border-indigo-500/50 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition text-left flex items-center gap-1">
+              <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> "One thing to keep in mind is..."
+            </button>
+            <button onclick="selectTransition('For instance,...')" class="transition-chip bg-slate-950 hover:bg-indigo-900/40 border border-slate-700 hover:border-indigo-500/50 text-slate-300 text-xs px-2.5 py-1 rounded-lg transition text-left flex items-center gap-1">
+              <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> "For instance,..."
+            </button>
+          </div>
+        </div>
+
+        <!-- UNSORTED IDEA BIN -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 shadow-md"
+             ondragover="allowDrop(event)" ondrop="dropCard(event, 'unsorted')">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <div class="bg-slate-800 p-1 rounded-md text-slate-300">
+                <i data-lucide="inbox" class="w-4 h-4"></i>
+              </div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Unsorted Idea Bin</h3>
+              <span id="unsortedCount" class="bg-slate-800 text-slate-400 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            </div>
+            <span class="text-[11px] text-slate-500 italic">Drag cards from here into categories below</span>
+          </div>
+
+          <div id="unsortedBin" class="min-h-[75px] max-h-[140px] overflow-y-auto bg-slate-950/60 rounded-xl border border-dashed border-slate-800 p-2 flex flex-wrap gap-2 items-start">
+            <!-- Cards go here dynamically -->
+            <p id="emptyBinNotice" class="text-xs text-slate-600 italic p-2 w-full text-center">
+              No ideas in bin. Answer outcome questions on the left or type a custom idea card to get started!
+            </p>
+          </div>
+        </div>
+
+        <!-- 4 COLOR-CODED CATEGORY BUCKETS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-[380px]">
+          
+          <!-- CATEGORY A: Sights & Activities -->
+          <div class="bg-slate-900/80 border-t-4 border-t-blue-500 border-x border-b border-slate-800 rounded-2xl p-3 flex flex-col shadow-md"
+               ondragover="allowDrop(event)" ondrop="dropCard(event, 'sights')">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <div class="bg-blue-500/20 text-blue-400 p-1 rounded-lg">
+                  <i data-lucide="landmark" class="w-4 h-4"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wide">Category A: Sights & Vibe</h4>
+              </div>
+              <span id="sightsCount" class="text-xs font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">0</span>
+            </div>
+            
+            <div id="sightsBucket" class="flex-1 bg-slate-950/40 rounded-xl p-2 space-y-2 overflow-y-auto max-h-[220px]">
+              <!-- Cards dynamically inserted -->
+            </div>
+          </div>
+
+          <!-- CATEGORY B: Food & Drink -->
+          <div class="bg-slate-900/80 border-t-4 border-t-amber-500 border-x border-b border-slate-800 rounded-2xl p-3 flex flex-col shadow-md"
+               ondragover="allowDrop(event)" ondrop="dropCard(event, 'food')">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <div class="bg-amber-500/20 text-amber-400 p-1 rounded-lg">
+                  <i data-lucide="utensils" class="w-4 h-4"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wide">Category B: Food & Culture</h4>
+              </div>
+              <span id="foodCount" class="text-xs font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">0</span>
+            </div>
+            
+            <div id="foodBucket" class="flex-1 bg-slate-950/40 rounded-xl p-2 space-y-2 overflow-y-auto max-h-[220px]">
+              <!-- Cards dynamically inserted -->
+            </div>
+          </div>
+
+          <!-- CATEGORY C: Culture, Vibe & Atmosphere -->
+          <div class="bg-slate-900/80 border-t-4 border-t-purple-500 border-x border-b border-slate-800 rounded-2xl p-3 flex flex-col shadow-md"
+               ondragover="allowDrop(event)" ondrop="dropCard(event, 'culture')">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <div class="bg-purple-500/20 text-purple-400 p-1 rounded-lg">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wide">Category C: Culture & Atmosphere</h4>
+              </div>
+              <span id="cultureCount" class="text-xs font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">0</span>
+            </div>
+            
+            <div id="cultureBucket" class="flex-1 bg-slate-950/40 rounded-xl p-2 space-y-2 overflow-y-auto max-h-[220px]">
+              <!-- Cards dynamically inserted -->
+            </div>
+          </div>
+
+          <!-- CATEGORY D: Logistics & Practical Info -->
+          <div class="bg-slate-900/80 border-t-4 border-t-emerald-500 border-x border-b border-slate-800 rounded-2xl p-3 flex flex-col shadow-md"
+               ondragover="allowDrop(event)" ondrop="dropCard(event, 'logistics')">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <div class="bg-emerald-500/20 text-emerald-400 p-1 rounded-lg">
+                  <i data-lucide="bus" class="w-4 h-4"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wide">Category D: Practical & Logistics</h4>
+              </div>
+              <span id="logisticsCount" class="text-xs font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">0</span>
+            </div>
+            
+            <div id="logisticsBucket" class="flex-1 bg-slate-950/40 rounded-xl p-2 space-y-2 overflow-y-auto max-h-[220px]">
+              <!-- Cards dynamically inserted -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- PHASE 4: 30-SECOND ELEVATOR PITCH AUDIO RECORDER PANEL -->
+    <section class="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-500/30 rounded-2xl p-4 shadow-xl">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        
+        <!-- Pitch Instructions -->
+        <div class="md:col-span-5">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Phase 4 Action</span>
+            <h3 class="font-extrabold text-sm text-white flex items-center gap-1.5">
+              <i data-lucide="mic" class="w-4 h-4 text-rose-400"></i>
+              30-Second Elevator Pitch
+            </h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Choose 1 key point from each category. Press Record and present your city pitch using your attached B1 transition connectors!
+          </p>
+        </div>
+
+        <!-- HTML5 Audio Recorder Controls -->
+        <div class="md:col-span-7 bg-slate-950/70 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+          
+          <div class="flex items-center gap-3">
+            <button id="recordBtn" onclick="toggleAudioRecording()" class="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg">
+              <div id="recDot" class="w-2.5 h-2.5 rounded-full bg-white"></div>
+              <span id="recBtnText">Record Pitch (30s)</span>
+            </button>
+
+            <!-- Recording visualizer & Countdown -->
+            <div class="flex items-center gap-2">
+              <div id="recordingWaveform" class="hidden flex items-center gap-1 h-7 px-2 bg-slate-900 rounded-lg border border-slate-800">
+                <div class="w-1 bg-rose-500 rounded-full recording-bar"></div>
+                <div class="w-1 bg-rose-500 rounded-full recording-bar"></div>
+                <div class="w-1 bg-rose-500 rounded-full recording-bar"></div>
+                <div class="w-1 bg-rose-500 rounded-full recording-bar"></div>
+              </div>
+
+              <div id="pitchTimerDisplay" class="text-sm font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                00:30
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Playback -->
+          <div class="flex-1 min-w-[200px] flex items-center justify-end">
+            <audio id="audioPlayback" controls class="hidden w-full max-w-[240px] h-9 rounded-lg"></audio>
+            <span id="noAudioLabel" class="text-xs text-slate-500 italic">No recording made yet</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- MODAL: PROMPT INPUT DIALOG -->
+  <div id="promptModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <span id="modalCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded uppercase">Category</span>
+          <h3 id="modalPromptTitle" class="text-sm font-bold text-white mt-1">Prompt Question</h3>
+        </div>
+        <button onclick="closePromptModal()" class="text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p id="modalPromptText" class="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800">
+        Question prompt details...
+      </p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Your B1 English Answer Card:</label>
+        <textarea id="modalAnswerInput" rows="3" placeholder="Type your response here..." class="w-full bg-slate-950 border border-slate-700 text-xs text-white rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closePromptModal()" class="px-3 py-2 text-xs text-slate-400 hover:text-slate-200 font-medium">Cancel</button>
+        <button onclick="savePromptAnswer()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition">
+          Add to Idea Bin
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL: ATTACH TRANSITION TO CARD -->
+  <div id="transitionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-white">Attach Transition Phrase</h3>
+          <p class="text-[11px] text-slate-400">Selected connector: <span id="modalSelectedTransitionText" class="text-indigo-400 font-semibold">"..."</span></p>
+        </div>
+        <button onclick="closeTransitionModal()" class="text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-300">Choose card to attach this linker to:</label>
+        <div id="modalCardListForTransition" class="max-h-48 overflow-y-auto space-y-1.5">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button onclick="closeTransitionModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl">Done</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODAL: FINAL PITCH SUMMARY DECK -->
+  <div id="summaryModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[90vh] flex flex-col">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="bg-gradient-to-tr from-indigo-500 to-sky-400 p-2 rounded-xl text-slate-950">
+            <i data-lucide="award" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-extrabold text-white">Wanderlust Digital Pitch Summary Deck</h2>
+            <p class="text-xs text-slate-400">Classified Board &amp; Transition Script</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Print Pitch</span>
+          </button>
+          <button onclick="closeSummaryModal()" class="text-slate-400 hover:text-slate-200 p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable Deck Area -->
+      <div id="print-area" class="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+        
+        <!-- City & Team Header -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-3">
+          <div>
+            <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Pitch Destination</span>
+            <h3 id="summaryCityName" class="text-2xl font-black text-white">Barcelona</h3>
+          </div>
+          <div class="text-xs text-slate-300 space-y-1">
+            <p><span class="font-bold text-sky-400">Sights Specialist:</span> <span id="summaryRoleSights">--</span></p>
+            <p><span class="font-bold text-amber-400">Food Specialist:</span> <span id="summaryRoleFood">--</span></p>
+            <p><span class="font-bold text-emerald-400">Logistics Specialist:</span> <span id="summaryRoleLogistics">--</span></p>
+          </div>
+        </div>
+
+        <!-- Classified Ideas Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          
+          <!-- Sights Summary -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border-t-2 border-t-blue-500 border-slate-800">
+            <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <i data-lucide="landmark" class="w-3.5 h-3.5"></i> Sights &amp; Vibe
+            </h4>
+            <ul id="summarySightsList" class="text-xs text-slate-300 space-y-1.5 list-disc pl-4">
+              <li class="italic text-slate-600">No items categorized</li>
+            </ul>
+          </div>
+
+          <!-- Food Summary -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border-t-2 border-t-amber-500 border-slate-800">
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <i data-lucide="utensils" class="w-3.5 h-3.5"></i> Food &amp; Culture
+            </h4>
+            <ul id="summaryFoodList" class="text-xs text-slate-300 space-y-1.5 list-disc pl-4">
+              <li class="italic text-slate-600">No items categorized</li>
+            </ul>
+          </div>
+
+          <!-- Culture Summary -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border-t-2 border-t-purple-500 border-slate-800">
+            <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Culture &amp; Atmosphere
+            </h4>
+            <ul id="summaryCultureList" class="text-xs text-slate-300 space-y-1.5 list-disc pl-4">
+              <li class="italic text-slate-600">No items categorized</li>
+            </ul>
+          </div>
+
+          <!-- Logistics Summary -->
+          <div class="bg-slate-950/80 p-3 rounded-xl border-t-2 border-t-emerald-500 border-slate-800">
+            <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <i data-lucide="bus" class="w-3.5 h-3.5"></i> Practical &amp; Logistics
+            </h4>
+            <ul id="summaryLogisticsList" class="text-xs text-slate-300 space-y-1.5 list-disc pl-4">
+              <li class="italic text-slate-600">No items categorized</li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- CUSTOM TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-indigo-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+    <i data-lucide="info" class="w-4 h-4"></i>
+    <span id="toastMsg">Notification message</span>
+  </div>
+
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // --- 20 OUTCOME QUESTION PROMPTS DATA ---
+    const PROMPTS_DATA = [
+      {
+        id: 1,
+        cat: 'sights',
+        catTitle: 'Sights & Activities',
+        color: 'sky',
+        q: 'What is the most famous landmark in this city, and why is it worth seeing?'
+      },
+      {
+        id: 2,
+        cat: 'sights',
+        catTitle: 'Sights & Activities',
+        color: 'sky',
+        q: 'What is one hidden gem or non-touristy location visitors should explore?'
+      },
+      {
+        id: 3,
+        cat: 'sights',
+        catTitle: 'Sights & Activities',
+        color: 'sky',
+        q: 'What outdoor activity can tourists enjoy on a pleasant day?'
+      },
+      {
+        id: 4,
+        cat: 'sights',
+        catTitle: 'Sights & Activities',
+        color: 'sky',
+        q: 'What museum or historical site gives the best look into the city’s past?'
+      },
+      {
+        id: 5,
+        cat: 'sights',
+        catTitle: 'Sights & Activities',
+        color: 'sky',
+        q: 'What unique activity can travelers experience only in this specific city?'
+      },
+
+      {
+        id: 6,
+        cat: 'food',
+        catTitle: 'Food, Drink & Nightlife',
+        color: 'amber',
+        q: 'What iconic local dish must every visitor try before leaving?'
+      },
+      {
+        id: 7,
+        cat: 'food',
+        catTitle: 'Food, Drink & Nightlife',
+        color: 'amber',
+        q: 'What popular street food or snack is both delicious and affordable?'
+      },
+      {
+        id: 8,
+        cat: 'food',
+        catTitle: 'Food, Drink & Nightlife',
+        color: 'amber',
+        q: 'Where do local residents usually go to socialise on weekend evenings?'
+      },
+      {
+        id: 9,
+        cat: 'food',
+        catTitle: 'Food, Drink & Nightlife',
+        color: 'amber',
+        q: 'What kind of atmosphere can you expect at the city’s central food market?'
+      },
+      {
+        id: 10,
+        cat: 'food',
+        catTitle: 'Food, Drink & Nightlife',
+        color: 'amber',
+        q: 'What local café drink or beverage should tourists order?'
+      },
+
+      {
+        id: 11,
+        cat: 'culture',
+        catTitle: 'Culture, Vibe & Atmosphere',
+        color: 'purple',
+        q: 'How would you describe the overall energy and pace of life in this city?'
+      },
+      {
+        id: 12,
+        cat: 'culture',
+        catTitle: 'Culture, Vibe & Atmosphere',
+        color: 'purple',
+        q: 'What annual festival or seasonal event brings the city to life?'
+      },
+      {
+        id: 13,
+        cat: 'culture',
+        catTitle: 'Culture, Vibe & Atmosphere',
+        color: 'purple',
+        q: 'How welcoming or friendly are the locals toward international tourists?'
+      },
+      {
+        id: 14,
+        cat: 'culture',
+        catTitle: 'Culture, Vibe & Atmosphere',
+        color: 'purple',
+        q: 'What style of music, art, or performance represents the local scene?'
+      },
+      {
+        id: 15,
+        cat: 'culture',
+        catTitle: 'Culture, Vibe & Atmosphere',
+        color: 'purple',
+        q: 'Why would a traveler feel inspired or refreshed after spending a day here?'
+      },
+
+      {
+        id: 16,
+        cat: 'logistics',
+        catTitle: 'Practical Tips & Logistics',
+        color: 'emerald',
+        q: 'What is the best month or season to visit, and why?'
+      },
+      {
+        id: 17,
+        cat: 'logistics',
+        catTitle: 'Practical Tips & Logistics',
+        color: 'emerald',
+        q: 'How easy or affordable is it to navigate the city using public transit?'
+      },
+      {
+        id: 18,
+        cat: 'logistics',
+        catTitle: 'Practical Tips & Logistics',
+        color: 'emerald',
+        q: 'Is this city better suited for budget backpackers, luxury travelers, or both?'
+      },
+      {
+        id: 19,
+        cat: 'logistics',
+        catTitle: 'Practical Tips & Logistics',
+        color: 'emerald',
+        q: 'What key safety tip or local etiquette rule should visitors keep in mind?'
+      },
+      {
+        id: 20,
+        cat: 'logistics',
+        catTitle: 'Practical Tips & Logistics',
+        color: 'emerald',
+        q: 'What nearby town or natural attraction makes for a perfect day trip?'
+      }
+    ];
+
+    // --- STATE MANAGEMENT ---
+    let appState = {
+      city: 'Barcelona',
+      timerSeconds: 600, // 10 minutes total
+      timerInterval: null,
+      isTimerRunning: false,
+      cards: [], // { id, promptId, text, category: 'unsorted'|'sights'|'food'|'culture'|'logistics', transition: null }
+      currentPromptForModal: null,
+      selectedTransition: null,
+      recording: {
+        mediaRecorder: null,
+        audioChunks: [],
+        timerSeconds: 30,
+        interval: null,
+        isRecording: false
+      }
+    };
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      lucide.createIcons();
+      renderPromptsAccordion();
+      renderCards();
+      updatePhaseUI();
+    };
+
+    // --- TOAST NOTIFICATION UTILITY ---
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // --- CITY SELECTOR HANDLER ---
+    function handleCityChange() {
+      const select = document.getElementById('citySelect');
+      const customInput = document.getElementById('customCityInput');
+      if (select.value === 'CUSTOM') {
+        customInput.classList.remove('hidden');
+        appState.city = customInput.value || 'Custom City';
+      } else {
+        customInput.classList.add('hidden');
+        appState.city = select.value;
+      }
+    }
+
+    function updateCustomCityName() {
+      const customInput = document.getElementById('customCityInput');
+      appState.city = customInput.value || 'Custom City';
+    }
+
+    // --- TIMER & PHASE LOGIC ---
+    function toggleTimer() {
+      if (appState.isTimerRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function startTimer() {
+      if (appState.isTimerRunning) return;
+      appState.isTimerRunning = true;
+      document.getElementById('playIcon').setAttribute('data-lucide', 'pause');
+      lucide.createIcons();
+
+      appState.timerInterval = setInterval(() => {
+        if (appState.timerSeconds > 0) {
+          appState.timerSeconds--;
+          updateTimerDisplay();
+          updatePhaseUI();
+        } else {
+          pauseTimer();
+          showToast('⏰ Time is up! 10-minute challenge complete!');
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      appState.isTimerRunning = false;
+      clearInterval(appState.timerInterval);
+      document.getElementById('playIcon').setAttribute('data-lucide', 'play');
+      lucide.createIcons();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      appState.timerSeconds = 600;
+      updateTimerDisplay();
+      updatePhaseUI();
+      showToast('Timer reset to 10:00');
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(appState.timerSeconds / 60);
+      const secs = appState.timerSeconds % 60;
+      document.getElementById('timerDisplay').innerText = 
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function jumpToPhase(phaseNum) {
+      if (phaseNum === 1) appState.timerSeconds = 600; // 10m remaining
+      if (phaseNum === 2) appState.timerSeconds = 480; // 8m remaining
+      if (phaseNum === 3) appState.timerSeconds = 240; // 4m remaining
+      if (phaseNum === 4) appState.timerSeconds = 120; // 2m remaining
+      updateTimerDisplay();
+      updatePhaseUI();
+    }
+
+    function updatePhaseUI() {
+      const remaining = appState.timerSeconds;
+      let phase = 1;
+
+      // Phase 1: 10:00 - 08:00 (600 - 481s) -> Brainstorm
+      // Phase 2: 08:00 - 04:00 (480 - 241s) -> Classify
+      // Phase 3: 04:00 - 02:00 (240 - 121s) -> Connect
+      // Phase 4: 02:00 - 00:00 (120 - 0s)   -> Pitch
+
+      if (remaining <= 480 && remaining > 240) phase = 2;
+      else if (remaining <= 240 && remaining > 120) phase = 3;
+      else if (remaining <= 120) phase = 4;
+
+      const phaseLabel = document.getElementById('currentPhaseLabel');
+      const timeHint = document.getElementById('phaseTimeHint');
+
+      const p1 = document.getElementById('phaseStep1');
+      const p2 = document.getElementById('phaseStep2');
+      const p3 = document.getElementById('phaseStep3');
+      const p4 = document.getElementById('phaseStep4');
+
+      [p1, p2, p3, p4].forEach((el, idx) => {
+        if (idx + 1 === phase) {
+          el.className = "h-2 rounded-full bg-indigo-500 transition-all duration-300 relative group cursor-pointer shadow-lg shadow-indigo-500/50";
+        } else if (idx + 1 < phase) {
+          el.className = "h-2 rounded-full bg-emerald-500 transition-all duration-300 relative group cursor-pointer";
+        } else {
+          el.className = "h-2 rounded-full bg-slate-800 transition-all duration-300 relative group cursor-pointer";
+        }
+      });
+
+      if (phase === 1) {
+        phaseLabel.innerText = "Phase 1: Brainstorming Ideas";
+        timeHint.innerText = "00:00 - 02:00";
+      } else if (phase === 2) {
+        phaseLabel.innerText = "Phase 2: Classify & Sort Cards";
+        timeHint.innerText = "02:00 - 06:00";
+      } else if (phase === 3) {
+        phaseLabel.innerText = "Phase 3: Connect with B1 Transitions";
+        timeHint.innerText = "06:00 - 08:00";
+      } else {
+        phaseLabel.innerText = "Phase 4: 30-Second Elevator Pitch";
+        timeHint.innerText = "08:00 - 10:00";
+      }
+    }
+
+    // --- PROMPTS ACCORDION RENDER ---
+    function renderPromptsAccordion() {
+      const container = document.getElementById('promptsAccordionContainer');
+      const categories = [
+        { key: 'sights', title: 'Sights & Activities', color: 'blue', icon: 'landmark' },
+        { key: 'food', title: 'Food, Drink & Nightlife', color: 'amber', icon: 'utensils' },
+        { key: 'culture', title: 'Culture, Vibe & Atmosphere', color: 'purple', icon: 'sparkles' },
+        { key: 'logistics', title: 'Practical Tips & Logistics', color: 'emerald', icon: 'bus' },
+      ];
+
+      container.innerHTML = '';
+
+      categories.forEach(cat => {
+        const catPrompts = PROMPTS_DATA.filter(p => p.cat === cat.key);
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = "border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60";
+
+        let promptsHTML = catPrompts.map(p => {
+          const isAnswered = appState.cards.some(c => c.promptId === p.id);
+          return `
+            <div onclick="openPromptModal(${p.id})" class="p-2.5 hover:bg-slate-800/60 transition cursor-pointer flex items-start gap-2 border-t border-slate-900 group">
+              <span class="text-[10px] font-extrabold ${isAnswered ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'} px-1.5 py-0.5 rounded shrink-0">
+                Q${p.id} ${isAnswered ? '✓' : ''}
+              </span>
+              <p class="text-xs text-slate-300 group-hover:text-white transition leading-snug">
+                ${p.q}
+              </p>
+            </div>
+          `;
+        }).join('');
+
+        groupDiv.innerHTML = `
+          <div class="bg-slate-900 px-3 py-2 flex items-center justify-between border-b border-slate-800 cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+              <i data-lucide="${cat.icon}" class="w-3.5 h-3.5 text-${cat.color}-400"></i>
+              ${cat.title}
+            </span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          </div>
+          <div class="divide-y divide-slate-900">
+            ${promptsHTML}
+          </div>
+        `;
+
+        container.appendChild(groupDiv);
+      });
+
+      lucide.createIcons();
+      updatePromptsAnsweredCount();
+    }
+
+    function updatePromptsAnsweredCount() {
+      const answeredPrompts = new Set(appState.cards.filter(c => c.promptId).map(c => c.promptId)).size;
+      document.getElementById('promptsAnsweredCount').innerText = `${answeredPrompts}/20`;
+    }
+
+    // --- MODAL HANDLING FOR PROMPTS ---
+    function openPromptModal(promptId) {
+      const prompt = PROMPTS_DATA.find(p => p.id === promptId);
+      if (!prompt) return;
+
+      appState.currentPromptForModal = prompt;
+      document.getElementById('modalPromptTitle').innerText = `Outcome Question #${prompt.id}`;
+      document.getElementById('modalPromptText').innerText = prompt.q;
+      
+      const badge = document.getElementById('modalCategoryBadge');
+      badge.innerText = prompt.catTitle;
+      badge.className = `text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-${prompt.color}-500/20 text-${prompt.color}-300 border border-${prompt.color}-500/30`;
+
+      // Check if card already exists
+      const existing = appState.cards.find(c => c.promptId === promptId);
+      document.getElementById('modalAnswerInput').value = existing ? existing.text : '';
+
+      document.getElementById('promptModal').classList.remove('hidden');
+    }
+
+    function closePromptModal() {
+      document.getElementById('promptModal').classList.add('hidden');
+      appState.currentPromptForModal = null;
+    }
+
+    function savePromptAnswer() {
+      const text = document.getElementById('modalAnswerInput').value.trim();
+      if (!text) return;
+
+      const prompt = appState.currentPromptForModal;
+      const existingIndex = appState.cards.findIndex(c => c.promptId === prompt.id);
+
+      if (existingIndex >= 0) {
+        appState.cards[existingIndex].text = text;
+      } else {
+        appState.cards.push({
+          id: Date.now(),
+          promptId: prompt.id,
+          suggestedCat: prompt.cat,
+          text: text,
+          category: 'unsorted', // always goes into unsorted bin first!
+          transition: null
+        });
+      }
+
+      closePromptModal();
+      renderCards();
+      renderPromptsAccordion();
+      showToast('Card added to Unsorted Bin!');
+    }
+
+    function addCustomIdeaCard() {
+      const input = document.getElementById('customIdeaInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appState.cards.push({
+        id: Date.now(),
+        promptId: null,
+        suggestedCat: 'sights',
+        text: text,
+        category: 'unsorted',
+        transition: null
+      });
+
+      input.value = '';
+      renderCards();
+      showToast('Custom card added to Unsorted Bin!');
+    }
+
+    // --- CARDS RENDER & DRAG-AND-DROP ---
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function dragCard(ev, cardId) {
+      ev.dataTransfer.setData("text/plain", cardId);
+    }
+
+    function dropCard(ev, targetCat) {
+      ev.preventDefault();
+      const cardId = parseInt(ev.dataTransfer.getData("text/plain"));
+      moveCardToCategory(cardId, targetCat);
+    }
+
+    function moveCardToCategory(cardId, targetCat) {
+      const card = appState.cards.find(c => c.id === cardId);
+      if (card) {
+        card.category = targetCat;
+        renderCards();
+        showToast(`Card moved to ${targetCat.toUpperCase()}`);
+      }
+    }
+
+    function deleteCard(cardId) {
+      appState.cards = appState.cards.filter(c => c.id !== cardId);
+      renderCards();
+      renderPromptsAccordion();
+      showToast('Card deleted');
+    }
+
+    function renderCards() {
+      const unsortedBin = document.getElementById('unsortedBin');
+      const sightsBucket = document.getElementById('sightsBucket');
+      const foodBucket = document.getElementById('foodBucket');
+      const cultureBucket = document.getElementById('cultureBucket');
+      const logisticsBucket = document.getElementById('logisticsBucket');
+
+      // Clear buckets
+      unsortedBin.innerHTML = '';
+      sightsBucket.innerHTML = '';
+      foodBucket.innerHTML = '';
+      cultureBucket.innerHTML = '';
+      logisticsBucket.innerHTML = '';
+
+      const unsorted = appState.cards.filter(c => c.category === 'unsorted');
+      const sights = appState.cards.filter(c => c.category === 'sights');
+      const food = appState.cards.filter(c => c.category === 'food');
+      const culture = appState.cards.filter(c => c.category === 'culture');
+      const logistics = appState.cards.filter(c => c.category === 'logistics');
+
+      // Update counters
+      document.getElementById('unsortedCount').innerText = unsorted.length;
+      document.getElementById('sightsCount').innerText = sights.length;
+      document.getElementById('foodCount').innerText = food.length;
+      document.getElementById('cultureCount').innerText = culture.length;
+      document.getElementById('logisticsCount').innerText = logistics.length;
+
+      if (unsorted.length === 0) {
+        unsortedBin.innerHTML = `<p id="emptyBinNotice" class="text-xs text-slate-600 italic p-2 w-full text-center">No ideas in bin. Click prompts on the left to add ideas!</p>`;
+      } else {
+        unsorted.forEach(card => unsortedBin.appendChild(createCardElement(card)));
+      }
+
+      sights.forEach(card => sightsBucket.appendChild(createCardElement(card)));
+      food.forEach(card => foodBucket.appendChild(createCardElement(card)));
+      culture.forEach(card => cultureBucket.appendChild(createCardElement(card)));
+      logistics.forEach(card => logisticsBucket.appendChild(createCardElement(card)));
+
+      lucide.createIcons();
+    }
+
+    function createCardElement(card) {
+      const el = document.createElement('div');
+      el.draggable = true;
+      el.ondragstart = (ev) => dragCard(ev, card.id);
+
+      let borderStyle = "border-slate-700 bg-slate-900";
+      if (card.category === 'sights') borderStyle = "border-blue-500/40 bg-blue-950/20";
+      if (card.category === 'food') borderStyle = "border-amber-500/40 bg-amber-950/20";
+      if (card.category === 'culture') borderStyle = "border-purple-500/40 bg-purple-950/20";
+      if (card.category === 'logistics') borderStyle = "border-emerald-500/40 bg-emerald-950/20";
+
+      el.className = `p-2.5 rounded-xl border ${borderStyle} text-xs text-slate-200 shadow hover:shadow-lg transition cursor-grab active:cursor-grabbing group relative`;
+
+      let transitionBadge = card.transition ? 
+        `<div class="mt-1.5 text-[10px] text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+          <i data-lucide="link" class="w-3 h-3 text-indigo-400"></i> ${card.transition}
+        </div>` : '';
+
+      let promptBadge = card.promptId ? 
+        `<span class="text-[9px] bg-slate-800 text-slate-400 px-1 py-0.5 rounded font-bold">Q${card.promptId}</span>` :
+        `<span class="text-[9px] bg-slate-800 text-emerald-400 px-1 py-0.5 rounded font-bold">Custom</span>`;
+
+      el.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-1.5 mb-1">
+            <i data-lucide="grip-vertical" class="w-3 h-3 text-slate-500"></i>
+            ${promptBadge}
+          </div>
+          <div class="flex items-center gap-1">
+            <!-- Mobile Tap-To-Move Dropdown -->
+            <select onchange="moveCardToCategory(${card.id}, this.value)" class="bg-slate-950 text-[10px] text-slate-400 border border-slate-800 rounded p-0.5 focus:outline-none">
+              <option value="" disabled selected>Move to...</option>
+              <option value="unsorted">Bin</option>
+              <option value="sights">A: Sights</option>
+              <option value="food">B: Food</option>
+              <option value="culture">C: Culture</option>
+              <option value="logistics">D: Practical</option>
+            </select>
+            <button onclick="deleteCard(${card.id})" class="text-slate-500 hover:text-rose-400 p-0.5">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+        <p class="font-medium text-slate-100 leading-snug">${card.text}</p>
+        ${transitionBadge}
+      `;
+
+      return el;
+    }
+
+    // --- TRANSITIONS SELECTION & ATTACHMENT ---
+    function selectTransition(phrase) {
+      if (appState.cards.length === 0) {
+        showToast('Add some cards first before attaching transition connectors!');
+        return;
+      }
+
+      appState.selectedTransition = phrase;
+      document.getElementById('modalSelectedTransitionText').innerText = `"${phrase}"`;
+
+      const listContainer = document.getElementById('modalCardListForTransition');
+      listContainer.innerHTML = '';
+
+      appState.cards.forEach(card => {
+        const item = document.createElement('div');
+        item.className = "p-2 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between cursor-pointer hover:border-indigo-500 transition";
+        item.onclick = () => {
+          card.transition = phrase;
+          renderCards();
+          closeTransitionModal();
+          showToast(`Attached phrase to card Q${card.promptId || 'Custom'}`);
+        };
+
+        item.innerHTML = `
+          <div class="text-xs text-slate-200 truncate max-w-[280px]">
+            <span class="font-bold text-indigo-400">[${card.category.toUpperCase()}]</span> ${card.text}
+          </div>
+          <span class="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded">Attach</span>
+        `;
+        listContainer.appendChild(item);
+      });
+
+      document.getElementById('transitionModal').classList.remove('hidden');
+    }
+
+    function closeTransitionModal() {
+      document.getElementById('transitionModal').classList.add('hidden');
+      appState.selectedTransition = null;
+    }
+
+    // --- PHASE 4 AUDIO RECORDER LOGIC ---
+    async function toggleAudioRecording() {
+      const recBtn = document.getElementById('recordBtn');
+      const recBtnText = document.getElementById('recBtnText');
+      const recDot = document.getElementById('recDot');
+      const waveform = document.getElementById('recordingWaveform');
+
+      if (!appState.recording.isRecording) {
+        // Start Recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          appState.recording.mediaRecorder = new MediaRecorder(stream);
+          appState.recording.audioChunks = [];
+
+          appState.recording.mediaRecorder.ondataavailable = event => {
+            appState.recording.audioChunks.push(event.data);
+          };
+
+          appState.recording.mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(appState.recording.audioChunks, { type: 'audio/mp3' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audioPlayback = document.getElementById('audioPlayback');
+            audioPlayback.src = audioUrl;
+            audioPlayback.classList.remove('hidden');
+            document.getElementById('noAudioLabel').classList.add('hidden');
+          };
+
+          appState.recording.mediaRecorder.start();
+          appState.recording.isRecording = true;
+          appState.recording.timerSeconds = 30;
+
+          recBtn.classList.replace('bg-rose-600', 'bg-amber-600');
+          recBtnText.innerText = "Stop Pitch Recording";
+          recDot.classList.add('animate-ping');
+          waveform.classList.remove('hidden');
+
+          // Countdown Timer for Pitch (30 seconds)
+          appState.recording.interval = setInterval(() => {
+            appState.recording.timerSeconds--;
+            document.getElementById('pitchTimerDisplay').innerText = 
+              `00:${String(appState.recording.timerSeconds).padStart(2, '0')}`;
+
+            if (appState.recording.timerSeconds <= 0) {
+              stopAudioRecording();
+            }
+          }, 1000);
+
+        } catch (err) {
+          showToast('Microphone access denied or not available');
+          console.error(err);
+        }
+
+      } else {
+        // Stop Recording
+        stopAudioRecording();
+      }
+    }
+
+    function stopAudioRecording() {
+      if (!appState.recording.isRecording) return;
+
+      appState.recording.isRecording = false;
+      clearInterval(appState.recording.interval);
+
+      if (appState.recording.mediaRecorder) {
+        appState.recording.mediaRecorder.stop();
+      }
+
+      const recBtn = document.getElementById('recordBtn');
+      const recBtnText = document.getElementById('recBtnText');
+      const recDot = document.getElementById('recDot');
+      const waveform = document.getElementById('recordingWaveform');
+
+      recBtn.classList.replace('bg-amber-600', 'bg-rose-600');
+      recBtnText.innerText = "Record Pitch (30s)";
+      recDot.classList.remove('animate-ping');
+      waveform.classList.add('hidden');
+
+      showToast('Pitch recording saved! Play it back on the right.');
+    }
+
+    // --- SUMMARY & PRINT MODAL ---
+    function openSummaryModal() {
+      document.getElementById('summaryCityName').innerText = appState.city;
+      document.getElementById('summaryRoleSights').innerText = document.getElementById('roleSightsName').value;
+      document.getElementById('summaryRoleFood').innerText = document.getElementById('roleFoodName').value;
+      document.getElementById('summaryRoleLogistics').innerText = document.getElementById('roleLogisticsName').value;
+
+      populateSummaryList('sights', 'summarySightsList');
+      populateSummaryList('food', 'summaryFoodList');
+      populateSummaryList('culture', 'summaryCultureList');
+      populateSummaryList('logistics', 'summaryLogisticsList');
+
+      document.getElementById('summaryModal').classList.remove('hidden');
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summaryModal').classList.add('hidden');
+    }
+
+    function populateSummaryList(categoryKey, listElemId) {
+      const listContainer = document.getElementById(listElemId);
+      const filtered = appState.cards.filter(c => c.category === categoryKey);
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<li class="italic text-slate-600">No items categorized</li>`;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(card => {
+        let transText = card.transition ? `<span class="font-bold text-indigo-400">"${card.transition}"</span> ` : '';
+        return `<li>${transText}${card.text}</li>`;
+      }).join('');
+    }
+
+    // --- TEACHER DEMO UTILITY: LOAD BARCELONA BOARD ---
+    function loadBarcelonaDemo() {
+      // Set City
+      document.getElementById('citySelect').value = 'Barcelona';
+      handleCityChange();
+
+      // Set Roles
+      document.getElementById('roleSightsName').value = 'María (Sights)';
+      document.getElementById('roleFoodName').value = 'Liam (Food)';
+      document.getElementById('roleLogisticsName').value = 'Sofia (Logistics)';
+
+      // Clear & Populate Cards
+      appState.cards = [
+        {
+          id: 101,
+          promptId: 1,
+          suggestedCat: 'sights',
+          text: 'La Sagrada Família cathedral is incredible because of Antoni Gaudí\'s unique modern architecture.',
+          category: 'sights',
+          transition: 'The main reason to visit is...'
+        },
+        {
+          id: 102,
+          promptId: 3,
+          suggestedCat: 'sights',
+          text: 'Walk up to Park Güell or Montjuïc hill for panoramic sunset views over the Mediterranean Sea.',
+          category: 'sights',
+          transition: 'If you like..., then you should...'
+        },
+        {
+          id: 103,
+          promptId: 6,
+          suggestedCat: 'food',
+          text: 'Authentic seafood Paella and traditional Catalan tapas like Patatas Bravas in El Born district.',
+          category: 'food',
+          transition: 'In addition to that,...'
+        },
+        {
+          id: 104,
+          promptId: 9,
+          suggestedCat: 'food',
+          text: 'Mercat de La Boqueria has vibrant food stalls selling fresh fruit juices and Iberian ham cones.',
+          category: 'food',
+          transition: 'For instance,...'
+        },
+        {
+          id: 105,
+          promptId: 11,
+          suggestedCat: 'culture',
+          text: 'The city has a relaxed Mediterranean vibe where people eat late dinners and enjoy outdoor plazas.',
+          category: 'culture',
+          transition: 'The main reason to visit is...'
+        },
+        {
+          id: 106,
+          promptId: 17,
+          suggestedCat: 'logistics',
+          text: 'The T-Casual metro pass makes public transportation super fast and affordable across 10 rides.',
+          category: 'logistics',
+          transition: 'One important thing to keep in mind is...'
+        },
+        {
+          id: 107,
+          promptId: 19,
+          suggestedCat: 'logistics',
+          text: 'Keep an eye on bags and phones in crowded areas like Las Ramblas to prevent pickpocketing.',
+          category: 'logistics',
+          transition: 'One important thing to keep in mind is...'
+        },
+        {
+          id: 108,
+          promptId: 2,
+          suggestedCat: 'sights',
+          text: 'Bunkers del Carmel offers an unbelievable 360-degree viewpoint away from huge tour buses.',
+          category: 'unsorted',
+          transition: null
+        }
+      ];
+
+      renderCards();
+      renderPromptsAccordion();
+      jumpToPhase(2);
+      showToast('Loaded Barcelona Sample Board with B1 Cards!');
+    }
+  </script>
+</body>
+</html>
