@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetPeeve Studio: Expressing Irritation & Everyday Rants (B1/B2 English)</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            900: '#881337'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js for Reactive UI Logic -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(225, 29, 72, 0.15);
+            box-shadow: 0 10px 30px -5px rgba(225, 29, 72, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e11d48;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f43f5e;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Printable Sheet Formatting */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #printable-section, #printable-section * {
+                visibility: visible;
+            }
+            #printable-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-rose-500 selection:text-white"
+      :class="darkMode ? 'dark bg-slate-950 text-slate-100' : 'light bg-slate-50 text-slate-900'"
+      x-data="petPeeveApp()" 
+      x-init="initAudio()">
+
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="border-b border-rose-900/40 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Application Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="switchTab('matrix')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-amber-500 to-orange-400 flex items-center justify-center shadow-lg shadow-rose-500/30 text-white font-black text-xl">
+                    <i class="fa-solid fa-face-angry text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-lg font-extrabold bg-gradient-to-r from-white via-rose-200 to-amber-300 bg-clip-text text-transparent leading-none">
+                            PetPeeve Studio
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
+                            B1/B2 English Lab
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Expressing Irritation & Everyday Rants</p>
+                </div>
+            </div>
+
+            <!-- Global Control Buttons -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                
+                <!-- Learner XP & Streak Badge -->
+                <div class="px-3 py-1.5 rounded-xl bg-rose-950/80 border border-rose-800/60 text-xs font-mono font-bold text-rose-300 flex items-center gap-1.5 shadow-inner">
+                    <i class="fa-solid fa-fire text-amber-400"></i>
+                    <span x-text="`XP: ${userXP} | Score: ${arcadeScore}`"></span>
+                </div>
+
+                <!-- Web Audio Mute Switch -->
+                <button @click="toggleMute()" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs flex items-center gap-1"
+                        :title="soundMuted ? 'Unmute Sound SFX' : 'Mute Sound SFX'">
+                    <i class="fa-solid" :class="soundMuted ? 'fa-volume-xmark text-rose-400' : 'fa-volume-high text-rose-400'"></i>
+                </button>
+
+                <!-- Light/Dark Mode Switch -->
+                <button @click="darkMode = !darkMode" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs"
+                        :title="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                    <i class="fa-solid" :class="darkMode ? 'fa-moon text-rose-400' : 'fa-sun text-amber-400'"></i>
+                </button>
+
+                <!-- Printable Worksheet Button -->
+                <button @click="switchTab('print')" 
+                        class="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-bold text-xs shadow-lg shadow-rose-600/20 hover:from-rose-500 hover:to-amber-500 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden md:inline">Print Sheet</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- MAIN MODULE NAVIGATION TABS -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-rose-900/30 flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar">
+            
+            <button @click="switchTab('matrix')" 
+                    :class="activeTab === 'matrix' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-gauge-high text-amber-400"></i>
+                <span>1. Irritation Matrix</span>
+            </button>
+
+            <button @click="switchTab('grammar')" 
+                    :class="activeTab === 'grammar' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-diagram-project text-sky-400"></i>
+                <span>2. Grammar Inspector</span>
+            </button>
+
+            <button @click="switchTab('arcade')" 
+                    :class="activeTab === 'arcade' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-gamepad text-emerald-400"></i>
+                <span>3. Pet Peeve Arcade</span>
+            </button>
+
+            <button @click="switchTab('venting')" 
+                    :class="activeTab === 'venting' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-pen-nib text-rose-400"></i>
+                <span>4. Venting Studio & Analyzer</span>
+            </button>
+
+            <button @click="switchTab('scenarios')" 
+                    :class="activeTab === 'scenarios' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-lightbulb text-violet-400"></i>
+                <span>5. Scenario Prompts</span>
+            </button>
+
+            <button @click="switchTab('print')" 
+                    :class="activeTab === 'print' ? 'border-rose-400 text-rose-300 font-bold bg-rose-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-file-pdf text-orange-400"></i>
+                <span>6. Printable Worksheet</span>
+            </button>
+
+        </nav>
+    </header>
+
+    <!-- MAIN APP WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- GLOBAL TOAST NOTIFICATION POPUP -->
+        <div x-show="toast.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-6 right-6 z-50 glass-card border border-rose-500/40 text-slate-100 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 no-print">
+            <span class="text-2xl" x-text="toast.icon"></span>
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-rose-300" x-text="toast.title"></h4>
+                <p class="text-xs sm:text-sm text-slate-200" x-text="toast.message"></p>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 1: INTERACTIVE IRRITATION MATRIX -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'matrix'" x-transition class="space-y-8">
+            
+            <!-- Hero Banner -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-rose-800/50">
+                <div class="max-w-3xl space-y-3 relative z-10">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-widest font-mono">
+                        Irritation Spectrum Architecture
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                        Expressing Annoyance with <span class="text-rose-400">Precision & Tone</span>
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        In English, expressing irritation effectively requires choosing the right intensity—from mild pet peeves to severe boiling points—and mastering nuance. Click any card to hear standard pronunciation or view grammar usage notes.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Intensity Filter Tabs -->
+            <div class="flex flex-wrap items-center justify-between gap-4 border-b border-rose-900/30 pb-4">
+                <div class="flex space-x-2 font-mono text-xs">
+                    <button @click="matrixFilter = 'all'" 
+                            :class="matrixFilter === 'all' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-3.5 py-2 rounded-xl border border-slate-800 transition-all">All Expressions</button>
+                    <button @click="matrixFilter = 'mild'" 
+                            :class="matrixFilter === 'mild' ? 'bg-amber-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-3.5 py-2 rounded-xl border border-slate-800 transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span> Mild Irritation
+                    </button>
+                    <button @click="matrixFilter = 'moderate'" 
+                            :class="matrixFilter === 'moderate' ? 'bg-orange-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-3.5 py-2 rounded-xl border border-slate-800 transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-orange-400"></span> Moderate Irritation
+                    </button>
+                    <button @click="matrixFilter = 'severe'" 
+                            :class="matrixFilter === 'severe' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                            class="px-3.5 py-2 rounded-xl border border-slate-800 transition-all flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Severe / Extreme
+                    </button>
+                </div>
+
+                <div class="text-xs font-mono text-slate-400">
+                    Showing <strong class="text-rose-400" x-text="filteredMatrixExpressions.length"></strong> key phrases
+                </div>
+            </div>
+
+            <!-- Matrix Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <template x-for="expr in filteredMatrixExpressions" :key="expr.id">
+                    <div class="glass-card rounded-2xl p-6 border-t-4 space-y-4 flex flex-col justify-between hover:border-rose-500/50 transition-all"
+                         :class="{
+                             'border-t-amber-400': expr.intensity === 'mild',
+                             'border-t-orange-500': expr.intensity === 'moderate',
+                             'border-t-rose-600': expr.intensity === 'severe'
+                         }">
+                        
+                        <div class="space-y-3">
+                            <!-- Card Header Badge & Audio -->
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono uppercase"
+                                      :class="{
+                                          'bg-amber-500/20 text-amber-300 border border-amber-500/30': expr.intensity === 'mild',
+                                          'bg-orange-500/20 text-orange-300 border border-orange-500/30': expr.intensity === 'moderate',
+                                          'bg-rose-500/20 text-rose-300 border border-rose-500/30': expr.intensity === 'severe'
+                                      }"
+                                      x-text="`${expr.intensity.toUpperCase()} (${expr.scaleScore}/10)`">
+                                </span>
+
+                                <button @click="speakText(expr.phrase)" class="p-2 rounded-lg bg-slate-900 text-rose-400 hover:text-white hover:bg-slate-800 transition-all text-xs" title="Listen to Pronunciation">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+
+                            <!-- Expression Title -->
+                            <h3 class="text-lg font-bold text-white font-mono" x-text="expr.phrase"></h3>
+
+                            <!-- Form / Pattern -->
+                            <p class="text-[11px] font-mono text-slate-400" x-text="`Grammar Pattern: ${expr.pattern}`"></p>
+
+                            <!-- Example Sentence -->
+                            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-sans text-slate-200 leading-relaxed italic">
+                                "<span x-text="expr.example"></span>"
+                            </div>
+                        </div>
+
+                        <!-- Card Footer Grammar Note & Detail Button -->
+                        <div class="pt-3 border-t border-slate-800/80 space-y-2">
+                            <p class="text-[11px] text-slate-400 font-sans" x-text="expr.note"></p>
+                            
+                            <button @click="openExpressionModal(expr)" class="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-mono text-rose-300 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-eye"></i> View Deep-Dive Usage
+                            </button>
+                        </div>
+
+                    </div>
+                </template>
+            </div>
+
+            <!-- EXPRESSION DEEP-DIVE MODAL -->
+            <div x-show="activeExprModal" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md no-print">
+                <div class="glass-card border border-rose-500/40 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-6 relative shadow-2xl">
+                    <button @click="activeExprModal = null" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-2xl bg-rose-600/30 border border-rose-400/40 flex items-center justify-center text-rose-300 text-2xl font-bold">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white font-mono" x-text="selectedModalExpr.phrase"></h3>
+                            <p class="text-xs text-rose-300 font-mono" x-text="`Intensity Level: ${selectedModalExpr.intensity?.toUpperCase()}`"></p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
+                        <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 font-mono text-xs">
+                            <span class="text-rose-400 font-bold block uppercase">Structure Breakdown:</span>
+                            <p class="text-slate-300" x-text="selectedModalExpr.pattern"></p>
+                        </div>
+
+                        <div class="space-y-1 font-mono text-xs">
+                            <span class="text-amber-300 font-bold block uppercase">Context & Register:</span>
+                            <p class="text-slate-300" x-text="selectedModalExpr.context"></p>
+                        </div>
+
+                        <div class="p-4 bg-rose-950/40 rounded-2xl border border-rose-800/60 font-mono text-xs space-y-2">
+                            <span class="text-amber-300 font-bold block uppercase"><i class="fa-solid fa-comment-dots"></i> Example Usage in Context:</span>
+                            <p class="text-rose-100 italic" x-text="`'${selectedModalExpr.example}'`"></p>
+                        </div>
+
+                        <div class="space-y-1 font-mono text-xs">
+                            <span class="text-sky-300 font-bold block uppercase">Common Learner Pitfall / Fix:</span>
+                            <p class="text-slate-300" x-text="selectedModalExpr.pitfall"></p>
+                        </div>
+                    </div>
+
+                    <button @click="speakText(selectedModalExpr.example)" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-volume-high"></i> Listen to Full Example Audio
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 2: GRAMMAR & SENTENCE STRUCTURE INSPECTOR -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'grammar'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-800/50">
+                <div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30 uppercase tracking-widest font-mono">
+                        Target Syntax Breakdown
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">3 Core Irritation Grammar Patterns</h2>
+                    <p class="text-xs text-slate-400">Master how native speakers construct rants using frequency adverbs, dummy subjects, and cleft focus structures.</p>
+                </div>
+
+                <!-- 3 Core Structure Breakdown Cards -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Structure 1: Present Continuous + Always -->
+                    <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono uppercase">
+                                Structure A
+                            </span>
+                            <h3 class="text-base font-bold text-white">Present Continuous + Always / Constantly</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Expresses habitual, repeated behavior that causes ongoing annoyance.
+                            </p>
+                            
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 font-mono text-xs text-sky-300 space-y-1">
+                                <span class="text-[10px] text-slate-500 uppercase block">Formula:</span>
+                                <div>[Subject] + [is/are] + [always/constantly] + [Verb-ing]</div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-900/50 rounded-xl text-xs font-mono text-slate-300 italic border border-slate-800">
+                            "He is <strong>always interrupting</strong> me during Zoom meetings!"
+                        </div>
+                    </div>
+
+                    <!-- Structure 2: Introductory Dummy Subject "It" -->
+                    <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase">
+                                Structure B
+                            </span>
+                            <h3 class="text-base font-bold text-white">Introductory Dummy Subject "It"</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Shifts the focus directly onto the emotional reaction before introducing the annoying trigger.
+                            </p>
+
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 font-mono text-xs text-amber-300 space-y-1">
+                                <span class="text-[10px] text-slate-500 uppercase block">Formula:</span>
+                                <div>It + [drives me crazy / bugs me] + [when / if ...]</div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-900/50 rounded-xl text-xs font-mono text-slate-300 italic border border-slate-800">
+                            "<strong>It drives me up the wall when</strong> people talk loudly on speakerphone."
+                        </div>
+                    </div>
+
+                    <!-- Structure 3: Cleft Sentences with "What" -->
+                    <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono uppercase">
+                                Structure C
+                            </span>
+                            <h3 class="text-base font-bold text-white">Cleft Sentences ("What ... is ...")</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Creates rhetorical emphasis by isolating the specific element that causes peak irritation.
+                            </p>
+
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 font-mono text-xs text-rose-300 space-y-1">
+                                <span class="text-[10px] text-slate-500 uppercase block">Formula:</span>
+                                <div>What + [bugs me most] + is + [that / when ...]</div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-900/50 rounded-xl text-xs font-mono text-slate-300 italic border border-slate-800">
+                            "<strong>What gets on my nerves most is</strong> when people leave dirty dishes in the sink."
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- INTERACTIVE SENTENCE BUILDER STUDIO -->
+                <div class="p-6 bg-slate-950 rounded-3xl border border-sky-500/30 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-white font-mono flex items-center gap-2">
+                            <i class="fa-solid fa-wrench text-sky-400"></i>
+                            <span>Interactive Sentence Builder</span>
+                        </h3>
+                        <span class="text-xs font-mono text-slate-400">Assemble custom B1/B2 irritation sentences</span>
+                    </div>
+
+                    <!-- Builder Controls -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                        
+                        <!-- Step 1: Select Structure Type -->
+                        <div class="space-y-1.5">
+                            <label class="text-slate-400 font-bold block">1. Target Grammar Structure:</label>
+                            <select x-model="builderPattern" @change="updateSentenceBuilder()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                                <option value="continuous">Present Continuous + Always</option>
+                                <option value="dummy_it">Dummy Subject 'It'</option>
+                                <option value="cleft">Cleft Focus Sentence</option>
+                            </select>
+                        </div>
+
+                        <!-- Step 2: Select Subject / Lead -->
+                        <div class="space-y-1.5">
+                            <label class="text-slate-400 font-bold block">2. Subject / Starter Phrase:</label>
+                            <select x-model="builderStarter" @change="updateSentenceBuilder()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                                <template x-for="opt in builderStarterOptions" :key="opt">
+                                    <option :value="opt" x-text="opt"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <!-- Step 3: Select Annoying Action -->
+                        <div class="space-y-1.5">
+                            <label class="text-slate-400 font-bold block">3. Annoying Everyday Action:</label>
+                            <select x-model="builderAction" @change="updateSentenceBuilder()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 focus:outline-none focus:border-sky-500">
+                                <template x-for="act in builderActionOptions" :key="act">
+                                    <option :value="act" x-text="act"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- Live Sentence Preview & Audio Output -->
+                    <div class="p-5 bg-gradient-to-r from-sky-950/60 via-slate-900 to-slate-950 rounded-2xl border border-sky-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-mono text-sky-400 uppercase font-bold tracking-wider">Live Assembled Sentence:</span>
+                            <p class="text-base sm:text-lg font-mono font-bold text-white" x-text="builtSentence"></p>
+                        </div>
+
+                        <button @click="speakText(builtSentence)" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-lg transition-all flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>Test Audio</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 3: PET PEEVE ARCADE & SPEED SORTER -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'arcade'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-800/50">
+                
+                <!-- Arcade Top Dashboard -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-900/30 pb-6">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-widest font-mono">
+                            Interactive Gamified Practice
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Pet Peeve Speed Sorter</h2>
+                        <p class="text-xs text-slate-400">Classify incoming expressions by intensity level and grammar structure before the round ends!</p>
+                    </div>
+
+                    <!-- Scoreboard & Streak -->
+                    <div class="flex items-center space-x-3 font-mono text-xs">
+                        <div class="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-500 uppercase block">Score</span>
+                            <span class="text-xl font-bold text-emerald-400" x-text="arcadeScore"></span>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-500 uppercase block">Streak</span>
+                            <span class="text-xl font-bold text-amber-400" x-text="`${arcadeStreak}x`"></span>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-center">
+                            <span class="text-[10px] text-slate-500 uppercase block">Multiplier</span>
+                            <span class="text-xl font-bold text-rose-400" x-text="`${arcadeMultiplier}x`"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN GAME ARENA -->
+                <div class="max-w-2xl mx-auto space-y-6">
+                    
+                    <template x-if="!arcadeActive">
+                        <div class="p-8 bg-slate-950 rounded-3xl border border-slate-800 text-center space-y-4">
+                            <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-3xl mx-auto">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">Ready for the Speed Classification Challenge?</h3>
+                            <p class="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                                You will be presented with 10 random irritation prompts. Rapidly identify whether they represent Mild, Moderate, or Severe intensity, or match the target grammar formula!
+                            </p>
+
+                            <button @click="startArcadeGame()" class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-xs rounded-2xl shadow-xl transition-all">
+                                <i class="fa-solid fa-play"></i> Start Speed Sorter Round
+                            </button>
+                        </div>
+                    </template>
+
+                    <template x-if="arcadeActive">
+                        <div class="p-6 sm:p-8 bg-slate-950 rounded-3xl border border-emerald-500/40 space-y-6 relative shadow-2xl">
+                            
+                            <!-- Question Counter Bar -->
+                            <div class="flex justify-between items-center text-xs font-mono">
+                                <span class="text-slate-400" x-text="`Prompt ${arcadeCurrentIndex + 1} of ${arcadeQuestions.length}`"></span>
+                                <span class="text-emerald-400 font-bold" x-text="`Question Type: ${currentArcadeQ.questionType}`"></span>
+                            </div>
+
+                            <!-- Target Prompt Box -->
+                            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800 text-center space-y-2">
+                                <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Classify This Statement:</span>
+                                <p class="text-base sm:text-xl font-mono font-bold text-white" x-text="`'${currentArcadeQ.promptText}'`"></p>
+                            </div>
+
+                            <!-- Choice Buttons Grid -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                                <template x-for="opt in currentArcadeQ.options" :key="opt">
+                                    <button @click="submitArcadeAnswer(opt)" 
+                                            class="py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500 hover:bg-slate-800 text-slate-200 transition-all font-bold">
+                                        <span x-text="opt"></span>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Feedback Message Banner -->
+                            <div x-show="arcadeFeedback" x-transition class="p-3 rounded-xl text-center font-mono text-xs border"
+                                 :class="arcadeFeedbackCorrect ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'">
+                                <p x-text="arcadeFeedbackMsg"></p>
+                            </div>
+
+                        </div>
+                    </template>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 4: GUIDED VENTING STUDIO & REAL-TIME ANALYZER -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'venting'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-800/50">
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-widest font-mono">
+                            Interactive Writing Lab
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Guided Venting Studio & Real-time Analyzer</h2>
+                        <p class="text-xs text-slate-400">Write an expressive rant about an annoying situation. The real-time parser checks syntax, vocabulary intensity, and punctuation.</p>
+                    </div>
+
+                    <!-- Preset Model Rants Loader -->
+                    <div class="flex items-center space-x-2">
+                        <select x-model="selectedModelRant" @change="loadModelRant()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500">
+                            <option value="">-- Load B1/B2 Model Rant --</option>
+                            <option value="transport">Public Transport Delays</option>
+                            <option value="office">Open Office Noise</option>
+                            <option value="tech">Unresponsive Wi-Fi & Tech</option>
+                            <option value="roommate">Dirty Roommate Dishes</option>
+                        </select>
+
+                        <button @click="speakText(rantText)" :disabled="!rantText" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500 text-rose-300 text-xs font-mono flex items-center gap-1.5 transition-all">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span class="hidden sm:inline">Listen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MAIN VENTING EDITOR & DIAGNOSTIC SIDEBAR -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left Column: Quick-Insert Chips & Textarea (2 Cols) -->
+                    <div class="lg:col-span-2 space-y-4">
+                        
+                        <!-- Quick Target Phrase Chips -->
+                        <div class="space-y-1.5">
+                            <span class="text-[11px] font-mono text-slate-400 font-bold block">Quick Target Phrase Insertion Chips:</span>
+                            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
+                                <button @click="insertRantChip('is always ')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-300 transition-all">+ is always...</button>
+                                <button @click="insertRantChip('It drives me crazy when ')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 transition-all">+ It drives me crazy when...</button>
+                                <button @click="insertRantChip('What bugs me most is ')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-rose-300 transition-all">+ What bugs me most is...</button>
+                                <button @click="insertRantChip('I am sick and tired of ')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-orange-300 transition-all">+ sick and tired of...</button>
+                                <button @click="insertRantChip('At my wit\'s end ')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-rose-400 transition-all">+ At my wit's end...</button>
+                            </div>
+                        </div>
+
+                        <!-- Main Rant Input Textarea -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs font-mono">
+                                <label class="text-rose-300 font-bold">Draft Your Everyday Rant:</label>
+                                <span class="text-slate-500" x-text="`${countWords(rantText)} words | ${rantMetrics.commaCount} commas`"></span>
+                            </div>
+
+                            <textarea x-model="rantText" @input="analyzeRantText()" rows="8"
+                                      placeholder="Start venting here... (e.g., 'What bugs me most is when people talk on speakerphone. They are constantly blaring their calls...')"
+                                      class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-rose-500 font-mono transition-all leading-relaxed"></textarea>
+                        </div>
+
+                        <button @click="saveRantToWorksheet()" 
+                                :disabled="countWords(rantText) < 15"
+                                :class="countWords(rantText) >= 15 ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white shadow-lg' : 'bg-slate-900 text-slate-600 cursor-not-allowed'"
+                                class="w-full py-3.5 rounded-xl font-bold font-mono text-xs transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>Save Rant to Printable Prep Worksheet (+25 XP)</span>
+                        </button>
+
+                    </div>
+
+                    <!-- Right Column: Live Syntax & Intensity Diagnostic Parser -->
+                    <div class="space-y-4">
+                        <div class="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 font-mono">
+                            <h4 class="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span>Rant Diagnostics</span>
+                                <i class="fa-solid fa-chart-pie text-rose-400"></i>
+                            </h4>
+
+                            <!-- Diagnostic Metric: Vocabulary Intensity Rating -->
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-300">Irritation Intensity Rating:</span>
+                                    <span class="font-bold text-amber-400" x-text="`${rantMetrics.intensityScore}/10`"></span>
+                                </div>
+                                <div class="w-full bg-slate-900 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all duration-300"
+                                         :class="{
+                                             'bg-amber-400': rantMetrics.intensityScore < 5,
+                                             'bg-orange-400': rantMetrics.intensityScore >= 5 && rantMetrics.intensityScore < 8,
+                                             'bg-rose-500': rantMetrics.intensityScore >= 8
+                                         }"
+                                         :style="`width: ${rantMetrics.intensityScore * 10}%`"></div>
+                                </div>
+                            </div>
+
+                            <!-- Diagnostic Metric: Detected Target Expressions -->
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+                                <span class="text-sky-300 font-bold block text-[11px] uppercase">Detected Target Expressions:</span>
+                                
+                                <template x-if="rantMetrics.detectedTargetPhrases.length === 0">
+                                    <p class="text-[11px] text-slate-500 italic">No target phrases detected yet. Try adding 'is always' or 'drives me crazy'.</p>
+                                </template>
+
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="phrase in rantMetrics.detectedTargetPhrases" :key="phrase">
+                                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold" x-text="phrase"></span>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Diagnostic Metric: Grammar Formula Checklist -->
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                                <span class="text-amber-300 font-bold block uppercase">Grammar Formula Checklist:</span>
+                                
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span :class="rantMetrics.hasContinuous ? 'text-emerald-400 font-bold' : 'text-slate-400'">• Present Continuous + Always</span>
+                                    <i class="fa-solid" :class="rantMetrics.hasContinuous ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-slate-600'"></i>
+                                </div>
+
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span :class="rantMetrics.hasDummyIt ? 'text-emerald-400 font-bold' : 'text-slate-400'">• Dummy Subject "It..."</span>
+                                    <i class="fa-solid" :class="rantMetrics.hasDummyIt ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-slate-600'"></i>
+                                </div>
+
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span :class="rantMetrics.hasCleft ? 'text-emerald-400 font-bold' : 'text-slate-400'">• Cleft Sentence ("What...")</span>
+                                    <i class="fa-solid" :class="rantMetrics.hasCleft ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-slate-600'"></i>
+                                </div>
+                            </div>
+
+                            <!-- Diagnostic Advice Tip -->
+                            <div class="p-3 bg-rose-950/30 border border-rose-500/30 rounded-xl text-[11px] text-rose-200 leading-relaxed font-sans">
+                                💡 <strong class="font-mono">Writing Coach Tip:</strong> <span x-text="rantMetrics.coachingTip"></span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 5: SCENARIO GENERATOR / RANT PROMPTS -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'scenarios'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-800/50">
+                <div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-violet-500/20 text-violet-300 border border-violet-500/30 uppercase tracking-widest font-mono">
+                        Everyday Situations Generator
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Real-World Irritation Prompts</h2>
+                    <p class="text-xs text-slate-400">Select an annoying scenario card to inspect vocabulary ideas and jump directly into the Venting Studio.</p>
+                </div>
+
+                <!-- Scenario Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="scen in scenarios" :key="scen.id">
+                        <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between hover:border-violet-500/40 transition-all">
+                            
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 font-mono uppercase" x-text="scen.category"></span>
+                                    <i :class="scen.icon" class="text-violet-400 text-lg"></i>
+                                </div>
+
+                                <h3 class="text-base font-bold text-white font-mono" x-text="scen.title"></h3>
+                                <p class="text-xs text-slate-300 leading-relaxed" x-text="scen.description"></p>
+
+                                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs font-mono space-y-1">
+                                    <span class="text-amber-300 text-[10px] uppercase font-bold block">Suggested Vocabulary:</span>
+                                    <p class="text-slate-300" x-text="scen.vocab.join(', ')"></p>
+                                </div>
+                            </div>
+
+                            <button @click="useScenarioInVenting(scen)" class="w-full py-2.5 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/40 rounded-xl text-xs font-mono text-violet-200 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-pen-nib"></i> Vent About This Scenario ➔
+                            </button>
+
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 6: PRINTABLE PREP WORKSHEET -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'print'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-800/50 no-print">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-orange-500/20 text-orange-300 border border-orange-500/30 uppercase tracking-widest font-mono">
+                            Offline Student Handout
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Printable Student Worksheet</h2>
+                        <p class="text-xs text-slate-400">Export a formatted PDF/Print cheat sheet containing grammar rules, saved rants, fill-in exercises, and answer key.</p>
+                    </div>
+
+                    <button @click="window.print()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Print Handout PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PRINTABLE SECTION (Clean Light Styling for PDF Export) -->
+            <div id="printable-section" class="bg-white text-slate-900 p-8 rounded-2xl shadow-xl space-y-8 text-sm leading-relaxed">
+                
+                <!-- Printable Header -->
+                <div class="border-b-2 border-rose-600 pb-4 flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold text-rose-950">PetPeeve Studio: Expressing Irritation Worksheet</h1>
+                        <p class="text-xs text-slate-600">B1/B2 English Language Learning Handout & Writing Practice</p>
+                    </div>
+                    <div class="text-right text-xs text-slate-500 font-mono">
+                        <div>Student Name: ______________________</div>
+                        <div>Date: ______________________</div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Target Grammar Summary -->
+                <div class="space-y-2">
+                    <h2 class="text-base font-bold text-rose-900 border-b border-rose-200 pb-1">1. Key Grammar Structures for Expressing Irritation</h2>
+                    <ul class="list-disc list-inside font-mono text-xs text-slate-800 space-y-1">
+                        <li><strong>Present Continuous + Always/Constantly:</strong> Expresses habitual annoying behavior (e.g., <em>"He is constantly leaving dirty dishes in the sink."</em>).</li>
+                        <li><strong>Dummy Subject 'It':</strong> <em>"It drives me crazy / bugs me when..."</em></li>
+                        <li><strong>Cleft Sentences:</strong> <em>"What annoys me most is that..."</em></li>
+                    </ul>
+                </div>
+
+                <!-- Section 2: Student Saved Rant -->
+                <div class="space-y-2">
+                    <h2 class="text-base font-bold text-rose-900 border-b border-rose-200 pb-1">2. My Custom Written Rant</h2>
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 font-mono text-xs italic min-h-[80px]">
+                        <span x-text="savedWorksheetRant || '[No saved rant yet. Draft and save a rant in Module 4.]'"></span>
+                    </div>
+                </div>
+
+                <!-- Section 3: Fill-in-the-Blank Grammar Exercise -->
+                <div class="space-y-3">
+                    <h2 class="text-base font-bold text-rose-900 border-b border-rose-200 pb-1">3. Fill-in-the-Blank Practice Exercise</h2>
+                    <ol class="list-decimal list-inside space-y-2 font-mono text-xs">
+                        <li>My roommate ______________________ (always / leave) the lights on when leaving the apartment.</li>
+                        <li>It drives me up the wall ______________________ people talk loudly on speakerphone in public.</li>
+                        <li>What ______________________ (bug) me most is when drivers forget to use their turn signals.</li>
+                        <li>I am ______________________ (sick and tired) of dealing with unreliable Wi-Fi during online meetings.</li>
+                    </ol>
+                </div>
+
+                <!-- Section 4: Answer Key Toggle -->
+                <div class="space-y-2 pt-4 border-t border-slate-200">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">Teacher Answer Key (Fill-in Exercise)</h2>
+                        <button @click="showAnswerKey = !showAnswerKey" class="no-print text-[10px] font-mono text-rose-600 underline">
+                            <span x-text="showAnswerKey ? 'Hide Answer Key' : 'Show Answer Key'"></span>
+                        </button>
+                    </div>
+                    
+                    <div x-show="showAnswerKey" class="p-3 bg-amber-50 rounded border border-amber-200 font-mono text-xs text-amber-900 space-y-1">
+                        <p>1. is always leaving</p>
+                        <p>2. when</p>
+                        <p>3. bugs</p>
+                        <p>4. sick and tired</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-rose-900/30 bg-slate-950 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>PetPeeve Studio • Interactive B1/B2 English Language Learning Platform</p>
+        </div>
+    </footer>
+
+    <!-- ALPINE.JS APPLICATION LOGIC SCRIPT -->
+    <script>
+        function petPeeveApp() {
+            return {
+                activeTab: 'matrix',
+                darkMode: true,
+                soundMuted: false,
+                userXP: 50,
+                audioCtx: null,
+
+                toast: {
+                    show: false,
+                    icon: '💡',
+                    title: '',
+                    message: ''
+                },
+
+                // Web Audio Context Initialization
+                initAudio() {
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            this.audioCtx = new AudioContext();
+                        }
+                    } catch (e) {
+                        console.log('Web Audio API unavailable.');
+                    }
+                },
+
+                toggleMute() {
+                    this.soundMuted = !this.soundMuted;
+                    this.showToast(
+                        this.soundMuted ? 'Sound SFX Muted' : 'Sound Active',
+                        this.soundMuted ? 'Audio effects muted.' : 'Audio effects enabled.',
+                        this.soundMuted ? '🔇' : '🔊'
+                    );
+                },
+
+                // Web Audio API Synthesizer (Click, Correct, Error)
+                playSound(type) {
+                    if (this.soundMuted || !this.audioCtx) return;
+                    try {
+                        if (this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
+                        const now = this.audioCtx.currentTime;
+
+                        if (type === 'click') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(600, now);
+                            gain.gain.setValueAtTime(0.04, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.04);
+                        } else if (type === 'correct') {
+                            const osc1 = this.audioCtx.createOscillator();
+                            const osc2 = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc1.type = 'sine';
+                            osc2.type = 'triangle';
+                            osc1.frequency.setValueAtTime(523.25, now);
+                            osc2.frequency.setValueAtTime(659.25, now + 0.08);
+                            gain.gain.setValueAtTime(0.06, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                            osc1.connect(gain);
+                            osc2.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc1.start(now);
+                            osc1.stop(now + 0.12);
+                            osc2.start(now + 0.08);
+                            osc2.stop(now + 0.25);
+                        } else if (type === 'error') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(180, now);
+                            gain.gain.setValueAtTime(0.06, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.2);
+                        }
+                    } catch (e) {}
+                },
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.playSound('click');
+                },
+
+                showToast(title, message, icon = '💡') {
+                    this.toast = { show: true, title, message, icon };
+                    setTimeout(() => { this.toast.show = false; }, 3200);
+                },
+
+                // Text-to-Speech Engine
+                speakText(text) {
+                    if (!text) return;
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 0.92;
+                        utterance.lang = 'en-US';
+                        window.speechSynthesis.speak(utterance);
+                        this.showToast('Audio Playback', 'Playing natural pronunciation...', '🔊');
+                    }
+                },
+
+                countWords(str) {
+                    if (!str) return 0;
+                    return str.trim().split(/\s+/).filter(w => w.length > 0).length;
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 1: IRRITATION MATRIX DATA
+                // -----------------------------------------------------------
+                matrixFilter: 'all',
+                activeExprModal: null,
+                selectedModalExpr: {},
+
+                matrixExpressions: [
+                    {
+                        id: 1,
+                        phrase: "A pet peeve",
+                        intensity: "mild",
+                        scaleScore: 3,
+                        pattern: "Noun phrase",
+                        example: "My biggest pet peeve is when people don't put things back where they belong.",
+                        note: "Refers to a specific minor habit that uniquely annoys you.",
+                        context: "Informal, conversational everyday English.",
+                        pitfall: "Don't say 'It is my pet peeved'. Always use 'pet peeve'."
+                    },
+                    {
+                        id: 2,
+                        phrase: "Bugs me / Bothers me",
+                        intensity: "mild",
+                        scaleScore: 4,
+                        pattern: "Verb (It bugs me when... / That really bothers me)",
+                        example: "It really bugs me when people leave dirty cups on the desk.",
+                        note: "Mild verb used for everyday slight annoyances.",
+                        context: "Common in work and social settings.",
+                        pitfall: "'Bug' is informal. Use 'bother' in slightly more formal writing."
+                    },
+                    {
+                        id: 3,
+                        phrase: "Gets on my nerves",
+                        intensity: "moderate",
+                        scaleScore: 6,
+                        pattern: "Idiomatic Verb Phrase + [person / action]",
+                        example: "Her loud chewing really gets on my nerves during lunch.",
+                        note: "Expresses repeated irritation that gradually builds up.",
+                        context: "Widely used across all informal English dialects.",
+                        pitfall: "Correct: 'gets on my nerves'. Incorrect: 'gets in my nerves'."
+                    },
+                    {
+                        id: 4,
+                        phrase: "Drives me up the wall / crazy",
+                        intensity: "moderate",
+                        scaleScore: 7,
+                        pattern: "It drives me [up the wall / crazy] when...",
+                        example: "It drives me up the wall when trains are delayed without explanation.",
+                        note: "Expresses strong frustration or feeling overwhelmed by a situation.",
+                        context: "Highly expressive spoken idiom.",
+                        pitfall: "Requires object pronoun: 'It drives ME crazy' or 'It drives HIM up the wall'."
+                    },
+                    {
+                        id: 5,
+                        phrase: "Can't stand",
+                        intensity: "moderate",
+                        scaleScore: 7,
+                        pattern: "Subject + can't stand + [Gerund (-ing) or Noun]",
+                        example: "I can't stand waiting in long queues at the supermarket.",
+                        note: "Must be followed by a gerund verb or noun, not a full clause.",
+                        context: "Direct personal opinion.",
+                        pitfall: "Incorrect: 'I can't stand to wait'. Correct: 'I can't stand waiting'."
+                    },
+                    {
+                        id: 6,
+                        phrase: "Makes my blood boil",
+                        intensity: "severe",
+                        scaleScore: 9,
+                        pattern: "It makes my blood boil when...",
+                        example: "It makes my blood boil when people display complete disregard for others.",
+                        note: "Indicates severe anger and intense moral or personal outrage.",
+                        context: "Used for serious or infuriating grievances.",
+                        pitfall: "Use sparingly for maximum dramatic effect."
+                    },
+                    {
+                        id: 7,
+                        phrase: "Sick and tired of",
+                        intensity: "severe",
+                        scaleScore: 8,
+                        pattern: "be + sick and tired of + [Noun / Gerund]",
+                        example: "I am sick and tired of hearing empty promises from management.",
+                        note: "Implies that an annoying issue has continued for far too long.",
+                        context: "Emphatic complaint structure.",
+                        pitfall: "Must include both words: 'sick AND tired of'."
+                    },
+                    {
+                        id: 8,
+                        phrase: "At my wit's end",
+                        intensity: "severe",
+                        scaleScore: 10,
+                        pattern: "be + at my wit's end (with...)",
+                        example: "I am at my wit's end with this unreliable computer system!",
+                        note: "Implies complete exhaustion of patience with no solutions remaining.",
+                        context: "Executive / formal venting.",
+                        pitfall: "Note apostrophe placement: 'wit's end'."
+                    }
+                ],
+
+                get filteredMatrixExpressions() {
+                    if (this.matrixFilter === 'all') return this.matrixExpressions;
+                    return this.matrixExpressions.filter(e => e.intensity === this.matrixFilter);
+                },
+
+                openExpressionModal(expr) {
+                    this.selectedModalExpr = expr;
+                    this.activeExprModal = true;
+                    this.playSound('click');
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 2: SENTENCE BUILDER STATE
+                // -----------------------------------------------------------
+                builderPattern: 'continuous',
+                builderStarter: 'My coworker',
+                builderAction: 'leaving dirty dishes in the sink',
+                builtSentence: '',
+
+                builderStarterOptionsMap: {
+                    continuous: ['My coworker', 'Our manager', 'My roommate', 'People on the bus'],
+                    dummy_it: ['It drives me crazy when', 'It gets on my nerves when', 'It bugs me when', 'It really bothers me if'],
+                    cleft: ['What bugs me most is when', 'What annoys me to no end is when', 'What gets on my nerves is that']
+                },
+
+                builderActionOptionsMap: {
+                    continuous: ['is always leaving dirty dishes in the sink.', 'is constantly interrupting during meetings.', 'is always playing loud music late at night.', 'is constantly taking phone calls on speaker.'],
+                    dummy_it: ['people chew with their mouth open.', 'people leave dirty cups on the desk.', 'someone takes food without asking.', 'trains are delayed without notice.'],
+                    cleft: ['people interrupt while someone is speaking.', 'colleagues don\'t reply to urgent emails.', 'people don\'t put things back where they belong.']
+                },
+
+                get builderStarterOptions() {
+                    return this.builderStarterOptionsMap[this.builderPattern] || [];
+                },
+
+                get builderActionOptions() {
+                    return this.builderActionOptionsMap[this.builderPattern] || [];
+                },
+
+                updateSentenceBuilder() {
+                    if (!this.builderStarterOptions.includes(this.builderStarter)) {
+                        this.builderStarter = this.builderStarterOptions[0];
+                    }
+                    if (!this.builderActionOptions.includes(this.builderAction)) {
+                        this.builderAction = this.builderActionOptions[0];
+                    }
+
+                    this.builtSentence = `${this.builderStarter} ${this.builderAction}`;
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 3: PET PEEVE ARCADE SPEED SORTER
+                // -----------------------------------------------------------
+                arcadeActive: false,
+                arcadeScore: 0,
+                arcadeStreak: 0,
+                arcadeMultiplier: 1,
+                arcadeCurrentIndex: 0,
+                arcadeFeedback: false,
+                arcadeFeedbackCorrect: false,
+                arcadeFeedbackMsg: '',
+
+                arcadeQuestions: [
+                    {
+                        promptText: "It drives me up the wall when trains are delayed.",
+                        questionType: "Intensity Classification",
+                        options: ["Mild", "Moderate", "Severe"],
+                        correctAnswer: "Moderate"
+                    },
+                    {
+                        promptText: "He is constantly leaving his shoes right in the doorway.",
+                        questionType: "Grammar Pattern",
+                        options: ["Present Continuous + Always", "Dummy Subject It", "Cleft Focus Sentence"],
+                        correctAnswer: "Present Continuous + Always"
+                    },
+                    {
+                        promptText: "It makes my blood boil when people lie.",
+                        questionType: "Intensity Classification",
+                        options: ["Mild", "Moderate", "Severe"],
+                        correctAnswer: "Severe"
+                    },
+                    {
+                        promptText: "What bugs me most is when people interrupt.",
+                        questionType: "Grammar Pattern",
+                        options: ["Present Continuous + Always", "Dummy Subject It", "Cleft Focus Sentence"],
+                        correctAnswer: "Cleft Focus Sentence"
+                    },
+                    {
+                        promptText: "It bothers me slightly when my laptop updates during lunch.",
+                        questionType: "Intensity Classification",
+                        options: ["Mild", "Moderate", "Severe"],
+                        correctAnswer: "Mild"
+                    }
+                ],
+
+                get currentArcadeQ() {
+                    return this.arcadeQuestions[this.arcadeCurrentIndex] || this.arcadeQuestions[0];
+                },
+
+                startArcadeGame() {
+                    this.arcadeActive = true;
+                    this.arcadeCurrentIndex = 0;
+                    this.arcadeScore = 0;
+                    this.arcadeStreak = 0;
+                    this.arcadeMultiplier = 1;
+                    this.arcadeFeedback = false;
+                    this.playSound('click');
+                },
+
+                submitArcadeAnswer(selectedOpt) {
+                    const isCorrect = selectedOpt === this.currentArcadeQ.correctAnswer;
+                    this.arcadeFeedback = true;
+                    this.arcadeFeedbackCorrect = isCorrect;
+
+                    if (isCorrect) {
+                        this.arcadeStreak++;
+                        this.arcadeMultiplier = Math.min(4, Math.floor(this.arcadeStreak / 2) + 1);
+                        this.arcadeScore += 100 * this.arcadeMultiplier;
+                        this.userXP += 10;
+                        this.arcadeFeedbackMsg = `✅ Correct! +${100 * this.arcadeMultiplier} Points (${this.arcadeMultiplier}x Multiplier)`;
+                        this.playSound('correct');
+                    } else {
+                        this.arcadeStreak = 0;
+                        this.arcadeMultiplier = 1;
+                        this.arcadeFeedbackMsg = `❌ Incorrect! Correct classification: ${this.currentArcadeQ.correctAnswer}`;
+                        this.playSound('error');
+                    }
+
+                    setTimeout(() => {
+                        this.arcadeFeedback = false;
+                        if (this.arcadeCurrentIndex < this.arcadeQuestions.length - 1) {
+                            this.arcadeCurrentIndex++;
+                        } else {
+                            this.arcadeActive = false;
+                            this.showToast('Arcade Completed!', `Final Score: ${this.arcadeScore} Points!`, '🏆');
+                        }
+                    }, 1400);
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 4: GUIDED VENTING STUDIO & ANALYZER
+                // -----------------------------------------------------------
+                selectedModelRant: '',
+                rantText: '',
+                savedWorksheetRant: '',
+                showAnswerKey: false,
+
+                rantMetrics: {
+                    intensityScore: 0,
+                    commaCount: 0,
+                    detectedTargetPhrases: [],
+                    hasContinuous: false,
+                    hasDummyIt: false,
+                    hasCleft: false,
+                    coachingTip: "Include a target expression like 'is always' or 'It drives me crazy' to enhance your rant."
+                },
+
+                insertRantChip(text) {
+                    this.rantText += text;
+                    this.analyzeRantText();
+                    this.playSound('click');
+                },
+
+                loadModelRant() {
+                    const rants = {
+                        transport: "What bugs me most about public transport is the utter unpredictability. It drives me crazy when buses are delayed without any announcement. Passengers are constantly crowding near the doors before anyone can step out, which makes my blood boil!",
+                        office: "I am sick and tired of open office noise! My coworker is constantly taking personal phone calls on loud speakerphone right next to my desk. It gets on my nerves because I can never focus on complex tasks.",
+                        tech: "At my wit's end with unresponsive Wi-Fi! It drives me up the wall when video calls freeze right in the middle of a crucial presentation. What annoys me most is that it always happens right on the deadline.",
+                        roommate: "My roommate is always leaving dirty dishes in the kitchen sink overnight. It really bothers me because I can't stand cooking in a messy kitchen first thing in the morning."
+                    };
+
+                    if (rants[this.selectedModelRant]) {
+                        this.rantText = rants[this.selectedModelRant];
+                        this.analyzeRantText();
+                        this.playSound('click');
+                    }
+                },
+
+                analyzeRantText() {
+                    const lower = this.rantText.toLowerCase();
+                    const words = this.countWords(this.rantText);
+
+                    // Check comma punctuation
+                    this.rantMetrics.commaCount = (this.rantText.match(/,/g) || []).length;
+
+                    // Detect target phrases
+                    const targets = [
+                        'pet peeve', 'bugs me', 'bothers me', 'gets on my nerves',
+                        'drives me crazy', 'drives me up the wall', 'can\'t stand',
+                        'blood boil', 'sick and tired of', 'wit\'s end', 'is always', 'is constantly'
+                    ];
+
+                    const found = targets.filter(t => lower.includes(t));
+                    this.rantMetrics.detectedTargetPhrases = found;
+
+                    // Grammar patterns detection
+                    this.rantMetrics.hasContinuous = /\b(is|are)\s+(always|constantly)\s+\w+ing\b/i.test(this.rantText);
+                    this.rantMetrics.hasDummyIt = /\bit\s+(drives|gets|bugs|bothers)\b/i.test(this.rantText);
+                    this.rantMetrics.hasCleft = /\bwhat\s+(bugs|annoys|gets)\s+me\b/i.test(this.rantText);
+
+                    // Calculate intensity score
+                    let intensity = 2;
+                    if (found.length > 0) intensity += found.length * 2;
+                    if (this.rantMetrics.hasContinuous) intensity += 1;
+                    if (this.rantMetrics.hasDummyIt) intensity += 1;
+                    if (this.rantMetrics.hasCleft) intensity += 1;
+
+                    this.rantMetrics.intensityScore = Math.min(10, intensity);
+
+                    // Dynamic advice tip
+                    if (found.length === 0) {
+                        this.rantMetrics.coachingTip = "Add target B1/B2 phrases like 'gets on my nerves' or 'sick and tired of'.";
+                    } else if (!this.rantMetrics.hasCleft) {
+                        this.rantMetrics.coachingTip = "Try adding a Cleft Sentence: 'What bugs me most is when...'";
+                    } else {
+                        this.rantMetrics.coachingTip = "Excellent rant structure! High vocabulary range and strong syntax precision.";
+                    }
+                },
+
+                saveRantToWorksheet() {
+                    if (this.countWords(this.rantText) < 15) return;
+                    this.savedWorksheetRant = this.rantText;
+                    this.userXP += 25;
+                    this.showToast('Rant Saved!', 'Added to your printable student worksheet PDF.', '📝');
+                    this.playSound('correct');
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 5: SCENARIO GENERATOR DATA
+                // -----------------------------------------------------------
+                scenarios: [
+                    {
+                        id: 1,
+                        title: "The Speakerphone Commuter",
+                        category: "Public Transport",
+                        icon: "fa-solid fa-bus-simple",
+                        description: "Someone on a crowded train is watching videos without headphones at 8:00 AM.",
+                        vocab: ["blaring sound", "lack of courtesy", "drives me crazy"]
+                    },
+                    {
+                        id: 2,
+                        title: "The Fridge Thief",
+                        category: "Open Office",
+                        icon: "fa-solid fa-briefcase",
+                        description: "You labeled your lunch box, but a mystery coworker ate your sandwich anyway.",
+                        vocab: ["blood boil", "labeled container", "sick and tired of"]
+                    },
+                    {
+                        id: 3,
+                        title: "The Unresponsive Wi-Fi",
+                        category: "Technology Fails",
+                        icon: "fa-solid fa-wifi",
+                        description: "Your connection drops repeatedly 10 minutes before a major project submission.",
+                        vocab: ["at my wit's end", "buffering icon", "what bugs me most"]
+                    },
+                    {
+                        id: 4,
+                        title: "The Sink Stacker",
+                        category: "Roommates",
+                        icon: "fa-solid fa-house-user",
+                        description: "Your roommate stacks plates in the sink right on top of clean sponges.",
+                        vocab: ["pet peeve", "gets on my nerves", "is constantly leaving"]
+                    },
+                    {
+                        id: 5,
+                        title: "The Line Cutter",
+                        category: "Shopping & Retail",
+                        icon: "fa-solid fa-cart-shopping",
+                        description: "A shopper pretend-talks on their phone and slides directly in front of you at checkout.",
+                        vocab: ["can't stand", "pretend distraction", "it bothers me when"]
+                    }
+                ],
+
+                useScenarioInVenting(scen) {
+                    this.rantText = `What bugs me most about ${scen.category.toLowerCase()} is when ${scen.description.toLowerCase()} It really gets on my nerves because...`;
+                    this.switchTab('venting');
+                    this.analyzeRantText();
+                    this.showToast('Scenario Loaded', 'Drafting prompt in Venting Studio.', '💡');
+                }
+
+            };
+        }
+    </script>
+</body>
+</html>
