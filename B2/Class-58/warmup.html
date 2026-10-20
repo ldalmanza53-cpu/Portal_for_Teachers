@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CultureCompare & Writing Studio: Supporting Statements, Contrasts & Exceptions</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                            950: '#0f172a'
+                        },
+                        topic: {
+                            light: '#0284c7',
+                            dark: '#38bdf8',
+                            bg: 'rgba(56, 189, 248, 0.12)'
+                        },
+                        contrast: {
+                            light: '#d97706',
+                            dark: '#fbbf24',
+                            bg: 'rgba(251, 191, 36, 0.12)'
+                        },
+                        exception: {
+                            light: '#e11d48',
+                            dark: '#fb7185',
+                            bg: 'rgba(251, 113, 133, 0.12)'
+                        },
+                        consequence: {
+                            light: '#059669',
+                            dark: '#34d399',
+                            bg: 'rgba(52, 211, 153, 0.12)'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js for Reactive State Management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .light .glass-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            box-shadow: 0 10px 30px -5px rgba(99, 102, 241, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Print Media Stylesheet */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #printable-section, #printable-section * {
+                visibility: visible;
+            }
+            #printable-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 15px;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white"
+      :class="darkMode ? 'dark bg-slate-950 text-slate-100' : 'light bg-slate-50 text-slate-900'"
+      x-data="cultureApp()" 
+      x-init="initAudio()">
+
+    <!-- TOP HEADER / NAVBAR -->
+    <header class="border-b border-indigo-900/40 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Brand Logo & Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="switchTab('anatomy')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-amber-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black text-xl">
+                    <i class="fa-solid fa-earth-americas text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-lg font-extrabold bg-gradient-to-r from-white via-indigo-200 to-amber-300 bg-clip-text text-transparent leading-none">
+                            CultureCompare
+                        </h1>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                            B1/B2 Writing Studio
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Supporting Statements: Contrasts, Exceptions & Consequences</p>
+                </div>
+            </div>
+
+            <!-- Header Controls: XP, Audio, Theme, Print -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                
+                <!-- XP Score Badge -->
+                <div class="px-3 py-1.5 rounded-xl bg-indigo-950/80 border border-indigo-800/60 text-xs font-mono font-bold text-indigo-300 flex items-center gap-1.5 shadow-inner">
+                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                    <span x-text="`${xp} XP`"></span>
+                </div>
+
+                <!-- Audio Synth Toggle -->
+                <button @click="toggleMute()" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs flex items-center gap-1"
+                        :title="soundMuted ? 'Unmute Web Audio' : 'Mute Web Audio'">
+                    <i class="fa-solid" :class="soundMuted ? 'fa-volume-xmark text-rose-400' : 'fa-volume-high text-emerald-400'"></i>
+                </button>
+
+                <!-- Light / Dark Theme Toggle -->
+                <button @click="darkMode = !darkMode" 
+                        class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-all text-xs"
+                        :title="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                    <i class="fa-solid" :class="darkMode ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-400'"></i>
+                </button>
+
+                <!-- Export / Print Button -->
+                <button @click="switchTab('print')" 
+                        class="px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 hover:from-indigo-500 hover:to-violet-500 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span class="hidden md:inline">Printable PDF</span>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- MAIN NAVIGATION TABS -->
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-indigo-900/30 flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar">
+            
+            <button @click="switchTab('anatomy')" 
+                    :class="activeTab === 'anatomy' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-sitemap text-sky-400"></i>
+                <span>Paragraph Anatomy & Rules</span>
+            </button>
+
+            <button @click="switchTab('blueprint')" 
+                    :class="activeTab === 'blueprint' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-puzzle-piece text-amber-400"></i>
+                <span>Paragraph Blueprint Lab</span>
+            </button>
+
+            <button @click="switchTab('sorter')" 
+                    :class="activeTab === 'sorter' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-gamepad text-emerald-400"></i>
+                <span>Speed Sorter Game</span>
+            </button>
+
+            <button @click="switchTab('studio')" 
+                    :class="activeTab === 'studio' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-pen-nib text-violet-400"></i>
+                <span>Writing Studio & Analyzer</span>
+            </button>
+
+            <button @click="switchTab('print')" 
+                    :class="activeTab === 'print' ? 'border-indigo-400 text-indigo-300 font-bold bg-indigo-500/10' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                    class="py-3 px-3.5 border-b-2 text-xs sm:text-sm whitespace-nowrap flex items-center space-x-2 transition-all rounded-t-lg">
+                <i class="fa-solid fa-file-lines text-rose-400"></i>
+                <span>Worksheet Sheet</span>
+            </button>
+
+        </nav>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- TOAST NOTIFICATION POPUP -->
+        <div x-show="toast.show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-6 right-6 z-50 glass-card border border-indigo-500/40 text-slate-100 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 no-print">
+            <span class="text-2xl" x-text="toast.icon"></span>
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300" x-text="toast.title"></h4>
+                <p class="text-xs sm:text-sm text-slate-200" x-text="toast.message"></p>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 1: PARAGRAPH ANATOMY & GRAMMAR EXPLORER -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'anatomy'" x-transition class="space-y-8">
+            
+            <!-- Hero Banner -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-indigo-800/50">
+                <div class="max-w-3xl space-y-3 relative z-10">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest">
+                        B1/B2 Paragraph Architecture
+                    </span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                        Crafting Sophisticated <span class="text-indigo-400">Cultural Comparison</span> Paragraphs
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        Strong academic and B1/B2 level writing goes beyond simple facts. Learn how to combine a <strong>Topic Sentence</strong> with <strong>Contrast Support</strong>, <strong>Exception Support</strong>, and a sentence-modifying <strong>Consequence Clause</strong> (<code class="text-emerald-300 font-mono font-bold">, which</code>).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Interactive Visual Diagram of 4-Part Paragraph Flow -->
+            <div class="glass-card rounded-2xl p-6 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                        <i class="fa-solid fa-diagram-project"></i> 4-Stage Structural Flowchart
+                    </h3>
+                    <span class="text-xs text-slate-400 font-mono">Click cards to inspect details</span>
+                </div>
+
+                <!-- Step-by-Step Color Coded Flowchart -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    
+                    <!-- Stage 1: Topic Sentence -->
+                    <div @click="selectedAnatomyStage = 'topic'" 
+                         :class="selectedAnatomyStage === 'topic' ? 'ring-2 ring-sky-400 bg-sky-950/40 border-sky-500' : 'bg-slate-900/80 border-slate-800 hover:border-sky-500/50'"
+                         class="p-4 rounded-2xl border cursor-pointer transition-all space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30 uppercase font-mono">Stage 1</span>
+                            <i class="fa-solid fa-bullseye text-sky-400"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-sky-200">Topic Sentence</h4>
+                        <p class="text-xs text-slate-400">State the general cultural habit, custom, or social norm being examined.</p>
+                    </div>
+
+                    <!-- Stage 2: Contrast Support -->
+                    <div @click="selectedAnatomyStage = 'contrast'" 
+                         :class="selectedAnatomyStage === 'contrast' ? 'ring-2 ring-amber-400 bg-amber-950/40 border-amber-500' : 'bg-slate-900/80 border-slate-800 hover:border-amber-500/50'"
+                         class="p-4 rounded-2xl border cursor-pointer transition-all space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase font-mono">Stage 2</span>
+                            <i class="fa-solid fa-code-compare text-amber-400"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-amber-200">Contrast Support</h4>
+                        <p class="text-xs text-slate-400">Highlight how another culture or system differs using linkers like <em>whereas, while, unlike</em>.</p>
+                    </div>
+
+                    <!-- Stage 3: Exception Support -->
+                    <div @click="selectedAnatomyStage = 'exception'" 
+                         :class="selectedAnatomyStage === 'exception' ? 'ring-2 ring-rose-400 bg-rose-950/40 border-rose-500' : 'bg-slate-900/80 border-slate-800 hover:border-rose-500/50'"
+                         class="p-4 rounded-2xl border cursor-pointer transition-all space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase font-mono">Stage 3</span>
+                            <i class="fa-solid fa-filter text-rose-400"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-rose-200">Exception Support</h4>
+                        <p class="text-xs text-slate-400">Refine your statement by noting exceptions (*except for, apart from*).</p>
+                    </div>
+
+                    <!-- Stage 4: Consequence Clause -->
+                    <div @click="selectedAnatomyStage = 'consequence'" 
+                         :class="selectedAnatomyStage === 'consequence' ? 'ring-2 ring-emerald-400 bg-emerald-950/40 border-emerald-500' : 'bg-slate-900/80 border-slate-800 hover:border-emerald-500/50'"
+                         class="p-4 rounded-2xl border cursor-pointer transition-all space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase font-mono">Stage 4</span>
+                            <i class="fa-solid fa-link text-emerald-400"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-emerald-200">Consequence (, which)</h4>
+                        <p class="text-xs text-slate-400">Comment on the whole situation using a sentence-modifying relative clause.</p>
+                    </div>
+
+                </div>
+
+                <!-- Detailed Explanation Card for Selected Stage -->
+                <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 font-mono text-xs sm:text-sm">
+                    <template x-if="selectedAnatomyStage === 'topic'">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sky-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info"></i> Stage 1: Topic Sentence
+                            </h4>
+                            <p class="text-slate-300">Introduces the overarching theme or cultural standard. It should be clear and general enough to support further comparison.</p>
+                            <div class="p-3 bg-sky-950/40 rounded-xl border border-sky-500/30 text-sky-200">
+                                <strong>Example:</strong> In many Latin American cities, Sunday mornings are reserved for outdoor recreation and community bonding.
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedAnatomyStage === 'contrast'">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-amber-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info"></i> Stage 2: Contrast Support
+                            </h4>
+                            <p class="text-slate-300">Compares the topic with a contrasting habit. Pay attention to grammar rules: <em>whereas/while</em> are followed by full clauses, while <em>unlike/in contrast to</em> are followed by noun phrases.</p>
+                            <div class="p-3 bg-amber-950/40 rounded-xl border border-amber-500/30 text-amber-200">
+                                <strong>Example:</strong> Whereas many North American cities prioritize car traffic seven days a week, local authorities here close main avenues to automobiles.
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedAnatomyStage === 'exception'">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-rose-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info"></i> Stage 3: Exception Support
+                            </h4>
+                            <p class="text-slate-300">Shows critical nuance by identifying exceptions to the general rule using <em>except for</em>, <em>apart from</em>, or <em>with the exception of</em>.</p>
+                            <div class="p-3 bg-rose-950/40 rounded-xl border border-rose-500/30 text-rose-200">
+                                <strong>Example:</strong> Apart from emergency vehicles and public buses, no motorized transport is permitted on designated bicycle corridors.
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedAnatomyStage === 'consequence'">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-emerald-400 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-info"></i> Stage 4: Consequence (, which)
+                            </h4>
+                            <p class="text-slate-300">Adds an evaluative comment or consequence that modifies the entire preceding situation. Always preceded by a comma!</p>
+                            <div class="p-3 bg-emerald-950/40 rounded-xl border border-emerald-500/30 text-emerald-200">
+                                <strong>Example:</strong> ..., which enables thousands of families and cyclists to enjoy clean air and active urban living.
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Grammar Reference Cards: Contrast Linkers vs. Exception Phrases -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Contrast Linkers Deck -->
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-l-amber-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase">
+                            Grammar Deck: Contrast Linkers
+                        </span>
+                        <i class="fa-solid fa-scale-balanced text-amber-400 text-xl"></i>
+                    </div>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-amber-300 flex justify-between font-mono">
+                                <span>whereas / while</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">+ Clause [S + V]</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Used to connect two contrasting clauses.</p>
+                            <p class="text-slate-300 font-mono text-xs">"She prefers tea, <strong>whereas</strong> he loves espresso."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-amber-300 flex justify-between font-mono">
+                                <span>unlike / in contrast to</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">+ Noun Phrase / -ing</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Prepositions directly followed by a noun or noun phrase.</p>
+                            <p class="text-slate-300 font-mono text-xs">"<strong>Unlike</strong> fast-paced city dwellers, small town residents take slow lunches."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-amber-300 flex justify-between font-mono">
+                                <span>on the other hand</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Transition (Starts sentence)</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Requires a full stop before it and a comma right after.</p>
+                            <p class="text-slate-300 font-mono text-xs">"Some cultures prioritize brevity. <strong>On the other hand,</strong> others value warm greetings."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exception Phrases Deck -->
+                <div class="glass-card rounded-2xl p-6 border-l-4 border-l-rose-500 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 font-mono uppercase">
+                            Grammar Deck: Exception Phrases
+                        </span>
+                        <i class="fa-solid fa-filter text-rose-400 text-xl"></i>
+                    </div>
+
+                    <div class="space-y-3 text-xs sm:text-sm">
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-rose-300 flex justify-between font-mono">
+                                <span>except for / apart from</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">+ Noun Phrase</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Identifies an exclusion from a general statement.</p>
+                            <p class="text-slate-300 font-mono text-xs">"<strong>Except for</strong> major public holidays, shops remain open every day."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-rose-300 flex justify-between font-mono">
+                                <span>with the exception of</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">+ Formal Noun Phrase</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Formal academic phrase used to exclude items.</p>
+                            <p class="text-slate-300 font-mono text-xs">"<strong>With the exception of</strong> small family bakeries, businesses close at 8 PM."</p>
+                        </div>
+
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-rose-300 flex justify-between font-mono">
+                                <span>except when</span>
+                                <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">+ Clause [S + V]</span>
+                            </div>
+                            <p class="text-slate-400 text-xs">Used when the exception is a full conditional clause.</p>
+                            <p class="text-slate-300 font-mono text-xs">"People shake hands, <strong>except when</strong> they are greeting close personal friends."</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Cultural Topic Showcase Showcase (Interactive Breakdown) -->
+            <div class="glass-card rounded-2xl p-6 space-y-6">
+                <div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase font-mono">
+                        Real Cultural Case Studies
+                    </span>
+                    <h3 class="text-xl font-bold text-white mt-2">Explore Sample Cultural Essays</h3>
+                    <p class="text-xs text-slate-400">Select a cultural theme below to view its complete color-coded paragraph breakdown:</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <template x-for="topic in culturalTopics" :key="topic.id">
+                        <button @click="activeCulturalTopic = topic; playSound('pop')"
+                                :class="activeCulturalTopic.id === topic.id ? 'bg-indigo-600 text-white font-bold border-indigo-400 shadow-lg' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'"
+                                class="p-3 rounded-xl text-xs border transition-all text-left flex flex-col justify-between h-20">
+                            <span class="text-lg" x-text="topic.icon"></span>
+                            <span x-text="topic.title" class="line-clamp-1 font-medium"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Displayed Paragraph Breakdown -->
+                <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 font-mono text-xs sm:text-sm leading-relaxed">
+                    <div class="text-xs font-bold text-indigo-400 uppercase tracking-widest font-sans flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span x-text="`${activeCulturalTopic.icon} ${activeCulturalTopic.title}`"></span>
+                        <span class="text-slate-500">Color-Coded Paragraph Map</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="p-3 rounded-xl bg-sky-950/30 border border-sky-500/30 text-sky-200">
+                            <span class="text-[10px] font-bold uppercase block text-sky-400 font-sans mb-1">Topic Sentence:</span>
+                            <span x-text="activeCulturalTopic.topicSentence"></span>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-200">
+                            <span class="text-[10px] font-bold uppercase block text-amber-400 font-sans mb-1">Contrast Support:</span>
+                            <span x-text="activeCulturalTopic.contrastSupport"></span>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30 text-rose-200">
+                            <span class="text-[10px] font-bold uppercase block text-rose-400 font-sans mb-1">Exception Support:</span>
+                            <span x-text="activeCulturalTopic.exceptionSupport"></span>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-200">
+                            <span class="text-[10px] font-bold uppercase block text-emerald-400 font-sans mb-1">Consequence (, which):</span>
+                            <span x-text="activeCulturalTopic.consequenceClause"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 2: PARAGRAPH BLUEPRINT LAB (ASSEMBLY PUZZLE) -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'blueprint'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest font-mono">
+                            Structural Assembly Challenge
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Paragraph Blueprint Lab</h2>
+                        <p class="text-xs text-slate-400">Reconstruct jumbled sentences into a logical, coherent cultural comparison paragraph.</p>
+                    </div>
+
+                    <!-- Topic Selector Dropdown -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-xs text-slate-400 font-bold uppercase">Select Theme:</label>
+                        <select x-model="blueprintTopicIndex" @change="loadBlueprintPuzzle()" 
+                                class="bg-slate-900 border border-slate-800 text-xs text-slate-100 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 font-mono">
+                            <template x-for="(puzzle, idx) in blueprintPuzzles" :key="puzzle.id">
+                                <option :value="idx" x-text="puzzle.theme"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Active Blueprint Puzzle Workspace -->
+                <div class="bg-slate-950/90 p-6 rounded-2xl border border-slate-800 space-y-6">
+                    
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="text-slate-400">Current Order (Click Up/Down arrows to reorder):</span>
+                        <span class="text-indigo-400 font-bold" x-text="`Target: 4 Structural Parts`"></span>
+                    </div>
+
+                    <!-- Draggable / Reorderable Sentence Cards List -->
+                    <div class="space-y-3">
+                        <template x-for="(item, idx) in currentBlueprintItems" :key="item.id">
+                            <div class="p-4 rounded-xl border bg-slate-900 transition-all flex items-center justify-between gap-4"
+                                 :class="blueprintChecked ? (item.correctIndex === idx ? 'border-emerald-500/80 bg-emerald-950/20' : 'border-rose-500/80 bg-rose-950/20') : 'border-slate-800'">
+                                
+                                <div class="flex items-center space-x-3">
+                                    <span class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center font-mono font-bold text-xs text-indigo-300 shrink-0"
+                                          x-text="idx + 1"></span>
+                                    <p class="text-xs sm:text-sm text-slate-200 font-mono" x-text="item.text"></p>
+                                </div>
+
+                                <!-- Action Arrows -->
+                                <div class="flex items-center space-x-1 shrink-0 no-print">
+                                    <button @click="moveBlueprintItem(idx, -1)" 
+                                            :disabled="idx === 0"
+                                            class="p-2 rounded-lg bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-300 transition-all text-xs">
+                                        <i class="fa-solid fa-arrow-up"></i>
+                                    </button>
+                                    <button @click="moveBlueprintItem(idx, 1)" 
+                                            :disabled="idx === currentBlueprintItems.length - 1"
+                                            class="p-2 rounded-lg bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 disabled:hover:bg-slate-800 text-slate-300 transition-all text-xs">
+                                        <i class="fa-solid fa-arrow-down"></i>
+                                    </button>
+                                </div>
+
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Verification Controls -->
+                    <div class="flex items-center justify-between pt-2">
+                        <button @click="resetBlueprintPuzzle()" class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-all">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reset Order
+                        </button>
+
+                        <button @click="checkBlueprintPuzzle()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Check Paragraph Order (+30 XP)</span>
+                        </button>
+                    </div>
+
+                    <!-- Feedback Display Panel -->
+                    <div x-show="blueprintChecked" x-transition class="p-5 rounded-2xl border text-xs sm:text-sm space-y-3"
+                         :class="blueprintIsCorrect ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/40 border-rose-500/40 text-rose-200'">
+                        <div class="flex items-center gap-2 font-bold text-sm">
+                            <i class="fa-solid" :class="blueprintIsCorrect ? 'fa-trophy text-amber-400' : 'fa-circle-exclamation text-rose-400'"></i>
+                            <span x-text="blueprintIsCorrect ? 'Perfect Structural Order!' : 'Order Needs Revision'"></span>
+                        </div>
+                        <p x-text="blueprintFeedback"></p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 3: SPEED SORTER & MARKER DETECTIVE GAME -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'sorter'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-widest font-mono">
+                            Arcade Grammar Sorter
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Speed Sorter & Marker Detective</h2>
+                        <p class="text-xs text-slate-400">Classify incoming linkers and clauses rapidly by their grammatical function or required clause structure.</p>
+                    </div>
+
+                    <!-- Scoreboard & Stats -->
+                    <div class="bg-slate-950 px-5 py-3 rounded-2xl border border-slate-800 flex items-center space-x-6 text-xs shrink-0 font-mono">
+                        <div>
+                            <span class="text-slate-500 block text-[10px] uppercase">Score</span>
+                            <span class="font-bold text-emerald-400 text-sm" x-text="`${sorterScore} pts`"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px] uppercase">Streak</span>
+                            <span class="font-bold text-amber-400 text-sm" x-text="`🔥 ${sorterStreak}`"></span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block text-[10px] uppercase">Timer</span>
+                            <span class="font-bold text-indigo-400 text-sm" x-text="`${sorterTimeLeft}s`"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Container -->
+                <div class="bg-slate-950/90 p-6 sm:p-8 rounded-2xl border border-slate-800 text-center space-y-6">
+                    
+                    <!-- Pre-game Start State -->
+                    <template x-if="!sorterActive && !sorterFinished">
+                        <div class="space-y-4 py-8">
+                            <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-2xl">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">Ready for the 45-Second Syntax Blitz?</h3>
+                            <p class="text-xs text-slate-400 max-w-md mx-auto">Categorize transition words and sentence fragments accurately. Earn streak multipliers and build your grammar speed!</p>
+                            
+                            <button @click="startSorterGame()" class="px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-xl transition-all">
+                                Start Blitz Challenge
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Active Game State -->
+                    <template x-if="sorterActive">
+                        <div class="space-y-6">
+                            <!-- Target Phrase Display Card -->
+                            <div class="p-8 bg-indigo-950/30 rounded-2xl border border-indigo-800/40 min-h-[140px] flex flex-col items-center justify-center space-y-2">
+                                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-mono">Target Expression:</span>
+                                <p class="text-xl sm:text-2xl font-bold text-white font-mono" x-text="currentSorterCard.phrase"></p>
+                                <span class="text-xs text-slate-400" x-text="currentSorterCard.contextHint"></span>
+                            </div>
+
+                            <!-- Classification Options (4 Role Categories) -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <button @click="answerSorterCard('topic')" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-sky-500 hover:bg-sky-950/30 text-sky-300 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-bullseye text-base"></i>
+                                    <span>Topic Sentence</span>
+                                </button>
+
+                                <button @click="answerSorterCard('contrast')" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500 hover:bg-amber-950/30 text-amber-300 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-code-compare text-base"></i>
+                                    <span>Contrast Support</span>
+                                </button>
+
+                                <button @click="answerSorterCard('exception')" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500 hover:bg-rose-950/30 text-rose-300 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-filter text-base"></i>
+                                    <span>Exception Support</span>
+                                </button>
+
+                                <button @click="answerSorterCard('consequence')" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-500 hover:bg-emerald-950/30 text-emerald-300 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-link text-base"></i>
+                                    <span>Consequence (, which)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Game Finished State -->
+                    <template x-if="sorterFinished">
+                        <div class="space-y-4 py-8">
+                            <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-amber-500 to-indigo-500 flex items-center justify-center text-3xl shadow-lg">
+                                🏆
+                            </div>
+                            <h3 class="text-2xl font-extrabold text-white">Blitz Round Complete!</h3>
+                            <p class="text-slate-400 text-xs font-mono" x-text="`Final Score: ${sorterScore} pts | Max Streak: 🔥 ${sorterMaxStreak}`"></p>
+
+                            <button @click="startSorterGame()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all">
+                                Play Again
+                            </button>
+                        </div>
+                    </template>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 4: GUIDED WRITING STUDIO & REAL-TIME PARSER -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'studio'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-violet-500/20 text-violet-300 border border-violet-500/30 uppercase tracking-widest font-mono">
+                            Guided Writing Lab
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Guided Writing Studio & Syntax Parser</h2>
+                        <p class="text-xs text-slate-400">Draft a 4-part cultural comparison paragraph. Our live engine verifies linkers, syntax, and punctuation.</p>
+                    </div>
+
+                    <!-- Speech Synthesis Control -->
+                    <button @click="speakParagraph()" 
+                            class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500 text-indigo-300 font-bold text-xs transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Listen to Paragraph</span>
+                    </button>
+                </div>
+
+                <!-- Structured 4-Stage Inputs -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Left Column: Input Forms -->
+                    <div class="space-y-4">
+                        
+                        <!-- Stage 1 Input -->
+                        <div class="space-y-1">
+                            <label class="block text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-bullseye"></i> Stage 1: Topic Sentence
+                            </label>
+                            <input type="text" x-model="studioTopic" @input="analyzeStudioParagraph()"
+                                   placeholder="e.g. In many Mediterranean countries, afternoon rest periods remain a central part of daily life." 
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-sky-400 font-mono">
+                        </div>
+
+                        <!-- Stage 2 Input -->
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-code-compare"></i> Stage 2: Contrast Support
+                                </label>
+                                <!-- Chip Quick Insertion -->
+                                <div class="flex space-x-1">
+                                    <button @click="insertChip('contrast', 'Whereas ')" class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 text-[10px] text-amber-300 hover:bg-amber-900">Whereas</button>
+                                    <button @click="insertChip('contrast', 'Unlike ')" class="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-500/30 text-[10px] text-amber-300 hover:bg-amber-900">Unlike</button>
+                                </div>
+                            </div>
+                            <input type="text" x-model="studioContrast" @input="analyzeStudioParagraph()"
+                                   placeholder="e.g. Whereas non-stop 8-hour office schedules dominate northern cities, shops here close during peak heat." 
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-mono">
+                        </div>
+
+                        <!-- Stage 3 Input -->
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-filter"></i> Stage 3: Exception Support
+                                </label>
+                                <div class="flex space-x-1">
+                                    <button @click="insertChip('exception', 'Except for ')" class="px-2 py-0.5 rounded bg-rose-950/60 border border-rose-500/30 text-[10px] text-rose-300 hover:bg-rose-900">Except for</button>
+                                    <button @click="insertChip('exception', 'Apart from ')" class="px-2 py-0.5 rounded bg-rose-950/60 border border-rose-500/30 text-[10px] text-rose-300 hover:bg-rose-900">Apart from</button>
+                                </div>
+                            </div>
+                            <input type="text" x-model="studioException" @input="analyzeStudioParagraph()"
+                                   placeholder="e.g. Except for major essential supermarkets, local family stores lock their doors for two hours." 
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-400 font-mono">
+                        </div>
+
+                        <!-- Stage 4 Input -->
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-link"></i> Stage 4: Consequence (, which)
+                                </label>
+                                <div class="flex space-x-1">
+                                    <button @click="insertChip('consequence', ', which makes ')" class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-[10px] text-emerald-300 hover:bg-emerald-900">, which makes</button>
+                                    <button @click="insertChip('consequence', ', which allows ')" class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-[10px] text-emerald-300 hover:bg-emerald-900">, which allows</button>
+                                </div>
+                            </div>
+                            <input type="text" x-model="studioConsequence" @input="analyzeStudioParagraph()"
+                                   placeholder="e.g. , which gives families time to dine together and recover energy." 
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 font-mono">
+                        </div>
+
+                        <!-- B1/B2 Vocabulary Drawer -->
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase font-mono block">B1/B2 Vocabulary Drawer (Click to copy):</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="word in studioVocabWords" :key="word">
+                                    <button @click="copyVocabWord(word)" class="px-2 py-1 rounded bg-slate-900 border border-slate-800 hover:border-indigo-500 text-[11px] text-slate-300 font-mono transition-all">
+                                        + <span x-text="word"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column: Real-Time Diagnostic Dashboard & Preview -->
+                    <div class="space-y-4">
+                        
+                        <!-- Combined Live Preview Window -->
+                        <div class="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 font-mono text-xs sm:text-sm leading-relaxed">
+                            <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans block border-b border-slate-800 pb-2">Assembled Paragraph Preview:</span>
+                            <div class="space-x-1">
+                                <span class="text-sky-300" x-text="studioTopic || '[Topic Sentence]'"></span>
+                                <span class="text-amber-300" x-text="studioContrast || '[Contrast Support]'"></span>
+                                <span class="text-rose-300" x-text="studioException || '[Exception Support]'"></span>
+                                <span class="text-emerald-300" x-text="studioConsequence || '[, which Consequence]'"></span>
+                            </div>
+                        </div>
+
+                        <!-- Syntax Diagnostics Checklist -->
+                        <div class="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-sans">Live Syntax Diagnostics:</h4>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                
+                                <div class="p-2.5 rounded-xl border flex items-center space-x-2"
+                                     :class="studioDiag.topicValid ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                    <i class="fa-solid" :class="studioDiag.topicValid ? 'fa-circle-check' : 'fa-circle-dot'"></i>
+                                    <span>Topic Sentence (8+ words)</span>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl border flex items-center space-x-2"
+                                     :class="studioDiag.contrastValid ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                    <i class="fa-solid" :class="studioDiag.contrastValid ? 'fa-circle-check' : 'fa-circle-dot'"></i>
+                                    <span>Contrast Linker Detected</span>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl border flex items-center space-x-2"
+                                     :class="studioDiag.exceptionValid ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                    <i class="fa-solid" :class="studioDiag.exceptionValid ? 'fa-circle-check' : 'fa-circle-dot'"></i>
+                                    <span>Exception Phrase Used</span>
+                                </div>
+
+                                <div class="p-2.5 rounded-xl border flex items-center space-x-2"
+                                     :class="studioDiag.consequenceValid ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-500'">
+                                    <i class="fa-solid" :class="studioDiag.consequenceValid ? 'fa-circle-check' : 'fa-circle-dot'"></i>
+                                    <span>Relative Clause `, which`</span>
+                                </div>
+
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono flex items-center justify-between">
+                                <span class="text-slate-400">Total Word Count:</span>
+                                <span class="font-bold text-indigo-300" x-text="`${studioWordCount} words (Target: 50+)`"></span>
+                            </div>
+
+                            <!-- Submit Paragraph Button -->
+                            <button @click="submitStudioParagraph()" 
+                                    :disabled="!studioDiag.allValid"
+                                    :class="studioDiag.allValid ? 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg' : 'bg-slate-900 text-slate-600 cursor-not-allowed'"
+                                    class="w-full py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-award"></i>
+                                <span>Validate & Award Writing Bonus (+50 XP)</span>
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- MODULE 5: PRINTABLE WORKSHEET GENERATOR -->
+        <!-- ========================================================= -->
+        <section x-show="activeTab === 'print'" x-transition class="space-y-8">
+            
+            <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6 border border-indigo-800/50 no-print">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                    <div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-widest font-mono">
+                            Classroom Distribution Studio
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Printable ESL Grammar Worksheet</h2>
+                        <p class="text-xs text-slate-400">Export or print a clean PDF study sheet complete with grammar notes, exercises, and essay layout.</p>
+                    </div>
+
+                    <button @click="window.print()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Print PDF Worksheet</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PRINTABLE SHEET SECTION (Clean light layout for print) -->
+            <div id="printable-section" class="bg-white text-slate-900 p-8 rounded-2xl shadow-xl space-y-8 text-sm leading-relaxed">
+                
+                <!-- Printable Header -->
+                <div class="border-b-2 border-indigo-600 pb-4 flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold text-indigo-950">CultureCompare Studio: B1/B2 Writing Worksheet</h1>
+                        <p class="text-xs text-slate-600">Supporting Statements: Contrasts, Exceptions & Consequences</p>
+                    </div>
+                    <div class="text-right text-xs text-slate-500 font-mono">
+                        <div>Name: ______________________</div>
+                        <div>Date: ______________________</div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Grammar Rules Summary -->
+                <div class="space-y-2">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">1. B1/B2 Grammar Core Reference</h2>
+                    <div class="grid grid-cols-3 gap-3 text-xs font-mono bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <strong class="text-amber-800 block">Contrast Linkers:</strong>
+                            <p>• whereas / while (+ Clause)</p>
+                            <p>• unlike / in contrast to (+ Noun)</p>
+                        </div>
+                        <div>
+                            <strong class="text-rose-800 block">Exception Phrases:</strong>
+                            <p>• except for / apart from (+ Noun)</p>
+                            <p>• with the exception of (+ Noun)</p>
+                        </div>
+                        <div>
+                            <strong class="text-emerald-800 block">Consequence Clause:</strong>
+                            <p>• , which makes...</p>
+                            <p>• , which allows...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Sentence Combination Exercises -->
+                <div class="space-y-3">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">2. Sentence Combination Exercises</h2>
+                    <p class="text-xs text-slate-600">Combine each pair of clauses using the indicated linker or exception phrase in brackets.</p>
+
+                    <div class="space-y-4 text-xs font-mono">
+                        <div>
+                            <p class="font-bold text-slate-800">1. Northern cities prioritize cars. Local authorities here close main avenues on Sunday. [whereas]</p>
+                            <div class="border-b border-slate-300 pt-5 w-full"></div>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">2. Most shops lock their doors for afternoon rest. Supermarkets stay open all day. [except for]</p>
+                            <div class="border-b border-slate-300 pt-5 w-full"></div>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">3. Fast coffee runs dominate overseas. Local residents savor slow morning brews. [, which allows]</p>
+                            <div class="border-b border-slate-300 pt-5 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Guided Paragraph Writing Template -->
+                <div class="space-y-3">
+                    <h2 class="text-base font-bold text-indigo-900 border-b border-indigo-200 pb-1">3. Cultural Comparison Essay Prompt</h2>
+                    <p class="text-xs text-slate-600">Choose a cultural topic (Greetings, Public Transport, Food Culture) and write a 4-part paragraph following the B1/B2 Blueprint:</p>
+
+                    <div class="space-y-3 text-xs font-mono">
+                        <div class="p-2 border border-slate-300 rounded">
+                            <span class="text-sky-800 font-bold block">Stage 1 (Topic Sentence):</span>
+                            <div class="pt-6 border-b border-dashed border-slate-300"></div>
+                        </div>
+
+                        <div class="p-2 border border-slate-300 rounded">
+                            <span class="text-amber-800 font-bold block">Stage 2 (Contrast Support with whereas/unlike):</span>
+                            <div class="pt-6 border-b border-dashed border-slate-300"></div>
+                        </div>
+
+                        <div class="p-2 border border-slate-300 rounded">
+                            <span class="text-rose-800 font-bold block">Stage 3 (Exception Support with except for/apart from):</span>
+                            <div class="pt-6 border-b border-dashed border-slate-300"></div>
+                        </div>
+
+                        <div class="p-2 border border-slate-300 rounded">
+                            <span class="text-emerald-800 font-bold block">Stage 4 (Consequence with , which):</span>
+                            <div class="pt-6 border-b border-dashed border-slate-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-indigo-900/30 bg-slate-950 py-6 text-center text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>CultureCompare & Writing Studio • B1/B2 ESL/EFL Interactive Masterclass</p>
+        </div>
+    </footer>
+
+    <!-- ALPINE.JS APPLICATION STATE SCRIPT -->
+    <script>
+        function cultureApp() {
+            return {
+                activeTab: 'anatomy',
+                darkMode: true,
+                soundMuted: false,
+                xp: 150,
+                audioCtx: null,
+
+                toast: {
+                    show: false,
+                    icon: '💡',
+                    title: '',
+                    message: ''
+                },
+
+                // Audio Synthesis Initialization
+                initAudio() {
+                    try {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        if (AudioContext) {
+                            this.audioCtx = new AudioContext();
+                        }
+                    } catch (e) {
+                        console.log('Web Audio API unavailable.');
+                    }
+                },
+
+                toggleMute() {
+                    this.soundMuted = !this.soundMuted;
+                    this.showToast(
+                        this.soundMuted ? 'Muted' : 'Sound Active',
+                        this.soundMuted ? 'Audio effects disabled.' : 'Audio effects enabled.',
+                        this.soundMuted ? '🔇' : '🔊'
+                    );
+                },
+
+                playSound(type) {
+                    if (this.soundMuted || !this.audioCtx) return;
+                    try {
+                        if (this.audioCtx.state === 'suspended') {
+                            this.audioCtx.resume();
+                        }
+                        const now = this.audioCtx.currentTime;
+
+                        if (type === 'click') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(500, now);
+                            gain.gain.setValueAtTime(0.04, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.04);
+                        } else if (type === 'pop') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(300, now);
+                            osc.frequency.exponentialRampToValueAtTime(600, now + 0.06);
+                            gain.gain.setValueAtTime(0.05, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.06);
+                        } else if (type === 'success') {
+                            const osc1 = this.audioCtx.createOscillator();
+                            const osc2 = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc1.type = 'sine';
+                            osc2.type = 'triangle';
+                            osc1.frequency.setValueAtTime(523.25, now); // C5
+                            osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                            gain.gain.setValueAtTime(0.06, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                            osc1.connect(gain);
+                            osc2.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc1.start(now);
+                            osc1.stop(now + 0.15);
+                            osc2.start(now + 0.08);
+                            osc2.stop(now + 0.3);
+                        } else if (type === 'error') {
+                            const osc = this.audioCtx.createOscillator();
+                            const gain = this.audioCtx.createGain();
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(180, now);
+                            gain.gain.setValueAtTime(0.05, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                            osc.connect(gain);
+                            gain.connect(this.audioCtx.destination);
+                            osc.start(now);
+                            osc.stop(now + 0.2);
+                        }
+                    } catch (e) {}
+                },
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    this.playSound('click');
+                },
+
+                showToast(title, message, icon = '💡') {
+                    this.toast = { show: true, title, message, icon };
+                    setTimeout(() => { this.toast.show = false; }, 3200);
+                },
+
+                addXp(amount) {
+                    this.xp += amount;
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 1 DATA & FUNCTIONS
+                // -----------------------------------------------------------
+                selectedAnatomyStage: 'topic',
+
+                culturalTopics: [
+                    {
+                        id: 1,
+                        title: "Sunday Ciclovía & Urban Mobility",
+                        icon: "🚲",
+                        topicSentence: "In many Latin American capitals, Sunday mornings are dedicated to health, active recreation, and community mobility.",
+                        contrastSupport: "Whereas cities in other parts of the world maintain heavy car traffic seven days a week, local municipal road networks here are closed to motorized vehicles.",
+                        exceptionSupport: "Apart from emergency vehicles and public buses, no private cars are allowed on designated green transit avenues.",
+                        consequenceClause: ", which enables thousands of cyclists and pedestrians to enjoy clean air and vibrant public spaces."
+                    },
+                    {
+                        id: 2,
+                        title: "Midday Lunch & Coffee Rituals",
+                        icon: "☕",
+                        topicSentence: "In traditional Mediterranean and South American workplace cultures, lunch is regarded as a leisurely social meal.",
+                        contrastSupport: "Unlike fast-paced commercial hubs where desk lunches are commonplace, workers here take a full hour to share hot meals with colleagues.",
+                        exceptionSupport: "Except for urgent deadline periods, fast food chains remain secondary to traditional sit-down dining rooms.",
+                        consequenceClause: ", which fosters strong interpersonal relationships and reduces afternoon workplace stress."
+                    },
+                    {
+                        id: 3,
+                        title: "Warm Greetings & Personal Space",
+                        icon: "🤝",
+                        topicSentence: "Social interactions in Southern Europe and Latin America are characterized by warmth and expressive physical greetings.",
+                        contrastSupport: "While Anglo-Saxon business environments generally maintain a formal physical distance during meetings, colleagues here frequently exchange a handshake or cheek kiss.",
+                        exceptionSupport: "With the exception of formal job interviews, stiff distance is often viewed as cold or distant.",
+                        consequenceClause: ", which instantly creates an atmosphere of hospitality and trust among acquaintances."
+                    },
+                    {
+                        id: 4,
+                        title: "Neighborhood Market Commerce",
+                        icon: "🛍️",
+                        topicSentence: "Traditional fresh-food neighborhood markets remain the commercial beating heart of local communities.",
+                        contrastSupport: "In contrast to mega-supermarkets with impersonal self-checkout counters, family vendors build long-term relationships with daily shoppers.",
+                        exceptionSupport: "Except when shopping for pre-packaged industrial goods, residents prefer buying fruit and meat at open-air stands.",
+                        consequenceClause: ", which supports local farming families and preserves neighborhood culture."
+                    }
+                ],
+
+                activeCulturalTopic: {
+                    id: 1,
+                    title: "Sunday Ciclovía & Urban Mobility",
+                    icon: "🚲",
+                    topicSentence: "In many Latin American capitals, Sunday mornings are dedicated to health, active recreation, and community mobility.",
+                    contrastSupport: "Whereas cities in other parts of the world maintain heavy car traffic seven days a week, local municipal road networks here are closed to motorized vehicles.",
+                    exceptionSupport: "Apart from emergency vehicles and public buses, no private cars are allowed on designated green transit avenues.",
+                    consequenceClause: ", which enables thousands of cyclists and pedestrians to enjoy clean air and vibrant public spaces."
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 2: BLUEPRINT LAB DATA & FUNCTIONS
+                // -----------------------------------------------------------
+                blueprintTopicIndex: 0,
+                blueprintChecked: false,
+                blueprintIsCorrect: false,
+                blueprintFeedback: "",
+                currentBlueprintItems: [],
+
+                blueprintPuzzles: [
+                    {
+                        id: 1,
+                        theme: "Urban Mobility (Ciclovía)",
+                        correctItems: [
+                            "In many major cities, Sunday mornings are dedicated to public health and outdoor recreation.",
+                            "Whereas northern capitals prioritize automobile traffic every day, local authorities here close main avenues to cars.",
+                            "Apart from emergency services and public transit, no motorized vehicles are permitted on designated routes.",
+                            ", which allows thousands of families to enjoy safe, pollution-free urban cycling."
+                        ]
+                    },
+                    {
+                        id: 2,
+                        theme: "Food Culture & Coffee",
+                        correctItems: [
+                            "In traditional Latin cultures, morning coffee is an intentional social ritual rather than a quick caffeine fix.",
+                            "Unlike fast-paced office environments where workers rush with disposable cups, locals sit together to talk.",
+                            "Except for emergency work situations, people spend at least twenty minutes enjoying their espresso.",
+                            ", which encourages meaningful personal connections before starting the workday."
+                        ]
+                    }
+                ],
+
+                loadBlueprintPuzzle() {
+                    const puzzle = this.blueprintPuzzles[this.blueprintTopicIndex];
+                    this.blueprintChecked = false;
+                    this.blueprintIsCorrect = false;
+                    
+                    // Create jumbled list items with original correct indices
+                    const items = puzzle.correctItems.map((text, idx) => ({
+                        id: idx,
+                        text: text,
+                        correctIndex: idx
+                    }));
+
+                    // Deterministic jumble shuffle
+                    this.currentBlueprintItems = [...items].sort(() => 0.5 - Math.random());
+                },
+
+                moveBlueprintItem(idx, direction) {
+                    const newIdx = idx + direction;
+                    if (newIdx < 0 || newIdx >= this.currentBlueprintItems.length) return;
+                    
+                    const temp = this.currentBlueprintItems[idx];
+                    this.currentBlueprintItems[idx] = this.currentBlueprintItems[newIdx];
+                    this.currentBlueprintItems[newIdx] = temp;
+                    this.blueprintChecked = false;
+                    this.playSound('pop');
+                },
+
+                resetBlueprintPuzzle() {
+                    this.loadBlueprintPuzzle();
+                    this.playSound('click');
+                },
+
+                checkBlueprintPuzzle() {
+                    this.blueprintChecked = true;
+                    let correctCount = 0;
+
+                    this.currentBlueprintItems.forEach((item, idx) => {
+                        if (item.correctIndex === idx) {
+                            correctCount++;
+                        }
+                    });
+
+                    if (correctCount === this.currentBlueprintItems.length) {
+                        this.blueprintIsCorrect = true;
+                        this.blueprintFeedback = "Excellent! You properly ordered Topic Sentence → Contrast Support → Exception Support → Consequence (, which).";
+                        this.addXp(30);
+                        this.playSound('success');
+                    } else {
+                        this.blueprintIsCorrect = false;
+                        this.blueprintFeedback = `You have ${correctCount} of 4 sentences in the correct structural order. Check your contrast linkers and relative clauses.`;
+                        this.playSound('error');
+                    }
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 3: SPEED SORTER GAME
+                // -----------------------------------------------------------
+                sorterActive: false,
+                sorterFinished: false,
+                sorterScore: 0,
+                sorterStreak: 0,
+                sorterMaxStreak: 0,
+                sorterTimeLeft: 45,
+                sorterTimerInterval: null,
+                sorterIndex: 0,
+
+                sorterDeck: [
+                    { phrase: "Whereas northern cities experience cold winters,", role: "contrast", contextHint: "Uses 'Whereas' + Clause" },
+                    { phrase: "In traditional markets, Sunday is the busiest day.", role: "topic", contextHint: "General statement" },
+                    { phrase: "Apart from small artisan shops, most businesses close early.", role: "exception", contextHint: "Uses 'Apart from' + Noun" },
+                    { phrase: ", which creates a relaxed community vibe.", role: "consequence", contextHint: "Sentence-modifying relative clause" },
+                    { phrase: "Unlike fast-food restaurants in big cities,", role: "contrast", contextHint: "Uses 'Unlike' + Noun" },
+                    { phrase: "Except for public holidays, bus lines run all day.", role: "exception", contextHint: "Uses 'Except for' + Noun" },
+                    { phrase: ", which leads to reduced stress levels.", role: "consequence", contextHint: "Sentence-modifying relative clause" },
+                    { phrase: "Public squares are essential social hubs in Latin America.", role: "topic", contextHint: "General topic statement" }
+                ],
+
+                get currentSorterCard() {
+                    return this.sorterDeck[this.sorterIndex % this.sorterDeck.length];
+                },
+
+                startSorterGame() {
+                    this.sorterScore = 0;
+                    this.sorterStreak = 0;
+                    this.sorterMaxStreak = 0;
+                    this.sorterTimeLeft = 45;
+                    this.sorterIndex = 0;
+                    this.sorterActive = true;
+                    this.sorterFinished = false;
+
+                    this.playSound('pop');
+
+                    if (this.sorterTimerInterval) clearInterval(this.sorterTimerInterval);
+                    this.sorterTimerInterval = setInterval(() => {
+                        this.sorterTimeLeft--;
+                        if (this.sorterTimeLeft <= 0) {
+                            this.endSorterGame();
+                        }
+                    }, 1000);
+                },
+
+                answerSorterCard(chosenRole) {
+                    if (!this.sorterActive) return;
+
+                    if (chosenRole === this.currentSorterCard.role) {
+                        this.sorterStreak++;
+                        if (this.sorterStreak > this.sorterMaxStreak) {
+                            this.sorterMaxStreak = this.sorterStreak;
+                        }
+                        this.sorterScore += 15 * Math.min(this.sorterStreak, 3);
+                        this.playSound('success');
+                    } else {
+                        this.sorterStreak = 0;
+                        this.playSound('error');
+                    }
+
+                    this.sorterIndex++;
+                },
+
+                endSorterGame() {
+                    clearInterval(this.sorterTimerInterval);
+                    this.sorterActive = false;
+                    this.sorterFinished = true;
+                    this.addXp(Math.floor(this.sorterScore / 2));
+                    this.playSound('pop');
+                },
+
+                // -----------------------------------------------------------
+                // MODULE 4: GUIDED WRITING STUDIO & PARSER
+                // -----------------------------------------------------------
+                studioTopic: "",
+                studioContrast: "",
+                studioException: "",
+                studioConsequence: "",
+                studioWordCount: 0,
+
+                studioDiag: {
+                    topicValid: false,
+                    contrastValid: false,
+                    exceptionValid: false,
+                    consequenceValid: false,
+                    allValid: false
+                },
+
+                studioVocabWords: [
+                    "pedestrianized", "hospitality", "leisurely", "customary", 
+                    "interaction", "vibrant", "obligation", "recreation"
+                ],
+
+                insertChip(target, text) {
+                    if (target === 'contrast') this.studioContrast = text + this.studioContrast;
+                    if (target === 'exception') this.studioException = text + this.studioException;
+                    if (target === 'consequence') this.studioConsequence = text + this.studioConsequence;
+                    this.analyzeStudioParagraph();
+                    this.playSound('pop');
+                },
+
+                copyVocabWord(word) {
+                    this.studioTopic += " " + word;
+                    this.analyzeStudioParagraph();
+                    this.showToast('Word Added', `Inserted '${word}' into topic sentence.`, '✨');
+                    this.playSound('click');
+                },
+
+                analyzeStudioParagraph() {
+                    const fullText = `${this.studioTopic} ${this.studioContrast} ${this.studioException} ${this.studioConsequence}`.trim();
+                    const words = fullText.length > 0 ? fullText.split(/\s+/).length : 0;
+                    this.studioWordCount = words;
+
+                    this.studioDiag.topicValid = this.studioTopic.trim().split(/\s+/).length >= 6;
+                    this.studioDiag.contrastValid = /\b(whereas|while|unlike|in contrast to|on the other hand)\b/i.test(this.studioContrast);
+                    this.studioDiag.exceptionValid = /\b(except for|apart from|with the exception of|except when)\b/i.test(this.studioException);
+                    this.studioDiag.consequenceValid = /,\s*which\b/i.test(this.studioConsequence);
+
+                    this.studioDiag.allValid = this.studioDiag.topicValid && 
+                                              this.studioDiag.contrastValid && 
+                                              this.studioDiag.exceptionValid && 
+                                              this.studioDiag.consequenceValid && 
+                                              words >= 35;
+                },
+
+                submitStudioParagraph() {
+                    if (this.studioDiag.allValid) {
+                        this.addXp(50);
+                        this.showToast('Paragraph Validated!', 'Received +50 XP for a complete cultural paragraph.', '🏆');
+                        this.playSound('success');
+                    }
+                },
+
+                speakParagraph() {
+                    const text = `${this.studioTopic}. ${this.studioContrast}. ${this.studioException} ${this.studioConsequence}`.trim();
+                    if (!text || text.length < 10) {
+                        this.showToast('Empty Studio', 'Type a paragraph first to listen.', '⚠️');
+                        return;
+                    }
+
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel(); // Stop current speech
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 0.9;
+                        utterance.lang = 'en-US';
+                        window.speechSynthesis.speak(utterance);
+                        this.showToast('Reading Aloud', 'Synthesizing voice playback...', '🔊');
+                    } else {
+                        this.showToast('Speech Error', 'Speech Synthesis API not supported in browser.', '🛑');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
