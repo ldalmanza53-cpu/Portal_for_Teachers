@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalkOutline 360°: The 10-Minute Conversation & Outline Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+        /* Glassmorphism custom styling */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .drag-over {
+            border-color: #06b6d4 !important;
+            background-color: rgba(6, 182, 212, 0.15) !important;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100,116,139,0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100,116,139,0.8);
+        }
+        /* Print Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printModal, #printModal * {
+                visibility: visible;
+            }
+            #printModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300 light:bg-slate-50 light:text-slate-800" id="appBody">
+
+    <!-- TOP NAVBAR -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-slate-800 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand & Context -->
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-cyan-500/20 text-white">
+                    <i class="fa-solid fa-comments-twotone text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-lg tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
+                            TalkOutline 360°
+                        </h1>
+                        <span class="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/30 font-medium">B1 ESL Studio</span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium">CommuniCraft Training Agency • 10-Min Consultancy Briefing</p>
+                </div>
+            </div>
+
+            <!-- Action Controls & Header Tools -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Toggle Theme">
+                    <i class="fa-solid fa-sun text-amber-400 hidden light:inline"></i>
+                    <i class="fa-solid fa-moon text-cyan-400 inline light:hidden"></i>
+                </button>
+
+                <!-- Grammar & Reference Modal Button -->
+                <button onclick="openModal('grammarModal')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-cyan-300 border border-slate-700 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-book-open"></i> Grammar Guide
+                </button>
+
+                <!-- Teacher Demo Fill -->
+                <button onclick="loadTeacherDemo()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-bolt"></i> ⚡ Teacher Demo
+                </button>
+
+                <!-- Print Deck Summary -->
+                <button onclick="openPrintModal()" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/30 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-file-invoice"></i> Summary Deck
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- CONTEXT BRIEFING & ROLES PANEL -->
+        <section class="glass-panel rounded-2xl p-4 md:p-5 border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center border-b border-slate-800/80 pb-4 mb-4">
+                <div>
+                    <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Real-World Scenario Briefing</span>
+                    <h2 class="text-lg font-bold text-white mt-0.5">Corporate Conversation & Outline Strategy Task</h2>
+                    <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                        A corporate client needs a structured guide on organizing conversational settings. Your team has <strong>10 minutes</strong> to analyze conversation types, build a hierarchical outline using B1 transition markers, and present a 30-second pitch.
+                    </p>
+                </div>
+                <button onclick="toggleRolesDisplay()" class="text-xs text-slate-400 hover:text-cyan-400 flex items-center gap-1 transition">
+                    <i class="fa-solid fa-users"></i> <span id="rolesToggleText">Configure Roles</span>
+                </button>
+            </div>
+
+            <!-- Student Roles Selector Grid -->
+            <div id="rolesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Role 1 -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">🗣️</div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-extrabold uppercase text-indigo-400">Role 1: Typologist</label>
+                        <input type="text" id="roleTypologist" placeholder="Student Name" oninput="updateRoles()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        <span class="text-[10px] text-slate-400 block mt-0.5">Identifies conversation types & social tone</span>
+                    </div>
+                </div>
+
+                <!-- Role 2 -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">✒️</div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-extrabold uppercase text-cyan-400">Role 2: Structural Outliner</label>
+                        <input type="text" id="roleOutliner" placeholder="Student Name" oninput="updateRoles()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
+                        <span class="text-[10px] text-slate-400 block mt-0.5">Builds structured outline hierarchy</span>
+                    </div>
+                </div>
+
+                <!-- Role 3 -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center gap-3">
+                    <div class="text-2xl p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">🎙️</div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-extrabold uppercase text-emerald-400">Role 3: Pitch Lead</label>
+                        <input type="text" id="rolePitchLead" placeholder="Student Name" oninput="updateRoles()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
+                        <span class="text-[10px] text-slate-400 block mt-0.5">Delivers 30s spoken audio presentation</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SPRINT TIMER & 4-STAGE STEPPER BAR -->
+        <section class="glass-panel rounded-2xl p-4 md:p-5 border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-6">
+            <!-- Sprint Timer Control Box -->
+            <div class="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="relative flex items-center justify-center">
+                        <i class="fa-solid fa-stopwatch text-2xl text-amber-400 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] uppercase font-extrabold tracking-wider text-slate-400">Sprint Clock</div>
+                        <div id="timerDisplay" class="font-mono text-2xl md:text-3xl font-black text-amber-400">10:00</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                    <button id="startTimerBtn" onclick="toggleTimer()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-md transition">
+                        <i class="fa-solid fa-play"></i> Start
+                    </button>
+                    <button onclick="resetTimer()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition" title="Reset Timer">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button id="chimeBtn" onclick="toggleChime()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition" title="Toggle Chime Sound">
+                        <i class="fa-solid fa-bell text-cyan-400"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stage Stepper Navigation -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto flex-1">
+                <button onclick="goToPhase(1)" id="stepBtn1" class="phase-btn p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-500/20 text-cyan-300 text-left transition flex flex-col justify-between">
+                    <span class="text-[10px] font-extrabold uppercase opacity-80">Phase 1 (0-3m)</span>
+                    <span class="text-xs font-bold truncate"><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i> Brainstorm</span>
+                </button>
+
+                <button onclick="goToPhase(2)" id="stepBtn2" class="phase-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left transition flex flex-col justify-between hover:border-slate-700">
+                    <span class="text-[10px] font-extrabold uppercase opacity-80">Phase 2 (3-6m)</span>
+                    <span class="text-xs font-bold truncate"><i class="fa-solid fa-folder-tree text-indigo-400 mr-1"></i> Classify</span>
+                </button>
+
+                <button onclick="goToPhase(3)" id="stepBtn3" class="phase-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left transition flex flex-col justify-between hover:border-slate-700">
+                    <span class="text-[10px] font-extrabold uppercase opacity-80">Phase 3 (6-8m)</span>
+                    <span class="text-xs font-bold truncate"><i class="fa-solid fa-pen-ruler text-cyan-400 mr-1"></i> Outline</span>
+                </button>
+
+                <button onclick="goToPhase(4)" id="stepBtn4" class="phase-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left transition flex flex-col justify-between hover:border-slate-700">
+                    <span class="text-[10px] font-extrabold uppercase opacity-80">Phase 4 (8-10m)</span>
+                    <span class="text-xs font-bold truncate"><i class="fa-solid fa-microphone text-emerald-400 mr-1"></i> Pitch 30s</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- PHASE 1: 20 OUTCOME QUESTION PROMPTS DECK -->
+        <section id="phase1" class="phase-panel space-y-4">
+            <div class="glass-panel rounded-2xl p-4 md:p-6 border border-slate-800">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-slate-800 pb-3 mb-4">
+                    <div>
+                        <span class="text-xs font-bold text-cyan-400 uppercase tracking-wide">Phase 1 • 20 Outcome Prompts Deck</span>
+                        <h3 class="text-lg font-bold text-white">Select Prompts & Generate Conversation Cards</h3>
+                    </div>
+                    <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">
+                        Cards Created: <strong id="promptCardCount" class="text-cyan-400">0</strong> / 20
+                    </span>
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-800/80 pb-3">
+                    <button onclick="switchPromptCategory('catA')" id="tabCatA" class="prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-600 text-white shadow-sm transition">
+                        A: Types & Settings (1-5)
+                    </button>
+                    <button onclick="switchPromptCategory('catB')" id="tabCatB" class="prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                        B: Tone & Dynamics (6-10)
+                    </button>
+                    <button onclick="switchPromptCategory('catC')" id="tabCatC" class="prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                        C: Outlining Mechanics (11-15)
+                    </button>
+                    <button onclick="switchPromptCategory('catD')" id="tabCatD" class="prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-slate-200 transition">
+                        D: B1 Transition Markers (16-20)
+                    </button>
+                </div>
+
+                <!-- Prompts Container -->
+                <div id="promptsContainer" class="space-y-4">
+                    <!-- Prompts dynamically rendered via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 2: 3-BUCKET CLASSIFICATION BOARD -->
+        <section id="phase2" class="phase-panel hidden space-y-4">
+            <div class="glass-panel rounded-2xl p-4 md:p-6 border border-slate-800">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-800 pb-3 mb-4">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wide">Phase 2 • Classify Conversation Types</span>
+                        <h3 class="text-lg font-bold text-white">Drag & Drop or Tap Cards into Buckets</h3>
+                    </div>
+                    <!-- Quick Custom Card Creator -->
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <input type="text" id="customCardInput" placeholder="Add custom conversation card..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 w-full md:w-60">
+                        <button onclick="addCustomCard()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition whitespace-nowrap">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Cards Idea Bin -->
+                <div class="mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-box-archive text-amber-400"></i> Idea Bin (Unassigned Cards)
+                        </span>
+                        <span id="ideaBinCount" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">0 cards</span>
+                    </div>
+                    <div id="ideaBinZone" class="min-h-[70px] p-2 flex flex-wrap gap-2 bg-slate-950/80 rounded-lg border border-dashed border-slate-800 transition" ondragover="allowDrop(event)" ondrop="dropCard(event, 'unassigned')">
+                        <p id="emptyBinText" class="text-xs text-slate-400 m-auto py-2">No unassigned cards. Answer prompts in Phase 1 or create custom cards!</p>
+                    </div>
+                </div>
+
+                <!-- 3 Classification Buckets Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Bucket 1: Casual & Social -->
+                    <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 flex flex-col h-full">
+                        <div class="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3">
+                            <h4 class="font-bold text-amber-300 text-sm flex items-center gap-2">
+                                ☕ Casual & Social
+                            </h4>
+                            <span id="bucketCasualCount" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">0</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">Small talk, cafe catch-ups, party banter, icebreakers.</p>
+                        <div id="bucketCasual" class="bucket-zone flex-1 min-h-[160px] p-2 rounded-lg bg-slate-950/60 border border-dashed border-amber-500/30 space-y-2 transition" ondragover="allowDrop(event)" ondrop="dropCard(event, 'casual')">
+                        </div>
+                    </div>
+
+                    <!-- Bucket 2: Professional & Formal -->
+                    <div class="bg-cyan-950/20 border border-cyan-500/30 rounded-xl p-4 flex flex-col h-full">
+                        <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-3">
+                            <h4 class="font-bold text-cyan-300 text-sm flex items-center gap-2">
+                                💼 Professional & Formal
+                            </h4>
+                            <span id="bucketProfCount" class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">0</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">Job interviews, negotiations, client pitch, performance reviews.</p>
+                        <div id="bucketProf" class="bucket-zone flex-1 min-h-[160px] p-2 rounded-lg bg-slate-950/60 border border-dashed border-cyan-500/30 space-y-2 transition" ondragover="allowDrop(event)" ondrop="dropCard(event, 'professional')">
+                        </div>
+                    </div>
+
+                    <!-- Bucket 3: Deep & Emotional -->
+                    <div class="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 flex flex-col h-full">
+                        <div class="flex items-center justify-between border-b border-rose-500/20 pb-2 mb-3">
+                            <h4 class="font-bold text-rose-300 text-sm flex items-center gap-2">
+                                ❤️ Deep & Emotional
+                            </h4>
+                            <span id="bucketDeepCount" class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">0</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">Heart-to-heart, conflict resolution, active listening, personal advice.</p>
+                        <div id="bucketDeep" class="bucket-zone flex-1 min-h-[160px] p-2 rounded-lg bg-slate-950/60 border border-dashed border-rose-500/30 space-y-2 transition" ondragover="allowDrop(event)" ondrop="dropCard(event, 'deep')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 3: HIERARCHICAL OUTLINE STUDIO & LIVE REGEX VALIDATOR -->
+        <section id="phase3" class="phase-panel hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Outline Input Builder (7 Cols) -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-4 md:p-6 border border-slate-800 space-y-4">
+                    <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-cyan-400 uppercase tracking-wide">Phase 3 • Outline Workbench</span>
+                            <h3 class="text-lg font-bold text-white">Hierarchical Outline Editor ✒️</h3>
+                        </div>
+                        <span class="text-[10px] text-slate-400 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md">
+                            Formula: Title $\rightarrow$ Main $\rightarrow$ Details $\rightarrow$ Conclusion
+                        </span>
+                    </div>
+
+                    <!-- Outline Form -->
+                    <div class="space-y-3 text-xs">
+                        <!-- Outline Title -->
+                        <div>
+                            <label class="block font-bold text-cyan-300 mb-1">Outline Title / Conversation Theme</label>
+                            <input type="text" id="outTitle" oninput="runOutlineValidation()" placeholder="e.g. Master Strategy for Professional Job Interviews" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-cyan-500">
+                        </div>
+
+                        <!-- Main Point I -->
+                        <div class="pl-2 border-l-2 border-indigo-500 space-y-1">
+                            <label class="block font-bold text-indigo-300">I. Main Point / Speech Heading</label>
+                            <input type="text" id="outMainPoint" oninput="runOutlineValidation()" placeholder="e.g. Prepare clear, structured personal responses for panel questions" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+
+                        <!-- Supporting Detail A -->
+                        <div class="pl-6 border-l-2 border-cyan-500 space-y-1">
+                            <label class="block font-bold text-cyan-300">A. Supporting Detail 1 (Use B1 Transition Marker)</label>
+                            <textarea id="outDetailA" oninput="runOutlineValidation()" rows="2" placeholder="e.g. First of all, introduce your relevant professional experience concisely." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"></textarea>
+                        </div>
+
+                        <!-- Supporting Detail B -->
+                        <div class="pl-6 border-l-2 border-cyan-500 space-y-1">
+                            <label class="block font-bold text-cyan-300">B. Supporting Detail 2 (Use B1 Transition Marker)</label>
+                            <textarea id="outDetailB" oninput="runOutlineValidation()" rows="2" placeholder="e.g. Specifically, provide two concrete examples of past achievements." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"></textarea>
+                        </div>
+
+                        <!-- Conclusion -->
+                        <div class="pl-2 border-l-2 border-emerald-500 space-y-1">
+                            <label class="block font-bold text-emerald-300">II. Conclusion & Key Takeaway</label>
+                            <input type="text" id="outConclusion" oninput="runOutlineValidation()" placeholder="e.g. In summary, structured preparation instills confidence and clarity." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Regex Structure Validator (5 Cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="glass-panel rounded-2xl p-4 md:p-6 border border-slate-800 space-y-4">
+                        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-cyan-400"></i> Live Regex Validator
+                            </h4>
+                            <span id="validationScoreBadge" class="text-xs bg-amber-500/20 text-amber-300 font-bold px-2.5 py-1 rounded-full border border-amber-500/30">
+                                Incomplete
+                            </span>
+                        </div>
+
+                        <!-- Marker Checklist -->
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Required B1 Transition Markers Detected</span>
+                            <div class="space-y-2 text-xs">
+                                <div id="chkMarker1" class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                                    <span>"First of all"</span>
+                                    <i class="fa-solid fa-circle-xmark text-slate-600"></i>
+                                </div>
+                                <div id="chkMarker2" class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                                    <span>"For instance" or "For example"</span>
+                                    <i class="fa-solid fa-circle-xmark text-slate-600"></i>
+                                </div>
+                                <div id="chkMarker3" class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                                    <span>"Specifically"</span>
+                                    <i class="fa-solid fa-circle-xmark text-slate-600"></i>
+                                </div>
+                                <div id="chkMarker4" class="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
+                                    <span>"In summary" or "To conclude"</span>
+                                    <i class="fa-solid fa-circle-xmark text-slate-600"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statistics -->
+                        <div class="grid grid-cols-2 gap-2 pt-2 text-center">
+                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Total Words</span>
+                                <span id="valWordCount" class="text-lg font-black text-cyan-400">0</span>
+                            </div>
+                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Markers Found</span>
+                                <span id="valMarkerCount" class="text-lg font-black text-amber-400">0 / 4</span>
+                            </div>
+                        </div>
+
+                        <!-- Tip Box -->
+                        <div class="p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-cyan-200 leading-relaxed">
+                            <i class="fa-solid fa-circle-info mr-1 text-cyan-400"></i>
+                            <strong>B1 Outlining Tip:</strong> Ensure each sub-point expands on the main heading with specific connectors.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 4: 30-SECOND AUDIO PITCH STUDIO -->
+        <section id="phase4" class="phase-panel hidden space-y-4">
+            <div class="glass-panel rounded-2xl p-4 md:p-6 border border-slate-800 space-y-6">
+                <div class="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wide">Phase 4 • Spoken Presentation Studio</span>
+                        <h3 class="text-lg font-bold text-white">30-Second Audio Pitch Lead Presentation 🎙️</h3>
+                    </div>
+                    <button onclick="compilePitchScript()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Re-compile Script
+                    </button>
+                </div>
+
+                <!-- Auto-Compiled Pitch Transcript Preview -->
+                <div class="bg-slate-900/90 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
+                        <span class="font-bold uppercase tracking-wider text-cyan-400"><i class="fa-solid fa-scroll mr-1"></i> Compiled Spoken Pitch Script</span>
+                        <span id="scriptWordCount" class="text-[10px] bg-slate-800 px-2 py-0.5 rounded">0 words (~30 sec)</span>
+                    </div>
+                    <p id="pitchScriptBox" class="text-xs md:text-sm text-slate-200 leading-relaxed font-mono whitespace-pre-wrap py-2">
+                        [Script will auto-generate from Phase 2 classified cards & Phase 3 outline entries...]
+                    </p>
+                </div>
+
+                <!-- Audio Recorder Dashboard -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    <!-- Recorder Controls & Canvas (8 cols) -->
+                    <div class="md:col-span-8 bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-300 uppercase">Voice Recording Controls</span>
+                            <span id="recordingTimer" class="font-mono text-sm font-bold text-amber-400">00:00 / 00:30</span>
+                        </div>
+
+                        <!-- Canvas Equalizer Visualizer -->
+                        <div class="bg-slate-950 rounded-lg p-2 border border-slate-800 relative h-20 flex items-center justify-center">
+                            <canvas id="visualizerCanvas" class="w-full h-full"></canvas>
+                            <div id="canvasPlaceholder" class="absolute text-xs text-slate-400 flex items-center gap-2">
+                                <i class="fa-solid fa-microphone-slash"></i> Microphone inactive
+                            </div>
+                        </div>
+
+                        <!-- Record Action Buttons -->
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <button id="recordBtn" onclick="toggleRecording()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-lg transition">
+                                <i class="fa-solid fa-microphone"></i> Start Recording (30s)
+                            </button>
+                            <button id="stopRecordBtn" onclick="stopRecording()" disabled class="px-4 py-2 bg-slate-800 text-slate-500 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-not-allowed">
+                                <i class="fa-solid fa-square"></i> Stop
+                            </button>
+                            <a id="downloadAudioBtn" class="hidden px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition" download="TalkOutline_Pitch.wav">
+                                <i class="fa-solid fa-download"></i> Download Recording
+                            </a>
+                        </div>
+
+                        <!-- Audio Playback Control -->
+                        <div id="audioPlaybackContainer" class="hidden border-t border-slate-800 pt-3">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Recorded Audio Playback</label>
+                            <audio id="audioPlayback" controls class="w-full h-9 rounded-lg focus:outline-none"></audio>
+                        </div>
+                    </div>
+
+                    <!-- B1 Rubric Self-Assessment Checklist (4 cols) -->
+                    <div class="md:col-span-4 bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2">
+                            <i class="fa-solid fa-square-check text-cyan-400 mr-1"></i> B1 Assessment Rubric
+                        </h4>
+                        <div class="space-y-2 text-xs">
+                            <label class="flex items-start gap-2 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="rubric1" onchange="calculateRubricScore()" class="mt-0.5 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+                                <span>Used 2+ distinct conversation categories</span>
+                            </label>
+                            <label class="flex items-start gap-2 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="rubric2" onchange="calculateRubricScore()" class="mt-0.5 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+                                <span>Clear Main Point & Sub-points hierarchy</span>
+                            </label>
+                            <label class="flex items-start gap-2 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="rubric3" onchange="calculateRubricScore()" class="mt-0.5 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+                                <span>Used B1 transition markers correctly</span>
+                            </label>
+                            <label class="flex items-start gap-2 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="rubric4" onchange="calculateRubricScore()" class="mt-0.5 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
+                                <span>Spoken pitch under 30 seconds</span>
+                            </label>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                            <span class="text-slate-400">Score:</span>
+                            <span id="rubricScoreDisplay" class="font-bold text-cyan-400">0 / 4 Criteria</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- GRAMMAR & OUTLINING REFERENCE MODAL -->
+    <div id="grammarModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel bg-slate-900 rounded-2xl max-w-2xl w-full p-6 border border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-cyan-400"></i> B1 Outlining & Transition Guide
+                </h3>
+                <button onclick="closeModal('grammarModal')" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs leading-relaxed text-slate-300">
+                <!-- Outline Structure -->
+                <div>
+                    <h4 class="font-bold text-cyan-300 text-sm mb-1">1. Hierarchical Outline Hierarchy</h4>
+                    <p class="mb-2">Outlines organize complex thoughts into levels using indentations and numbers/letters:</p>
+                    <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono space-y-1 text-slate-200">
+                        <div>Title: Strategic Client Communication</div>
+                        <div class="pl-3">I. Main Point / Speech Heading</div>
+                        <div class="pl-6 text-cyan-300">A. Supporting Detail 1 (Evidence / Example)</div>
+                        <div class="pl-6 text-cyan-300">B. Supporting Detail 2 (Evidence / Example)</div>
+                        <div class="pl-3">II. Conclusion / Summary Statement</div>
+                    </div>
+                </div>
+
+                <!-- B1 Transition Markers -->
+                <div>
+                    <h4 class="font-bold text-cyan-300 text-sm mb-1">2. Key B1 Transition Markers</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <strong class="text-amber-400 block mb-0.5">Sequence & Order</strong>
+                            <span><em>First of all, To begin with, Secondly, Next...</em></span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <strong class="text-amber-400 block mb-0.5">Examples & Details</strong>
+                            <span><em>For instance, For example, Specifically...</em></span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <strong class="text-amber-400 block mb-0.5">Adding Information</strong>
+                            <span><em>Furthermore, In addition, Also...</em></span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                            <strong class="text-amber-400 block mb-0.5">Summary & Ending</strong>
+                            <span><em>In summary, To conclude, Overall...</em></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right pt-2 border-t border-slate-800">
+                <button onclick="closeModal('grammarModal')" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINTABLE SUMMARY DECK MODAL -->
+    <div id="printModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel bg-slate-900 rounded-2xl max-w-3xl w-full p-6 border border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 no-print">
+                <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice text-cyan-400"></i> CommuniCraft Consultancy Deck Report
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-print"></i> Print Report
+                    </button>
+                    <button onclick="closeModal('printModal')" class="text-slate-400 hover:text-white text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Print Summary Body -->
+            <div id="printReportContent" class="space-y-6 text-slate-800 light:text-slate-800 bg-white p-6 rounded-xl text-xs">
+                <!-- Header -->
+                <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900">TalkOutline 360° Summary Deck</h2>
+                        <p class="text-slate-600 font-medium">CommuniCraft Training Agency • B1 Corporate Briefing</p>
+                    </div>
+                    <div class="text-right text-slate-500 text-[10px]">
+                        <div>Date: <span id="printDate"></span></div>
+                        <div>Status: Submitted</div>
+                    </div>
+                </div>
+
+                <!-- Roles Section -->
+                <div>
+                    <h4 class="font-bold uppercase text-slate-900 text-xs mb-2 border-b border-slate-300 pb-1">1. Consultancy Team Roles</h4>
+                    <div class="grid grid-cols-3 gap-2 text-slate-700">
+                        <div><strong>Typologist:</strong> <span id="pRole1">-</span></div>
+                        <div><strong>Outliner:</strong> <span id="pRole2">-</span></div>
+                        <div><strong>Pitch Lead:</strong> <span id="pRole3">-</span></div>
+                    </div>
+                </div>
+
+                <!-- Classified Buckets -->
+                <div>
+                    <h4 class="font-bold uppercase text-slate-900 text-xs mb-2 border-b border-slate-300 pb-1">2. Categorized Conversations</h4>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="p-2 bg-slate-100 rounded border border-slate-300">
+                            <strong class="block text-slate-900 mb-1">☕ Casual & Social</strong>
+                            <ul id="pCasualList" class="list-disc pl-4 space-y-0.5 text-[11px] text-slate-700"></ul>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded border border-slate-300">
+                            <strong class="block text-slate-900 mb-1">💼 Professional</strong>
+                            <ul id="pProfList" class="list-disc pl-4 space-y-0.5 text-[11px] text-slate-700"></ul>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded border border-slate-300">
+                            <strong class="block text-slate-900 mb-1">❤️ Deep & Emotional</strong>
+                            <ul id="pDeepList" class="list-disc pl-4 space-y-0.5 text-[11px] text-slate-700"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Structured Outline -->
+                <div>
+                    <h4 class="font-bold uppercase text-slate-900 text-xs mb-2 border-b border-slate-300 pb-1">3. Hierarchical Conversation Outline</h4>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-300 font-mono space-y-1 text-slate-800">
+                        <div class="font-bold text-slate-900" id="pOutTitle">Title: -</div>
+                        <div class="pl-3" id="pOutMain">I. Main Point: -</div>
+                        <div class="pl-6" id="pOutDetA">A. Detail 1: -</div>
+                        <div class="pl-6" id="pOutDetB">B. Detail 2: -</div>
+                        <div class="pl-3" id="pOutConc">II. Conclusion: -</div>
+                    </div>
+                </div>
+
+                <!-- Final Evaluation Rubric -->
+                <div>
+                    <h4 class="font-bold uppercase text-slate-900 text-xs mb-2 border-b border-slate-300 pb-1">4. Presentation Pitch & Assessment</h4>
+                    <div class="flex justify-between items-center bg-slate-100 p-2.5 rounded border border-slate-300">
+                        <span>B1 Rubric Checklist Score:</span>
+                        <strong id="pRubricScore" class="text-slate-900 text-sm">0 / 4 Criteria Met</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MAIN JAVASCRIPT APP LOGIC -->
+    <script>
+        // --- 1. APP STATE & INITIALIZATION ---
+        const state = {
+            theme: 'dark',
+            timer: {
+                seconds: 600, // 10 Minutes
+                running: false,
+                interval: null,
+                chime: true
+            },
+            currentPhase: 1,
+            roles: {
+                typologist: '',
+                outliner: '',
+                pitchLead: ''
+            },
+            cards: [], // { id, text, category, bucket: 'unassigned' | 'casual' | 'professional' | 'deep' }
+            prompts: [
+                // Category A: Types & Settings (1-5)
+                { id: 1, cat: 'catA', title: '1. Small Talk Settings', text: 'What characterizes "small talk" with a stranger at a coffee shop or bus stop?' },
+                { id: 2, cat: 'catA', title: '2. Heart-to-Heart Talk', text: 'How would you describe an emotional "heart-to-heart" conversation between close friends?' },
+                { id: 3, cat: 'catA', title: '3. Job Interview Setup', text: 'What features define a formal "job interview" or performance review in an office?' },
+                { id: 4, cat: 'catA', title: '4. Dynamic Debate', text: 'What occurs during a dynamic "debate" or business negotiation where opinions clash?' },
+                { id: 5, cat: 'catA', title: '5. Catch-up vs Networking', text: 'How does casual "catch-up" talk differ from professional networking?' },
+                
+                // Category B: Tone & Dynamics (6-10)
+                { id: 6, cat: 'catB', title: '6. Casual Banter Tone', text: 'What is the main purpose of casual banter, and what tone is usually kept?' },
+                { id: 7, cat: 'catB', title: '7. Active Listening', text: 'Why is active listening crucial during conflict-resolution conversations?' },
+                { id: 8, cat: 'catB', title: '8. High-Stakes Tone', text: 'What body language and tone of voice usually accompany a high-stakes negotiation?' },
+                { id: 9, cat: 'catB', title: '9. Social Bridge', text: 'How does small talk serve as a "social bridge" before diving into business topics?' },
+                { id: 10, cat: 'catB', title: '10. Brainstorming Dynamics', text: 'What makes a group brainstorming conversation productive versus chaotic?' },
+
+                // Category C: Outlining Mechanics (11-15)
+                { id: 11, cat: 'catC', title: '11. Purpose of Outlines', text: 'Why is an outline better than writing a messy block of text when preparing a talk?' },
+                { id: 12, cat: 'catC', title: '12. Main Title Role', text: 'What essential information belongs in the "Main Title / Heading" section?' },
+                { id: 13, cat: 'catC', title: '13. Main vs Details', text: 'What is the clear difference between a "Main Point" and a "Supporting Detail"?' },
+                { id: 14, cat: 'catC', title: '14. Hierarchy Markers', text: 'How do indentation and bullet numerals (I, A, 1) help organize thoughts clearly?' },
+                { id: 15, cat: 'catC', title: '15. Conclusion Role', text: 'What key takeaway or summary statement should go into the "Conclusion" line?' },
+
+                // Category D: Transition Markers (16-20)
+                { id: 16, cat: 'catD', title: '16. "For instance" Marker', text: 'Complete using an example marker: "Main Type: Networking. For instance, ..."' },
+                { id: 17, cat: 'catD', title: '17. Sequence Markers', text: 'Complete using sequence transitions: "First of all, small talk builds trust; secondly, ..."' },
+                { id: 18, cat: 'catD', title: '18. "Specifically" Marker', text: 'Use specifically to add detail to a main point: "During an interview, specifically highlight ..."' },
+                { id: 19, cat: 'catD', title: '19. Concluding Markers', text: 'Write a concluding line for an outline using "In summary" or "To conclude".' },
+                { id: 20, cat: 'catD', title: '20. Outlining Benefit', text: 'In one sentence, state why organizing ideas into outlines improves communication skills.' }
+            ],
+            promptCategory: 'catA',
+            audioRecorder: {
+                mediaRecorder: null,
+                chunks: [],
+                audioBlob: null,
+                isRecording: false,
+                seconds: 0,
+                timerInterval: null,
+                audioCtx: null,
+                analyser: null,
+                animFrame: null
+            }
+        };
+
+        // --- 2. LIFECYCLE & DOM LOAD ---
+        window.onload = function() {
+            renderPrompts();
+            renderCards();
+            runOutlineValidation();
+            updateRoles();
+            document.getElementById('printDate').innerText = new Date().toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+            });
+        };
+
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.getElementById('appBody');
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            if (state.theme === 'light') {
+                body.classList.remove('dark');
+                body.classList.add('light');
+            } else {
+                body.classList.remove('light');
+                body.classList.add('dark');
+            }
+            showToast(`Switched to ${state.theme} theme`, 'info');
+        }
+
+        // Roles Handler
+        function updateRoles() {
+            state.roles.typologist = document.getElementById('roleTypologist').value;
+            state.roles.outliner = document.getElementById('roleOutliner').value;
+            state.roles.pitchLead = document.getElementById('rolePitchLead').value;
+        }
+
+        function toggleRolesDisplay() {
+            const grid = document.getElementById('rolesGrid');
+            const txt = document.getElementById('rolesToggleText');
+            if (grid.classList.contains('hidden')) {
+                grid.classList.remove('hidden');
+                txt.innerText = 'Hide Roles';
+            } else {
+                grid.classList.add('hidden');
+                txt.innerText = 'Configure Roles';
+            }
+        }
+
+        // --- 3. SPRINT TIMER & STEPPER CONTROL ---
+        function toggleTimer() {
+            const btn = document.getElementById('startTimerBtn');
+            if (state.timer.running) {
+                clearInterval(state.timer.interval);
+                state.timer.running = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+                btn.className = 'px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-md transition';
+            } else {
+                state.timer.running = true;
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+                btn.className = 'px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold shadow-md transition';
+                
+                state.timer.interval = setInterval(() => {
+                    if (state.timer.seconds > 0) {
+                        state.timer.seconds--;
+                        updateTimerDisplay();
+                        checkPhaseAutoAdvance();
+                    } else {
+                        clearInterval(state.timer.interval);
+                        state.timer.running = false;
+                        playChimeSound(800, 0.8);
+                        showToast('⌛ 10-Minute Sprint Completed!', 'success');
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(state.timer.interval);
+            state.timer.running = false;
+            state.timer.seconds = 600;
+            updateTimerDisplay();
+            const btn = document.getElementById('startTimerBtn');
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> Start';
+            btn.className = 'px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-md transition';
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(state.timer.seconds / 60);
+            const s = state.timer.seconds % 60;
+            document.getElementById('timerDisplay').innerText = 
+                `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function toggleChime() {
+            state.timer.chime = !state.timer.chime;
+            const btn = document.getElementById('chimeBtn');
+            if (state.timer.chime) {
+                btn.innerHTML = '<i class="fa-solid fa-bell text-cyan-400"></i>';
+                showToast('Audio Chimes Enabled', 'info');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-bell-slash text-slate-500"></i>';
+                showToast('Audio Chimes Muted', 'info');
+            }
+        }
+
+        function playChimeSound(freq = 440, typeDuration = 0.2) {
+            if (!state.timer.chime) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + typeDuration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + typeDuration);
+            } catch (e) {
+                console.log('Audio Context muted or unsupported');
+            }
+        }
+
+        function checkPhaseAutoAdvance() {
+            // Auto highlight step based on timer countdown
+            if (state.timer.seconds === 420) { // 3:00 mark (7 min left)
+                playChimeSound(600, 0.4);
+                showToast('Phase 2 Starter: Classify Conversation Cards!', 'info');
+            } else if (state.timer.seconds === 240) { // 6:00 mark (4 min left)
+                playChimeSound(600, 0.4);
+                showToast('Phase 3 Starter: Open Outline Studio!', 'info');
+            } else if (state.timer.seconds === 120) { // 8:00 mark (2 min left)
+                playChimeSound(600, 0.4);
+                showToast('Phase 4 Starter: Record 30s Spoken Pitch!', 'info');
+            }
+        }
+
+        function goToPhase(phaseNum) {
+            state.currentPhase = phaseNum;
+            document.querySelectorAll('.phase-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`phase${phaseNum}`).classList.remove('hidden');
+
+            // Update button styles
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`stepBtn${i}`);
+                if (i === phaseNum) {
+                    btn.className = 'phase-btn p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-500/20 text-cyan-300 text-left transition flex flex-col justify-between shadow-lg shadow-cyan-500/10';
+                } else {
+                    btn.className = 'phase-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left transition flex flex-col justify-between hover:border-slate-700';
+                }
+            }
+
+            if (phaseNum === 4) {
+                compilePitchScript();
+            }
+        }
+
+        // --- 4. PHASE 1: PROMPTS DECK MANAGEMENT ---
+        function switchPromptCategory(cat) {
+            state.promptCategory = cat;
+            document.querySelectorAll('.prompt-tab-btn').forEach(btn => {
+                btn.className = 'prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:text-slate-200 transition';
+            });
+            
+            const activeTab = document.getElementById(`tab${cat.toUpperCase()}`);
+            if (activeTab) {
+                activeTab.className = 'prompt-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-600 text-white shadow-sm transition';
+            }
+            renderPrompts();
+        }
+
+        function renderPrompts() {
+            const container = document.getElementById('promptsContainer');
+            container.innerHTML = '';
+
+            const filteredPrompts = state.prompts.filter(p => p.cat === state.promptCategory);
+
+            filteredPrompts.forEach(p => {
+                const existingCard = state.cards.find(c => c.promptId === p.id);
+                
+                const cardEl = document.createElement('div');
+                cardEl.className = 'bg-slate-900 p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row gap-3 justify-between items-start md:items-center';
+                
+                cardEl.innerHTML = `
+                    <div class="flex-1 space-y-1">
+                        <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">${p.title}</span>
+                        <p class="text-xs font-semibold text-white leading-snug">${p.text}</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <input type="text" id="promptAns_${p.id}" value="${existingCard ? existingCard.text : ''}" placeholder="Type key concept answer..." class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 w-full md:w-64">
+                        <button onclick="convertPromptToCard(${p.id})" class="px-3 py-1.5 ${existingCard ? 'bg-emerald-600' : 'bg-cyan-600 hover:bg-cyan-500'} text-white rounded-lg text-xs font-bold transition whitespace-nowrap">
+                            <i class="fa-solid ${existingCard ? 'fa-check' : 'fa-plus'}"></i> ${existingCard ? 'Updated' : 'Card'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+
+        function convertPromptToCard(promptId) {
+            const inputVal = document.getElementById(`promptAns_${promptId}`).value.trim();
+            if (!inputVal) {
+                showToast('Please type an answer before generating a card!', 'warning');
+                return;
+            }
+
+            const promptObj = state.prompts.find(p => p.id === promptId);
+            const existingIndex = state.cards.findIndex(c => c.promptId === promptId);
+
+            if (existingIndex > -1) {
+                state.cards[existingIndex].text = inputVal;
+                showToast('Updated card content!', 'info');
+            } else {
+                state.cards.push({
+                    id: Date.now(),
+                    promptId: promptId,
+                    text: inputVal,
+                    category: promptObj.title,
+                    bucket: 'unassigned'
+                });
+                showToast('New card added to Idea Bin!', 'success');
+            }
+
+            document.getElementById('promptCardCount').innerText = state.cards.length;
+            renderPrompts();
+            renderCards();
+        }
+
+        // --- 5. PHASE 2: BUCKET CLASSIFICATION BOARD ---
+        function addCustomCard() {
+            const input = document.getElementById('customCardInput');
+            const val = input.value.trim();
+            if (!val) return;
+
+            state.cards.push({
+                id: Date.now(),
+                promptId: null,
+                text: val,
+                category: 'Custom Card',
+                bucket: 'unassigned'
+            });
+
+            input.value = '';
+            document.getElementById('promptCardCount').innerText = state.cards.length;
+            renderCards();
+            showToast('Added custom card to Idea Bin!', 'success');
+        }
+
+        function renderCards() {
+            const binZone = document.getElementById('ideaBinZone');
+            const casualZone = document.getElementById('bucketCasual');
+            const profZone = document.getElementById('bucketProf');
+            const deepZone = document.getElementById('bucketDeep');
+
+            binZone.innerHTML = '';
+            casualZone.innerHTML = '';
+            profZone.innerHTML = '';
+            deepZone.innerHTML = '';
+
+            const unassigned = state.cards.filter(c => c.bucket === 'unassigned');
+            const casual = state.cards.filter(c => c.bucket === 'casual');
+            const prof = state.cards.filter(c => c.bucket === 'professional');
+            const deep = state.cards.filter(c => c.bucket === 'deep');
+
+            // Counter Badges
+            document.getElementById('ideaBinCount').innerText = `${unassigned.length} cards`;
+            document.getElementById('bucketCasualCount').innerText = casual.length;
+            document.getElementById('bucketProfCount').innerText = prof.length;
+            document.getElementById('bucketDeepCount').innerText = deep.length;
+
+            if (unassigned.length === 0) {
+                binZone.innerHTML = `<p class="text-xs text-slate-400 m-auto py-2">No unassigned cards. Answer prompts in Phase 1 or create custom cards!</p>`;
+            } else {
+                unassigned.forEach(card => binZone.appendChild(createCardElement(card)));
+            }
+
+            casual.forEach(card => casualZone.appendChild(createCardElement(card)));
+            prof.forEach(card => profZone.appendChild(createCardElement(card)));
+            deep.forEach(card => deepZone.appendChild(createCardElement(card)));
+        }
+
+        function createCardElement(card) {
+            const div = document.createElement('div');
+            div.className = 'bg-slate-900 border border-slate-700 p-2.5 rounded-lg text-xs text-white shadow-md cursor-grab active:cursor-grabbing flex flex-col gap-1.5 transition hover:border-slate-500';
+            div.draggable = true;
+            div.id = `card_${card.id}`;
+            div.ondragstart = (e) => e.dataTransfer.setData('text/plain', card.id);
+
+            div.innerHTML = `
+                <div class="flex justify-between items-start gap-1">
+                    <span class="text-[9px] font-bold text-cyan-400 uppercase tracking-tight truncate">${card.category}</span>
+                    <button onclick="deleteCard(${card.id})" class="text-slate-500 hover:text-rose-400 text-[10px]"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <p class="font-medium text-slate-200 leading-tight">${card.text}</p>
+                
+                <!-- Quick Move Controls for Touch/Mobile -->
+                <div class="flex items-center gap-1 mt-1 pt-1 border-t border-slate-800 text-[9px] text-slate-400">
+                    <span>Move:</span>
+                    <button onclick="moveCardBucket(${card.id}, 'casual')" class="px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300">☕ Casual</button>
+                    <button onclick="moveCardBucket(${card.id}, 'professional')" class="px-1.5 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300">💼 Prof</button>
+                    <button onclick="moveCardBucket(${card.id}, 'deep')" class="px-1.5 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300">❤️ Deep</button>
+                </div>
+            `;
+            return div;
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+
+        function dropCard(ev, targetBucket) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('drag-over');
+            const cardId = ev.dataTransfer.getData('text/plain');
+            moveCardBucket(parseInt(cardId), targetBucket);
+        }
+
+        function moveCardBucket(cardId, targetBucket) {
+            const card = state.cards.find(c => c.id === cardId);
+            if (card) {
+                card.bucket = targetBucket;
+                renderCards();
+                playChimeSound(500, 0.1);
+            }
+        }
+
+        function deleteCard(cardId) {
+            state.cards = state.cards.filter(c => c.id !== cardId);
+            document.getElementById('promptCardCount').innerText = state.cards.length;
+            renderCards();
+            showToast('Card removed', 'info');
+        }
+
+        // --- 6. PHASE 3: OUTLINE WORKBENCH & REGEX VALIDATOR ---
+        function runOutlineValidation() {
+            const title = document.getElementById('outTitle').value.trim();
+            const main = document.getElementById('outMainPoint').value.trim();
+            const detA = document.getElementById('outDetailA').value.trim();
+            const detB = document.getElementById('outDetailB').value.trim();
+            const conc = document.getElementById('outConclusion').value.trim();
+
+            const fullText = `${title} ${main} ${detA} ${detB} ${conc}`;
+            const words = fullText ? fullText.split(/\s+/).filter(w => w.length > 0).length : 0;
+            document.getElementById('valWordCount').innerText = words;
+
+            // Regex for B1 Markers
+            const hasMarker1 = /first of all|to begin with|secondly/i.test(fullText);
+            const hasMarker2 = /for instance|for example/i.test(fullText);
+            const hasMarker3 = /specifically|in particular/i.test(fullText);
+            const hasMarker4 = /in summary|to conclude|overall/i.test(fullText);
+
+            updateMarkerCheckmark('chkMarker1', hasMarker1);
+            updateMarkerCheckmark('chkMarker2', hasMarker2);
+            updateMarkerCheckmark('chkMarker3', hasMarker3);
+            updateMarkerCheckmark('chkMarker4', hasMarker4);
+
+            const countFound = [hasMarker1, hasMarker2, hasMarker3, hasMarker4].filter(Boolean).length;
+            document.getElementById('valMarkerCount').innerText = `${countFound} / 4`;
+
+            // Calculate Score Badge
+            const badge = document.getElementById('validationScoreBadge');
+            if (countFound === 4 && title && main && conc) {
+                badge.innerText = '✨ Perfectly Structured';
+                badge.className = 'text-xs bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-1 rounded-full border border-emerald-500/30';
+            } else if (countFound >= 2) {
+                badge.innerText = '⚡ Good Progress';
+                badge.className = 'text-xs bg-cyan-500/20 text-cyan-300 font-bold px-2.5 py-1 rounded-full border border-cyan-500/30';
+            } else {
+                badge.innerText = 'Incomplete';
+                badge.className = 'text-xs bg-amber-500/20 text-amber-300 font-bold px-2.5 py-1 rounded-full border border-amber-500/30';
+            }
+        }
+
+        function updateMarkerCheckmark(elementId, isFound) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            if (isFound) {
+                el.className = 'flex items-center justify-between p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-semibold';
+                el.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-400';
+            } else {
+                el.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400';
+                el.querySelector('i').className = 'fa-solid fa-circle-xmark text-slate-600';
+            }
+        }
+
+        // --- 7. PHASE 4: 30S AUDIO PITCH STUDIO ---
+        function compilePitchScript() {
+            const title = document.getElementById('outTitle').value.trim() || '[Title Heading]';
+            const main = document.getElementById('outMainPoint').value.trim() || '[Main Heading]';
+            const detA = document.getElementById('outDetailA').value.trim() || '[Supporting Detail A]';
+            const detB = document.getElementById('outDetailB').value.trim() || '[Supporting Detail B]';
+            const conc = document.getElementById('outConclusion').value.trim() || '[Conclusion Summary]';
+
+            const casualCount = state.cards.filter(c => c.bucket === 'casual').length;
+            const profCount = state.cards.filter(c => c.bucket === 'professional').length;
+            const deepCount = state.cards.filter(c => c.bucket === 'deep').length;
+
+            const script = `Hello everyone, on behalf of CommuniCraft Agency, today we present our conversation strategy for "${title}".\n\nI. ${main}\n${detA}\n${detB}\n\nOur analysis categorized ${casualCount} casual social interactions, ${profCount} formal professional scenarios, and ${deepCount} deep conversations.\n\nII. ${conc}`;
+
+            document.getElementById('pitchScriptBox').innerText = script;
+            const wordCount = script.split(/\s+/).length;
+            document.getElementById('scriptWordCount').innerText = `${wordCount} words (~30 sec pitch)`;
+        }
+
+        async function toggleRecording() {
+            const rec = state.audioRecorder;
+            if (rec.isRecording) {
+                stopRecording();
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    rec.mediaRecorder = new MediaRecorder(stream);
+                    rec.chunks = [];
+
+                    rec.mediaRecorder.ondataavailable = (e) => rec.chunks.push(e.data);
+                    rec.mediaRecorder.onstop = () => {
+                        rec.audioBlob = new Blob(rec.chunks, { type: 'audio/wav' });
+                        const audioUrl = URL.createObjectURL(rec.audioBlob);
+                        const player = document.getElementById('audioPlayback');
+                        player.src = audioUrl;
+                        document.getElementById('audioPlaybackContainer').classList.remove('hidden');
+
+                        const downloadBtn = document.getElementById('downloadAudioBtn');
+                        downloadBtn.href = audioUrl;
+                        downloadBtn.classList.remove('hidden');
+                    };
+
+                    rec.mediaRecorder.start();
+                    rec.isRecording = true;
+                    rec.seconds = 0;
+
+                    // UI Updates
+                    document.getElementById('recordBtn').className = 'px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-lg transition animate-pulse';
+                    document.getElementById('recordBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Recording...';
+                    document.getElementById('stopRecordBtn').disabled = false;
+                    document.getElementById('stopRecordBtn').className = 'px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer';
+
+                    // Timer interval (30s limit)
+                    rec.timerInterval = setInterval(() => {
+                        rec.seconds++;
+                        document.getElementById('recordingTimer').innerText = `00:${rec.seconds.toString().padStart(2, '0')} / 00:30`;
+                        if (rec.seconds >= 30) {
+                            stopRecording();
+                        }
+                    }, 1000);
+
+                    // Setup Canvas Visualizer
+                    setupVisualizer(stream);
+                    showToast('🎤 Recording started! Present your 30s pitch.', 'info');
+
+                } catch (err) {
+                    showToast('Microphone access denied or unavailable.', 'warning');
+                    console.error(err);
+                }
+            }
+        }
+
+        function stopRecording() {
+            const rec = state.audioRecorder;
+            if (rec.mediaRecorder && rec.isRecording) {
+                rec.mediaRecorder.stop();
+                rec.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                rec.isRecording = false;
+                clearInterval(rec.timerInterval);
+
+                document.getElementById('recordBtn').className = 'px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-lg transition';
+                document.getElementById('recordBtn').innerHTML = '<i class="fa-solid fa-microphone"></i> Record Again';
+                document.getElementById('stopRecordBtn').disabled = true;
+                document.getElementById('stopRecordBtn').className = 'px-4 py-2 bg-slate-800 text-slate-500 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-not-allowed';
+
+                if (rec.animFrame) cancelAnimationFrame(rec.animFrame);
+                document.getElementById('canvasPlaceholder').classList.remove('hidden');
+
+                showToast('Recording saved successfully!', 'success');
+            }
+        }
+
+        function setupVisualizer(stream) {
+            const canvas = document.getElementById('visualizerCanvas');
+            const ctx = canvas.getContext('2d');
+            document.getElementById('canvasPlaceholder').classList.add('hidden');
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+            analyser.fftSize = 64;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                state.audioRecorder.animFrame = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = 'rgb(2, 6, 23)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 4;
+
+                    ctx.fillStyle = `rgb(6, 182, 212)`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        function calculateRubricScore() {
+            let score = 0;
+            for (let i = 1; i <= 4; i++) {
+                if (document.getElementById(`rubric${i}`).checked) score++;
+            }
+            document.getElementById('rubricScoreDisplay').innerText = `${score} / 4 Criteria`;
+            document.getElementById('pRubricScore').innerText = `${score} / 4 Criteria Met`;
+        }
+
+        // --- 8. TEACHER DEMO FILL & MODALS ---
+        function loadTeacherDemo() {
+            // Fill Roles
+            document.getElementById('roleTypologist').value = 'Sarah Miller';
+            document.getElementById('roleOutliner').value = 'Alex Rivera';
+            document.getElementById('rolePitchLead').value = 'Maria Chen';
+            updateRoles();
+
+            // Populate Prompts & Generated Cards
+            state.cards = [
+                { id: 101, promptId: 1, text: 'Coffee shop order and polite weather chat', category: 'Small Talk Settings', bucket: 'casual' },
+                { id: 102, promptId: 2, text: 'Heart-to-heart talk about career stress', category: 'Heart-to-Heart Talk', bucket: 'deep' },
+                { id: 103, promptId: 3, text: 'Panel job interview with HR manager', category: 'Job Interview Setup', bucket: 'professional' },
+                { id: 104, promptId: 4, text: 'Salary and benefits contract negotiation', category: 'Dynamic Debate', bucket: 'professional' },
+                { id: 105, promptId: 7, text: 'Active listening during team conflict resolution', category: 'Active Listening', bucket: 'deep' }
+            ];
+
+            // Populate Outline Studio
+            document.getElementById('outTitle').value = 'Navigating High-Stakes Job Interviews';
+            document.getElementById('outMainPoint').value = 'Prepare clear, structured personal responses for panel questions';
+            document.getElementById('outDetailA').value = 'First of all, introduce your relevant professional experience concisely.';
+            document.getElementById('outDetailB').value = 'Specifically, provide two concrete examples of past achievements.';
+            document.getElementById('outConclusion').value = 'In summary, structured preparation instills confidence and clarity.';
+
+            renderPrompts();
+            renderCards();
+            runOutlineValidation();
+            compilePitchScript();
+
+            showToast('⚡ Teacher Demo data populated across all modules!', 'success');
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function openPrintModal() {
+            // Populate Print Modal Data
+            document.getElementById('pRole1').innerText = state.roles.typologist || 'Unassigned';
+            document.getElementById('pRole2').innerText = state.roles.outliner || 'Unassigned';
+            document.getElementById('pRole3').innerText = state.roles.pitchLead || 'Unassigned';
+
+            const casual = state.cards.filter(c => c.bucket === 'casual');
+            const prof = state.cards.filter(c => c.bucket === 'professional');
+            const deep = state.cards.filter(c => c.bucket === 'deep');
+
+            document.getElementById('pCasualList').innerHTML = casual.map(c => `<li>${c.text}</li>`).join('') || '<li>None</li>';
+            document.getElementById('pProfList').innerHTML = prof.map(c => `<li>${c.text}</li>`).join('') || '<li>None</li>';
+            document.getElementById('pDeepList').innerHTML = deep.map(c => `<li>${c.text}</li>`).join('') || '<li>None</li>';
+
+            document.getElementById('pOutTitle').innerText = `Title: ${document.getElementById('outTitle').value || 'N/A'}`;
+            document.getElementById('pOutMain').innerText = `I. Main Point: ${document.getElementById('outMainPoint').value || 'N/A'}`;
+            document.getElementById('pOutDetA').innerText = `A. Detail 1: ${document.getElementById('outDetailA').value || 'N/A'}`;
+            document.getElementById('pOutDetB').innerText = `B. Detail 2: ${document.getElementById('outDetailB').value || 'N/A'}`;
+            document.getElementById('pOutConc').innerText = `II. Conclusion: ${document.getElementById('outConclusion').value || 'N/A'}`;
+
+            openModal('printModal');
+        }
+
+        // --- 9. UTILITY TOAST NOTIFICATIONS ---
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bg = 'bg-slate-900 border-slate-700 text-white';
+            if (type === 'success') bg = 'bg-emerald-950 border-emerald-500/50 text-emerald-200';
+            if (type === 'warning') bg = 'bg-amber-950 border-amber-500/50 text-amber-200';
+            if (type === 'info') bg = 'bg-cyan-950 border-cyan-500/50 text-cyan-200';
+
+            toast.className = `p-3 rounded-xl border text-xs font-semibold shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 pointer-events-auto ${bg}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${msg}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
