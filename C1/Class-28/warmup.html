@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Pulse: Show Preferences & Popularity Lab (CEFR B1)</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            tv: {
+              bg: '#0b0f19',
+              card: '#131b2e',
+              border: '#1f2d4d',
+              red: '#e50914',
+              redHover: '#b80710',
+              purple: '#8b5cf6',
+              cyan: '#06b6d4',
+              gold: '#f59e0b',
+              emerald: '#10b981'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2d4d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #e50914;
+    }
+
+    /* Cinematic Glow Effects */
+    .glow-red { box-shadow: 0 0 25px rgba(229, 9, 20, 0.3); }
+    .glow-purple { box-shadow: 0 0 25px rgba(139, 92, 246, 0.25); }
+    .glow-cyan { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); }
+    .glow-gold { box-shadow: 0 0 25px rgba(245, 158, 11, 0.25); }
+
+    /* 3D Flip Card Utilities */
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+
+    /* Active Highlight States */
+    .card-selected {
+      border-color: #e50914 !important;
+      background-color: rgba(229, 9, 20, 0.12) !important;
+      transform: translateY(-2px);
+    }
+
+    /* Print Styles for Certificate */
+    @media print {
+      body * { visibility: hidden; }
+      #printable-certificate, #printable-certificate * { visibility: visible; }
+      #printable-certificate {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: white !important; color: black !important;
+        box-shadow: none !important; border: 2px solid #333 !important;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+
+<body class="bg-tv-bg text-slate-100 font-sans min-h-screen flex flex-col selection:bg-tv-red selection:text-white">
+
+  <!-- TOP LEARNING STATUS BAR -->
+  <header class="bg-slate-950/90 border-b border-slate-800/80 text-xs no-print backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-gradient-to-r from-tv-red to-purple-600 text-white font-black px-2.5 py-0.5 rounded-md uppercase tracking-widest text-[10px] shadow-sm">
+          CEFR B1 LAB
+        </span>
+        <span class="text-slate-300 font-medium hidden sm:inline flex items-center gap-2">
+          <i class="fa-solid fa-tv text-tv-red"></i>
+          Target: Expressing Preferences & Explaining TV Show Popularity
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Audio TTS Toggle -->
+        <button id="tts-toggle-btn" onclick="toggleTTS()" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 py-1 rounded-lg border border-slate-700 transition" title="Toggle audio pronunciation auto-read">
+          <i id="tts-icon" class="fa-solid fa-volume-high text-tv-cyan"></i>
+          <span id="tts-label">TTS: On</span>
+        </button>
+
+        <!-- Sound Effects Toggle -->
+        <button id="sfx-toggle-btn" onclick="toggleSFX()" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 py-1 rounded-lg border border-slate-700 transition" title="Toggle sound effects">
+          <i id="sfx-icon" class="fa-solid fa-music text-tv-gold"></i>
+          <span id="sfx-label">SFX: On</span>
+        </button>
+
+        <!-- XP / Score Counter -->
+        <div class="flex items-center gap-1.5 bg-tv-red/10 border border-tv-red/30 text-tv-red px-3 py-1 rounded-lg font-extrabold">
+          <i class="fa-solid fa-bolt text-tv-gold"></i>
+          <span id="user-score">0 XP</span>
+        </div>
+
+        <!-- Portfolio Certificate Button -->
+        <button onclick="switchTab(5)" class="bg-tv-gold/20 hover:bg-tv-gold/30 text-tv-gold border border-tv-gold/40 px-3 py-1 rounded-lg font-bold transition flex items-center gap-1.5" title="View Portfolio Certificate">
+          <i class="fa-solid fa-award text-tv-gold"></i>
+          <span class="hidden md:inline">Certificate</span>
+        </button>
+
+        <!-- Reset Button -->
+        <button onclick="resetAppProgress()" class="text-slate-400 hover:text-rose-400 transition" title="Reset Progress">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN BRANDING & HERO BANNER -->
+  <section class="bg-gradient-to-b from-slate-950 via-tv-bg to-tv-bg border-b border-slate-800/80 no-print py-6 px-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-gradient-to-tr from-tv-red via-purple-600 to-tv-cyan rounded-2xl flex items-center justify-center text-3xl font-display font-black text-white shadow-xl glow-red">
+            🍿
+          </div>
+          <div>
+            <h1 class="font-display text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              TV Pulse <span class="text-tv-red text-lg">B1</span>
+              <span class="text-xs font-sans bg-tv-red/20 text-tv-red font-semibold px-2.5 py-0.5 rounded-full border border-tv-red/30">Preferences & Popularity</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-0.5">Master preferences, cause-and-effect connectors, and explain why TV shows go viral globally</p>
+          </div>
+        </div>
+
+        <!-- Quick Summary Stats -->
+        <div class="flex items-center gap-3 bg-tv-card p-3 rounded-2xl border border-slate-800/80 text-xs">
+          <div class="px-3 border-r border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Vocab Cards</span>
+            <span id="stat-cards-count" class="font-bold text-tv-gold text-sm">0 / 8 Mastered</span>
+          </div>
+          <div class="px-3 border-r border-slate-800 text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Sentences Built</span>
+            <span id="stat-builder-count" class="font-bold text-tv-cyan text-sm">0 / 3 Completed</span>
+          </div>
+          <div class="px-3 text-center">
+            <span class="text-[10px] text-slate-400 uppercase font-bold block">Reviews Published</span>
+            <span id="stat-reviews-count" class="font-bold text-tv-red text-sm">0 Published</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN TAB NAVIGATION BAR -->
+      <nav class="mt-6 pt-4 border-t border-slate-800/80 flex overflow-x-auto gap-2 text-xs font-semibold no-scrollbar">
+        <button onclick="switchTab(1)" id="tab-btn-1" class="tab-nav-btn active-tab flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-tv-red border-tv-red text-white shadow-md">
+          <span class="tab-num w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center">1</span>
+          <span class="truncate">🎴 Vocab & Warm-Up</span>
+        </button>
+
+        <button onclick="switchTab(2)" id="tab-btn-2" class="tab-nav-btn flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">2</span>
+          <span class="truncate">🧩 Formula & Builder</span>
+        </button>
+
+        <button onclick="switchTab(3)" id="tab-btn-3" class="tab-nav-btn flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">3</span>
+          <span class="truncate">🎬 TV Review Studio</span>
+        </button>
+
+        <button onclick="switchTab(4)" id="tab-btn-4" class="tab-nav-btn flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">4</span>
+          <span class="truncate">💬 TV Talk Lounge</span>
+        </button>
+
+        <button onclick="switchTab(5)" id="tab-btn-5" class="tab-nav-btn flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">5</span>
+          <span class="truncate">🏆 Summary & Cert</span>
+        </button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- MAIN WORKSPACE CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full no-print">
+
+    <!-- ================= TAB 1: WARM-UP & VOCAB DECK ================= -->
+    <section id="tab-1" class="space-y-8">
+
+      <!-- Hero Header -->
+      <div class="relative bg-gradient-to-r from-slate-950 via-tv-card to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 opacity-10 text-[180px] pointer-events-none select-none">📺</div>
+        <div class="relative z-10 max-w-3xl space-y-3">
+          <span class="bg-tv-red/10 text-tv-red text-xs px-3 py-1 rounded-full border border-tv-red/30 font-bold uppercase tracking-wider inline-block">
+            Step 1: Foundational TV Terms & Connectors
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-black text-white">Vocabulary Deck & Stance Sorter</h2>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Flip cards to master essential TV industry vocabulary, practice categorizing preferences versus popularity explanations, and complete the diagnostic connector quiz.
+          </p>
+        </div>
+      </div>
+
+      <!-- PART A: INTERACTIVE FLASHCARD DECK (8 CARDS) -->
+      <div class="bg-tv-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6">
+        <div class="border-b border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <span class="text-xs text-tv-gold font-bold uppercase tracking-widest">Interactive Practice 1A</span>
+            <h3 class="font-display text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-clone text-tv-gold"></i>
+              TV Industry Flashcard Deck
+            </h3>
+          </div>
+          <span class="text-xs bg-slate-900 text-slate-300 px-3 py-1 rounded-full font-semibold border border-slate-800">
+            Click cards to flip • Listen to native TTS pronunciation
+          </span>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="flashcard-grid">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- PART B: PREFERENCE VS POPULARITY SORTER -->
+      <div class="bg-tv-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6">
+        <div class="border-b border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <span class="text-xs text-tv-purple font-bold uppercase tracking-widest">Interactive Practice 1B</span>
+            <h3 class="font-display text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-layer-group text-tv-purple"></i>
+              Preference vs. Popularity Stance Sorter
+            </h3>
+          </div>
+          <span class="text-xs bg-slate-900 text-slate-300 px-3 py-1 rounded-full font-semibold border border-slate-800">
+            Click a phrase below, then select the target category bucket
+          </span>
+        </div>
+
+        <!-- Phrases Pool -->
+        <div class="space-y-2">
+          <p class="text-xs font-bold text-slate-400 uppercase">Phrases to Categorize:</p>
+          <div id="sorter-phrases-pool" class="flex flex-wrap gap-2">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- 2 Categorization Buckets -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <!-- Bucket 1: Personal Preference -->
+          <div onclick="dropPhraseIntoBucket('preference')" class="bg-slate-950 p-5 rounded-2xl border-2 border-dashed border-tv-purple/40 space-y-3 min-h-[160px] cursor-pointer hover:bg-purple-950/20 transition">
+            <div class="flex items-center justify-between text-tv-purple font-bold text-xs border-b border-slate-800/80 pb-2">
+              <span>❤️ Personal Preference ("What I like/dislike")</span>
+              <span id="count-pref" class="text-[10px] bg-tv-purple/20 px-2 py-0.5 rounded-full text-purple-300">0</span>
+            </div>
+            <div id="bucket-preference" class="space-y-2 text-xs">
+              <!-- Injected -->
+            </div>
+          </div>
+
+          <!-- Bucket 2: Explaining Popularity -->
+          <div onclick="dropPhraseIntoBucket('popularity')" class="bg-slate-950 p-5 rounded-2xl border-2 border-dashed border-tv-cyan/40 space-y-3 min-h-[160px] cursor-pointer hover:bg-cyan-950/20 transition">
+            <div class="flex items-center justify-between text-tv-cyan font-bold text-xs border-b border-slate-800/80 pb-2">
+              <span>🌟 Explaining Popularity ("Why it's famous")</span>
+              <span id="count-pop" class="text-[10px] bg-tv-cyan/20 px-2 py-0.5 rounded-full text-cyan-300">0</span>
+            </div>
+            <div id="bucket-popularity" class="space-y-2 text-xs">
+              <!-- Injected -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PART C: DIAGNOSTIC CONNECTOR QUIZ -->
+      <div class="bg-tv-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs text-tv-cyan font-bold uppercase tracking-widest">Interactive Practice 1C</span>
+            <h3 class="font-display text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-circle-question text-tv-cyan"></i>
+              Diagnostic Cause & Effect Connector Quiz
+            </h3>
+          </div>
+          <span class="text-xs bg-slate-900 text-slate-300 px-3 py-1 rounded-full font-semibold border border-slate-800" id="quiz-progress-badge">
+            Question 1 of 5
+          </span>
+        </div>
+
+        <div id="quiz-container-box" class="space-y-6">
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-2">
+            <span class="text-[10px] text-tv-cyan font-bold uppercase tracking-wider block">Target Sentence:</span>
+            <p id="quiz-sentence-text" class="font-display text-base sm:text-lg text-slate-100 font-semibold italic">
+              Loading diagnostic question...
+            </p>
+          </div>
+
+          <div>
+            <p id="quiz-prompt-text" class="text-xs font-bold text-slate-300 mb-3">Select the correct cause-and-effect connector to complete the statement:</p>
+            <div id="quiz-options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <!-- Dynamically populated choices -->
+            </div>
+          </div>
+
+          <div id="quiz-feedback-box" class="p-4 rounded-xl text-xs leading-relaxed hidden"></div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+          <span class="text-xs text-slate-400"><i class="fa-solid fa-bolt text-tv-gold mr-1"></i>Earn +10 XP per correct question</span>
+          <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden bg-tv-red hover:bg-tv-redHover text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center gap-2">
+            Next Question <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 2: POPULARITY FORMULA & LANGUAGE MATRIX ================= -->
+    <section id="tab-2" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-950 via-tv-card to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl">
+        <span class="bg-tv-purple/20 text-purple-300 text-xs px-3 py-1 rounded-full border border-tv-purple/30 font-bold uppercase tracking-wider inline-block mb-2">
+          Step 2: Sentence Structure & Grammar Tools
+        </span>
+        <h2 class="font-display text-2xl sm:text-3xl font-black text-white">The B1 Popularity Formula & Phrase Deck</h2>
+        <p class="text-slate-300 text-sm mt-1">
+          Learn how to combine personal stances, TV genre terms, popularity reasons, and cause connectors into sophisticated sentences.
+        </p>
+      </div>
+
+      <!-- VISUAL FORMULA BREAKDOWN -->
+      <div class="bg-tv-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+        <h3 class="font-display text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+          <i class="fa-solid fa-wand-magic-sparkles text-tv-gold"></i>
+          The B1 TV Review Formula
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 text-center text-xs font-bold">
+          <div class="bg-slate-950 p-4 rounded-2xl border border-tv-red/40 space-y-1">
+            <span class="text-tv-red text-[10px] uppercase block">Part 1</span>
+            <span class="text-white text-sm block">Personal Stance</span>
+            <span class="text-[11px] text-slate-400 font-normal italic">"I'm really into..."</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-2xl border border-tv-purple/40 space-y-1">
+            <span class="text-tv-purple text-[10px] uppercase block">Part 2</span>
+            <span class="text-white text-sm block">TV Genre / Show</span>
+            <span class="text-[11px] text-slate-400 font-normal italic">"sci-fi dramas"</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-2xl border border-tv-cyan/40 space-y-1">
+            <span class="text-tv-cyan text-[10px] uppercase block">Part 3</span>
+            <span class="text-white text-sm block">Cause Connector</span>
+            <span class="text-[11px] text-slate-400 font-normal italic">"mainly because..."</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-2xl border border-tv-gold/40 space-y-1">
+            <span class="text-tv-gold text-[10px] uppercase block">Part 4</span>
+            <span class="text-white text-sm block">Popularity Factor</span>
+            <span class="text-[11px] text-slate-400 font-normal italic">"high production value"</span>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-2xl border border-tv-emerald/40 space-y-1">
+            <span class="text-tv-emerald text-[10px] uppercase block">Part 5</span>
+            <span class="text-white text-sm block">Viewer Impact</span>
+            <span class="text-[11px] text-slate-400 font-normal italic">"creates escapism."</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE PHRASE BANK WITH TTS -->
+      <div class="bg-tv-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+          <div>
+            <span class="text-xs text-tv-purple font-bold uppercase tracking-widest">Interactive Tool</span>
+            <h3 class="font-display text-xl font-bold text-white flex items-center gap-2 mt-1">
+              <i class="fa-solid fa-icons text-tv-purple"></i>
+              B1 Expression Phrase Deck
+            </h3>
+          </div>
+          <span class="text-xs text-slate-400">Click chips to hear pronunciation</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Column 1: Preference Phrases -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-display font-bold text-tv-purple text-sm flex items-center gap-2">
+              <i class="fa-solid fa-heart"></i> Expressing Preferences
+            </h4>
+            <div class="space-y-2 text-xs">
+              <button onclick="speakText('I am really into thriller series.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"I'm really into..."</span> <i class="fa-solid fa-volume-high text-tv-purple"></i>
+              </button>
+              <button onclick="speakText('I can not get enough of unexpected plot twists.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"I can't get enough of..."</span> <i class="fa-solid fa-volume-high text-tv-purple"></i>
+              </button>
+              <button onclick="speakText('I am a massive fan of binge-watching sitcoms.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"I'm a massive fan of..."</span> <i class="fa-solid fa-volume-high text-tv-purple"></i>
+              </button>
+              <button onclick="speakText('What draws me in is strong character development.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"What draws me in is..."</span> <i class="fa-solid fa-volume-high text-tv-purple"></i>
+              </button>
+              <button onclick="speakText('I am not particularly keen on slow reality shows.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"I'm not particularly keen on..."</span> <i class="fa-solid fa-volume-high text-tv-purple"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Column 2: Explaining Popularity -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-display font-bold text-tv-cyan text-sm flex items-center gap-2">
+              <i class="fa-solid fa-fire"></i> Explaining Popularity
+            </h4>
+            <div class="space-y-2 text-xs">
+              <button onclick="speakText('It appeals to a wide audience because of relatable themes.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"It appeals to a wide audience..."</span> <i class="fa-solid fa-volume-high text-tv-cyan"></i>
+              </button>
+              <button onclick="speakText('What makes it a global hit is social media hype.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"What makes it a global hit is..."</span> <i class="fa-solid fa-volume-high text-tv-cyan"></i>
+              </button>
+              <button onclick="speakText('Its massive success is due to word-of-mouth recommendations.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"Its massive success is due to..."</span> <i class="fa-solid fa-volume-high text-tv-cyan"></i>
+              </button>
+              <button onclick="speakText('One key factor behind its popularity is high production value.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"One key factor behind its popularity..."</span> <i class="fa-solid fa-volume-high text-tv-cyan"></i>
+              </button>
+              <button onclick="speakText('It went viral because of intense cliffhanger endings.')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"It went viral because of..."</span> <i class="fa-solid fa-volume-high text-tv-cyan"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Column 3: Cause Connectors -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-display font-bold text-tv-gold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-link"></i> Cause & Effect Connectors
+            </h4>
+            <div class="space-y-2 text-xs">
+              <button onclick="speakText('mainly because...')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"mainly because..."</span> <i class="fa-solid fa-volume-high text-tv-gold"></i>
+              </button>
+              <button onclick="speakText('due to...')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"due to..."</span> <i class="fa-solid fa-volume-high text-tv-gold"></i>
+              </button>
+              <button onclick="speakText('which is why...')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"which is why..."</span> <i class="fa-solid fa-volume-high text-tv-gold"></i>
+              </button>
+              <button onclick="speakText('as a result...')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"as a result..."</span> <i class="fa-solid fa-volume-high text-tv-gold"></i>
+              </button>
+              <button onclick="speakText('owing to...')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition flex items-center justify-between">
+                <span>"owing to..."</span> <i class="fa-solid fa-volume-high text-tv-gold"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SENTENCE BUILDER GAME -->
+      <div class="bg-tv-card p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+        <div class="border-b border-slate-800 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <span class="text-xs text-tv-emerald font-bold uppercase tracking-widest">Interactive Mini-Game</span>
+            <h3 class="font-display text-xl font-bold text-white flex items-center gap-2 mt-1">
+              <i class="fa-solid fa-puzzle-piece text-tv-emerald"></i>
+              Sentence Builder Challenge
+            </h3>
+          </div>
+          <span id="builder-challenge-badge" class="text-xs bg-slate-900 text-tv-emerald px-3 py-1 rounded-full font-bold border border-slate-800">
+            Challenge 1 of 3
+          </span>
+        </div>
+
+        <div class="space-y-4">
+          <p class="text-xs text-slate-300">Tap word tiles below in the correct order to construct a grammatically accurate B1 sentence:</p>
+
+          <!-- Selected Tiles Area -->
+          <div class="bg-slate-950 p-4 rounded-2xl border-2 border-dashed border-slate-700 min-h-[70px] flex flex-wrap gap-2 items-center" id="builder-selected-slots">
+            <span class="text-xs text-slate-600 italic pointer-events-none" id="builder-empty-placeholder">Tap tiles below to assemble sentence...</span>
+          </div>
+
+          <!-- Available Tiles Pool -->
+          <div class="flex flex-wrap gap-2 pt-2" id="builder-tiles-pool">
+            <!-- Injected via JS -->
+          </div>
+
+          <!-- Feedback & Controls -->
+          <div id="builder-feedback-msg" class="p-3 rounded-xl text-xs font-semibold hidden"></div>
+
+          <div class="flex gap-3 pt-2">
+            <button onclick="checkSentenceBuilderAnswer()" class="bg-tv-emerald hover:bg-emerald-600 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl transition flex items-center gap-2">
+              <i class="fa-solid fa-check"></i> Check Sentence (+15 XP)
+            </button>
+            <button onclick="resetSentenceBuilderCurrent()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-700 transition">
+              Clear Slots
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 3: TV SHOW STUDIO & REVIEWER ================= -->
+    <section id="tab-3" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-tv-red/20 via-tv-card to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-tv-red/20 text-tv-red text-xs px-3 py-1 rounded-full border border-tv-red/30 font-bold uppercase tracking-wider inline-block mb-2">
+            Step 3: Synthesis & Writing Studio
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-black text-white">TV Show Review Studio</h2>
+          <p class="text-slate-300 text-sm mt-1">Select a TV show, state your personal preferences, and explain its popularity using cause connectors.</p>
+        </div>
+        <button onclick="loadSampleStudioReview()" class="text-xs bg-slate-900 hover:bg-slate-800 text-tv-gold border border-slate-700 font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Load B1 Sample Review
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Column Left: Interactive Input Controls (7 cols) -->
+        <div class="lg:col-span-7 bg-tv-card rounded-3xl border border-slate-800 p-6 space-y-6">
+
+          <!-- Step 1: Select / Enter Show -->
+          <div class="space-y-3 border-b border-slate-800 pb-5">
+            <div class="flex items-center gap-2 text-white font-display font-bold text-sm">
+              <span class="w-6 h-6 rounded-lg bg-tv-red text-white text-xs font-black flex items-center justify-center">1</span>
+              Select or Enter TV Show & Reviewer Alias
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Select Template or Custom</label>
+                <select id="studio-show-template" onchange="applyShowTemplate()" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-tv-red focus:outline-none">
+                  <option value="Stranger Things (Sci-Fi / Mystery)">👑 Stranger Things (Sci-Fi / Mystery)</option>
+                  <option value="Wednesday (Dark Comedy / Supernatural)">🔮 Wednesday (Dark Supernatural)</option>
+                  <option value="Squid Game (Survival Drama / Thriller)">🦑 Squid Game (Survival Drama)</option>
+                  <option value="Friends (Classic Sitcom)">☕ Friends (Classic Sitcom)</option>
+                  <option value="The Crown (Historical Drama)">👑 The Crown (Historical Drama)</option>
+                  <option value="custom">✏️ Custom TV Show Title...</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Your Reviewer Name / Alias</label>
+                <input type="text" id="studio-author-input" oninput="updateStudioPreview()" value="TV Fan Alex" placeholder="Your name or alias" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-tv-red focus:outline-none">
+              </div>
+            </div>
+
+            <div id="studio-custom-box" class="grid grid-cols-2 gap-3 text-xs hidden pt-1">
+              <input type="text" id="studio-custom-title" oninput="updateStudioPreview()" placeholder="Enter TV Show Title" class="bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-tv-red focus:outline-none">
+              <input type="text" id="studio-custom-genre" oninput="updateStudioPreview()" placeholder="Enter Genre (e.g. Sci-Fi)" class="bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-tv-red focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Step 2: Personal Preference Statement -->
+          <div class="space-y-3 border-b border-slate-800 pb-5">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-2 text-white font-display font-bold text-sm">
+                <span class="w-6 h-6 rounded-lg bg-tv-purple text-white text-xs font-black flex items-center justify-center">2</span>
+                Express Personal Preference
+              </div>
+              <span class="text-[10px] text-tv-purple font-semibold">Preference Target</span>
+            </div>
+
+            <select id="studio-pref-phrase-select" onchange="insertPrefPhraseToText()" class="w-full bg-slate-950 text-purple-300 font-semibold p-2.5 rounded-xl border border-slate-800 focus:border-tv-purple focus:outline-none text-xs">
+              <option value="I'm really into">"I'm really into..."</option>
+              <option value="I can't get enough of">"I can't get enough of..."</option>
+              <option value="I'm a massive fan of">"I'm a massive fan of..."</option>
+              <option value="What draws me in is">"What draws me in is..."</option>
+              <option value="I'm not particularly keen on">"I'm not particularly keen on..."</option>
+            </select>
+
+            <textarea id="studio-pref-text" oninput="updateStudioPreview()" rows="2" placeholder="Explain why you love or dislike this show (e.g., I'm really into supernatural mystery series because the nostalgic 80s setting creates complete escapism)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-tv-purple focus:outline-none"></textarea>
+          </div>
+
+          <!-- Step 3: Explain Popularity & Cause Connectors -->
+          <div class="space-y-3 border-b border-slate-800 pb-5">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-2 text-white font-display font-bold text-sm">
+                <span class="w-6 h-6 rounded-lg bg-tv-cyan text-slate-950 text-xs font-black flex items-center justify-center">3</span>
+                Explain Popularity & Global Appeal
+              </div>
+              <span class="text-[10px] text-tv-cyan font-semibold">Popularity Reason</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <select id="studio-pop-factor-select" onchange="updateStudioPreview()" class="bg-slate-950 text-cyan-300 font-semibold p-2.5 rounded-xl border border-slate-800 focus:border-tv-cyan focus:outline-none">
+                <option value="relatable characters and authentic dialogue">Relatable Characters</option>
+                <option value="shocking plot twists and intense cliffhangers">Plot Twists & Cliffhangers</option>
+                <option value="high production value and stunning visual effects">High Production Value</option>
+                <option value="social media hype and viral word-of-mouth">Viral Social Media Hype</option>
+                <option value="nostalgic storytelling and a star-studded cast">Nostalgia & Star Cast</option>
+              </select>
+
+              <select id="studio-connector-select" onchange="updateStudioPreview()" class="bg-slate-950 text-tv-gold font-semibold p-2.5 rounded-xl border border-slate-800 focus:border-tv-gold focus:outline-none">
+                <option value="mainly because">mainly because...</option>
+                <option value="due to">due to...</option>
+                <option value="which is why">which is why...</option>
+                <option value="as a result">as a result...</option>
+                <option value="owing to">owing to...</option>
+              </select>
+            </div>
+
+            <textarea id="studio-pop-text" oninput="updateStudioPreview()" rows="2" placeholder="Explain why this show appeals to a wide audience (e.g., What makes it a global hit is its relatable characters, which is why millions of fans binge-watch every season)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-tv-cyan focus:outline-none"></textarea>
+          </div>
+
+          <!-- Step 4: Rating & Target Audience -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 text-white font-display font-bold text-sm">
+              <span class="w-6 h-6 rounded-lg bg-tv-gold text-slate-950 text-xs font-black flex items-center justify-center">4</span>
+              Star Rating & Target Recommendation
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Star Rating (1-5)</label>
+                <div class="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                  <div class="flex text-tv-gold text-base gap-1" id="studio-star-rating-box">
+                    <i class="fa-solid fa-star cursor-pointer" onclick="setStudioStars(1)"></i>
+                    <i class="fa-solid fa-star cursor-pointer" onclick="setStudioStars(2)"></i>
+                    <i class="fa-solid fa-star cursor-pointer" onclick="setStudioStars(3)"></i>
+                    <i class="fa-solid fa-star cursor-pointer" onclick="setStudioStars(4)"></i>
+                    <i class="fa-solid fa-star cursor-pointer" onclick="setStudioStars(5)"></i>
+                  </div>
+                  <span id="studio-star-val" class="font-bold text-slate-300">5 / 5 Stars</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Recommended Audience</label>
+                <select id="studio-audience-select" onchange="updateStudioPreview()" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-tv-gold focus:outline-none">
+                  <option value="Teenagers & Mystery Fans">Teenagers & Mystery Fans</option>
+                  <option value="Binge-Watchers & Thriller Seekers">Binge-Watchers & Thriller Seekers</option>
+                  <option value="Sitcom & Comedy Lovers">Sitcom & Comedy Lovers</option>
+                  <option value="Fantasy & Sci-Fi Enthusiasts">Fantasy & Sci-Fi Enthusiasts</option>
+                  <option value="General Global Audience">General Global Audience</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Column Right: Live Card Preview & Quality Check Gauge (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+
+          <!-- Live Card Preview -->
+          <div class="bg-tv-card rounded-3xl border-2 border-tv-red/40 p-6 space-y-4 shadow-xl relative overflow-hidden glow-red">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span class="text-xs font-bold text-tv-red uppercase tracking-widest flex items-center gap-1.5">
+                <i class="fa-solid fa-eye"></i> Live Streaming Review Card
+              </span>
+              <span id="preview-show-title" class="bg-tv-red/20 text-tv-red border border-tv-red/30 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                Stranger Things
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400">Reviewer: <strong id="preview-author-name" class="text-tv-gold">Alex</strong></span>
+                <span id="preview-stars-display" class="text-tv-gold font-bold">⭐⭐⭐⭐⭐</span>
+              </div>
+
+              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-200 leading-relaxed font-medium space-y-2 min-h-[140px]">
+                <p id="preview-full-review-text" class="text-slate-300 italic">
+                  "Your generated TV show review will update here live as you type..."
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2">
+                <span>Audience: <strong id="preview-audience-name" class="text-tv-cyan">Mystery Fans</strong></span>
+                <span id="preview-word-count">0 words</span>
+              </div>
+            </div>
+
+            <!-- Audio Pronunciation Button -->
+            <button onclick="readStudioReviewAloud()" class="w-full bg-tv-cyan/20 hover:bg-tv-cyan/30 border border-tv-cyan/40 text-tv-cyan font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-volume-high text-tv-cyan"></i> Read Aloud Review (TTS)
+            </button>
+          </div>
+
+          <!-- B1 FLUENCY GAUGE -->
+          <div class="bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="font-display font-bold text-white text-xs uppercase tracking-wider">B1 Fluency Quality Gauge</span>
+              <span id="gauge-score-badge" class="text-xs font-extrabold text-tv-gold">0 / 4 Criteria Met</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div id="gauge-word-cnt" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Length (Target 50+ Words)</span>
+                <span id="gauge-word-val" class="font-bold">0/50</span>
+              </div>
+              <div id="gauge-pref" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Preference Expression Detected</span>
+                <span id="gauge-pref-val" class="font-bold">Missing</span>
+              </div>
+              <div id="gauge-pop" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Popularity Factor Included</span>
+                <span id="gauge-pop-val" class="font-bold">Missing</span>
+              </div>
+              <div id="gauge-conn" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Cause & Effect Connector Used</span>
+                <span id="gauge-conn-val" class="font-bold">Missing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-2">
+            <button onclick="publishStudioReview()" class="w-full bg-gradient-to-r from-tv-red via-purple-600 to-tv-cyan hover:opacity-90 text-white font-black text-xs py-3.5 rounded-xl transition shadow-xl flex items-center justify-center gap-2 uppercase tracking-wider">
+              <i class="fa-solid fa-paper-plane"></i> Publish to TV Talk Lounge (+100 XP)
+            </button>
+            <button onclick="copyStudioReviewText()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-copy"></i> Copy Review to Clipboard
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 4: TV TALK LOUNGE & HYPE POLLS ================= -->
+    <section id="tab-4" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-slate-950 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="bg-tv-red text-slate-950 text-xs px-3 py-0.5 rounded-full font-black uppercase tracking-wider inline-block mb-1">
+            Peer Community
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-black">TV Talk Lounge</h2>
+          <p class="text-xs text-slate-400">Read peer reviews, react with streaming stickers, practice counter-comments, and vote on viral trends.</p>
+        </div>
+        <button onclick="switchTab(3)" class="bg-tv-red hover:bg-tv-redHover text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Create New Review
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Column Left: Viral Poll Widget & Phrase Quick Card (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+
+          <!-- Hype Poll Widget -->
+          <div class="bg-tv-card rounded-3xl border border-slate-800 p-6 space-y-5">
+            <div class="border-b border-slate-800 pb-3">
+              <span class="text-[10px] text-tv-gold font-bold uppercase tracking-wider">Live TV Trend Poll</span>
+              <h3 class="font-display font-bold text-base text-white mt-0.5">What is the single biggest reason TV shows go viral today?</h3>
+            </div>
+
+            <div class="space-y-3 text-xs" id="viral-poll-options-container">
+              <!-- Dynamic Poll Buttons -->
+            </div>
+
+            <p id="poll-voted-status" class="text-[11px] text-slate-400 italic">Click an option to cast your vote (+15 XP)!</p>
+          </div>
+
+          <!-- Quick Peer Comment Response Phrases -->
+          <div class="bg-tv-card rounded-3xl border border-slate-800 p-6 space-y-3">
+            <h4 class="font-display font-bold text-sm text-white flex items-center gap-2">
+              <i class="fa-solid fa-comments text-tv-cyan"></i>
+              B1 Peer Reaction Phrases
+            </h4>
+            <div class="space-y-2 text-xs">
+              <p onclick="speakText('I completely agree with your review!')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"I completely agree with your review!"</p>
+              <p onclick="speakText('That show is on my watchlist mainly because of your recommendation.')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"That show is on my watchlist..."</p>
+              <p onclick="speakText('Personally, I am not keen on slow pacing, but I see why it is popular.')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"I am not keen on it, but..."</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Column Right: Live Community Review Feed (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-display font-bold text-lg text-white">Community Review Feed (<span id="feed-count-badge">3</span>)</h3>
+            <span class="text-xs text-tv-emerald font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> Live Global Reviews</span>
+          </div>
+
+          <!-- Feed Container -->
+          <div id="lounge-feed-container" class="space-y-6">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 5: SUMMARY & CERTIFICATE ================= -->
+    <section id="tab-5" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-slate-950 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-tv-gold text-slate-950 text-xs px-3 py-0.5 rounded-full font-black uppercase tracking-wider inline-block mb-1">
+            Step 5: Completion & Verification
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-black">Performance Summary & CEFR B1 Certificate</h2>
+          <p class="text-xs text-slate-400">Review your achievements, total XP gained, and generate your printable learning certificate.</p>
+        </div>
+      </div>
+
+      <!-- PERFORMANCE DASHBOARD STATS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-tv-card p-5 rounded-3xl border border-slate-800 text-center space-y-1">
+          <i class="fa-solid fa-bolt text-2xl text-tv-gold mb-1"></i>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Total XP Earned</span>
+          <span id="summary-xp-val" class="text-2xl font-black text-white">0 XP</span>
+        </div>
+
+        <div class="bg-tv-card p-5 rounded-3xl border border-slate-800 text-center space-y-1">
+          <i class="fa-solid fa-clone text-2xl text-tv-purple mb-1"></i>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Vocab Deck Mastered</span>
+          <span id="summary-vocab-val" class="text-2xl font-black text-white">0 / 8</span>
+        </div>
+
+        <div class="bg-tv-card p-5 rounded-3xl border border-slate-800 text-center space-y-1">
+          <i class="fa-solid fa-puzzle-piece text-2xl text-tv-cyan mb-1"></i>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Sentences Assembled</span>
+          <span id="summary-sentences-val" class="text-2xl font-black text-white">0 / 3</span>
+        </div>
+
+        <div class="bg-tv-card p-5 rounded-3xl border border-slate-800 text-center space-y-1">
+          <i class="fa-solid fa-pen-nib text-2xl text-tv-red mb-1"></i>
+          <span class="text-[10px] text-slate-400 font-bold uppercase block">Reviews Published</span>
+          <span id="summary-reviews-val" class="text-2xl font-black text-white">0</span>
+        </div>
+      </div>
+
+      <!-- CERTIFICATE GENERATOR CARD / PRINT AREA -->
+      <div class="bg-white text-slate-900 p-8 sm:p-12 rounded-3xl border-4 border-slate-200 shadow-2xl space-y-6 max-w-4xl mx-auto relative overflow-hidden" id="printable-certificate">
+        
+        <!-- Certificate Watermark / Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-200 pb-6">
+          <div class="space-y-1">
+            <span class="bg-tv-red text-white text-[10px] font-black px-3 py-1 rounded uppercase tracking-widest">
+              OFFICIAL CEFR B1 ATTAINMENT
+            </span>
+            <h3 class="text-2xl sm:text-3xl font-display font-black text-slate-900 tracking-tight mt-1">
+              TV Pulse Language Certificate
+            </h3>
+            <p class="text-xs text-slate-500 font-medium">Communicating TV Preferences & Explaining Global Popularity</p>
+          </div>
+          <div class="text-right">
+            <div class="text-3xl">🍿</div>
+            <span class="text-[10px] font-bold text-slate-400 block mt-1" id="cert-issue-date">Date: Oct 2026</span>
+          </div>
+        </div>
+
+        <!-- Student Information Input & Presentation -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase no-print mb-1">Student / Critic Name:</label>
+            <input type="text" id="cert-student-input" oninput="updateCertificateName()" value="Alex Morgan" class="no-print w-full bg-white text-slate-900 font-bold text-base p-2 rounded-xl border border-slate-300 focus:outline-none">
+            <p class="font-display font-black text-xl text-slate-900 mt-1" id="cert-student-display">Alex Morgan</p>
+          </div>
+          <div>
+            <span class="block text-xs font-bold text-slate-500 uppercase mb-1">Verified CEFR Level:</span>
+            <p class="font-display font-black text-xl text-tv-red">CEFR B1 Intermediate (Passed)</p>
+          </div>
+        </div>
+
+        <!-- Target Competencies Checked -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-sm text-slate-900 uppercase tracking-wider">Validated Language Competencies:</h4>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 font-medium">
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Expressed Personal Stances ("I'm really into...", "What draws me in...")</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Explained TV Popularity ("What makes it a hit...", "Appeals to...")</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Applied Cause Connectors (*mainly because*, *due to*, *which is why*)</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Utilized TV Industry Vocab (*Binge-watch*, *Cliffhanger*, *Plot twist*)</li>
+          </ul>
+        </div>
+
+        <!-- Generated Review Display -->
+        <div class="space-y-2 border-t border-slate-200 pt-4">
+          <h4 class="font-bold text-sm text-slate-900 uppercase tracking-wider">Student Published Critique:</h4>
+          <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs italic text-slate-800 leading-relaxed" id="cert-review-quote">
+            "No review published yet. Complete Tab 3 to publish your review to this certificate!"
+          </div>
+        </div>
+
+        <!-- Certificate Footer -->
+        <div class="border-t-2 border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-400 font-semibold gap-2">
+          <span>TV Pulse B1 Language Lab • Single Page Application</span>
+          <span>Verified Student Portfolio</span>
+        </div>
+
+      </div>
+
+      <!-- PRINT / COPY ACTIONS -->
+      <div class="flex flex-wrap justify-center gap-4 no-print pt-2">
+        <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl border border-slate-700 transition flex items-center gap-2 shadow-lg">
+          <i class="fa-solid fa-print text-tv-gold"></i> Print / Save PDF Certificate
+        </button>
+        <button onclick="copyStudioReviewText()" class="bg-tv-red hover:bg-tv-redHover text-white font-bold text-xs px-6 py-3 rounded-xl transition flex items-center gap-2 shadow-lg">
+          <i class="fa-solid fa-copy"></i> Copy Critique Text
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    /* ================= WEB AUDIO API SYNTHESIZER ================= */
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+      playClick() {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.04);
+      }
+      playSuccess() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.07);
+          gain.gain.setValueAtTime(0.12, now + i * 0.07);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.07);
+          osc.stop(now + i * 0.07 + 0.18);
+        });
+      }
+      playBadge() {
+        if (!this.enabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        [440, 554.37, 659.25, 880].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.06);
+          gain.gain.setValueAtTime(0.15, now + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.22);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.06);
+          osc.stop(now + i * 0.06 + 0.22);
+        });
+      }
+    }
+
+    const sfx = new SoundFX();
+
+    /* ================= GLOBAL APP STATE ================= */
+    let appState = {
+      score: 0,
+      activeTab: 1,
+      ttsEnabled: true,
+
+      // Tab 1 Vocab Deck State
+      masteredCards: new Set(),
+
+      // Tab 1 Sorter State
+      selectedSorterPhrase: null,
+
+      // Tab 1 Diagnostic Quiz State
+      quizIndex: 0,
+
+      // Tab 2 Sentence Builder State
+      builderIndex: 0,
+      builderCompleted: 0,
+      builderSelectedTiles: [],
+
+      // Tab 3 Studio State
+      studioStars: 5,
+      studio: {
+        template: "Stranger Things (Sci-Fi / Mystery)",
+        title: "Stranger Things",
+        genre: "Sci-Fi / Mystery",
+        author: "Alex Morgan",
+        prefPhrase: "I'm really into",
+        prefText: "supernatural mystery series because the nostalgic 80s setting and high production value create total escapism.",
+        popFactor: "relatable characters and authentic dialogue",
+        connector: "mainly because",
+        popText: "What makes it a global hit is its relatable characters, which is why millions of viewers binge-watch every season.",
+        audience: "Teenagers & Mystery Fans"
+      },
+
+      // Tab 4 Lounge Feed & Poll
+      posts: [
+        {
+          id: 1,
+          author: "Elena Vasquez",
+          country: "Spain",
+          show: "Stranger Things",
+          stars: "⭐⭐⭐⭐⭐",
+          review: "I'm a massive fan of Stranger Things mainly because the nostalgic 80s aesthetic and high production value create total escapism. What makes it a global hit is its relatable characters and constant cliffhangers, which is why everyone binge-watches it!",
+          audience: "Teenagers & Mystery Fans",
+          likes: 24,
+          agrees: 19,
+          comments: [
+            { author: "Mateo", text: "I completely agree! The cliffhangers at the end of every episode are insane." }
+          ]
+        },
+        {
+          id: 2,
+          author: "Mateo Silva",
+          country: "Mexico",
+          show: "Squid Game",
+          stars: "⭐⭐⭐⭐⭐",
+          review: "What draws me in is high-stakes survival drama. Its massive success is due to intense plot twists and social media word-of-mouth. As a result, it became an instant international phenomenon.",
+          audience: "Binge-Watchers & Thriller Seekers",
+          likes: 31,
+          agrees: 22,
+          comments: []
+        },
+        {
+          id: 3,
+          author: "Yuka Takahashi",
+          country: "Japan",
+          show: "Wednesday",
+          stars: "⭐⭐⭐⭐⭐",
+          review: "I can't get enough of dark supernatural comedies! One key factor behind its popularity is Jenna Ortega's star performance, owing to her viral dance scene on TikTok.",
+          audience: "General Global Audience",
+          likes: 18,
+          agrees: 14,
+          comments: []
+        }
+      ],
+
+      pollData: [
+        { id: 'twists', label: '🤯 Mind-blowing plot twists', votes: 48 },
+        { id: 'relatable', label: '🤝 Relatable characters', votes: 32 },
+        { id: 'cliffhangers', label: '😱 Insane cliffhangers', votes: 21 },
+        { id: 'tiktok', label: '📱 TikTok & Social media hype', votes: 14 }
+      ],
+      votedPoll: false
+    };
+
+    /* ================= DATASETS ================= */
+
+    // Tab 1 Flashcards (8 items)
+    const flashcardsData = [
+      { id: 'fc1', term: "Binge-watch", pos: "verb", def: "To watch multiple episodes of a TV series in rapid succession.", ex: "I was so hooked on the mystery that I binge-watched the entire season in one weekend." },
+      { id: 'fc2', term: "Cliffhanger", pos: "noun", def: "A dramatic ending to an episode that leaves the audience in suspense.", ex: "The finale ended on an intense cliffhanger, leaving fans desperate for season two." },
+      { id: 'fc3', term: "Relatable Characters", pos: "noun phrase", def: "Fictional characters that viewers can easily identify with or understand.", ex: "The main reason teenagers love the show is its relatable characters and honest struggles." },
+      { id: 'fc4', term: "Plot Twist", pos: "noun", def: "An unexpected turn of events in a story that changes the narrative direction.", ex: "The unexpected plot twist in episode eight completely shocked viewers around the world." },
+      { id: 'fc5', term: "High Production Value", pos: "noun phrase", def: "Outstanding technical quality in costumes, cinematography, effects, and sets.", ex: "Its high production value makes every episode look like a big-budget Hollywood movie." },
+      { id: 'fc6', term: "Escapism", pos: "noun", def: "Entertainment that provides a distraction or relief from everyday reality.", ex: "Fantasy drama offers pure escapism after a stressful day at school or work." },
+      { id: 'fc7', term: "Word-of-mouth", pos: "noun", def: "Informal communication where people recommend a show to friends.", ex: "Without massive billboard ads, the series became a global hit purely through word-of-mouth." },
+      { id: 'fc8', term: "Hype", pos: "noun / verb", def: "Intense media promotion or social excitement surrounding a new release.", ex: "Despite all the social media hype, the new sci-fi spinoff lived up to expectations." }
+    ];
+
+    // Tab 1 Sorter Phrases (8 items)
+    const sorterPhrasesData = [
+      { id: 'sp1', text: "I'm really into dark fantasy dramas...", cat: 'preference' },
+      { id: 'sp2', text: "It appeals to a wide audience because...", cat: 'popularity' },
+      { id: 'sp3', text: "I can't get enough of high-stakes plot twists...", cat: 'preference' },
+      { id: 'sp4', text: "What makes it a global hit is...", cat: 'popularity' },
+      { id: 'sp5', text: "What draws me in is emotional depth...", cat: 'preference' },
+      { id: 'sp6', text: "Its massive success is due to word-of-mouth...", cat: 'popularity' },
+      { id: 'sp7', text: "I'm not particularly keen on slow documentaries...", cat: 'preference' },
+      { id: 'sp8', text: "One key factor behind its viral hype is...", cat: 'popularity' }
+    ];
+
+    // Tab 1 Diagnostic Quiz (5 questions)
+    const diagnosticQuizData = [
+      {
+        sentence: "The drama series became an instant global success __________ its relatable characters and high production value.",
+        prompt: "Which cause connector correctly completes the popularity explanation?",
+        correct: "due to",
+        explanation: "'Due to' is followed by a noun phrase ('its relatable characters...').",
+        choices: ["due to", "which is why", "as a result", "mainly"]
+      },
+      {
+        sentence: "Viewers love suspenseful plot twists, __________ the thriller trended on TikTok for weeks.",
+        prompt: "Which connector connects the cause to the result clause?",
+        correct: "which is why",
+        explanation: "'Which is why' introduces a clause expressing the consequence or result.",
+        choices: ["which is why", "owing to", "because of", "due to"]
+      },
+      {
+        sentence: "I am obsessed with the fantasy series __________ the world-building provides complete escapism.",
+        prompt: "Which connector correctly introduces the reason clause?",
+        correct: "mainly because",
+        explanation: "'Mainly because' introduces a full clause explaining the personal reason.",
+        choices: ["mainly because", "as a result", "owing to", "due to"]
+      },
+      {
+        sentence: "The finale ended on a massive cliffhanger. __________, fans are passionately debating online.",
+        prompt: "Which connector starts a new sentence to express a result?",
+        correct: "As a result",
+        explanation: "'As a result' transition phrase starts a new sentence to state the outcome.",
+        choices: ["As a result", "Because", "Due to", "Owing to"]
+      },
+      {
+        sentence: "The show failed to attract viewers __________ a lack of character development and poor marketing.",
+        prompt: "Which connector introduces a negative cause followed by a noun phrase?",
+        correct: "owing to",
+        explanation: "'Owing to' functions like 'due to' and is followed by a noun phrase.",
+        choices: ["owing to", "which is why", "as a result", "so"]
+      }
+    ];
+
+    // Tab 2 Sentence Builder Challenges (3 items)
+    const sentenceBuilderChallenges = [
+      {
+        target: "I am really into sci-fi series mainly because high production value creates complete escapism.",
+        tiles: ["I am really into", "sci-fi series", "mainly because", "high production value", "creates complete escapism."]
+      },
+      {
+        target: "What makes this thriller a global hit is its relatable characters and cliffhanger endings.",
+        tiles: ["What makes", "this thriller", "a global hit", "is its relatable characters", "and cliffhanger endings."]
+      },
+      {
+        target: "I am not keen on slow-paced dramas, which is why I stopped binge-watching that show.",
+        tiles: ["I am not keen on", "slow-paced dramas,", "which is why", "I stopped binge-watching", "that show."]
+      }
+    ];
+
+    /* ================= INITIALIZATION ================= */
+    window.onload = function() {
+      renderFlashcards();
+      renderSorterPhrases();
+      renderQuizQuestion();
+      initSentenceBuilderChallenge();
+      updateStudioPreview();
+      renderLoungeFeed();
+      renderPollWidget();
+      updateScoreUI();
+
+      // Auto set certificate date
+      const d = new Date();
+      document.getElementById('cert-issue-date').innerText = `Date: ${d.toLocaleString('default', { month: 'short' })} ${d.getFullYear()}`;
+    };
+
+    function updateScoreUI() {
+      document.getElementById('user-score').innerText = `${appState.score} XP`;
+      document.getElementById('summary-xp-val').innerText = `${appState.score} XP`;
+    }
+
+    function addXP(pts) {
+      appState.score += pts;
+      updateScoreUI();
+    }
+
+    function toggleTTS() {
+      appState.ttsEnabled = !appState.ttsEnabled;
+      document.getElementById('tts-label').innerText = appState.ttsEnabled ? "TTS: On" : "TTS: Off";
+      document.getElementById('tts-icon').className = appState.ttsEnabled ? "fa-solid fa-volume-high text-tv-cyan" : "fa-solid fa-volume-xmark text-slate-500";
+      showToast(appState.ttsEnabled ? "TTS Pronunciation enabled" : "TTS Pronunciation disabled");
+    }
+
+    function toggleSFX() {
+      sfx.enabled = !sfx.enabled;
+      document.getElementById('sfx-label').innerText = sfx.enabled ? "SFX: On" : "SFX: Off";
+      document.getElementById('sfx-icon').className = sfx.enabled ? "fa-solid fa-music text-tv-gold" : "fa-solid fa-volume-xmark text-slate-500";
+      showToast(sfx.enabled ? "Sound effects enabled" : "Sound effects disabled");
+    }
+
+    function speakText(text) {
+      if (!appState.ttsEnabled) return;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const clean = text.replace(/<\/?[^>]+(>|$)/g, "");
+        const ut = new SpeechSynthesisUtterance(clean);
+        ut.rate = 0.9;
+        ut.lang = 'en-US';
+        window.speechSynthesis.speak(ut);
+      }
+    }
+
+    function showToast(msg) {
+      const existing = document.getElementById('tv-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'tv-toast';
+      toast.className = "fixed bottom-6 right-6 bg-slate-900 text-slate-100 text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-2 border border-slate-700 no-print transition-all duration-300";
+      toast.innerHTML = `<i class="fa-solid fa-tv text-tv-red"></i> ${msg}`;
+
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    /* ================= NAVIGATION ================= */
+    function switchTab(tabNum) {
+      sfx.playClick();
+      appState.activeTab = tabNum;
+
+      for (let i = 1; i <= 5; i++) {
+        const tabEl = document.getElementById(`tab-${i}`);
+        const btn = document.getElementById(`tab-btn-${i}`);
+
+        if (i === tabNum) {
+          tabEl.classList.remove('hidden');
+          btn.className = "tab-nav-btn active-tab flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-tv-red border-tv-red text-white shadow-md";
+          btn.querySelector('.tab-num').className = "tab-num w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center";
+        } else {
+          tabEl.classList.add('hidden');
+          btn.className = "tab-nav-btn flex-1 min-w-[180px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+          btn.querySelector('.tab-num').className = "tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center";
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetAppProgress() {
+      appState.score = 0;
+      appState.masteredCards.clear();
+      appState.selectedSorterPhrase = null;
+      appState.quizIndex = 0;
+      appState.builderIndex = 0;
+      appState.builderCompleted = 0;
+      appState.votedPoll = false;
+
+      updateScoreUI();
+      renderFlashcards();
+      renderSorterPhrases();
+      renderQuizQuestion();
+      initSentenceBuilderChallenge();
+      renderPollWidget();
+
+      document.getElementById('stat-cards-count').innerText = "0 / 8 Mastered";
+      document.getElementById('stat-builder-count').innerText = "0 / 3 Completed";
+      document.getElementById('summary-vocab-val').innerText = "0 / 8";
+      document.getElementById('summary-sentences-val').innerText = "0 / 3";
+
+      showToast("App progress reset successfully");
+    }
+
+    /* ================= TAB 1: FLASHCARDS ================= */
+    function renderFlashcards() {
+      const grid = document.getElementById('flashcard-grid');
+      grid.innerHTML = '';
+
+      flashcardsData.forEach(card => {
+        const isMastered = appState.masteredCards.has(card.id);
+        const cardEl = document.createElement('div');
+        cardEl.className = "perspective-1000 h-[220px] cursor-pointer group";
+
+        cardEl.innerHTML = `
+          <div id="card-inner-${card.id}" onclick="flipFlashcard('${card.id}')" class="transform-style-3d relative w-full h-full rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-lg group-hover:border-tv-gold/50 transition">
+            
+            <!-- FRONT SIDE -->
+            <div class="backface-hidden absolute inset-0 p-5 flex flex-col justify-between">
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] bg-tv-gold/20 text-tv-gold font-bold px-2 py-0.5 rounded border border-tv-gold/30 uppercase">${card.pos}</span>
+                <button onclick="event.stopPropagation(); speakText('${card.term}')" class="text-slate-400 hover:text-tv-gold transition text-xs p-1" title="Listen Term">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+              </div>
+
+              <div class="text-center my-auto space-y-1">
+                <h4 class="font-display text-lg font-black text-white">${card.term}</h4>
+                <p class="text-[11px] text-slate-400 font-medium">Click to reveal definition</p>
+              </div>
+
+              <div class="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-800/80 pt-2">
+                <span>FLIP CARD ➔</span>
+                <span class="${isMastered ? 'text-tv-emerald font-bold' : ''}">${isMastered ? '✓ Mastered' : '+5 XP on Flip'}</span>
+              </div>
+            </div>
+
+            <!-- BACK SIDE -->
+            <div class="backface-hidden rotate-y-180 absolute inset-0 p-5 flex flex-col justify-between bg-slate-900 rounded-2xl border border-tv-gold/40">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="font-display font-bold text-xs text-tv-gold">${card.term}</span>
+                  <button onclick="event.stopPropagation(); speakText('${card.ex.replace(/'/g, "\\'")}')" class="text-xs text-tv-cyan hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-volume-high"></i> Example
+                  </button>
+                </div>
+                <p class="text-xs text-slate-200 leading-snug">${card.def}</p>
+                <p class="text-[11px] text-slate-400 italic bg-slate-950 p-2 rounded-lg border border-slate-800">
+                  "${card.ex}"
+                </p>
+              </div>
+
+              <div class="text-[10px] text-slate-400 text-right font-bold">
+                Click again to flip back
+              </div>
+            </div>
+
+          </div>
+        `;
+        grid.appendChild(cardEl);
+      });
+    }
+
+    function flipFlashcard(id) {
+      sfx.playClick();
+      const inner = document.getElementById(`card-inner-${id}`);
+      inner.classList.toggle('rotate-y-180');
+
+      if (!appState.masteredCards.has(id)) {
+        appState.masteredCards.add(id);
+        addXP(5);
+        document.getElementById('stat-cards-count').innerText = `${appState.masteredCards.size} / 8 Mastered`;
+        document.getElementById('summary-vocab-val').innerText = `${appState.masteredCards.size} / 8`;
+
+        if (appState.masteredCards.size === 8) {
+          sfx.playBadge();
+          confetti({ particleCount: 35, spread: 60 });
+          showToast("🎉 All 8 Vocab Flashcards Mastered!");
+        }
+      }
+    }
+
+    /* ================= TAB 1: STANCE SORTER ================= */
+    function renderSorterPhrases() {
+      const pool = document.getElementById('sorter-phrases-pool');
+      pool.innerHTML = '';
+
+      sorterPhrasesData.forEach(p => {
+        const btn = document.createElement('button');
+        btn.id = `sorter-phrase-${p.id}`;
+        btn.className = "p-2.5 rounded-xl border border-slate-800 bg-slate-950 hover:border-tv-purple/50 transition text-xs font-medium text-slate-200";
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          selectSorterPhrase(p.id);
+        };
+        btn.innerText = p.text;
+        pool.appendChild(btn);
+      });
+
+      ['preference', 'popularity'].forEach(cat => {
+        document.getElementById(`bucket-${cat}`).innerHTML = '';
+        document.getElementById(`count-${cat === 'preference' ? 'pref' : 'pop'}`).innerText = '0';
+      });
+    }
+
+    function selectSorterPhrase(id) {
+      sfx.playClick();
+      appState.selectedSorterPhrase = id;
+
+      sorterPhrasesData.forEach(p => {
+        const el = document.getElementById(`sorter-phrase-${p.id}`);
+        if (el && el.parentElement.id === 'sorter-phrases-pool') {
+          if (p.id === id) {
+            el.className = "p-2.5 rounded-xl border-2 border-tv-purple bg-tv-purple/20 text-purple-200 font-bold text-xs transition shadow";
+          } else {
+            el.className = "p-2.5 rounded-xl border border-slate-800 bg-slate-950 hover:border-tv-purple/50 transition text-xs font-medium text-slate-200";
+          }
+        }
+      });
+      showToast("Phrase selected! Now click a category bucket below.");
+    }
+
+    function dropPhraseIntoBucket(targetCat) {
+      if (!appState.selectedSorterPhrase) {
+        showToast("First select a phrase above!");
+        return;
+      }
+
+      const item = sorterPhrasesData.find(p => p.id === appState.selectedSorterPhrase);
+      if (!item) return;
+
+      const bucketBox = document.getElementById(`bucket-${targetCat}`);
+      const itemBtn = document.getElementById(`sorter-phrase-${item.id}`);
+
+      if (item.cat === targetCat) {
+        sfx.playSuccess();
+        itemBtn.className = "w-full p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-medium text-slate-200 flex items-center justify-between";
+        itemBtn.innerHTML = `<span>${item.text}</span> <i class="fa-solid fa-circle-check text-tv-emerald"></i>`;
+        itemBtn.onclick = null;
+        bucketBox.appendChild(itemBtn);
+
+        addXP(5);
+        showToast("Correct categorization! (+5 XP)");
+
+        const countSpan = document.getElementById(`count-${targetCat === 'preference' ? 'pref' : 'pop'}`);
+        countSpan.innerText = parseInt(countSpan.innerText) + 1;
+      } else {
+        showToast("Incorrect bucket! Try the other category.");
+      }
+
+      appState.selectedSorterPhrase = null;
+    }
+
+    /* ================= TAB 1: DIAGNOSTIC QUIZ ================= */
+    function renderQuizQuestion() {
+      const q = diagnosticQuizData[appState.quizIndex];
+      document.getElementById('quiz-progress-badge').innerText = `Question ${appState.quizIndex + 1} of ${diagnosticQuizData.length}`;
+      document.getElementById('quiz-sentence-text').innerText = `"${q.sentence}"`;
+      document.getElementById('quiz-prompt-text').innerText = q.prompt;
+
+      const grid = document.getElementById('quiz-options-grid');
+      grid.innerHTML = '';
+
+      q.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 hover:border-slate-700 font-medium text-slate-200 transition text-left leading-relaxed";
+        btn.innerText = choice;
+        btn.onclick = () => checkQuizAnswer(choice);
+        grid.appendChild(btn);
+      });
+
+      document.getElementById('quiz-feedback-box').classList.add('hidden');
+      document.getElementById('quiz-next-btn').classList.add('hidden');
+    }
+
+    function checkQuizAnswer(choice) {
+      const q = diagnosticQuizData[appState.quizIndex];
+      const fb = document.getElementById('quiz-feedback-box');
+      fb.classList.remove('hidden');
+
+      if (choice === q.correct) {
+        sfx.playSuccess();
+        fb.className = "p-4 rounded-xl text-xs leading-relaxed bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium";
+        fb.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> Correct! (+10 XP) ${q.explanation}`;
+        addXP(10);
+      } else {
+        fb.className = "p-4 rounded-xl text-xs leading-relaxed bg-rose-500/10 border border-rose-500/30 text-rose-300 font-medium";
+        fb.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 mr-1.5"></i> Not quite. ${q.explanation}`;
+      }
+
+      document.getElementById('quiz-next-btn').classList.remove('hidden');
+    }
+
+    function nextQuizQuestion() {
+      sfx.playClick();
+      if (appState.quizIndex < diagnosticQuizData.length - 1) {
+        appState.quizIndex++;
+        renderQuizQuestion();
+      } else {
+        document.getElementById('quiz-container-box').innerHTML = `
+          <div class="text-center py-6 space-y-3">
+            <div class="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl border border-emerald-500/30">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <h4 class="font-display font-bold text-lg text-white">Diagnostic Connector Quiz Completed!</h4>
+            <p class="text-xs text-slate-400">Great job mastering cause-and-effect connectors!</p>
+          </div>
+        `;
+        document.getElementById('quiz-next-btn').classList.add('hidden');
+        confetti({ particleCount: 30, spread: 50 });
+      }
+    }
+
+    /* ================= TAB 2: SENTENCE BUILDER GAME ================= */
+    function initSentenceBuilderChallenge() {
+      const ch = sentenceBuilderChallenges[appState.builderIndex];
+      document.getElementById('builder-challenge-badge').innerText = `Challenge ${appState.builderIndex + 1} of ${sentenceBuilderChallenges.length}`;
+      appState.builderSelectedTiles = [];
+
+      // Shuffle tiles
+      const shuffled = [...ch.tiles].sort(() => 0.5 - Math.random());
+
+      renderSentenceBuilderUI(shuffled);
+      document.getElementById('builder-feedback-msg').classList.add('hidden');
+    }
+
+    function renderSentenceBuilderUI(availableTiles) {
+      const slots = document.getElementById('builder-selected-slots');
+      const pool = document.getElementById('builder-tiles-pool');
+
+      slots.innerHTML = '';
+      pool.innerHTML = '';
+
+      if (appState.builderSelectedTiles.length === 0) {
+        slots.innerHTML = `<span class="text-xs text-slate-600 italic pointer-events-none" id="builder-empty-placeholder">Tap tiles below to assemble sentence...</span>`;
+      } else {
+        appState.builderSelectedTiles.forEach((tileText, idx) => {
+          const btn = document.createElement('button');
+          btn.className = "p-2 bg-tv-purple text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1";
+          btn.innerHTML = `<span>${tileText}</span> <i class="fa-solid fa-xmark text-[10px]"></i>`;
+          btn.onclick = () => removeTileFromSelected(idx);
+          slots.appendChild(btn);
+        });
+      }
+
+      availableTiles.forEach((tileText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "p-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-200 font-medium text-xs rounded-xl transition shadow";
+        btn.innerText = tileText;
+        btn.onclick = () => selectTileForSentence(tileText, availableTiles, idx);
+        pool.appendChild(btn);
+      });
+    }
+
+    function selectTileForSentence(tileText, currentAvailable, idx) {
+      sfx.playClick();
+      appState.builderSelectedTiles.push(tileText);
+      currentAvailable.splice(idx, 1);
+      renderSentenceBuilderUI(currentAvailable);
+    }
+
+    function removeTileFromSelected(idx) {
+      sfx.playClick();
+      const removed = appState.builderSelectedTiles.splice(idx, 1)[0];
+      const ch = sentenceBuilderChallenges[appState.builderIndex];
+      
+      // Re-render remaining available
+      const currentAvail = ch.tiles.filter(t => !appState.builderSelectedTiles.includes(t));
+      renderSentenceBuilderUI(currentAvail);
+    }
+
+    function resetSentenceBuilderCurrent() {
+      sfx.playClick();
+      initSentenceBuilderChallenge();
+    }
+
+    function checkSentenceBuilderAnswer() {
+      const ch = sentenceBuilderChallenges[appState.builderIndex];
+      const built = appState.builderSelectedTiles.join(' ');
+      const fb = document.getElementById('builder-feedback-msg');
+      fb.classList.remove('hidden');
+
+      if (built === ch.target) {
+        sfx.playSuccess();
+        fb.className = "p-3 rounded-xl text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300";
+        fb.innerHTML = "<i class=\"fa-solid fa-circle-check text-emerald-400 mr-1.5\"></i> Perfect sentence structure! (+15 XP)";
+        addXP(15);
+        appState.builderCompleted++;
+
+        document.getElementById('stat-builder-count').innerText = `${appState.builderCompleted} / 3 Completed`;
+        document.getElementById('summary-sentences-val').innerText = `${appState.builderCompleted} / 3`;
+
+        if (appState.builderIndex < sentenceBuilderChallenges.length - 1) {
+          setTimeout(() => {
+            appState.builderIndex++;
+            initSentenceBuilderChallenge();
+          }, 1800);
+        } else {
+          sfx.playBadge();
+          confetti({ particleCount: 40, spread: 60 });
+          fb.innerHTML = "<i class=\"fa-solid fa-trophy text-tv-gold mr-1.5\"></i> Amazing! You solved all 3 Sentence Builder Challenges!";
+        }
+      } else {
+        fb.className = "p-3 rounded-xl text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-300";
+        fb.innerHTML = "<i class=\"fa-solid fa-circle-xmark text-rose-400 mr-1.5\"></i> Not quite right. Re-order the tiles to follow the B1 Popularity Formula!";
+      }
+    }
+
+    /* ================= TAB 3: TV SHOW STUDIO ================= */
+    function applyShowTemplate() {
+      const val = document.getElementById('studio-show-template').value;
+      const customBox = document.getElementById('studio-custom-box');
+
+      if (val === 'custom') {
+        customBox.classList.remove('hidden');
+        appState.studio.title = document.getElementById('studio-custom-title').value || "My Favorite Show";
+        appState.studio.genre = document.getElementById('studio-custom-genre').value || "TV Series";
+      } else {
+        customBox.classList.add('hidden');
+        const match = val.match(/^(.*?)\s*\((.*?)\)$/);
+        if (match) {
+          appState.studio.title = match[1];
+          appState.studio.genre = match[2];
+        }
+      }
+      updateStudioPreview();
+    }
+
+    function setStudioStars(count) {
+      sfx.playClick();
+      appState.studioStars = count;
+      const starsBox = document.getElementById('studio-star-rating-box');
+      const children = starsBox.children;
+
+      for (let i = 0; i < 5; i++) {
+        if (i < count) {
+          children[i].className = "fa-solid fa-star cursor-pointer text-tv-gold";
+        } else {
+          children[i].className = "fa-regular fa-star cursor-pointer text-slate-600";
+        }
+      }
+
+      document.getElementById('studio-star-val').innerText = `${count} / 5 Stars`;
+      updateStudioPreview();
+    }
+
+    function insertPrefPhraseToText() {
+      const phrase = document.getElementById('studio-pref-phrase-select').value;
+      const area = document.getElementById('studio-pref-text');
+      if (!area.value.startsWith(phrase)) {
+        area.value = `${phrase} ${area.value.replace(/^(I'm really into|I can't get enough of|I'm a massive fan of|What draws me in is|I'm not particularly keen on)\s*/, '')}`;
+      }
+      updateStudioPreview();
+    }
+
+    function updateStudioPreview() {
+      const template = document.getElementById('studio-show-template').value;
+      let title = appState.studio.title;
+      let genre = appState.studio.genre;
+
+      if (template === 'custom') {
+        title = document.getElementById('studio-custom-title').value.trim() || "Custom TV Show";
+        genre = document.getElementById('studio-custom-genre').value.trim() || "Drama";
+      }
+
+      const author = document.getElementById('studio-author-input').value.trim() || "Alex Morgan";
+      const prefText = document.getElementById('studio-pref-text').value.trim();
+      const popFactor = document.getElementById('studio-pop-factor-select').value;
+      const connector = document.getElementById('studio-connector-select').value;
+      const popText = document.getElementById('studio-pop-text').value.trim();
+      const audience = document.getElementById('studio-audience-select').value;
+
+      appState.studio = { template, title, genre, author, prefText, popFactor, connector, popText, audience };
+
+      // Update Preview Card
+      document.getElementById('preview-show-title').innerText = title;
+      document.getElementById('preview-author-name').innerText = author;
+      document.getElementById('preview-audience-name').innerText = audience;
+      document.getElementById('preview-stars-display').innerText = "⭐".repeat(appState.studioStars);
+
+      const fullReview = `${prefText} ${popText}`;
+      document.getElementById('preview-full-review-text').innerText = `"${fullReview.trim() || 'Your review text will appear here...'}"`;
+
+      const words = fullReview.trim().split(/\s+/).filter(w => w.length > 0).length;
+      document.getElementById('preview-word-count').innerText = `${words} words`;
+
+      evaluateFluencyGauge(words, fullReview);
+    }
+
+    function evaluateFluencyGauge(words, text) {
+      let score = 0;
+      const lower = text.toLowerCase();
+
+      // Check 1: Length
+      const wordGauge = document.getElementById('gauge-word-cnt');
+      document.getElementById('gauge-word-val').innerText = `${words}/50`;
+      if (words >= 50) {
+        wordGauge.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        wordGauge.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        score++;
+      } else {
+        wordGauge.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        wordGauge.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      // Check 2: Preference Expression
+      const prefGauge = document.getElementById('gauge-pref');
+      const prefPatterns = ['really into', "can't get enough", 'massive fan', 'draws me in', 'keen on', 'obsessed with'];
+      const hasPref = prefPatterns.some(p => lower.includes(p));
+      if (hasPref) {
+        document.getElementById('gauge-pref-val').innerText = "Detected";
+        prefGauge.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        prefGauge.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        score++;
+      } else {
+        document.getElementById('gauge-pref-val').innerText = "Missing";
+        prefGauge.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        prefGauge.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      // Check 3: Popularity Factor
+      const popGauge = document.getElementById('gauge-pop');
+      const popPatterns = ['appeals to', 'global hit', 'massive success', 'key factor', 'went viral', 'relatable', 'cliffhanger', 'plot twist', 'production value', 'hype', 'escapism'];
+      const hasPop = popPatterns.some(p => lower.includes(p));
+      if (hasPop) {
+        document.getElementById('gauge-pop-val').innerText = "Included";
+        popGauge.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        popGauge.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        score++;
+      } else {
+        document.getElementById('gauge-pop-val').innerText = "Missing";
+        popGauge.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        popGauge.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      // Check 4: Cause Connector
+      const connGauge = document.getElementById('gauge-conn');
+      const connPatterns = ['mainly because', 'due to', 'which is why', 'as a result', 'owing to', 'because of'];
+      const hasConn = connPatterns.some(c => lower.includes(c));
+      if (hasConn) {
+        document.getElementById('gauge-conn-val').innerText = "Used";
+        connGauge.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        connGauge.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        score++;
+      } else {
+        document.getElementById('gauge-conn-val').innerText = "Missing";
+        connGauge.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        connGauge.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      document.getElementById('gauge-score-badge').innerText = `${score} / 4 Criteria Met`;
+    }
+
+    function loadSampleStudioReview() {
+      sfx.playClick();
+      document.getElementById('studio-show-template').value = "Stranger Things (Sci-Fi / Mystery)";
+      document.getElementById('studio-author-input').value = "Alex Morgan";
+      document.getElementById('studio-pref-text').value = "I'm really into supernatural mystery series because the nostalgic 80s setting and high production value create total escapism.";
+      document.getElementById('studio-pop-text').value = "What makes it a global hit is its relatable characters, which is why millions of viewers binge-watch every season.";
+      document.getElementById('studio-audience-select').value = "Teenagers & Mystery Fans";
+
+      applyShowTemplate();
+      showToast("Loaded B1 Sample Review into Studio!");
+    }
+
+    function readStudioReviewAloud() {
+      const text = document.getElementById('preview-full-review-text').innerText;
+      speakText(text);
+    }
+
+    function copyStudioReviewText() {
+      const text = document.getElementById('preview-full-review-text').innerText;
+      const show = appState.studio.title;
+      const author = appState.studio.author;
+
+      const formatted = `TV Pulse Review: ${show}\nBy ${author}\n\n${text}`;
+
+      const temp = document.createElement('textarea');
+      temp.value = formatted;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+
+      showToast("Review text copied to clipboard!");
+    }
+
+    function publishStudioReview() {
+      const st = appState.studio;
+      const fullReview = `${st.prefText} ${st.popText}`.trim();
+
+      if (fullReview.length < 30) {
+        showToast("Please write a complete review (at least 30+ words) before publishing!");
+        return;
+      }
+
+      const newPost = {
+        id: Date.now(),
+        author: st.author,
+        country: "Global Student",
+        show: st.title,
+        stars: "⭐".repeat(appState.studioStars),
+        review: fullReview,
+        audience: st.audience,
+        likes: 1,
+        agrees: 1,
+        comments: []
+      };
+
+      appState.posts.unshift(newPost);
+
+      // Sync Certificate Display
+      document.getElementById('cert-student-display').innerText = st.author;
+      document.getElementById('cert-student-input').value = st.author;
+      document.getElementById('cert-review-quote').innerText = `"${fullReview}"`;
+
+      // Stats
+      const pubCount = appState.posts.filter(p => p.country === "Global Student").length;
+      document.getElementById('stat-reviews-count').innerText = `${pubCount} Published`;
+      document.getElementById('summary-reviews-val').innerText = `${pubCount}`;
+
+      renderLoungeFeed();
+      addXP(100);
+      sfx.playBadge();
+      confetti({ particleCount: 60, spread: 70 });
+
+      showToast("Published review to TV Talk Lounge (+100 XP)!");
+      switchTab(4);
+    }
+
+    /* ================= TAB 4: TV TALK LOUNGE ================= */
+    function renderLoungeFeed() {
+      const container = document.getElementById('lounge-feed-container');
+      container.innerHTML = '';
+      document.getElementById('feed-count-badge').innerText = appState.posts.length;
+
+      appState.posts.forEach(post => {
+        const card = document.createElement('div');
+        card.className = "bg-tv-card rounded-3xl border border-slate-800 p-6 space-y-4 shadow-lg hover:border-slate-700 transition";
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 text-xs">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-tv-red text-white font-black flex items-center justify-center text-xs shadow">
+                ${post.author.charAt(0)}
+              </div>
+              <div>
+                <p class="font-display font-bold text-white text-sm">${post.author}</p>
+                <p class="text-[10px] text-slate-400">${post.country}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="bg-tv-red/10 text-tv-red border border-tv-red/20 px-3 py-1 rounded-full font-bold text-[10px] block">
+                ${post.show}
+              </span>
+              <span class="text-tv-gold text-[10px] font-bold block mt-0.5">${post.stars}</span>
+            </div>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium bg-slate-950 p-4 rounded-xl border border-slate-800 italic">
+            "${post.review}"
+          </p>
+
+          <div class="pt-2 flex flex-wrap items-center justify-between text-xs border-t border-slate-800/80 gap-2">
+            <div class="flex items-center gap-2">
+              <button onclick="likePost(${post.id})" class="bg-slate-950 hover:bg-slate-900 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5 font-bold">
+                ❤️ <span id="post-likes-${post.id}">${post.likes}</span>
+              </button>
+              <button onclick="agreePost(${post.id})" class="bg-slate-950 hover:bg-slate-900 text-tv-emerald px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5 font-bold">
+                🍿 I'd Watch This! (<span id="post-agrees-${post.id}">${post.agrees}</span>)
+              </button>
+            </div>
+            <button onclick="speakText('${post.review.replace(/'/g, "\\'")}')" class="text-tv-cyan hover:underline font-semibold text-xs flex items-center gap-1">
+              <i class="fa-solid fa-volume-high"></i> Listen Review
+            </button>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Peer Counter Comments:</span>
+            
+            <div class="space-y-2 text-xs" id="post-comments-${post.id}">
+              ${post.comments.map(c => `
+                <div class="p-2 bg-slate-900 rounded-lg border border-slate-800">
+                  <strong class="text-tv-gold">${c.author}:</strong> ${c.text}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Add Comment Input -->
+            <div class="flex gap-2 text-xs">
+              <input type="text" id="comment-input-${post.id}" placeholder="Write a response using preference or popularity terms..." class="flex-1 bg-slate-900 text-slate-100 p-2 rounded-xl border border-slate-700 focus:outline-none">
+              <button onclick="addCommentToPost(${post.id})" class="bg-tv-red hover:bg-tv-redHover text-white font-bold px-3 py-2 rounded-xl transition">
+                Send
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function likePost(id) {
+      sfx.playClick();
+      const p = appState.posts.find(item => item.id === id);
+      if (p) {
+        p.likes++;
+        document.getElementById(`post-likes-${id}`).innerText = p.likes;
+        showToast("Liked review!");
+      }
+    }
+
+    function agreePost(id) {
+      sfx.playClick();
+      const p = appState.posts.find(item => item.id === id);
+      if (p) {
+        p.agrees++;
+        document.getElementById(`post-agrees-${id}`).innerText = p.agrees;
+        showToast("Added to watchlist!");
+      }
+    }
+
+    function addCommentToPost(id) {
+      const input = document.getElementById(`comment-input-${id}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const p = appState.posts.find(item => item.id === id);
+      if (p) {
+        p.comments.push({ author: appState.studio.author || "Alex", text });
+        input.value = '';
+        renderLoungeFeed();
+        addXP(5);
+        sfx.playSuccess();
+        showToast("Comment added (+5 XP)!");
+      }
+    }
+
+    /* Live Hype Poll */
+    function renderPollWidget() {
+      const container = document.getElementById('viral-poll-options-container');
+      container.innerHTML = '';
+
+      const totalVotes = appState.pollData.reduce((acc, curr) => acc + curr.votes, 0);
+
+      appState.pollData.forEach(opt => {
+        const pct = Math.round((opt.votes / totalVotes) * 100);
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:border-tv-gold/50 transition space-y-1.5";
+        btn.onclick = () => voteViralPoll(opt.id);
+
+        btn.innerHTML = `
+          <div class="flex justify-between items-center text-xs font-semibold">
+            <span class="text-slate-200">${opt.label}</span>
+            <span class="text-tv-gold font-bold">${pct}%</span>
+          </div>
+          <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+            <div class="bg-gradient-to-r from-tv-red to-tv-gold h-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function voteViralPoll(optId) {
+      if (appState.votedPoll) {
+        showToast("You have already voted in this poll!");
+        return;
+      }
+
+      const opt = appState.pollData.find(o => o.id === optId);
+      if (opt) {
+        opt.votes++;
+        appState.votedPoll = true;
+        renderPollWidget();
+        addXP(15);
+        sfx.playSuccess();
+        document.getElementById('poll-voted-status').innerText = "Vote recorded! Thank you for participating.";
+        showToast("Poll vote recorded (+15 XP)!");
+      }
+    }
+
+    /* ================= TAB 5: CERTIFICATE SYNC ================= */
+    function updateCertificateName() {
+      const val = document.getElementById('cert-student-input').value.trim() || "Alex Morgan";
+      document.getElementById('cert-student-display').innerText = val;
+    }
+  </script>
+</body>
+</html>
