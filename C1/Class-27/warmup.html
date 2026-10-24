@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineCritique: Movie Preferences & Review Builder (B1 ESL)</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            cinema: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            cinema: {
+              bg: '#090d16',
+              card: '#111827',
+              border: '#1f2937',
+              red: '#e11d48',
+              gold: '#f59e0b',
+              cyan: '#06b6d4',
+              purple: '#8b5cf6',
+              green: '#10b981'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2937;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #e11d48;
+    }
+
+    /* Cinema Glow Effects */
+    .glow-red { box-shadow: 0 0 25px rgba(225, 29, 72, 0.25); }
+    .glow-gold { box-shadow: 0 0 25px rgba(245, 158, 11, 0.25); }
+    .glow-cyan { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25); }
+
+    /* Paragraph Highlight Effects in Anatomy Tab */
+    .highlight-active {
+      ring: 2px solid #38bdf8;
+      background-color: rgba(14, 165, 233, 0.12) !important;
+      border-left: 4px solid #06b6d4 !important;
+      transform: scale(1.01);
+      transition: all 0.25s ease-in-out;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-report, #printable-report * { visibility: visible; }
+      #printable-report {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: white !important; color: black !important;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+
+<body class="bg-cinema-bg text-slate-100 font-sans min-h-screen flex flex-col selection:bg-rose-600 selection:text-white">
+
+  <!-- TOP LEARNING HEADER -->
+  <header class="bg-slate-950/90 border-b border-slate-800 text-xs no-print backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div class="flex items-center gap-3">
+        <span class="bg-rose-600 text-white font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-widest text-[10px] shadow-sm">CEFR B1 ESL</span>
+        <span class="text-slate-300 font-medium hidden sm:inline flex items-center gap-2">
+          <i class="fa-solid fa-clapperboard text-amber-400"></i>
+          Target: Movie Preferences & Review Writing Mastery
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Audio Engine Toggle -->
+        <button id="tts-toggle-btn" onclick="toggleAudioEngine()" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 px-3 py-1 rounded-lg border border-slate-700 transition" title="Toggle audio pronunciation auto-read">
+          <i id="tts-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+          <span id="tts-label">Audio Assist: On</span>
+        </button>
+
+        <!-- Score Badge -->
+        <div class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-3 py-1 rounded-lg font-bold">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span id="user-score">0 pts</span>
+        </div>
+
+        <!-- Reset Button -->
+        <button onclick="resetAppProgress()" class="text-slate-400 hover:text-rose-400 transition" title="Reset Progress">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP BRANDING HEADER -->
+  <section class="bg-gradient-to-b from-slate-950 to-cinema-bg border-b border-slate-800/80 no-print py-6 px-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-gradient-to-tr from-rose-600 to-amber-500 rounded-2xl flex items-center justify-center text-3xl font-cinema font-black text-white shadow-lg glow-red">
+            🍿
+          </div>
+          <div>
+            <h1 class="font-cinema text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              CineCritique
+              <span class="text-xs font-sans bg-rose-500/20 text-rose-300 font-semibold px-2.5 py-0.5 rounded-full border border-rose-500/30">Review Studio</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-0.5">Express movie stances, rate films & master structured B1 review writing</p>
+          </div>
+        </div>
+
+        <!-- Learning Report Trigger -->
+        <div class="flex items-center gap-3">
+          <button onclick="openReportModal()" class="bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-lg flex items-center gap-2">
+            <i class="fa-solid fa-award"></i> View Learning Portfolio
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN TAB NAVIGATION BAR -->
+      <nav class="mt-6 pt-4 border-t border-slate-800/80 flex overflow-x-auto gap-2 text-xs font-semibold no-scrollbar">
+        <button onclick="switchTab(1)" id="tab-btn-1" class="tab-nav-btn active-tab flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-rose-600 border-rose-500 text-white shadow-md">
+          <span class="tab-num w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center">1</span>
+          <span class="truncate">🍿 Preferences & Vocab</span>
+        </button>
+
+        <button onclick="switchTab(2)" id="tab-btn-2" class="tab-nav-btn flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">2</span>
+          <span class="truncate">🔍 Review Anatomy</span>
+        </button>
+
+        <button onclick="switchTab(3)" id="tab-btn-3" class="tab-nav-btn flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">3</span>
+          <span class="truncate">✍️ Review Studio</span>
+        </button>
+
+        <button onclick="switchTab(4)" id="tab-btn-4" class="tab-nav-btn flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <span class="tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center">4</span>
+          <span class="truncate">🎬 CineClub Lounge</span>
+        </button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- MAIN WORKSPACE CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full no-print">
+
+    <!-- ================= TAB 1: PREFERENCES & VOCABULARY ================= -->
+    <section id="tab-1" class="space-y-8">
+
+      <!-- Hero Banner -->
+      <div class="relative bg-gradient-to-r from-slate-900 via-cinema-card to-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 opacity-10 text-[180px] pointer-events-none select-none">🎬</div>
+        <div class="relative z-10 max-w-3xl space-y-3">
+          <span class="bg-amber-500/10 text-amber-400 text-xs px-3 py-1 rounded-full border border-amber-500/30 font-bold uppercase tracking-wider inline-block">
+            Warm-Up & Vocabulary
+          </span>
+          <h2 class="font-cinema text-2xl sm:text-3xl font-black text-white">Expressing Movie Preferences & Key Terminology</h2>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Build your B1 vocabulary for rating films, select your favorite movie genres, practice preference expressions, and test your knowledge with the mini-quiz below!
+          </p>
+        </div>
+      </div>
+
+      <!-- SECTION A: GENRE & PREFERENCE PICKER WIDGET -->
+      <div class="bg-cinema-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6">
+        <div class="border-b border-slate-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <span class="text-xs text-rose-400 font-bold uppercase tracking-widest">Interactive Practice 1</span>
+            <h3 class="font-cinema text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-amber-400"></i>
+              Genre & Preference Builder
+            </h3>
+          </div>
+          <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-semibold">Select a genre & phrase to craft a preference statement</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          <!-- Genre Grid Picker (7 cols) -->
+          <div class="lg:col-span-7 space-y-3">
+            <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Step 1: Choose a Movie Genre</p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="genre-grid-container">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Stance / Expression Picker (5 cols) -->
+          <div class="lg:col-span-5 space-y-3 flex flex-col justify-between">
+            <div class="space-y-3">
+              <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Step 2: Choose Your Preference Expression</p>
+              <div class="space-y-2 text-xs" id="preference-phrase-buttons">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Generated Sentence Output Card -->
+        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="space-y-1 text-center sm:text-left">
+            <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Generated Preference Statement:</span>
+            <p id="generated-preference-text" class="font-cinema font-bold text-lg text-amber-300 italic">
+              "I'm a massive fan of Sci-Fi movies because of the imaginative plot twists!"
+            </p>
+          </div>
+          <button onclick="readPreferenceSentence()" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 px-4 py-2.5 rounded-xl font-bold text-xs transition shrink-0 flex items-center gap-2">
+            <i class="fa-solid fa-volume-high text-cyan-400"></i> Read Aloud
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION B: B1 VOCABULARY FLASHCARD DECK -->
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class="text-xs text-cyan-400 font-bold uppercase tracking-widest">Interactive Practice 2</span>
+            <h3 class="font-cinema text-xl font-bold text-white">Essential B1 Movie Vocabulary Deck</h3>
+          </div>
+          <span class="text-xs text-slate-400">Click speaker icon to listen to B1 pronunciation</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="vocab-cards-grid">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- SECTION C: PREFERENCE MATCHER QUIZ -->
+      <div class="bg-cinema-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">Interactive Practice 3</span>
+            <h3 class="font-cinema text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-circle-question text-emerald-400"></i>
+              Preference Matcher Quiz
+            </h3>
+          </div>
+          <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-semibold" id="quiz-progress-label">Question 1 of 5</span>
+        </div>
+
+        <div id="quiz-box" class="space-y-6">
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400 mb-1 uppercase font-bold tracking-wider"><i class="fa-solid fa-quote-left mr-1 text-rose-500"></i> Preference Statement:</p>
+            <p id="quiz-statement" class="font-cinema text-base sm:text-lg text-slate-100 font-semibold italic">
+              "Loading question..."
+            </p>
+          </div>
+
+          <div>
+            <p class="text-xs font-bold text-slate-300 mb-3">Which meaning/tone matches this statement best?</p>
+            <div id="quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <!-- Choices dynamically generated -->
+            </div>
+          </div>
+
+          <div id="quiz-feedback" class="p-4 rounded-xl text-xs leading-relaxed hidden"></div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+          <span class="text-xs text-slate-400"><i class="fa-solid fa-award text-amber-400 mr-1"></i>Earn 10 pts per correct match</span>
+          <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg">
+            Next Question <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 2: REVIEW ANATOMY (DECONSTRUCTION) ================= -->
+    <section id="tab-2" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-slate-900 to-cinema-card p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="bg-cyan-500/10 text-cyan-400 text-xs px-3 py-1 rounded-full border border-cyan-500/30 font-bold uppercase tracking-wider inline-block mb-2">
+            Model Analysis & Structure
+          </span>
+          <h2 class="font-cinema text-2xl sm:text-3xl font-black text-white">The 4-Part Structure of a Movie Review</h2>
+          <p class="text-slate-300 text-sm mt-1">
+            Click on the paragraph section buttons to highlight specific parts of the model review and unlock B1 grammar rules.
+          </p>
+        </div>
+      </div>
+
+      <!-- Highlighter Toolbar -->
+      <div class="bg-cinema-card p-4 rounded-2xl border border-slate-800 flex flex-wrap gap-2 text-xs font-bold justify-center sm:justify-start">
+        <button onclick="highlightModelSection('all')" id="hl-btn-all" class="px-4 py-2 rounded-xl bg-rose-600 text-white border border-rose-500 shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-layer-group"></i> View All Sections
+        </button>
+        <button onclick="highlightModelSection('p1')" id="hl-btn-p1" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span> 1. Hook & Intro
+        </button>
+        <button onclick="highlightModelSection('p2')" id="hl-btn-p2" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 2. Plot Summary
+        </button>
+        <button onclick="highlightModelSection('p3')" id="hl-btn-p3" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span> 3. Praise & Critique
+        </button>
+        <button onclick="highlightModelSection('p4')" id="hl-btn-p4" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-purple-400"></span> 4. Verdict & Rating
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Column Left: Model Review Card (7 cols) -->
+        <div class="lg:col-span-7 bg-cinema-card rounded-3xl border border-slate-800 p-6 sm:p-8 space-y-6 relative shadow-xl">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center border-b border-slate-800 pb-4 gap-3">
+            <div>
+              <span class="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                B1 Model Text
+              </span>
+              <h3 class="font-cinema font-extrabold text-xl text-white mt-1">Spider-Man: Into the Spider-Verse</h3>
+            </div>
+            <div class="flex items-center gap-1 text-amber-400 text-sm font-bold bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/20">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <span class="text-xs text-slate-300 ml-1">(5/5)</span>
+            </div>
+          </div>
+
+          <!-- 4 Model Review Paragraphs -->
+          <div class="space-y-4 text-xs sm:text-sm leading-relaxed text-slate-200">
+            <!-- Paragraph 1: Hook & Intro -->
+            <div id="model-p1" class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 transition-all">
+              <span class="text-[10px] text-cyan-400 font-bold uppercase block mb-1">Part 1: Hook & Intro</span>
+              Released in 2018, <strong class="text-white">Spider-Man: Into the Spider-Verse</strong> is an innovative animated superhero movie directed by Bob Persichetti, Peter Ramsey, and Rodney Rothman. If you are a fan of visually stunning animation and fresh comic book stories, this film is an absolute must-watch.
+            </div>
+
+            <!-- Paragraph 2: Plot Summary -->
+            <div id="model-p2" class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 transition-all">
+              <span class="text-[10px] text-emerald-400 font-bold uppercase block mb-1">Part 2: Plot Summary (No Spoilers)</span>
+              The story follows Miles Morales, a Brooklyn teenager who gains superpowers after being bitten by a radioactive spider. When a dangerous particle accelerator opens portals to alternate dimensions, Miles meets several other Spider-heroes from parallel universes. Together, they must unite to defeat the villainous Kingpin and find a way back to their home dimensions.
+            </div>
+
+            <!-- Paragraph 3: Praise & Critique -->
+            <div id="model-p3" class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 transition-all">
+              <span class="text-[10px] text-amber-400 font-bold uppercase block mb-1">Part 3: Praise & Critique</span>
+              What makes this movie stand out is its groundbreaking visual style, which feels like a living comic book. The soundtrack is equally impressive, featuring energetic hip-hop and orchestral tracks that match the high-octane action. On the downside, the fast pacing can feel slightly overwhelming during chaotic fight scenes, but the brilliant voice acting and emotional depth easily compensate for it.
+            </div>
+
+            <!-- Paragraph 4: Verdict & Recommendation -->
+            <div id="model-p4" class="p-4 rounded-2xl bg-slate-950 border border-slate-800/80 transition-all">
+              <span class="text-[10px] text-purple-400 font-bold uppercase block mb-1">Part 4: Verdict & Recommendation</span>
+              Overall, I would give <strong class="text-white">Spider-Man: Into the Spider-Verse</strong> 5 out of 5 stars. I highly recommend this masterpiece to anyone who loves action, animation, or compelling character growth. Even if you are tired of superhero movies, this film will completely redefine your expectations.
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+            <button onclick="readModelReviewText()" class="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-volume-high"></i> Listen to Full Model Review
+            </button>
+            <span class="text-slate-400 text-[11px]">Word count: ~190 words</span>
+          </div>
+        </div>
+
+        <!-- Column Right: Language & B1 Grammar Tips Box (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="bg-gradient-to-br from-slate-900 to-cinema-card rounded-3xl border border-slate-800 p-6 space-y-4 shadow-xl">
+            <div class="flex items-center gap-2 text-rose-400 border-b border-slate-800 pb-3">
+              <i class="fa-solid fa-lightbulb text-amber-400 text-xl"></i>
+              <h4 class="font-cinema font-bold text-white text-base">B1 Writing Guidelines</h4>
+            </div>
+
+            <div id="anatomy-tips-box" class="space-y-3 text-xs text-slate-300 leading-relaxed">
+              <p class="font-semibold text-white">Click any section button above to view specific writing instructions!</p>
+              <ul class="space-y-2 text-slate-300 list-disc list-inside">
+                <li><strong class="text-cyan-400">Part 1 Hook:</strong> Name the title, director, release year, genre, and a hook sentence.</li>
+                <li><strong class="text-emerald-400">Part 2 Plot:</strong> Use <span class="text-amber-300 font-mono font-bold">Present Simple</span> (follows, gains, meets) and avoid revealing plot twists or endings.</li>
+                <li><strong class="text-amber-400">Part 3 Critique:</strong> Evaluate acting, visuals, soundtrack, and pacing with adjectives.</li>
+                <li><strong class="text-purple-400">Part 4 Recommendation:</strong> State star rating and give target audience recommendations.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-6 rounded-3xl border border-slate-800 space-y-3 text-center">
+            <h4 class="font-cinema font-bold text-white text-sm">Ready to write your own review?</h4>
+            <p class="text-xs text-slate-400">Apply these 4 structural parts step-by-step in our guided Review Studio.</p>
+            <button onclick="switchTab(3)" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+              Launch Review Studio <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 3: GUIDED REVIEW STUDIO (BUILDER) ================= -->
+    <section id="tab-3" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-rose-950 via-cinema-card to-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span class="bg-rose-500/20 text-rose-300 text-xs px-3 py-1 rounded-full border border-rose-500/30 font-bold uppercase tracking-wider inline-block mb-2">
+            Interactive Review Studio
+          </span>
+          <h2 class="font-cinema text-2xl sm:text-3xl font-black text-white">Guided Review Builder</h2>
+          <p class="text-slate-300 text-sm mt-1">Compose your 4-part B1 movie review with sentence starters and real-time feedback.</p>
+        </div>
+        <button onclick="loadSampleReviewIntoStudio()" class="text-xs bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Load B1 Sample Review
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Column Left: Multi-Step Input Form (7 cols) -->
+        <div class="lg:col-span-7 bg-cinema-card rounded-3xl border border-slate-800 p-6 space-y-6">
+
+          <!-- Step 1: Movie Basic Info -->
+          <div class="space-y-4 border-b border-slate-800 pb-5">
+            <h3 class="font-cinema font-bold text-base text-white flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-rose-600 text-white font-black text-xs flex items-center justify-center">1</span>
+              Movie Metadata & Stance Tag
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Movie Title</label>
+                <input type="text" id="input-title" oninput="updateStudioLivePreview()" value="Inception" placeholder="e.g. Inception, Avatar, Barbie" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Genre</label>
+                <select id="input-genre" onchange="updateStudioLivePreview()" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none">
+                  <option value="Sci-Fi Thriller">Sci-Fi Thriller</option>
+                  <option value="Action Blockbuster">Action Blockbuster</option>
+                  <option value="Animated Family">Animated Family</option>
+                  <option value="Comedy Drama">Comedy Drama</option>
+                  <option value="Horror Mystery">Horror Mystery</option>
+                  <option value="Romantic Comedy">Romantic Comedy</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Director / Year</label>
+                <input type="text" id="input-director" oninput="updateStudioLivePreview()" value="Christopher Nolan (2010)" placeholder="e.g. Christopher Nolan (2010)" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Star Rating (1-5 Stars)</label>
+                <div class="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800" id="star-rating-picker">
+                  <!-- Star Buttons -->
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Preference Stance Tag</label>
+                <select id="input-tag" onchange="updateStudioLivePreview()" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none">
+                  <option value="Must-Watch Masterpiece">🏆 Must-Watch Masterpiece</option>
+                  <option value="Fun Crowd-Pleaser">🍿 Fun Crowd-Pleaser</option>
+                  <option value="Hidden Gem">💎 Hidden Gem</option>
+                  <option value="Overrated Drama">🤦 Overrated Drama</option>
+                  <option value="Disappointing Sequel">👎 Disappointing Sequel</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-bold text-slate-300 mb-1">Your Critic Alias / Name</label>
+                <input type="text" id="input-author" oninput="updateStudioLivePreview()" value="Movie Buff" class="w-full bg-slate-950 text-slate-100 p-2.5 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Part 1 - Hook & Intro -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Part 1: The Hook & Introduction</label>
+            <div class="flex flex-wrap gap-1.5 text-[11px] pb-1">
+              <span class="text-slate-400 self-center mr-1">Insert Starter:</span>
+              <button type="button" onclick="insertStarterIntoField('input-p1', 'Directed by ')" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 px-2 py-0.5 rounded border border-slate-700">Directed by...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p1', 'Released in ')" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 px-2 py-0.5 rounded border border-slate-700">Released in...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p1', 'If you are a fan of ')" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 px-2 py-0.5 rounded border border-slate-700">If you are a fan of...</button>
+            </div>
+            <textarea id="input-p1" oninput="updateStudioLivePreview()" rows="2" placeholder="Write Part 1 (Introduce title, director, year, genre, and hook statement)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Step 3: Part 2 - Plot Summary -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Part 2: Plot Summary</label>
+              <span class="text-[10px] text-amber-400 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Use Present Simple & No Spoilers!</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-[11px] pb-1">
+              <span class="text-slate-400 self-center mr-1">Insert Starter:</span>
+              <button type="button" onclick="insertStarterIntoField('input-p2', 'The story follows ')" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-2 py-0.5 rounded border border-slate-700">The story follows...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p2', 'When the main character ')" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-2 py-0.5 rounded border border-slate-700">When the main character...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p2', 'It revolves around ')" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-2 py-0.5 rounded border border-slate-700">It revolves around...</button>
+            </div>
+            <textarea id="input-p2" oninput="updateStudioLivePreview()" rows="3" placeholder="Write Part 2 (Summarize main premise in Present Simple without ruining the ending)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Step 4: Part 3 - Praise & Critique -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Part 3: Praise & Critique</label>
+            <div class="flex flex-wrap gap-1.5 text-[11px] pb-1">
+              <span class="text-slate-400 self-center mr-1">Insert Starter:</span>
+              <button type="button" onclick="insertStarterIntoField('input-p3', 'What makes this movie stand out is ')" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-0.5 rounded border border-slate-700">What makes this movie stand out is...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p3', 'On the downside, ')" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-0.5 rounded border border-slate-700">On the downside,...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p3', 'The soundtrack and acting are ')" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-0.5 rounded border border-slate-700">The soundtrack and acting are...</button>
+            </div>
+            <textarea id="input-p3" oninput="updateStudioLivePreview()" rows="3" placeholder="Write Part 3 (Discuss visuals, acting, music, pacing, pros & cons)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Step 5: Part 4 - Verdict & Recommendation -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Part 4: Final Verdict & Recommendation</label>
+            <div class="flex flex-wrap gap-1.5 text-[11px] pb-1">
+              <span class="text-slate-400 self-center mr-1">Insert Starter:</span>
+              <button type="button" onclick="insertStarterIntoField('input-p4', 'Overall, I would give this film ')" class="bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-0.5 rounded border border-slate-700">Overall, I would give...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p4', 'I highly recommend this to anyone who ')" class="bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-0.5 rounded border border-slate-700">I highly recommend this to...</button>
+              <button type="button" onclick="insertStarterIntoField('input-p4', 'Give it a miss if you dislike ')" class="bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-0.5 rounded border border-slate-700">Give it a miss if...</button>
+            </div>
+            <textarea id="input-p4" oninput="updateStudioLivePreview()" rows="2" placeholder="Write Part 4 (Star rating & target audience recommendation)..." class="w-full bg-slate-950 text-slate-100 text-xs p-3 rounded-xl border border-slate-800 focus:border-rose-500 focus:outline-none"></textarea>
+          </div>
+
+        </div>
+
+        <!-- Column Right: Live Card Preview & Quality Checklist Gauge (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+
+          <!-- Live Card Preview -->
+          <div class="bg-cinema-card rounded-3xl border-2 border-rose-500/40 p-6 space-y-4 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span class="text-xs font-bold text-rose-400 uppercase tracking-widest flex items-center gap-1.5">
+                <i class="fa-solid fa-eye"></i> Live Review Card Preview
+              </span>
+              <span id="preview-tag-badge" class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                Must-Watch Masterpiece
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 id="preview-title" class="font-cinema font-extrabold text-white text-lg">Inception</h4>
+                  <p id="preview-meta" class="text-[11px] text-slate-400">Sci-Fi Thriller • Christopher Nolan (2010)</p>
+                </div>
+                <div id="preview-stars" class="text-amber-400 text-xs font-bold flex gap-0.5">
+                  ★★★★★
+                </div>
+              </div>
+
+              <!-- RENDERED REVIEW CONTENT BOX -->
+              <div id="preview-body" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-200 leading-relaxed space-y-2 max-h-[300px] overflow-y-auto">
+                <p id="prev-p1-text" class="text-slate-300 italic">"Part 1 intro will appear here..."</p>
+                <p id="prev-p2-text" class="text-slate-300 italic">"Part 2 plot will appear here..."</p>
+                <p id="prev-p3-text" class="text-slate-300 italic">"Part 3 critique will appear here..."</p>
+                <p id="prev-p4-text" class="text-slate-300 italic">"Part 4 verdict will appear here..."</p>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2">
+                <span>By: <strong id="preview-author-name" class="text-amber-400">Movie Buff</strong></span>
+                <span id="preview-word-count">0 words</span>
+              </div>
+            </div>
+
+            <!-- Speech Audio Player Control -->
+            <button onclick="readLiveStudioReview()" class="w-full bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 font-bold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-circle-play text-cyan-400 text-base"></i> Read Aloud Studio Text
+            </button>
+          </div>
+
+          <!-- B1 QUALITY CHECKLIST GAUGE -->
+          <div class="bg-slate-950 p-5 rounded-3xl border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="font-cinema font-bold text-white text-xs uppercase tracking-wider">B1 Review Quality Gauge</span>
+              <span id="quality-score-badge" class="text-xs font-extrabold text-amber-400">0 / 4 Criteria Met</span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div id="chk-item-words" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Min 80 Words Length</span>
+                <span id="chk-word-val" class="font-bold">0/80</span>
+              </div>
+              <div id="chk-item-parts" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> 4 Distinct Paragraph Sections</span>
+                <span id="chk-parts-val" class="font-bold">0/4</span>
+              </div>
+              <div id="chk-item-tag" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Star Rating & Stance Tag</span>
+                <span id="chk-tag-val" class="font-bold">Pending</span>
+              </div>
+              <div id="chk-item-recom" class="flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50">
+                <span><i class="fa-solid fa-circle-xmark mr-1.5"></i> Target Recommendation Phrase</span>
+                <span id="chk-recom-val" class="font-bold">Missing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-2">
+            <button onclick="publishReviewToLounge()" class="w-full bg-gradient-to-r from-rose-600 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs py-3.5 rounded-xl transition shadow-xl flex items-center justify-center gap-2 uppercase tracking-wider">
+              <i class="fa-solid fa-paper-plane"></i> Publish to CineClub Lounge (+50 pts)
+            </button>
+            <button onclick="copyStudioReviewText()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-copy"></i> Copy Review Text to Clipboard
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= TAB 4: CINECLUB LOUNGE (DISCUSSION & POLLS) ================= -->
+    <section id="tab-4" class="space-y-8 hidden">
+
+      <!-- Header -->
+      <div class="bg-slate-950 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <span class="bg-amber-500 text-slate-950 text-xs px-3 py-0.5 rounded-full font-black uppercase tracking-wider inline-block mb-1">
+            Community Exchange
+          </span>
+          <h2 class="font-cinema text-2xl sm:text-3xl font-black">CineClub Discussion Lounge</h2>
+          <p class="text-xs text-slate-400">Read peer reviews, agree or disagree, leave comments, and participate in cinema polls.</p>
+        </div>
+        <button onclick="switchTab(3)" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i> Create New Review
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Column Left: Interactive Live Cinema Poll Widget (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+
+          <div class="bg-cinema-card rounded-3xl border border-slate-800 p-6 space-y-5">
+            <div class="border-b border-slate-800 pb-3">
+              <span class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Live Community Poll</span>
+              <h3 class="font-cinema font-bold text-base text-white mt-0.5">What makes a movie truly great for you?</h3>
+            </div>
+
+            <div class="space-y-3 text-xs" id="cinema-poll-container">
+              <!-- Dynamic Poll Option Buttons -->
+            </div>
+
+            <p id="poll-status-message" class="text-[11px] text-slate-400 italic">Click an element to cast your vote (+10 pts)!</p>
+          </div>
+
+          <!-- B1 Useful Response Phrases Card -->
+          <div class="bg-cinema-card rounded-3xl border border-slate-800 p-6 space-y-3">
+            <h4 class="font-cinema font-bold text-sm text-white flex items-center gap-2">
+              <i class="fa-solid fa-comments text-cyan-400"></i>
+              B1 Discussion Phrases
+            </h4>
+            <div class="space-y-2 text-xs">
+              <p onclick="speakText('I completely agree with your assessment!')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"I completely agree with your assessment!"</p>
+              <p onclick="speakText('Really? I found the pacing a bit too slow.')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"Really? I found the pacing a bit too slow."</p>
+              <p onclick="speakText('Thanks for the recommendation, I will definitely watch it!')" class="p-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl cursor-pointer text-slate-300">"Thanks for the recommendation!"</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Column Right: Live Community Review Feed (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-cinema font-bold text-lg text-white">Community Movie Reviews (<span id="feed-count-badge">2</span>)</h3>
+            <span class="text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> Live Discussion Feed</span>
+          </div>
+
+          <!-- Review Feed List -->
+          <div id="lounge-feed-container" class="space-y-6">
+            <!-- Dynamic Feed Posts Injected via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- PRINTABLE LEARNING PORTFOLIO MODAL -->
+  <div id="report-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white text-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl p-6 sm:p-8 space-y-6" id="printable-report">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-start border-b border-slate-200 pb-4">
+        <div>
+          <span class="bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">Official CEFR B1 Certificate</span>
+          <h2 class="text-2xl font-cinema font-bold text-slate-900 mt-1">CineCritique Learning Portfolio</h2>
+          <p class="text-xs text-slate-500">Student Movie Preferences & Written Review Assessment</p>
+        </div>
+        <button onclick="closeReportModal()" class="text-slate-400 hover:text-slate-700 text-2xl no-print">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Portfolio Report Content -->
+      <div class="space-y-4 text-xs sm:text-sm">
+        
+        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div>
+            <p class="text-slate-500 text-xs">Student Alias:</p>
+            <p class="font-bold text-slate-900 text-base" id="report-student-name">Movie Buff</p>
+          </div>
+          <div>
+            <p class="text-slate-500 text-xs">Total Earned Points:</p>
+            <p class="font-bold text-rose-600 text-base" id="report-modal-score">0 pts</p>
+          </div>
+        </div>
+
+        <!-- Completed Skills -->
+        <div class="space-y-2">
+          <h4 class="font-bold text-slate-900 text-sm">Learning Outcomes Achieved:</h4>
+          <ul class="space-y-1.5 text-xs text-slate-700">
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Expressed movie preferences using B1 stance structures</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Mastered 8 B1 movie vocabulary terms with audio pronunciation</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Deconstructed 4-part review anatomy & present simple plot summaries</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-600"></i> Composed structured movie review with recommendation phrases</li>
+          </ul>
+        </div>
+
+        <!-- Student Written Review -->
+        <div class="space-y-2 border-t border-slate-100 pt-3">
+          <h4 class="font-bold text-slate-900 text-sm">Student Written Movie Review Submission:</h4>
+          <div class="bg-amber-50/80 border border-amber-200 p-4 rounded-2xl text-slate-800 space-y-2 text-xs" id="report-review-box">
+            <p class="font-bold text-sm text-slate-900" id="report-rev-title">No review submitted yet.</p>
+            <p class="italic" id="report-rev-text">Complete Tab 3 Guided Review Studio to generate your official text here!</p>
+          </div>
+        </div>
+
+        <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-2 flex justify-between">
+          <span>Assessed Level: CEFR B1 English</span>
+          <span>CineCritique Learning Engine</span>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="border-t border-slate-200 pt-4 flex justify-end gap-3 no-print">
+        <button onclick="closeReportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+          Close
+        </button>
+        <button onclick="window.print()" class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-md">
+          <i class="fa-solid fa-print"></i> Print / Save PDF
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <script>
+    /* ================= GLOBAL APPLICATION STATE ================= */
+    let appState = {
+      score: 0,
+      activeTab: 1,
+      audioAssistEnabled: true,
+
+      // Tab 1 State
+      selectedGenre: 'Sci-Fi',
+      selectedPrefPhrase: "I'm a massive fan of",
+      quizIndex: 0,
+
+      // Tab 2 State
+      anatomyHighlight: 'all',
+
+      // Tab 3 Builder State
+      starRating: 5,
+      reviewData: {
+        title: "Inception",
+        genre: "Sci-Fi Thriller",
+        director: "Christopher Nolan (2010)",
+        tag: "Must-Watch Masterpiece",
+        author: "Movie Buff",
+        p1: "Released in 2010, Inception is a thrilling sci-fi action movie directed by Christopher Nolan. If you enjoy mind-bending stories and great suspense, this film is an absolute must-watch.",
+        p2: "The story follows Dom Cobb, a skilled thief who enters people's dreams to steal their secret ideas. When he is offered a chance to have his criminal history erased, Cobb must perform the opposite task: planting an idea into a CEO's mind.",
+        p3: "What makes this movie stand out is its astonishing visual effects and legendary soundtrack composed by Hans Zimmer. On the downside, the plot can be slightly complex to follow at first, but the brilliant acting keeps you completely engaged.",
+        p4: "Overall, I would give Inception 5 out of 5 stars. I highly recommend this masterpiece to anyone who loves clever sci-fi and action."
+      },
+
+      // Tab 4 Lounge State
+      loungePosts: [
+        {
+          id: 201,
+          author: "Elena Rostova",
+          title: "Paddington 2",
+          genre: "Animated Family",
+          director: "Paul King (2017)",
+          tag: "Hidden Gem",
+          rating: 5,
+          text: "Released in 2017, Paddington 2 is a heart-warming comedy directed by Paul King. The story follows Paddington Bear as he tries to buy a pop-up book for his aunt's birthday, but gets framed for theft instead. What makes this movie stand out is its incredible warmth and humor. I highly recommend this to anyone who loves wholesome family cinema!",
+          upvotes: 14,
+          agrees: 8,
+          disagrees: 0,
+          comments: [
+            { author: "Liam", text: "I completely agree! Hugh Grant's performance was hilarious." }
+          ]
+        },
+        {
+          id: 202,
+          author: "Marcus Vance",
+          title: "The Matrix Resurrections",
+          genre: "Sci-Fi Action",
+          director: "Lana Wachowski (2021)",
+          tag: "Disappointing Sequel",
+          rating: 2,
+          text: "Released in 2021, The Matrix Resurrections is a sci-fi sequel directed by Lana Wachowski. The story attempts to continue Neo's story in a new virtual world. On the downside, the action sequences feel predictable and lack original excitement. Give it a miss unless you are a die-hard fan.",
+          upvotes: 6,
+          agrees: 11,
+          disagrees: 3,
+          comments: [
+            { author: "Sofia", text: "Really? I thought the meta-humor was interesting!" }
+          ]
+        }
+      ],
+
+      // Live Poll State
+      pollData: [
+        { id: 'plot', label: '📖 Captivating Plot & Story', votes: 45, icon: 'fa-book-open' },
+        { id: 'acting', label: '🎭 Outstanding Performances', votes: 28, icon: 'fa-user-ninja' },
+        { id: 'cgi', label: '🍿 Stunning CGI & Visuals', votes: 18, icon: 'fa-wand-magic-sparkles' },
+        { id: 'music', label: '🎵 Epic Soundtrack & Audio', votes: 14, icon: 'fa-music' }
+      ],
+      userVotedPoll: false
+    };
+
+    /* ================= DATASETS ================= */
+
+    // Tab 1 Genres & Preference Phrases
+    const genreList = [
+      { name: "Sci-Fi", icon: "🚀", detail: "mind-bending twists" },
+      { name: "Action", icon: "💥", detail: "high-octane stunts" },
+      { name: "Comedy", icon: "😂", detail: "hilarious dialogue" },
+      { name: "Animation", icon: "🎨", detail: "stunning visual art" },
+      { name: "Thriller", icon: "🕵️", detail: "intense suspense" },
+      { name: "Drama", icon: "🎭", detail: "emotional character growth" },
+      { name: "Horror", icon: "👻", detail: "scary atmosphere" },
+      { name: "Romance", icon: "❤️", detail: "charming love stories" }
+    ];
+
+    const prefPhrases = [
+      { text: "I'm a massive fan of", type: "strong-pos", tone: "Strong Positive 👍👍" },
+      { text: "I'm quite fond of", type: "mod-pos", tone: "Moderate Positive 👍" },
+      { text: "I'm on the fence about", type: "neutral", tone: "Neutral / Mixed ⚖️" },
+      { text: "I'm not really into", type: "mod-neg", tone: "Moderate Negative 👎" },
+      { text: "I can't stand", type: "strong-neg", tone: "Strong Negative 🤦" }
+    ];
+
+    // Tab 1 B1 Vocab Deck (8 items)
+    const vocabDeck = [
+      {
+        word: "plot twist",
+        pos: "noun",
+        def: "An unexpected turn of events in the story of a movie or book.",
+        ex: "The ending featured an incredible plot twist that nobody saw coming."
+      },
+      {
+        word: "soundtrack",
+        pos: "noun",
+        def: "The recorded music accompanying a motion picture.",
+        ex: "I listen to the movie soundtrack whenever I study."
+      },
+      {
+        word: "binge-worthy",
+        pos: "adjective",
+        def: "So entertaining that you want to watch multiple episodes/parts at once.",
+        ex: "This mystery series is completely binge-worthy!"
+      },
+      {
+        word: "overrated",
+        pos: "adjective",
+        def: "Praised or rated much higher than it actually deserves.",
+        ex: "To be honest, I found that blockbuster film quite overrated."
+      },
+      {
+        word: "heart-warming",
+        pos: "adjective",
+        def: "Causing feelings of happiness, affection, or emotional pleasure.",
+        ex: "Paddington 2 is a heart-warming story for audiences of all ages."
+      },
+      {
+        word: "blockbuster",
+        pos: "noun",
+        def: "A movie that is huge, successful, and financially profitable.",
+        ex: "Summer is usually the season for huge superhero blockbusters."
+      },
+      {
+        word: "lead role",
+        pos: "noun",
+        def: "The main actor or character part in a theatrical film.",
+        ex: "She played the lead role with incredible emotional depth."
+      },
+      {
+        word: "predictable",
+        pos: "adjective",
+        def: "Happening in a way that is easy to expect or guess beforehand.",
+        ex: "I disliked the horror movie because the plot was far too predictable."
+      }
+    ];
+
+    // Tab 1 Quiz Questions (5 items)
+    const quizQuestions = [
+      {
+        quote: "I can't stand predictable jump scares in cheap horror movies.",
+        correct: "Strong Dislike of predictable horror elements",
+        explanation: "'I can't stand' expresses strong irritation or intense negative preference."
+      },
+      {
+        quote: "I'd rather watch an indie drama than a CGI superhero blockbuster.",
+        correct: "Clear preference comparing two movie types",
+        explanation: "'I'd rather watch A than B' compares two choices and selects A."
+      },
+      {
+        quote: "I'm on the fence about whether three-hour runtime movies are worth it.",
+        correct: "Undecided or neutral stance",
+        explanation: "'On the fence' means neutral, undecided, or having balanced mixed views."
+      },
+      {
+        quote: "I'm a massive fan of Christopher Nolan's mind-bending sci-fi soundtracks.",
+        correct: "Enthusiastic positive admiration",
+        explanation: "'I'm a massive fan of' expresses strong positive enthusiasm."
+      },
+      {
+        quote: "To be honest, I find romantic comedies a bit overrated.",
+        correct: "Skeptical opinion that something receives too much praise",
+        explanation: "'Overrated' indicates that a genre receives more praise than it deserves."
+      }
+    ];
+
+    /* ================= INITIALIZATION ================= */
+    window.onload = function() {
+      renderGenreGrid();
+      renderPrefPhraseButtons();
+      renderVocabCards();
+      renderQuizQuestion();
+      renderStarPicker();
+      updateStudioLivePreview();
+      renderLoungeFeed();
+      renderPollWidget();
+      updateScoreUI();
+    };
+
+    function updateScoreUI() {
+      document.getElementById('user-score').innerText = `${appState.score} pts`;
+      document.getElementById('report-modal-score').innerText = `${appState.score} pts`;
+    }
+
+    function addPoints(pts) {
+      appState.score += pts;
+      updateScoreUI();
+    }
+
+    function toggleAudioEngine() {
+      appState.audioAssistEnabled = !appState.audioAssistEnabled;
+      const label = document.getElementById('tts-label');
+      const icon = document.getElementById('tts-icon');
+
+      if (appState.audioAssistEnabled) {
+        label.innerText = "Audio Assist: On";
+        icon.className = "fa-solid fa-volume-high text-cyan-400";
+        showToast("Audio assist pronunciation enabled");
+      } else {
+        label.innerText = "Audio Assist: Off";
+        icon.className = "fa-solid fa-volume-xmark text-slate-500";
+        showToast("Audio assist disabled");
+      }
+    }
+
+    /* ================= SPEECH SYNTHESIS API ================= */
+    function speakText(text) {
+      if (!appState.audioAssistEnabled) return;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.rate = 0.9;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    /* ================= TAB NAVIGATION ================= */
+    function switchTab(tabNum) {
+      appState.activeTab = tabNum;
+
+      for (let i = 1; i <= 4; i++) {
+        const tabEl = document.getElementById(`tab-${i}`);
+        const btn = document.getElementById(`tab-btn-${i}`);
+
+        if (i === tabNum) {
+          tabEl.classList.remove('hidden');
+          btn.className = "tab-nav-btn active-tab flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-rose-600 border-rose-500 text-white shadow-md";
+          btn.querySelector('.tab-num').className = "tab-num w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center";
+        } else {
+          tabEl.classList.add('hidden');
+          btn.className = "tab-nav-btn flex-1 min-w-[170px] p-3 rounded-xl border transition text-left flex items-center gap-2.5 bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+          btn.querySelector('.tab-num').className = "tab-num w-6 h-6 rounded-lg bg-slate-800 text-slate-400 font-black text-xs flex items-center justify-center";
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetAppProgress() {
+      appState.score = 0;
+      appState.quizIndex = 0;
+      updateScoreUI();
+      renderQuizQuestion();
+      showToast("App progress reset successfully");
+    }
+
+    /* ================= TAB 1 LOGIC ================= */
+    function renderGenreGrid() {
+      const container = document.getElementById('genre-grid-container');
+      container.innerHTML = '';
+
+      genreList.forEach(g => {
+        const btn = document.createElement('button');
+        const isSelected = appState.selectedGenre === g.name;
+        btn.className = `p-3 rounded-2xl border text-left transition flex flex-col justify-between h-20 ${
+          isSelected 
+            ? 'bg-rose-600/20 border-rose-500 text-white glow-red' 
+            : 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300'
+        }`;
+        btn.onclick = () => {
+          appState.selectedGenre = g.name;
+          renderGenreGrid();
+          updateGeneratedPreferenceText();
+        };
+        btn.innerHTML = `
+          <span class="text-xl">${g.icon}</span>
+          <div>
+            <p class="font-cinema font-bold text-xs">${g.name}</p>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function renderPrefPhraseButtons() {
+      const container = document.getElementById('preference-phrase-buttons');
+      container.innerHTML = '';
+
+      prefPhrases.forEach(p => {
+        const btn = document.createElement('button');
+        const isSelected = appState.selectedPrefPhrase === p.text;
+        btn.className = `w-full text-left p-2.5 rounded-xl border transition flex justify-between items-center ${
+          isSelected 
+            ? 'bg-cyan-600/20 border-cyan-400 text-cyan-300 font-bold' 
+            : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900'
+        }`;
+        btn.onclick = () => {
+          appState.selectedPrefPhrase = p.text;
+          renderPrefPhraseButtons();
+          updateGeneratedPreferenceText();
+        };
+        btn.innerHTML = `
+          <span>"${p.text}..."</span>
+          <span class="text-[10px] opacity-75">${p.tone}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function updateGeneratedPreferenceText() {
+      const genreObj = genreList.find(g => g.name === appState.selectedGenre);
+      const textEl = document.getElementById('generated-preference-text');
+      const sentence = `"${appState.selectedPrefPhrase} ${appState.selectedGenre} movies because of the ${genreObj.detail}!"`;
+      textEl.innerText = sentence;
+    }
+
+    function readPreferenceSentence() {
+      const sentence = document.getElementById('generated-preference-text').innerText;
+      speakText(sentence);
+    }
+
+    function renderVocabCards() {
+      const container = document.getElementById('vocab-cards-grid');
+      container.innerHTML = '';
+
+      vocabDeck.forEach(v => {
+        const card = document.createElement('div');
+        card.className = "bg-cinema-card rounded-2xl border border-slate-800 p-4 space-y-3 shadow hover:border-slate-700 transition flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-cinema font-extrabold text-base text-white">${v.word}</span>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">${v.pos}</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">${v.def}</p>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 italic">
+              "${v.ex}"
+            </div>
+          </div>
+
+          <button onclick="speakText('${v.word}: ${v.def.replace(/'/g, "\\'")}')" class="w-full text-xs text-cyan-400 hover:text-cyan-300 bg-slate-950 hover:bg-slate-900 p-2 rounded-xl border border-slate-800 transition font-semibold flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-volume-high"></i> Listen Word
+          </button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderQuizQuestion() {
+      const q = quizQuestions[appState.quizIndex];
+      document.getElementById('quiz-progress-label').innerText = `Question ${appState.quizIndex + 1} of ${quizQuestions.length}`;
+      document.getElementById('quiz-statement').innerText = `"${q.quote}"`;
+
+      const optionsBox = document.getElementById('quiz-options');
+      optionsBox.innerHTML = '';
+
+      const choices = [
+        "Strong Dislike of predictable horror elements",
+        "Clear preference comparing two movie types",
+        "Undecided or neutral stance",
+        "Enthusiastic positive admiration",
+        "Skeptical opinion that something receives too much praise"
+      ];
+
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/60 hover:border-slate-700 font-medium text-slate-200 transition text-left";
+        btn.innerText = choice;
+        btn.onclick = () => checkQuizAnswer(choice);
+        optionsBox.appendChild(btn);
+      });
+
+      document.getElementById('quiz-feedback').classList.add('hidden');
+      document.getElementById('quiz-next-btn').classList.add('hidden');
+    }
+
+    function checkQuizAnswer(selectedChoice) {
+      const q = quizQuestions[appState.quizIndex];
+      const fb = document.getElementById('quiz-feedback');
+      fb.classList.remove('hidden');
+
+      if (selectedChoice === q.correct) {
+        fb.className = "p-4 rounded-xl text-xs leading-relaxed bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-medium";
+        fb.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> Correct! (+10 pts) ${q.explanation}`;
+        addPoints(10);
+      } else {
+        fb.className = "p-4 rounded-xl text-xs leading-relaxed bg-rose-500/10 border border-rose-500/30 text-rose-300 font-medium";
+        fb.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 mr-1.5"></i> Not quite. ${q.explanation}`;
+      }
+
+      document.getElementById('quiz-next-btn').classList.remove('hidden');
+    }
+
+    function nextQuizQuestion() {
+      if (appState.quizIndex < quizQuestions.length - 1) {
+        appState.quizIndex++;
+        renderQuizQuestion();
+      } else {
+        document.getElementById('quiz-box').innerHTML = `
+          <div class="text-center py-6 space-y-3">
+            <div class="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl border border-emerald-500/30">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <h4 class="font-cinema font-bold text-lg text-white">Preference Matcher Completed!</h4>
+            <p class="text-xs text-slate-400">You have mastered B1 movie preference nuances and tones.</p>
+          </div>
+        `;
+        document.getElementById('quiz-next-btn').classList.add('hidden');
+        confetti({ particleCount: 40, spread: 60 });
+      }
+    }
+
+    /* ================= TAB 2 LOGIC ================= */
+    function highlightModelSection(sectionId) {
+      appState.anatomyHighlight = sectionId;
+
+      // Update button highlights
+      ['all', 'p1', 'p2', 'p3', 'p4'].forEach(sec => {
+        const btn = document.getElementById(`hl-btn-${sec}`);
+        if (sec === sectionId) {
+          btn.className = "px-4 py-2 rounded-xl bg-rose-600 text-white border border-rose-500 shadow transition flex items-center gap-2";
+        } else {
+          btn.className = "px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition flex items-center gap-2";
+        }
+      });
+
+      // Update paragraph DOM highlights
+      ['p1', 'p2', 'p3', 'p4'].forEach(p => {
+        const el = document.getElementById(`model-${p}`);
+        if (sectionId === 'all' || sectionId === p) {
+          el.classList.remove('opacity-30');
+          if (sectionId === p) {
+            el.classList.add('highlight-active');
+          } else {
+            el.classList.remove('highlight-active');
+          }
+        } else {
+          el.classList.add('opacity-30');
+          el.classList.remove('highlight-active');
+        }
+      });
+
+      // Update Guidance Tips Box
+      const tipsBox = document.getElementById('anatomy-tips-box');
+      if (sectionId === 'p1') {
+        tipsBox.innerHTML = `
+          <h5 class="font-bold text-cyan-400 text-sm">Part 1: The Hook & Introduction</h5>
+          <p><strong>Goal:</strong> Grab the reader's attention and provide key film metadata.</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-slate-300">
+            <li>State the title, director, release year, and genre.</li>
+            <li>Use a conditional hook sentence (e.g., <em>"If you are a fan of..."</em>).</li>
+            <li>Include stance expressions like <em>"an absolute must-watch"</em>.</li>
+          </ul>
+        `;
+      } else if (sectionId === 'p2') {
+        tipsBox.innerHTML = `
+          <h5 class="font-bold text-emerald-400 text-sm">Part 2: Plot Summary (No Spoilers)</h5>
+          <p><strong>Grammar Rule:</strong> Use the <span class="text-amber-300 font-bold">PRESENT SIMPLE</span> tense to summarize movie storylines.</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-slate-300">
+            <li>Examples: <em>"The story follows..."</em>, <em>"Miles gains superpowers..."</em>, <em>"They unite to defeat..."</em>.</li>
+            <li>CRITICAL: Never reveal the ending or major plot twists!</li>
+          </ul>
+        `;
+      } else if (sectionId === 'p3') {
+        tipsBox.innerHTML = `
+          <h5 class="font-bold text-amber-400 text-sm">Part 3: Praise & Critique</h5>
+          <p><strong>Goal:</strong> Provide balanced criticism on technical and creative aspects.</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-slate-300">
+            <li>Discuss acting, soundtrack, visuals, and pacing.</li>
+            <li>Use connectors like <em>"What makes this movie stand out is..."</em> or <em>"On the downside..."</em>.</li>
+            <li>Use adjectives like <em>groundbreaking, energetic, chaotic, compelling</em>.</li>
+          </ul>
+        `;
+      } else if (sectionId === 'p4') {
+        tipsBox.innerHTML = `
+          <h5 class="font-bold text-purple-400 text-sm">Part 4: Final Verdict & Recommendation</h5>
+          <p><strong>Goal:</strong> Give a clear score and recommend target audiences.</p>
+          <ul class="list-disc list-inside space-y-1 mt-1 text-slate-300">
+            <li>Include star rating (e.g., 5 out of 5 stars).</li>
+            <li>Phrases: <em>"I highly recommend this to anyone who..."</em> or <em>"Give it a miss if..."</em>.</li>
+          </ul>
+        `;
+      } else {
+        tipsBox.innerHTML = `
+          <p class="font-semibold text-white">Click any section button above to view specific writing instructions!</p>
+          <ul class="space-y-2 text-slate-300 list-disc list-inside">
+            <li><strong class="text-cyan-400">Part 1 Hook:</strong> Name title, director, release year, genre, and a hook sentence.</li>
+            <li><strong class="text-emerald-400">Part 2 Plot:</strong> Use Present Simple and avoid spoilers.</li>
+            <li><strong class="text-amber-400">Part 3 Critique:</strong> Evaluate acting, visuals, soundtrack, and pacing with adjectives.</li>
+            <li><strong class="text-purple-400">Part 4 Recommendation:</strong> State star rating and recommend target audience.</li>
+          </ul>
+        `;
+      }
+    }
+
+    function readModelReviewText() {
+      const p1 = document.getElementById('model-p1').innerText;
+      const p2 = document.getElementById('model-p2').innerText;
+      const p3 = document.getElementById('model-p3').innerText;
+      const p4 = document.getElementById('model-p4').innerText;
+      speakText(`${p1} ${p2} ${p3} ${p4}`);
+    }
+
+    /* ================= TAB 3 LOGIC (REVIEW STUDIO) ================= */
+    function renderStarPicker() {
+      const container = document.getElementById('star-rating-picker');
+      container.innerHTML = '';
+
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('i');
+        star.className = `fa-solid fa-star text-base cursor-pointer transition ${
+          i <= appState.starRating ? 'text-amber-400' : 'text-slate-700'
+        }`;
+        star.onclick = () => {
+          appState.starRating = i;
+          renderStarPicker();
+          updateStudioLivePreview();
+        };
+        container.appendChild(star);
+      }
+    }
+
+    function insertStarterIntoField(fieldId, textStarter) {
+      const field = document.getElementById(fieldId);
+      if (!field.value.startsWith(textStarter)) {
+        field.value = textStarter + field.value;
+      }
+      field.focus();
+      updateStudioLivePreview();
+      showToast("Starter phrase inserted!");
+    }
+
+    function updateStudioLivePreview() {
+      const title = document.getElementById('input-title').value.trim() || "Untitled Movie";
+      const genre = document.getElementById('input-genre').value;
+      const director = document.getElementById('input-director').value.trim() || "Unknown Director";
+      const tag = document.getElementById('input-tag').value;
+      const author = document.getElementById('input-author').value.trim() || "Movie Buff";
+
+      const p1 = document.getElementById('input-p1').value.trim();
+      const p2 = document.getElementById('input-p2').value.trim();
+      const p3 = document.getElementById('input-p3').value.trim();
+      const p4 = document.getElementById('input-p4').value.trim();
+
+      appState.reviewData = { title, genre, director, tag, author, p1, p2, p3, p4 };
+
+      // Update Card Header Preview
+      document.getElementById('preview-title').innerText = title;
+      document.getElementById('preview-meta').innerText = `${genre} • ${director}`;
+      document.getElementById('preview-tag-badge').innerText = tag;
+      document.getElementById('preview-author-name').innerText = author;
+
+      // Update Stars
+      let starsHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        starsHtml += `<i class="fa-solid fa-star ${i <= appState.starRating ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+      }
+      document.getElementById('preview-stars').innerHTML = starsHtml;
+
+      // Update Body Paragraphs
+      document.getElementById('prev-p1-text').innerText = p1.length > 0 ? p1 : "Part 1 intro will appear here...";
+      document.getElementById('prev-p2-text').innerText = p2.length > 0 ? p2 : "Part 2 plot will appear here...";
+      document.getElementById('prev-p3-text').innerText = p3.length > 0 ? p3 : "Part 3 critique will appear here...";
+      document.getElementById('prev-p4-text').innerText = p4.length > 0 ? p4 : "Part 4 verdict will appear here...";
+
+      // Word Count
+      const fullText = `${p1} ${p2} ${p3} ${p4}`;
+      const words = fullText.split(/\s+/).filter(w => w.length > 0).length;
+      document.getElementById('preview-word-count').innerText = `${words} words`;
+
+      // Evaluate B1 Quality Gauge
+      evaluateQualityGauge(words, p1, p2, p3, p4);
+    }
+
+    function evaluateQualityGauge(words, p1, p2, p3, p4) {
+      let criteriaMet = 0;
+
+      // Check 1: Min 80 words
+      const wordsEl = document.getElementById('chk-item-words');
+      document.getElementById('chk-word-val').innerText = `${words}/80`;
+      if (words >= 80) {
+        wordsEl.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        wordsEl.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        criteriaMet++;
+      } else {
+        wordsEl.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        wordsEl.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      // Check 2: 4 distinct parts completed
+      const partsEl = document.getElementById('chk-item-parts');
+      const partsCount = (p1 ? 1 : 0) + (p2 ? 1 : 0) + (p3 ? 1 : 0) + (p4 ? 1 : 0);
+      document.getElementById('chk-parts-val').innerText = `${partsCount}/4`;
+      if (partsCount === 4) {
+        partsEl.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        partsEl.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        criteriaMet++;
+      } else {
+        partsEl.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        partsEl.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      // Check 3: Rating & Stance Tag
+      const tagEl = document.getElementById('chk-item-tag');
+      document.getElementById('chk-tag-val').innerText = "Selected";
+      tagEl.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+      tagEl.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+      criteriaMet++;
+
+      // Check 4: Target Recommendation Phrase
+      const recomEl = document.getElementById('chk-item-recom');
+      const hasRecom = p4.toLowerCase().includes('recommend') || p4.toLowerCase().includes('worth') || p4.toLowerCase().includes('give it a miss');
+      if (hasRecom) {
+        document.getElementById('chk-recom-val').innerText = "Found";
+        recomEl.className = "flex items-center justify-between text-emerald-400 font-bold p-2 rounded-lg bg-emerald-950/30 border border-emerald-500/20";
+        recomEl.querySelector('i').className = "fa-solid fa-circle-check text-emerald-400 mr-1.5";
+        criteriaMet++;
+      } else {
+        document.getElementById('chk-recom-val').innerText = "Missing";
+        recomEl.className = "flex items-center justify-between text-slate-500 p-2 rounded-lg bg-slate-900/50";
+        recomEl.querySelector('i').className = "fa-solid fa-circle-xmark mr-1.5";
+      }
+
+      document.getElementById('quality-score-badge').innerText = `${criteriaMet} / 4 Criteria Met`;
+    }
+
+    function loadSampleReviewIntoStudio() {
+      document.getElementById('input-title').value = "Inception";
+      document.getElementById('input-genre').value = "Sci-Fi Thriller";
+      document.getElementById('input-director').value = "Christopher Nolan (2010)";
+      document.getElementById('input-tag').value = "Must-Watch Masterpiece";
+      document.getElementById('input-author').value = "Film Buff";
+
+      document.getElementById('input-p1').value = "Released in 2010, Inception is a thrilling sci-fi action movie directed by Christopher Nolan. If you enjoy mind-bending stories and great suspense, this film is an absolute must-watch.";
+      document.getElementById('input-p2').value = "The story follows Dom Cobb, a skilled thief who enters people's dreams to steal secret ideas. When he is offered a chance to clear his criminal record, Cobb must perform inception: planting an idea into a targets mind.";
+      document.getElementById('input-p3').value = "What makes this movie stand out is its astonishing visual effects and legendary soundtrack composed by Hans Zimmer. On the downside, the complex plot requires close attention, but the brilliant acting compensates for it.";
+      document.getElementById('input-p4').value = "Overall, I would give Inception 5 out of 5 stars. I highly recommend this masterpiece to anyone who loves clever sci-fi and action.";
+
+      appState.starRating = 5;
+      renderStarPicker();
+      updateStudioLivePreview();
+      showToast("B1 Sample review loaded into studio!");
+    }
+
+    function readLiveStudioReview() {
+      const data = appState.reviewData;
+      const full = `${data.p1} ${data.p2} ${data.p3} ${data.p4}`;
+      if (!data.p1) {
+        showToast("Please write a review first!");
+        return;
+      }
+      speakText(full);
+    }
+
+    function copyStudioReviewText() {
+      const data = appState.reviewData;
+      const reviewText = `${data.title} (${data.genre})\nBy ${data.author}\n\n${data.p1}\n\n${data.p2}\n\n${data.p3}\n\n${data.p4}`;
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = reviewText;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempArea);
+
+      showToast("Review text copied to clipboard!");
+    }
+
+    function publishReviewToLounge() {
+      const data = appState.reviewData;
+      const words = `${data.p1} ${data.p2} ${data.p3} ${data.p4}`.split(/\s+/).filter(w => w.length > 0).length;
+
+      if (words < 40) {
+        showToast("Please write a complete review (at least 40+ words) before publishing!");
+        return;
+      }
+
+      const newPost = {
+        id: Date.now(),
+        author: data.author,
+        title: data.title,
+        genre: data.genre,
+        director: data.director,
+        tag: data.tag,
+        rating: appState.starRating,
+        text: `${data.p1} ${data.p2} ${data.p3} ${data.p4}`,
+        upvotes: 1,
+        agrees: 1,
+        disagrees: 0,
+        comments: []
+      };
+
+      appState.loungePosts.unshift(newPost);
+
+      // Update Report Modal State
+      document.getElementById('report-student-name').innerText = data.author;
+      document.getElementById('report-rev-title').innerText = `${data.title} (${data.genre}) - Rating: ${appState.starRating}/5 Stars`;
+      document.getElementById('report-rev-text').innerText = `"${newPost.text}"`;
+
+      renderLoungeFeed();
+      addPoints(50);
+      confetti({ particleCount: 70, spread: 80 });
+
+      showToast("Published review to CineClub Lounge (+50 pts)!");
+      switchTab(4);
+    }
+
+    /* ================= TAB 4 LOGIC (CINECLUB LOUNGE) ================= */
+    function renderLoungeFeed() {
+      const container = document.getElementById('lounge-feed-container');
+      container.innerHTML = '';
+      document.getElementById('feed-count-badge').innerText = appState.loungePosts.length;
+
+      appState.loungePosts.forEach(post => {
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+          starsHtml += `<i class="fa-solid fa-star ${i <= post.rating ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-cinema-card rounded-3xl border border-slate-800 p-6 space-y-4 shadow-lg hover:border-slate-700 transition";
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 text-xs">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-xs shadow">
+                ${post.author.charAt(0)}
+              </div>
+              <div>
+                <p class="font-cinema font-bold text-white text-sm">${post.author}</p>
+                <p class="text-[10px] text-slate-400">Movie Critic</p>
+              </div>
+            </div>
+            <span class="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1 rounded-full font-bold text-[10px]">
+              ${post.tag}
+            </span>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex justify-between items-center">
+              <h4 class="font-cinema font-extrabold text-white text-base">${post.title}</h4>
+              <div class="text-xs">${starsHtml}</div>
+            </div>
+            <p class="text-[11px] text-slate-400">${post.genre} • ${post.director}</p>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed italic bg-slate-950 p-4 rounded-xl border border-slate-800">
+            "${post.text}"
+          </p>
+
+          <!-- Interaction Bar -->
+          <div class="pt-2 flex items-center justify-between text-xs border-t border-slate-800/80">
+            <div class="flex items-center gap-2">
+              <button onclick="upvotePost(${post.id})" class="bg-slate-950 hover:bg-slate-900 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5 font-bold">
+                ❤️ <span id="upvotes-${post.id}">${post.upvotes}</span>
+              </button>
+              <button onclick="voteStance(${post.id}, 'agree')" class="bg-slate-950 hover:bg-slate-900 text-emerald-400 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5 font-bold">
+                👍 Agree (<span id="agrees-${post.id}">${post.agrees}</span>)
+              </button>
+              <button onclick="voteStance(${post.id}, 'disagree')" class="bg-slate-950 hover:bg-slate-900 text-rose-400 px-3 py-1.5 rounded-xl border border-slate-800 transition flex items-center gap-1.5 font-bold">
+                👎 Disagree (<span id="disagrees-${post.id}">${post.disagrees}</span>)
+              </button>
+            </div>
+            <button onclick="speakText('${post.text.replace(/'/g, "\\'")}')" class="text-cyan-400 hover:text-cyan-300 font-semibold text-xs">
+              <i class="fa-solid fa-volume-high"></i> Listen
+            </button>
+          </div>
+
+          <!-- Comment Section -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-3">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Peer Comments:</span>
+            
+            <div class="space-y-2 text-xs" id="comments-box-${post.id}">
+              ${post.comments.map(c => `
+                <div class="p-2 bg-slate-900 rounded-lg border border-slate-800">
+                  <strong class="text-amber-400">${c.author}:</strong> ${c.text}
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Quick Comment Box -->
+            <div class="flex gap-2 text-xs">
+              <input type="text" id="comment-input-${post.id}" placeholder="Write a comment or agreement..." class="flex-1 bg-slate-900 text-slate-100 p-2 rounded-xl border border-slate-700 focus:outline-none">
+              <button onclick="addCommentToPost(${post.id})" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-2 rounded-xl transition">
+                Send
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function upvotePost(postId) {
+      const post = appState.loungePosts.find(p => p.id === postId);
+      if (post) {
+        post.upvotes++;
+        document.getElementById(`upvotes-${postId}`).innerText = post.upvotes;
+        showToast("Review upvoted!");
+      }
+    }
+
+    function voteStance(postId, stance) {
+      const post = appState.loungePosts.find(p => p.id === postId);
+      if (post) {
+        if (stance === 'agree') {
+          post.agrees++;
+          document.getElementById(`agrees-${postId}`).innerText = post.agrees;
+        } else {
+          post.disagrees++;
+          document.getElementById(`disagrees-${postId}`).innerText = post.disagrees;
+        }
+        showToast("Stance vote recorded!");
+      }
+    }
+
+    function addCommentToPost(postId) {
+      const input = document.getElementById(`comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const post = appState.loungePosts.find(p => p.id === postId);
+      if (post) {
+        post.comments.push({ author: appState.reviewData.author || "Movie Buff", text: text });
+        input.value = '';
+        renderLoungeFeed();
+        addPoints(5);
+        showToast("Comment posted (+5 pts)!");
+      }
+    }
+
+    /* ================= LIVE POLL WIDGET ================= */
+    function renderPollWidget() {
+      const container = document.getElementById('cinema-poll-container');
+      container.innerHTML = '';
+
+      const totalVotes = appState.pollData.reduce((acc, curr) => acc + curr.votes, 0);
+
+      appState.pollData.forEach(opt => {
+        const pct = Math.round((opt.votes / totalVotes) * 100);
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-950 hover:border-amber-500/50 transition space-y-1.5";
+        btn.onclick = () => votePollOption(opt.id);
+
+        btn.innerHTML = `
+          <div class="flex justify-between items-center text-xs font-semibold">
+            <span class="text-slate-200">${opt.label}</span>
+            <span class="text-amber-400 font-bold">${pct}%</span>
+          </div>
+          <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+            <div class="bg-gradient-to-r from-rose-500 to-amber-500 h-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function votePollOption(optId) {
+      if (appState.userVotedPoll) {
+        showToast("You have already voted in this poll!");
+        return;
+      }
+
+      const opt = appState.pollData.find(o => o.id === optId);
+      if (opt) {
+        opt.votes++;
+        appState.userVotedPoll = true;
+        renderPollWidget();
+        addPoints(10);
+        document.getElementById('poll-status-message').innerText = "Vote recorded! Thank you for participating.";
+        showToast("Poll vote counted (+10 pts)!");
+      }
+    }
+
+    /* ================= REPORT MODAL & UTILS ================= */
+    function openReportModal() {
+      document.getElementById('report-modal').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      document.getElementById('report-modal').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const existing = document.getElementById('cine-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'cine-toast';
+      toast.className = "fixed bottom-6 right-6 bg-slate-900 text-slate-100 text-xs font-bold px-4 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-2 border border-slate-700 no-print transition-all duration-300";
+      toast.innerHTML = `<i class="fa-solid fa-clapperboard text-rose-500"></i> ${msg}`;
+
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
