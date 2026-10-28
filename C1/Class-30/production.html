@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamHub Binge Club: Validate & Upgrade TV Preferences</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        stream: {
+                            bg: '#0a0d14',
+                            card: '#121826',
+                            border: '#1f293d',
+                            hover: '#1a2235'
+                        },
+                        brand: {
+                            rose: '#f43f5e',
+                            purple: '#a855f7',
+                            cyan: '#06b6d4',
+                            gold: '#eab308',
+                            green: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0d14;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0d14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f43f5e;
+        }
+        .glass-card {
+            background: rgba(18, 24, 38, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-rose {
+            box-shadow: 0 0 25px rgba(244, 63, 94, 0.25);
+        }
+        .glow-purple {
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.25);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+        }
+        .timer-ring {
+            transition: stroke-dashoffset 1s linear;
+        }
+        .stream-gradient {
+            background: linear-gradient(135deg, rgba(244,63,94,0.15) 0%, rgba(168,85,247,0.15) 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-rose selection:text-white pb-10">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform -translate-y-24 opacity-0 transition-all duration-300 bg-stream-card border border-brand-rose text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-brand-rose text-lg"></i>
+        <span id="toast-message" class="text-sm font-medium">Notification</span>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-6">
+
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-stream-border gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-brand-rose via-purple-600 to-brand-cyan flex items-center justify-center text-white shadow-lg glow-rose">
+                    <i class="fa-solid fa-tv text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="bg-brand-rose/10 text-brand-rose border border-brand-rose/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-graduation-cap mr-1"></i> B1 ESL Guided Practice
+                        </span>
+                        <span class="bg-brand-purple/10 text-brand-purple border border-brand-purple/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                            Validate & Complement
+                        </span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
+                        STREAM<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-rose via-brand-purple to-brand-cyan">HUB</span> BINGE CLUB
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Dashboard Badges -->
+            <div class="flex items-center gap-3">
+                <div class="bg-stream-card border border-stream-border px-4 py-2 rounded-xl flex items-center gap-4">
+                    <div>
+                        <p class="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold">Diagnostic Score</p>
+                        <p id="header-quiz-score" class="text-xs font-bold text-brand-gold">0 / 6 Passed</p>
+                    </div>
+                    <div class="h-8 w-[1px] bg-stream-border"></div>
+                    <div>
+                        <p class="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold">Upgrades Mastered</p>
+                        <p id="header-upgrades-count" class="text-xs font-bold text-brand-cyan">0 Created</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="flex items-center gap-2 overflow-x-auto py-4 no-scrollbar border-b border-stream-border/60 mb-6">
+            <button onclick="switchTab('tab-context')" id="btn-tab-context" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap bg-brand-rose text-white shadow-lg">
+                <i class="fa-solid fa-compass"></i> Scenario & Roles
+            </button>
+            <button onclick="switchTab('tab-diagnostic')" id="btn-tab-diagnostic" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap bg-stream-card text-neutral-400 hover:text-white hover:bg-stream-hover">
+                <i class="fa-solid fa-list-check text-brand-gold"></i> Step 1: Prior Knowledge Check
+            </button>
+            <button onclick="switchTab('tab-upgrader')" id="btn-tab-upgrader" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap bg-stream-card text-neutral-400 hover:text-white hover:bg-stream-hover">
+                <i class="fa-solid fa-wand-magic-sparkles text-brand-purple"></i> Step 2: Phrase Upgrader
+            </button>
+            <button onclick="switchTab('tab-prompts')" id="btn-tab-prompts" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap bg-stream-card text-neutral-400 hover:text-white hover:bg-stream-hover">
+                <i class="fa-solid fa-comments text-brand-cyan"></i> Step 3: 20 Outcome Deck & Timer
+            </button>
+            <button onclick="switchTab('tab-log')" id="btn-tab-log" class="tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap bg-stream-card text-neutral-400 hover:text-white hover:bg-stream-hover">
+                <i class="fa-solid fa-square-poll-vertical text-brand-green"></i> Step 4: Log & Peer Scorecard
+            </button>
+        </nav>
+
+        <!-- MAIN TABS CONTENT -->
+        <main>
+
+            <!-- TAB 1: SCENARIO & ROLES -->
+            <section id="tab-context" class="tab-content space-y-8">
+                <!-- Context Banner -->
+                <div class="glass-card rounded-3xl p-6 sm:p-8 border-l-4 border-l-brand-rose relative overflow-hidden glow-rose">
+                    <div class="absolute -right-8 -bottom-8 opacity-10 text-brand-rose pointer-events-none">
+                        <i class="fa-solid fa-film text-9xl"></i>
+                    </div>
+                    <div class="relative z-10 space-y-3">
+                        <div class="inline-flex items-center gap-2 text-xs font-black tracking-widest text-brand-rose uppercase bg-brand-rose/10 px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-users"></i> Real-World Context: StreamHub Focus Group
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">The StreamHub Binge Club & Recommendation Panel</h2>
+                        <p class="text-neutral-300 leading-relaxed max-w-3xl text-sm sm:text-base">
+                            Welcome to the <strong class="text-white">StreamHub Viewer Panel</strong>! As a TV critic and reviewer, your job is to discuss current television trends, express your preferences clearly, and give compelling recommendations to fellow viewers.
+                        </p>
+                        <div class="p-4 bg-stream-bg/90 rounded-2xl border border-stream-border grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="space-y-1">
+                                <span class="font-bold text-brand-gold uppercase tracking-wider block">✅ Validate (What You Already Know):</span>
+                                <p class="text-neutral-300">Basic preference phrases ("I like...", "I prefer X to Y") and fundamental reason connectors ("because", "exciting / boring").</p>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="font-bold text-brand-purple uppercase tracking-wider block">🚀 Complement (What You Will Upgrade):</span>
+                                <p class="text-neutral-300">Elevated B1/B1+ phrases ("I'm totally hooked on", "not my cup of tea") and TV features ("binge-worthy", "slow-burn", "overrated").</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Timeline -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-timeline text-brand-purple"></i> 10-15 Minute Guided Activity Timeline
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                        <div class="glass-card p-4 rounded-2xl border border-stream-border space-y-2">
+                            <span class="text-brand-gold font-bold">MIN 0 - 3</span>
+                            <h4 class="font-bold text-white text-sm">1. Diagnostic Check</h4>
+                            <p class="text-neutral-400">Validate your prior knowledge with a quick 6-item quiz on common preference mistakes.</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-stream-border space-y-2">
+                            <span class="text-brand-purple font-bold">MIN 3 - 6</span>
+                            <h4 class="font-bold text-white text-sm">2. Phrase Upgrader</h4>
+                            <p class="text-neutral-400">Transform basic sentences into rich B1+ expressions using the sentence builder.</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-stream-border space-y-2">
+                            <span class="text-brand-cyan font-bold">MIN 6 - 12</span>
+                            <h4 class="font-bold text-white text-sm">3. Pair Speaking Prompts</h4>
+                            <p class="text-neutral-400">Draw cards from the 20-Prompt Deck and discuss preferences in pairs using upgraded starters.</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-2xl border border-stream-border space-y-2">
+                            <span class="text-brand-green font-bold">MIN 12 - 15</span>
+                            <h4 class="font-bold text-white text-sm">4. Log & Peer Review</h4>
+                            <p class="text-neutral-400">Log your best review and evaluate your partner using the executive peer rubric.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role Selection Matrix -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-masks-theater text-brand-cyan"></i> Select Your Reviewer Role
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <!-- Role A -->
+                        <div onclick="selectRole('A')" id="role-card-A" class="glass-card rounded-2xl p-6 border-2 border-stream-border hover:border-brand-rose cursor-pointer transition flex flex-col justify-between space-y-4">
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-rose/20 text-brand-rose text-xs font-bold px-2.5 py-1 rounded-lg">ROLE A</span>
+                                    <i class="fa-solid fa-fire text-brand-rose text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">The Binge Enthusiast</h4>
+                                <p class="text-xs text-neutral-300 leading-relaxed">You love fast-paced thrillers, sci-fi mysteries, and intense cliffhangers. You finish entire seasons in one weekend!</p>
+                            </div>
+                            <div class="bg-stream-bg p-3 rounded-xl border border-stream-border text-xs space-y-1">
+                                <span class="text-brand-rose font-bold block">🎯 Target Focus:</span>
+                                <span class="text-neutral-300 italic">"I'm totally hooked on..." / "binge-worthy" / "kept me on the edge of my seat"</span>
+                            </div>
+                        </div>
+
+                        <!-- Role B -->
+                        <div onclick="selectRole('B')" id="role-card-B" class="glass-card rounded-2xl p-6 border-2 border-stream-border hover:border-brand-purple cursor-pointer transition flex flex-col justify-between space-y-4">
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-purple/20 text-brand-purple text-xs font-bold px-2.5 py-1 rounded-lg">ROLE B</span>
+                                    <i class="fa-solid fa-glasses text-brand-purple text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">The Skeptical Critic</h4>
+                                <p class="text-xs text-neutral-300 leading-relaxed">You prefer realistic documentaries and slow-burn dramas. You hate predictable plots and hype.</p>
+                            </div>
+                            <div class="bg-stream-bg p-3 rounded-xl border border-stream-border text-xs space-y-1">
+                                <span class="text-brand-purple font-bold block">🎯 Target Focus:</span>
+                                <span class="text-neutral-300 italic">"I find it a bit overrated..." / "slow-burn" / "I can't stand predictable plots"</span>
+                            </div>
+                        </div>
+
+                        <!-- Role C -->
+                        <div onclick="selectRole('C')" id="role-card-C" class="glass-card rounded-2xl p-6 border-2 border-stream-border hover:border-brand-cyan cursor-pointer transition flex flex-col justify-between space-y-4">
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="bg-brand-cyan/20 text-brand-cyan text-xs font-bold px-2.5 py-1 rounded-lg">ROLE C</span>
+                                    <i class="fa-solid fa-couch text-brand-cyan text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">The Nostalgic Streamer</h4>
+                                <p class="text-xs text-neutral-300 leading-relaxed">You love rewatching comfortable sitcoms, lighthearted comedies, and feel-good stories after work.</p>
+                            </div>
+                            <div class="bg-stream-bg p-3 rounded-xl border border-stream-border text-xs space-y-1">
+                                <span class="text-brand-cyan font-bold block">🎯 Target Focus:</span>
+                                <span class="text-neutral-300 italic">"I tend to prefer... over..." / "comfort show" / "well worth rewatching"</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: STEP 1 PRIOR KNOWLEDGE DIAGNOSTIC -->
+            <section id="tab-diagnostic" class="tab-content hidden space-y-8">
+                <div class="glass-card rounded-3xl p-6 sm:p-8 border border-stream-border space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stream-border pb-4">
+                        <div>
+                            <span class="bg-brand-gold/20 text-brand-gold text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Diagnostic Check
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-bold text-white mt-2">Validate Your B1 TV Preference Basics</h3>
+                            <p class="text-xs text-neutral-400 mt-1">Test your recall of basic preference grammar, -ed/-ing adjectives, and prepositions before upgrading!</p>
+                        </div>
+                        <button onclick="resetQuiz()" class="bg-stream-card hover:bg-stream-hover border border-stream-border text-xs text-neutral-300 px-4 py-2 rounded-xl flex items-center gap-2 transition">
+                            <i class="fa-solid fa-rotate-left"></i> Reset Quiz
+                        </button>
+                    </div>
+
+                    <!-- Quiz Questions Container -->
+                    <div id="quiz-container" class="space-y-6">
+                        <!-- Questions dynamically rendered via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: STEP 2 PHRASE UPGRADERS & TRANSFORMER -->
+            <section id="tab-upgrader" class="tab-content hidden space-y-8">
+                
+                <!-- Sentence Transformer Tool -->
+                <div class="glass-card p-6 sm:p-8 rounded-3xl border border-brand-purple/40 space-y-6 glow-purple">
+                    <div class="border-b border-stream-border pb-4">
+                        <span class="bg-brand-purple/20 text-brand-purple text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                            Interactive Sentence Transformer
+                        </span>
+                        <h3 class="text-xl sm:text-2xl font-bold text-white mt-2">Upgrade Basic Preference Sentences to B1+</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Select basic choices below to build a sophisticated, complemented B1+ review statement!</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs">
+                        
+                        <!-- Step A: Opener -->
+                        <div class="space-y-2 bg-stream-bg p-4 rounded-2xl border border-stream-border">
+                            <label class="font-bold text-brand-purple block">1. Basic Preference ➡️ Upgraded Opener</label>
+                            <select id="trans-opener" onchange="buildTransformedSentence()" class="w-full bg-stream-card border border-stream-border text-white rounded-xl p-3 focus:outline-none focus:border-brand-purple">
+                                <option value="I'm totally hooked on">I like... ➔ "I'm totally hooked on"</option>
+                                <option value="I can't stand">I don't like... ➔ "I can't stand"</option>
+                                <option value="I find it a bit overrated when">I think it's bad... ➔ "I find it a bit overrated when"</option>
+                                <option value="I tend to favor">I prefer... ➔ "I tend to favor"</option>
+                                <option value="It's not really my cup of tea, but">It's okay... ➔ "It's not really my cup of tea, but"</option>
+                            </select>
+                        </div>
+
+                        <!-- Step B: TV Feature -->
+                        <div class="space-y-2 bg-stream-bg p-4 rounded-2xl border border-stream-border">
+                            <label class="font-bold text-brand-cyan block">2. Basic Adjective ➡️ Rich TV Vocabulary</label>
+                            <select id="trans-feature" onchange="buildTransformedSentence()" class="w-full bg-stream-card border border-stream-border text-white rounded-xl p-3 focus:outline-none focus:border-brand-cyan">
+                                <option value="binge-worthy sci-fi dramas">good/exciting shows ➔ "binge-worthy sci-fi dramas"</option>
+                                <option value="predictable plot twists">boring stories ➔ "predictable plot twists"</option>
+                                <option value="slow-burn mysteries">slow shows ➔ "slow-burn mysteries"</option>
+                                <option value="thought-provoking documentaries">interesting shows ➔ "thought-provoking documentaries"</option>
+                                <option value="comforting sitcoms">funny shows ➔ "comforting sitcoms"</option>
+                            </select>
+                        </div>
+
+                        <!-- Step C: Justification Hook -->
+                        <div class="space-y-2 bg-stream-bg p-4 rounded-2xl border border-stream-border">
+                            <label class="font-bold text-brand-rose block">3. Basic 'because' ➡️ Nuanced Reason</label>
+                            <select id="trans-reason" onchange="buildTransformedSentence()" class="w-full bg-stream-card border border-stream-border text-white rounded-xl p-3 focus:outline-none focus:border-brand-rose">
+                                <option value="because the unexpected cliffhangers keep me on the edge of my seat.">because it's exciting ➔ "...because cliffhangers keep me on edge."</option>
+                                <option value="since the characters feel realistic and well-developed.">because it's good ➔ "...since characters feel realistic."</option>
+                                <option value="due to the repetitive dialogue and weak ending.">because it's bad ➔ "...due to repetitive dialogue."</option>
+                                <option value="as it offers great replay value after a stressful day.">because it's relaxing ➔ "...as it offers great replay value."</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- Output Transformer Preview -->
+                    <div class="bg-stream-bg/90 p-6 rounded-2xl border-2 border-brand-purple/50 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-brand-purple uppercase tracking-wider"><i class="fa-solid fa-sparkles mr-1"></i> Upgraded B1+ Result</span>
+                            <button onclick="copyTransformedResult()" class="text-xs bg-brand-purple text-white px-3 py-1.5 rounded-lg font-bold hover:bg-purple-600 transition flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> Copy Upgraded Sentence
+                            </button>
+                        </div>
+                        <p id="transformer-output-text" class="text-base sm:text-lg font-semibold text-white leading-relaxed">
+                            "I'm totally hooked on binge-worthy sci-fi dramas because the unexpected cliffhangers keep me on the edge of my seat."
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Phrasebook Library (Validated vs Complemented) -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-brand-cyan"></i> B1 Phrasebook: Basic (Validated) vs Upgraded (Complemented)
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                        
+                        <!-- Card 1 -->
+                        <div class="glass-card p-5 rounded-2xl border border-stream-border space-y-3">
+                            <h4 class="font-bold text-brand-rose uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-heart"></i> Expressing High Interest
+                            </h4>
+                            <div class="space-y-2">
+                                <div class="bg-stream-bg p-2.5 rounded-lg border border-stream-border text-neutral-400">
+                                    <span class="text-[10px] font-bold uppercase text-neutral-500 block">Basic (Validated):</span>
+                                    "I like [Show Name] very much."
+                                </div>
+                                <div class="bg-brand-rose/10 p-2.5 rounded-lg border border-brand-rose/30 text-white font-medium space-y-1">
+                                    <span class="text-[10px] font-bold uppercase text-brand-rose block">🚀 Upgraded (Complemented):</span>
+                                    <p>• "I'm completely <strong>hooked on</strong>..."</p>
+                                    <p>• "I'm really <strong>into</strong> [Genre] because..."</p>
+                                    <p>• "I find [Show] absolutely <strong>captivating</strong>."</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="glass-card p-5 rounded-2xl border border-stream-border space-y-3">
+                            <h4 class="font-bold text-brand-purple uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-thumbs-down"></i> Expressing Dislike & Nuance
+                            </h4>
+                            <div class="space-y-2">
+                                <div class="bg-stream-bg p-2.5 rounded-lg border border-stream-border text-neutral-400">
+                                    <span class="text-[10px] font-bold uppercase text-neutral-500 block">Basic (Validated):</span>
+                                    "I don't like it. It is boring."
+                                </div>
+                                <div class="bg-brand-purple/10 p-2.5 rounded-lg border border-brand-purple/30 text-white font-medium space-y-1">
+                                    <span class="text-[10px] font-bold uppercase text-brand-purple block">🚀 Upgraded (Complemented):</span>
+                                    <p>• "It's <strong>not really my cup of tea</strong>."</p>
+                                    <p>• "I find it a bit <strong>overrated</strong> despite the hype."</p>
+                                    <p>• "I <strong>can't stand</strong> predictable storylines."</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 -->
+                        <div class="glass-card p-5 rounded-2xl border border-stream-border space-y-3">
+                            <h4 class="font-bold text-brand-cyan uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-code-compare"></i> Comparing Preferences
+                            </h4>
+                            <div class="space-y-2">
+                                <div class="bg-stream-bg p-2.5 rounded-lg border border-stream-border text-neutral-400">
+                                    <span class="text-[10px] font-bold uppercase text-neutral-500 block">Basic (Validated):</span>
+                                    "I prefer comedies than dramas." (Grammar Error!)
+                                </div>
+                                <div class="bg-brand-cyan/10 p-2.5 rounded-lg border border-brand-cyan/30 text-white font-medium space-y-1">
+                                    <span class="text-[10px] font-bold uppercase text-brand-cyan block">🚀 Upgraded (Complemented):</span>
+                                    <p>• "I <strong>prefer</strong> comedies <strong>TO</strong> dramas." (Correct preposition)</p>
+                                    <p>• "I <strong>tend to favor</strong> documentaries <strong>over</strong> reality TV."</p>
+                                    <p>• "I'd <strong>much rather watch</strong> a sitcom <strong>than</strong> a horror film."</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4 -->
+                        <div class="glass-card p-5 rounded-2xl border border-stream-border space-y-3">
+                            <h4 class="font-bold text-brand-gold uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-tags"></i> TV Feature Adjectives
+                            </h4>
+                            <div class="space-y-2">
+                                <div class="bg-stream-bg p-2.5 rounded-lg border border-stream-border text-neutral-400">
+                                    <span class="text-[10px] font-bold uppercase text-neutral-500 block">Basic (Validated):</span>
+                                    "It is exciting / good / funny."
+                                </div>
+                                <div class="bg-brand-gold/10 p-2.5 rounded-lg border border-brand-gold/30 text-white font-medium space-y-1">
+                                    <span class="text-[10px] font-bold uppercase text-brand-gold block">🚀 Upgraded (Complemented):</span>
+                                    <p>• <strong>Binge-worthy:</strong> So good you watch all episodes at once.</p>
+                                    <p>• <strong>Slow-burn:</strong> Plot develops slowly but pays off.</p>
+                                    <p>• <strong>Mind-bending:</strong> Confusing, mystery plot twists.</p>
+                                    <p>• <strong>Thought-provoking:</strong> Makes you think deeply about real life.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 4: STEP 3 OUTCOME PROMPTS & TIMER -->
+            <section id="tab-prompts" class="tab-content hidden space-y-8">
+                
+                <!-- Countdown Timer Bar -->
+                <div class="glass-card p-6 rounded-3xl border border-stream-border flex flex-col md:flex-row items-center justify-between gap-6 glow-cyan">
+                    <div class="flex items-center gap-4">
+                        <div class="relative w-20 h-20 flex-shrink-0">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-stream-border" fill="transparent" />
+                                <circle id="timer-ring" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-brand-cyan timer-ring" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" />
+                            </svg>
+                            <span id="timer-text" class="absolute inset-0 flex items-center justify-center text-sm font-black text-white font-mono">10:00</span>
+                        </div>
+                        <div>
+                            <span id="timer-phase-badge" class="bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">
+                                Phase 1: Individual Prep (Min 0-3)
+                            </span>
+                            <h4 class="text-base font-bold text-white mt-1">Activity Speaking Timer</h4>
+                            <p id="timer-desc" class="text-xs text-neutral-400">Review prompt cards below and practice formulating upgraded B1+ responses.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleTimer()" id="btn-timer-play" class="bg-brand-cyan hover:bg-cyan-400 text-black px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow">
+                            <i class="fa-solid fa-play"></i> Start Timer
+                        </button>
+                        <button onclick="resetTimer()" class="bg-stream-card hover:bg-stream-hover border border-stream-border text-neutral-300 px-3 py-2.5 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Filters Toolbar -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                    <button onclick="filterPrompts('all')" class="prompt-filter active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-brand-rose text-white">All Prompts (20)</button>
+                    <button onclick="filterPrompts('cat1')" class="prompt-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stream-card text-neutral-400 hover:text-white border border-stream-border">1. Preferences & Dislikes</button>
+                    <button onclick="filterPrompts('cat2')" class="prompt-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stream-card text-neutral-400 hover:text-white border border-stream-border">2. Recommendations</button>
+                    <button onclick="filterPrompts('cat3')" class="prompt-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stream-card text-neutral-400 hover:text-white border border-stream-border">3. Overrated vs Underrated</button>
+                    <button onclick="filterPrompts('cat4')" class="prompt-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-stream-card text-neutral-400 hover:text-white border border-stream-border">4. Binge Habits & Features</button>
+                </div>
+
+                <!-- Flashcard Active Display -->
+                <div class="max-w-3xl mx-auto">
+                    <div id="flashcard-box" class="glass-card rounded-3xl p-6 sm:p-10 border border-stream-border relative space-y-6 transition-all duration-200">
+                        <div class="flex items-center justify-between border-b border-stream-border pb-4">
+                            <span id="prompt-cat-badge" class="bg-brand-rose/20 text-brand-rose border border-brand-rose/30 text-xs font-extrabold px-3 py-1 rounded-full uppercase">
+                                Category 1: Preferences & Dislikes
+                            </span>
+                            <span id="prompt-counter-text" class="text-xs font-bold text-neutral-400">
+                                Card 1 / 20
+                            </span>
+                        </div>
+
+                        <!-- Question text -->
+                        <div class="min-h-[100px] flex items-center justify-center text-center">
+                            <h3 id="prompt-question-text" class="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+                                "What is a TV show genre you are currently obsessed with, and why?"
+                            </h3>
+                        </div>
+
+                        <!-- Sentence Starters: Basic vs Upgraded -->
+                        <div class="space-y-3 pt-4 border-t border-stream-border">
+                            <div class="bg-stream-bg p-3 rounded-xl border border-stream-border space-y-1 text-xs">
+                                <span class="text-neutral-500 font-bold uppercase text-[10px] block">🔹 Basic Starter (Validation):</span>
+                                <p id="prompt-basic-starter" class="text-neutral-300 italic">"I like [Genre] because it is very exciting to watch..."</p>
+                            </div>
+
+                            <div class="bg-brand-purple/10 p-3.5 rounded-xl border border-brand-purple/30 space-y-1 text-xs">
+                                <span class="text-brand-purple font-bold uppercase text-[10px] block">🚀 Upgraded Starter (Complement):</span>
+                                <p id="prompt-upgraded-starter" class="text-white font-medium italic">"I'm completely hooked on [Genre] because the mind-bending plot keeps me on edge..."</p>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Footer -->
+                        <div class="flex items-center justify-between pt-4 border-t border-stream-border gap-4">
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevPromptCard()" class="w-10 h-10 rounded-xl bg-stream-card hover:bg-stream-hover border border-stream-border flex items-center justify-center text-white transition">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <button onclick="nextPromptCard()" class="px-4 h-10 rounded-xl bg-stream-card hover:bg-stream-hover border border-stream-border text-white text-xs font-bold transition">
+                                    Next Prompt <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+
+                            <button onclick="toggleDiscussedPrompt()" id="btn-mark-prompt" class="px-4 h-10 rounded-xl text-xs font-bold flex items-center gap-2 border transition bg-stream-card border-stream-border text-neutral-300">
+                                <i class="fa-regular fa-circle-check"></i> Mark as Practiced
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 5: STEP 4 LIVE LOG & PEER SCORECARD -->
+            <section id="tab-log" class="tab-content hidden space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- Preference Log Form -->
+                    <div class="lg:col-span-6 glass-card p-6 sm:p-8 rounded-3xl border border-stream-border space-y-5">
+                        <div class="border-b border-stream-border pb-4">
+                            <span class="bg-brand-green/20 text-brand-green text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Reviewer Output Log
+                            </span>
+                            <h3 class="text-xl font-bold text-white mt-2">Log Your Upgraded TV Review</h3>
+                            <p class="text-xs text-neutral-400 mt-1">Record your final review combining validated basics and complemented upgrades!</p>
+                        </div>
+
+                        <div class="space-y-4 text-xs">
+                            <div>
+                                <label class="block font-bold text-neutral-300 mb-1">Your TV Show Choice & Genre</label>
+                                <input id="log-show-name" oninput="updateReviewBadge()" type="text" placeholder="e.g. Stranger Things (Sci-Fi Thriller)" class="w-full bg-stream-bg border border-stream-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-green">
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-neutral-300 mb-1">Basic Preference Statement (Validation)</label>
+                                <input id="log-basic-stmt" oninput="updateReviewBadge()" type="text" placeholder="e.g. I like sci-fi shows because they are exciting." class="w-full bg-stream-bg border border-stream-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-green">
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-neutral-300 mb-1">Upgraded B1+ Preference Statement (Complement)</label>
+                                <textarea id="log-upgraded-stmt" oninput="updateReviewBadge()" rows="3" placeholder="e.g. I'm completely hooked on Stranger Things because the mind-bending cliffhangers keep me on the edge of my seat!" class="w-full bg-stream-bg border border-stream-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-green resize-none"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-neutral-300 mb-1">Key TV Feature Terms Used</label>
+                                <input id="log-features-used" oninput="updateReviewBadge()" type="text" placeholder="e.g. Binge-worthy, mind-bending, cliffhanger" class="w-full bg-stream-bg border border-stream-border rounded-xl p-3 text-white focus:outline-none focus:border-brand-green">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Peer Review Scorecard & Badge Preview -->
+                    <div class="lg:col-span-6 space-y-6">
+                        
+                        <!-- Review Card Preview -->
+                        <div id="review-badge-card" class="stream-gradient glass-card rounded-3xl p-6 border-2 border-brand-green/40 space-y-4 shadow-xl">
+                            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                                <span class="text-[11px] font-black uppercase text-brand-green tracking-wider"><i class="fa-solid fa-certificate"></i> StreamHub Certified Review</span>
+                                <span id="badge-role-tag" class="text-[10px] bg-white/10 text-white px-2.5 py-0.5 rounded-full font-bold">Role: Binge Enthusiast</span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <h4 id="badge-show-title" class="text-xl font-black text-white">Stranger Things (Sci-Fi Thriller)</h4>
+                                <p id="badge-upgraded-text" class="text-xs text-neutral-200 italic leading-relaxed">
+                                    "I'm completely hooked on Stranger Things because the mind-bending cliffhangers keep me on the edge of my seat!"
+                                </p>
+                            </div>
+
+                            <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-neutral-400">
+                                <span>Features: <strong id="badge-features-text" class="text-brand-green">Binge-worthy, cliffhanger</strong></span>
+                                <button onclick="copyReviewCard()" class="text-xs bg-brand-green text-black font-bold px-3 py-1 rounded-lg hover:bg-emerald-400 transition">
+                                    <i class="fa-regular fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Peer Review Scorecard -->
+                        <div class="glass-card p-6 rounded-3xl border border-stream-border space-y-4">
+                            <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-square-check text-brand-gold"></i> Peer Evaluation Checklist
+                            </h4>
+                            <div class="space-y-2 text-xs">
+                                <label class="flex items-center gap-2.5 p-2.5 bg-stream-bg rounded-xl border border-stream-border cursor-pointer">
+                                    <input type="checkbox" id="chk-peer-1" onchange="checkPeerRubric()" class="accent-brand-green w-4 h-4">
+                                    <span class="text-neutral-300">Partner validated basic preferences correctly (-ed/-ing, prefer X to Y)</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 p-2.5 bg-stream-bg rounded-xl border border-stream-border cursor-pointer">
+                                    <input type="checkbox" id="chk-peer-2" onchange="checkPeerRubric()" class="accent-brand-green w-4 h-4">
+                                    <span class="text-neutral-300">Partner used at least 2 complemented upgrades ("hooked on", "cup of tea")</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 p-2.5 bg-stream-bg rounded-xl border border-stream-border cursor-pointer">
+                                    <input type="checkbox" id="chk-peer-3" onchange="checkPeerRubric()" class="accent-brand-green w-4 h-4">
+                                    <span class="text-neutral-300">Partner integrated rich TV features ("binge-worthy", "slow-burn", "overrated")</span>
+                                </label>
+                            </div>
+
+                            <div id="peer-status-box" class="p-3 bg-stream-bg text-center rounded-xl border border-stream-border text-xs text-neutral-400">
+                                Complete checklist to issue partner Greenlight Certificate!
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="max-w-7xl mx-auto w-full px-6 mt-12 pt-6 border-t border-stream-border flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
+        <div>
+            <p>StreamHub Binge Club • B1 ESL Preference Activity</p>
+        </div>
+        <div class="flex items-center gap-4 font-semibold">
+            <span>✅ Validate Basics</span>
+            <span>🚀 Complement B1+</span>
+            <span>⏱️ 10-15 Minutes</span>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           20 PROMPTS DATA STRUCTURE
+           ========================================================================== */
+        const PROMPTS = [
+            // Category 1: Preferences & Dislikes (1-5)
+            {
+                id: 1,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Dislikes',
+                question: "What TV show genre are you currently obsessed with, and why?",
+                basicStarter: "I like action shows because they are exciting to watch...",
+                upgradedStarter: "I'm completely hooked on action series because the fast-paced plot keeps me on the edge of my seat...",
+                discussed: false
+            },
+            {
+                id: 2,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Dislikes',
+                question: "Is there a popular show that is not really your cup of tea? Why?",
+                basicStarter: "I don't like reality shows because they are boring...",
+                upgradedStarter: "Reality TV isn't really my cup of tea because I find the forced drama a bit overrated...",
+                discussed: false
+            },
+            {
+                id: 3,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Dislikes',
+                question: "Do you prefer rewatching comfort shows or starting new series?",
+                basicStarter: "I prefer rewatching comedies than starting new shows...",
+                upgradedStarter: "I tend to favor rewatching comfort sitcoms over starting unknown shows because...",
+                discussed: false
+            },
+            {
+                id: 4,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Dislikes',
+                question: "What type of main characters do you find most captivating?",
+                basicStarter: "I like good main characters who are friendly...",
+                upgradedStarter: "I find complex, morally grey protagonists far more captivating than simple heroes because...",
+                discussed: false
+            },
+            {
+                id: 5,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Dislikes',
+                question: "What is a show that made you feel completely shocked or amazed?",
+                basicStarter: "I was surprised when I watched the ending...",
+                upgradedStarter: "I was totally blown away by the finale because the unexpected plot twist...",
+                discussed: false
+            },
+
+            // Category 2: Recommendations (6-10)
+            {
+                id: 6,
+                cat: 'cat2',
+                categoryName: '2. Recommendations',
+                question: "What show would you recommend to someone looking for a binge-worthy series?",
+                basicStarter: "I recommend Stranger Things because it is good...",
+                upgradedStarter: "I'd highly recommend Stranger Things—it is extremely binge-worthy and well worth watching because...",
+                discussed: false
+            },
+            {
+                id: 7,
+                cat: 'cat2',
+                categoryName: '2. Recommendations',
+                question: "What is a slow-burn show that requires patience but pays off?",
+                basicStarter: "Better Call Saul is slow but good...",
+                upgradedStarter: "Better Call Saul is a fantastic slow-burn drama where the realistic character development...",
+                discussed: false
+            },
+            {
+                id: 8,
+                cat: 'cat2',
+                categoryName: '2. Recommendations',
+                question: "What documentary or real-life series do you think is thought-provoking?",
+                basicStarter: "I think crime documentaries are interesting...",
+                upgradedStarter: "I find true-crime documentaries deeply thought-provoking as they examine real societal issues...",
+                discussed: false
+            },
+            {
+                id: 9,
+                cat: 'cat2',
+                categoryName: '2. Recommendations',
+                question: "If your friend feels stressed, what feel-good show should they stream?",
+                basicStarter: "They should watch Ted Lasso because it is funny...",
+                upgradedStarter: "If they need to unwind, Ted Lasso is the ultimate comfort show with heartwarming humor...",
+                discussed: false
+            },
+            {
+                id: 10,
+                cat: 'cat2',
+                categoryName: '2. Recommendations',
+                question: "Which show has a soundtrack that makes it well worth watching?",
+                basicStarter: "The music in Wednesday is very good...",
+                upgradedStarter: "The atmospheric soundtrack in Wednesday elevates the mood, making it well worth watching for visual fans...",
+                discussed: false
+            },
+
+            // Category 3: Overrated vs Underrated (11-15)
+            {
+                id: 11,
+                cat: 'cat3',
+                categoryName: '3. Overrated vs Underrated',
+                question: "What TV series do you think is heavily overrated despite the social media hype?",
+                basicStarter: "I think Squid Game is overrated because...",
+                upgradedStarter: "In my opinion, Squid Game is somewhat overrated despite the viral hype because...",
+                discussed: false
+            },
+            {
+                id: 12,
+                cat: 'cat3',
+                categoryName: '3. Overrated vs Underrated',
+                question: "What hidden gem TV show deserves much more attention from viewers?",
+                basicStarter: "A show nobody knows is Severance...",
+                upgradedStarter: "Severance is an underrated hidden gem featuring a mind-bending sci-fi mystery that deserves...",
+                discussed: false
+            },
+            {
+                id: 13,
+                cat: 'cat3',
+                categoryName: '3. Overrated vs Underrated',
+                question: "Why do some viewers find slow documentaries boring while others find them fascinating?",
+                basicStarter: "Some people are bored because there is no action...",
+                upgradedStarter: "While some viewers feel bored by slow pacing, others find detailed documentaries deeply engaging because...",
+                discussed: false
+            },
+            {
+                id: 14,
+                cat: 'cat3',
+                categoryName: '3. Overrated vs Underrated',
+                question: "Do you prefer shows adapted from famous books or original screenplays?",
+                basicStarter: "I prefer book adaptations than original shows...",
+                upgradedStarter: "I tend to prefer book adaptations TO original screenplays because the world-building feels richer...",
+                discussed: false
+            },
+            {
+                id: 15,
+                cat: 'cat3',
+                categoryName: '3. Overrated vs Underrated',
+                question: "What makes a season finale disappointing rather than satisfying?",
+                basicStarter: "A finale is bad when it is predictable...",
+                upgradedStarter: "A finale becomes disappointing when rush writing creates predictable resolutions and unresolved cliffhangers...",
+                discussed: false
+            },
+
+            // Category 4: Binge Habits & Features (16-20)
+            {
+                id: 16,
+                cat: 'cat4',
+                categoryName: '4. Binge Habits & Features',
+                question: "How do you feel when an episode ends on a massive cliffhanger?",
+                basicStarter: "I am excited because I want to watch more...",
+                upgradedStarter: "When an episode ends on a cliffhanger, I feel completely compelled to binge the next episode...",
+                discussed: false
+            },
+            {
+                id: 17,
+                cat: 'cat4',
+                categoryName: '4. Binge Habits & Features',
+                question: "Do you prefer streaming entire seasons at once or weekly episode releases?",
+                basicStarter: "I prefer watching all at once than waiting...",
+                upgradedStarter: "I'd much rather binge an entire season at once THAN wait a week for each episode because...",
+                discussed: false
+            },
+            {
+                id: 18,
+                cat: 'cat4',
+                categoryName: '4. Binge Habits & Features',
+                question: "What is your main criteria for deciding whether to abandon a show after episode 1?",
+                basicStarter: "I stop watching if it is boring...",
+                upgradedStarter: "I usually abandon a series if the pilot episode suffers from weak character chemistry or predictable dialogue...",
+                discussed: false
+            },
+            {
+                id: 19,
+                cat: 'cat4',
+                categoryName: '4. Binge Habits & Features',
+                question: "How important is dubbing or foreign subtitles when watching global TV shows?",
+                basicStarter: "Subtitles are good for understanding...",
+                upgradedStarter: "Subtitles are essential for preserving emotional performances in foreign language dramas...",
+                discussed: false
+            },
+            {
+                id: 20,
+                cat: 'cat4',
+                categoryName: '4. Binge Habits & Features',
+                question: "What television show has the most memorable theme song or intro sequence?",
+                basicStarter: "The theme song of Game of Thrones is exciting...",
+                upgradedStarter: "The iconic theme song of Game of Thrones sets a grand tone that immediately gets me into the mood...",
+                discussed: false
+            }
+        ];
+
+        /* ==========================================================================
+           DIAGNOSTIC QUIZ DATA
+           ========================================================================== */
+        const QUIZ_ITEMS = [
+            {
+                id: 1,
+                question: "Choose the correct sentence expressing interest:",
+                options: [
+                    "I am very interesting in sci-fi series.",
+                    "I am very interested in sci-fi series.",
+                    "I am very interest for sci-fi series."
+                ],
+                correct: 1,
+                explanation: "✅ 'Interested' (-ed) describes human feelings, while 'interesting' (-ing) describes the show itself!"
+            },
+            {
+                id: 2,
+                question: "Choose the correct preposition when comparing preferences:",
+                options: [
+                    "I prefer comedies than dramas.",
+                    "I prefer comedies over to dramas.",
+                    "I prefer comedies TO dramas."
+                ],
+                correct: 2,
+                explanation: "✅ Basic B1 Preference Rule: Always use 'prefer X TO Y' (or 'prefer X OVER Y'), never 'prefer X THAN Y'."
+            },
+            {
+                id: 3,
+                question: "Which sentence correctly describes a thriller show?",
+                options: [
+                    "This thriller show is so exciting!",
+                    "This thriller show is so excited!",
+                    "This thriller show feels excite."
+                ],
+                correct: 0,
+                explanation: "✅ The show itself is 'exciting' (-ing adjective). You feel 'excited' (-ed adjective) while watching it!"
+            },
+            {
+                id: 4,
+                question: "Complete the sentence: 'I don't like horror shows because I feel _____.'",
+                options: [
+                    "frightening",
+                    "frightened",
+                    "frighten"
+                ],
+                correct: 1,
+                explanation: "✅ 'Frightened' (-ed) describes your emotion/feeling, whereas horror movies are 'frightening' (-ing)."
+            },
+            {
+                id: 5,
+                question: "Choose the correct structure with 'would rather':",
+                options: [
+                    "I'd much rather watch a sitcom than a documentary.",
+                    "I'd much rather watch a sitcom to a documentary.",
+                    "I'd much rather to watch a sitcom than a documentary."
+                ],
+                correct: 0,
+                explanation: "✅ 'Would rather [verb] THAN [verb]'. Notice we use 'than' with 'would rather', but 'to' with 'prefer'!"
+            },
+            {
+                id: 6,
+                question: "Select the upgraded B1+ phrase for saying a show is too popular without reason:",
+                options: [
+                    "I think this show is very boring.",
+                    "I find this show a bit overrated.",
+                    "This show is not exciting."
+                ],
+                correct: 1,
+                explanation: "✅ 'Overrated' is a complemented B1+ adjective meaning a show gets more praise than it actually deserves."
+            }
+        ];
+
+        /* ==========================================================================
+           STATE MANAGEMENT
+           ========================================================================== */
+        let currentPromptIndex = 0;
+        let activePromptFilter = 'all';
+        let selectedRole = 'A';
+
+        // Timer State (600s = 10 mins)
+        const TOTAL_SECONDS = 600;
+        let timerSecondsRemaining = TOTAL_SECONDS;
+        let timerInterval = null;
+
+        /* ==========================================================================
+           INITIALIZATION
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderQuiz();
+            buildTransformedSentence();
+            renderPromptCard();
+            updateReviewBadge();
+        });
+
+        /* ==========================================================================
+           NAVIGATION TABS
+           ========================================================================== */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-rose', 'text-white', 'shadow-lg');
+                btn.classList.add('bg-stream-card', 'text-neutral-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-stream-card', 'text-neutral-400');
+                activeBtn.classList.add('bg-brand-rose', 'text-white', 'shadow-lg');
+            }
+        }
+
+        /* ==========================================================================
+           ROLE SELECTION
+           ========================================================================== */
+        function selectRole(roleKey) {
+            selectedRole = roleKey;
+            document.querySelectorAll('[id^="role-card-"]').forEach(card => {
+                card.classList.remove('border-brand-rose', 'border-brand-purple', 'border-brand-cyan');
+                card.classList.add('border-stream-border');
+            });
+
+            const activeCard = document.getElementById(`role-card-${roleKey}`);
+            const colorMap = { A: 'border-brand-rose', B: 'border-brand-purple', C: 'border-brand-cyan' };
+            activeCard.classList.remove('border-stream-border');
+            activeCard.classList.add(colorMap[roleKey]);
+
+            const roleNames = { A: 'The Binge Enthusiast', B: 'The Skeptical Critic', C: 'The Nostalgic Streamer' };
+            document.getElementById('badge-role-tag').innerText = `Role: ${roleNames[roleKey]}`;
+
+            showToast(`Role selected: ${roleNames[roleKey]}`);
+        }
+
+        /* ==========================================================================
+           DIAGNOSTIC QUIZ LOGIC
+           ========================================================================== */
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+
+            QUIZ_ITEMS.forEach((item, idx) => {
+                const qBox = document.createElement('div');
+                qBox.className = "bg-stream-bg p-5 rounded-2xl border border-stream-border space-y-3 text-xs";
+                
+                let optionsHTML = '';
+                item.options.forEach((opt, optIdx) => {
+                    optionsHTML += `
+                        <button onclick="checkQuizAnswer(${idx}, ${optIdx})" id="quiz-opt-${idx}-${optIdx}" class="w-full text-left p-3 rounded-xl border border-stream-border bg-stream-card text-neutral-200 hover:border-brand-gold transition font-medium">
+                            ${String.fromCharCode(65 + optIdx)}. ${opt}
+                        </button>
+                    `;
+                });
+
+                qBox.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-white">
+                        <span>${idx + 1}. ${item.question}</span>
+                        <span id="quiz-status-${idx}" class="text-[11px] text-neutral-500 font-normal">Unanswered</span>
+                    </div>
+                    <div class="space-y-2">
+                        ${optionsHTML}
+                    </div>
+                    <div id="quiz-exp-${idx}" class="hidden p-3 rounded-xl bg-brand-gold/10 border border-brand-gold/30 text-brand-gold font-medium">
+                        ${item.explanation}
+                    </div>
+                `;
+                container.appendChild(qBox);
+            });
+        }
+
+        let answeredCorrectCount = 0;
+
+        function checkQuizAnswer(qIdx, optIdx) {
+            const item = QUIZ_ITEMS[qIdx];
+            const expBox = document.getElementById(`quiz-exp-${qIdx}`);
+            const statusTag = document.getElementById(`quiz-status-${qIdx}`);
+
+            item.options.forEach((_, i) => {
+                const btn = document.getElementById(`quiz-opt-${qIdx}-${i}`);
+                btn.disabled = true;
+                if (i === item.correct) {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-emerald-500 bg-emerald-950/40 text-emerald-300 font-bold";
+                } else if (i === optIdx) {
+                    btn.className = "w-full text-left p-3 rounded-xl border border-rose-500 bg-rose-950/40 text-rose-300 font-medium";
+                }
+            });
+
+            expBox.classList.remove('hidden');
+
+            if (optIdx === item.correct) {
+                statusTag.innerText = "Correct ✅";
+                statusTag.className = "text-[11px] text-emerald-400 font-bold";
+                answeredCorrectCount++;
+            } else {
+                statusTag.innerText = "Review Needed ❌";
+                statusTag.className = "text-[11px] text-rose-400 font-bold";
+            }
+
+            document.getElementById('header-quiz-score').innerText = `${answeredCorrectCount} / ${QUIZ_ITEMS.length} Passed`;
+        }
+
+        function resetQuiz() {
+            answeredCorrectCount = 0;
+            document.getElementById('header-quiz-score').innerText = `0 / ${QUIZ_ITEMS.length} Passed`;
+            renderQuiz();
+            showToast("Diagnostic quiz reset.");
+        }
+
+        /* ==========================================================================
+           SENTENCE TRANSFORMER LOGIC
+           ========================================================================== */
+        let createdUpgradesCount = 0;
+
+        function buildTransformedSentence() {
+            const opener = document.getElementById('trans-opener').value;
+            const feature = document.getElementById('trans-feature').value;
+            const reason = document.getElementById('trans-reason').value;
+
+            const fullSentence = `"${opener} ${feature} ${reason}"`;
+            document.getElementById('transformer-output-text').innerText = fullSentence;
+        }
+
+        function copyTransformedResult() {
+            const text = document.getElementById('transformer-output-text').innerText;
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            createdUpgradesCount++;
+            document.getElementById('header-upgrades-count').innerText = `${createdUpgradesCount} Created`;
+            showToast("Upgraded sentence copied to clipboard!");
+        }
+
+        /* ==========================================================================
+           20 PROMPTS DECK
+           ========================================================================== */
+        function getFilteredPrompts() {
+            if (activePromptFilter === 'all') return PROMPTS;
+            return PROMPTS.filter(p => p.cat === activePromptFilter);
+        }
+
+        function renderPromptCard() {
+            const list = getFilteredPrompts();
+            if (list.length === 0) return;
+
+            if (currentPromptIndex >= list.length) currentPromptIndex = 0;
+            if (currentPromptIndex < 0) currentPromptIndex = list.length - 1;
+
+            const prompt = list[currentPromptIndex];
+
+            document.getElementById('prompt-cat-badge').innerText = prompt.categoryName;
+            document.getElementById('prompt-counter-text').innerText = `Card ${currentPromptIndex + 1} / ${list.length}`;
+            document.getElementById('prompt-question-text').innerText = `"${prompt.question}"`;
+            document.getElementById('prompt-basic-starter').innerText = `"${prompt.basicStarter}"`;
+            document.getElementById('prompt-upgraded-starter').innerText = `"${prompt.upgradedStarter}"`;
+
+            const btn = document.getElementById('btn-mark-prompt');
+            if (prompt.discussed) {
+                btn.className = "px-4 h-10 rounded-xl text-xs font-bold flex items-center gap-2 border transition bg-brand-green/20 border-brand-green text-brand-green";
+                btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Practiced`;
+            } else {
+                btn.className = "px-4 h-10 rounded-xl text-xs font-bold flex items-center gap-2 border transition bg-stream-card border-stream-border text-neutral-300";
+                btn.innerHTML = `<i class="fa-regular fa-circle-check"></i> Mark as Practiced`;
+            }
+        }
+
+        function nextPromptCard() {
+            const list = getFilteredPrompts();
+            currentPromptIndex = (currentPromptIndex + 1) % list.length;
+            renderPromptCard();
+        }
+
+        function prevPromptCard() {
+            const list = getFilteredPrompts();
+            currentPromptIndex = (currentPromptIndex - 1 + list.length) % list.length;
+            renderPromptCard();
+        }
+
+        function filterPrompts(catKey) {
+            activePromptFilter = catKey;
+            currentPromptIndex = 0;
+
+            document.querySelectorAll('.prompt-filter').forEach(btn => {
+                btn.classList.remove('bg-brand-rose', 'text-white');
+                btn.classList.add('bg-stream-card', 'text-neutral-400');
+            });
+            event.target.classList.remove('bg-stream-card', 'text-neutral-400');
+            event.target.classList.add('bg-brand-rose', 'text-white');
+
+            renderPromptCard();
+        }
+
+        function toggleDiscussedPrompt() {
+            const list = getFilteredPrompts();
+            const prompt = list[currentPromptIndex];
+            prompt.discussed = !prompt.discussed;
+            renderPromptCard();
+            showToast(prompt.discussed ? "Marked prompt as practiced!" : "Unchecked prompt.");
+        }
+
+        /* ==========================================================================
+           TIMER & WEBAUDIO CHIMES
+           ========================================================================== */
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSecondsRemaining / 60);
+            const secs = timerSecondsRemaining % 60;
+            document.getElementById('timer-text').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            const radius = 42;
+            const circumference = 2 * Math.PI * radius;
+            const progress = (TOTAL_SECONDS - timerSecondsRemaining) / TOTAL_SECONDS;
+            document.getElementById('timer-ring').style.strokeDashoffset = circumference * progress;
+
+            const badge = document.getElementById('timer-phase-badge');
+            const desc = document.getElementById('timer-desc');
+
+            if (timerSecondsRemaining > 420) { // Min 0-3
+                badge.className = "bg-brand-gold/20 text-brand-gold border border-brand-gold/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase";
+                badge.innerText = "Phase 1: Diagnostic & Prep (Min 0-3)";
+                desc.innerText = "Validate prior knowledge in Step 1 and construct upgraded sentences in Step 2.";
+            } else if (timerSecondsRemaining > 180) { // Min 3-7
+                badge.className = "bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase";
+                badge.innerText = "Phase 2: Pair Speaking Prompts (Min 3-7)";
+                desc.innerText = "Take turns answering the 20 Outcome Prompts using upgraded B1+ starters!";
+            } else { // Min 7-10
+                badge.className = "bg-brand-green/20 text-brand-green border border-brand-green/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase";
+                badge.innerText = "Phase 3: Log Review & Peer Scorecard (Min 7-10)";
+                desc.innerText = "Log your final review statement and evaluate your partner using the Peer Checklist.";
+            }
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-play');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                btn.innerHTML = `<i class="fa-solid fa-play"></i> Start Timer`;
+                btn.className = "bg-brand-cyan hover:bg-cyan-400 text-black px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow";
+            } else {
+                if (timerSecondsRemaining <= 0) timerSecondsRemaining = TOTAL_SECONDS;
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i> Pause Timer`;
+                btn.className = "bg-amber-500 hover:bg-amber-400 text-black px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition shadow";
+
+                timerInterval = setInterval(() => {
+                    timerSecondsRemaining--;
+                    updateTimerDisplay();
+
+                    if (timerSecondsRemaining === 420 || timerSecondsRemaining === 180) {
+                        playChimeSound(600, 0.3);
+                        showToast("Phase transition!");
+                    }
+
+                    if (timerSecondsRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        btn.innerHTML = `<i class="fa-solid fa-play"></i> Start Timer`;
+                        playChimeSound(800, 0.6);
+                        showToast("⏱️ Activity time complete!");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            timerSecondsRemaining = TOTAL_SECONDS;
+            document.getElementById('btn-timer-play').innerHTML = `<i class="fa-solid fa-play"></i> Start Timer`;
+            updateTimerDisplay();
+            showToast("Timer reset to 10:00.");
+        }
+
+        function playChimeSound(freq, duration) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        /* ==========================================================================
+           REVIEW LOG & PEER RUBRIC
+           ========================================================================== */
+        function updateReviewBadge() {
+            const showName = document.getElementById('log-show-name').value.trim() || "Stranger Things (Sci-Fi Thriller)";
+            const upgradedStmt = document.getElementById('log-upgraded-stmt').value.trim() || '"I\'m completely hooked on Stranger Things because the mind-bending cliffhangers keep me on the edge of my seat!"';
+            const features = document.getElementById('log-features-used').value.trim() || "Binge-worthy, cliffhanger";
+
+            document.getElementById('badge-show-title').innerText = showName;
+            document.getElementById('badge-upgraded-text').innerText = upgradedStmt.startsWith('"') ? upgradedStmt : `"${upgradedStmt}"`;
+            document.getElementById('badge-features-text').innerText = features;
+        }
+
+        function copyReviewCard() {
+            const showName = document.getElementById('badge-show-title').innerText;
+            const textStmt = document.getElementById('badge-upgraded-text').innerText;
+            const feats = document.getElementById('badge-features-text').innerText;
+
+            const fullText = `🎬 STREAMHUB CERTIFIED REVIEW 🎬\n\nShow: ${showName}\nReview: ${textStmt}\nKey Features: ${feats}`;
+
+            const temp = document.createElement('textarea');
+            temp.value = fullText;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+
+            showToast("Review card summary copied!");
+        }
+
+        function checkPeerRubric() {
+            const c1 = document.getElementById('chk-peer-1').checked;
+            const c2 = document.getElementById('chk-peer-2').checked;
+            const c3 = document.getElementById('chk-peer-3').checked;
+
+            const box = document.getElementById('peer-status-box');
+
+            if (c1 && c2 && c3) {
+                box.className = "p-3 bg-emerald-950/40 border border-emerald-500/40 text-center rounded-xl text-xs text-emerald-300 font-bold space-y-1";
+                box.innerHTML = `
+                    <div>🎉 GREENLIGHT CERTIFICATE GRANTED!</div>
+                    <p class="text-[11px] font-normal text-neutral-300">Partner successfully validated prior basics AND demonstrated complemented B1+ upgrades!</p>
+                `;
+            } else {
+                box.className = "p-3 bg-stream-bg text-center rounded-xl border border-stream-border text-xs text-neutral-400";
+                box.innerText = "Complete all 3 checklist criteria to grant Greenlight Certificate!";
+            }
+        }
+
+        /* ==========================================================================
+           TOAST UTILITY
+           ========================================================================== */
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('-translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-24', 'opacity-0');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
