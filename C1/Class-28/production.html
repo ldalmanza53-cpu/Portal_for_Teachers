@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Show Talk: Preferences & Popularity Summit</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        netflix: {
+                            red: '#E50914',
+                            darkRed: '#B81D24',
+                            black: '#121214',
+                            card: '#1A1A1E',
+                            border: '#2A2A30',
+                            purple: '#9333EA',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0c0d10;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121214;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a30;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #E50914;
+        }
+        .glass-card {
+            background: rgba(26, 26, 30, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-red {
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.25);
+        }
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.25);
+        }
+        /* Progress Circle Transition */
+        .timer-circle {
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-netflix-red selection:text-white pb-10">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 bg-neutral-900 border border-netflix-red text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-netflix-red text-lg"></i>
+        <span id="toast-message" class="text-sm font-medium">Notification</span>
+    </div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-6">
+
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-neutral-800 gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-netflix-red to-purple-600 flex items-center justify-center text-white shadow-lg glow-red">
+                    <i class="fa-solid fa-tv text-2xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-netflix-red/20 text-netflix-red border border-netflix-red/30 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">B1 Speaking Task</span>
+                        <span class="bg-purple-900/30 text-purple-400 border border-purple-500/30 text-xs font-semibold px-2.5 py-0.5 rounded-full">⏱️ 10 Minutes</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mt-1">TV Show Talk <span class="text-transparent bg-clip-text bg-gradient-to-r from-netflix-red to-purple-400">Summit</span></h1>
+                </div>
+            </div>
+
+            <!-- Header Quick Stats -->
+            <div class="flex items-center gap-3 self-start md:self-auto">
+                <div class="bg-neutral-900/80 border border-neutral-800 px-3.5 py-2 rounded-xl flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-xs text-neutral-400">Prompts Discussed</p>
+                        <p id="header-progress-text" class="text-sm font-bold text-white">0 / 20</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center text-netflix-red font-bold text-sm" id="header-progress-circle">
+                        0%
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="flex items-center gap-2 overflow-x-auto py-4 no-scrollbar border-b border-neutral-800/60 mb-6">
+            <button onclick="switchTab('tab-context')" id="btn-tab-context" class="tab-btn active px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap bg-netflix-red text-white shadow-lg">
+                <i class="fa-solid fa-compass"></i> Context & Roles
+            </button>
+            <button onclick="switchTab('tab-timer')" id="btn-tab-timer" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800">
+                <i class="fa-solid fa-stopwatch"></i> 10-Min Master Timer
+            </button>
+            <button onclick="switchTab('tab-prompts')" id="btn-tab-prompts" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800">
+                <i class="fa-solid fa-cards-blank"></i> Prompt Deck (20)
+            </button>
+            <button onclick="switchTab('tab-toolkit')" id="btn-tab-toolkit" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800">
+                <i class="fa-solid fa-users-gear"></i> Role Generator & Toolkit
+            </button>
+            <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all whitespace-nowrap bg-neutral-900/80 text-neutral-400 hover:text-white hover:bg-neutral-800">
+                <i class="fa-solid fa-pen-to-square"></i> Reflection & Notes
+            </button>
+        </nav>
+
+        <!-- TAB CONTENT AREA -->
+        <main>
+
+            <!-- TAB 1: CONTEXT & ROLES -->
+            <section id="tab-context" class="tab-content space-y-8">
+                <!-- Context Banner -->
+                <div class="glass-card rounded-2xl p-6 md:p-8 border-l-4 border-l-netflix-red relative overflow-hidden">
+                    <div class="absolute -right-10 -bottom-10 opacity-10 text-netflix-red pointer-events-none">
+                        <i class="fa-solid fa-film text-9xl"></i>
+                    </div>
+                    <div class="relative z-10 space-y-3">
+                        <div class="inline-flex items-center gap-2 text-xs font-bold tracking-wider text-netflix-red uppercase bg-netflix-red/10 px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-globe"></i> Global Streaming Summit
+                        </div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-white">What Makes a TV Show a Worldwide Hit?</h2>
+                        <p class="text-neutral-300 leading-relaxed max-w-3xl">
+                            Welcome to the <strong class="text-white">Global Entertainment Panel</strong>! You and your partner(s) are media experts participating in a 10-minute live podcast discussion. Your mission is to discuss personal TV viewing preferences, analyze why certain TV shows go viral, and agree on recommendations for international audiences.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 10-Minute Roadmap -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-timeline text-purple-400"></i> 10-Minute Activity Timeline
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="glass-card p-5 rounded-xl border border-neutral-800 relative">
+                            <div class="text-xs font-extrabold text-netflix-red tracking-widest uppercase mb-1">Min 0:00 - 1:00</div>
+                            <h4 class="font-bold text-white mb-2 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-netflix-red/20 text-netflix-red text-xs flex items-center justify-center font-bold">1</span>
+                                Warm-Up & Role Sync
+                            </h4>
+                            <p class="text-xs text-neutral-400">Greet panel members, introduce your assigned role personality, and set up your microphone.</p>
+                        </div>
+                        <div class="glass-card p-5 rounded-xl border border-neutral-800 relative">
+                            <div class="text-xs font-extrabold text-purple-400 tracking-widest uppercase mb-1">Min 1:00 - 8:00</div>
+                            <h4 class="font-bold text-white mb-2 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">2</span>
+                                Core Panel Discussion
+                            </h4>
+                            <p class="text-xs text-neutral-400">Draw cards from the Prompt Deck. Express preferences, explain viral popularity, and debate show quality (aim for 5-8 prompts).</p>
+                        </div>
+                        <div class="glass-card p-5 rounded-xl border border-neutral-800 relative">
+                            <div class="text-xs font-extrabold text-emerald-400 tracking-widest uppercase mb-1">Min 8:00 - 10:00</div>
+                            <h4 class="font-bold text-white mb-2 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">3</span>
+                                Final Pitch & Consensus
+                            </h4>
+                            <p class="text-xs text-neutral-400">Each panelist pitches ONE ultimate show recommendation. Agree on a final winner before time expires!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roles Grid -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-astronaut text-netflix-red"></i> Detailed Panel Roles
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        
+                        <!-- Role A -->
+                        <div class="glass-card rounded-2xl p-6 border-t-4 border-t-netflix-red flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="bg-netflix-red/20 text-netflix-red border border-netflix-red/30 text-xs font-bold px-2.5 py-1 rounded-lg">ROLE A</span>
+                                    <i class="fa-solid fa-fire text-netflix-red text-xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-white mb-1">The Passionate Binge-Watcher</h4>
+                                <p class="text-xs text-purple-300 font-medium mb-3">Focus: Emotional intensity, cliffhangers, sci-fi/thrillers</p>
+                                <p class="text-sm text-neutral-300 mb-4">You live for dramatic plot twists and watching whole seasons in one sitting. You care deeply about character connections and mysterious storylines.</p>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">🎯 B1 Vocabulary:</strong>
+                                        <span class="text-neutral-400">Binge-watch, addicting, cliffhanger, plot twist, season finale.</span>
+                                    </div>
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">💬 Signature Line:</strong>
+                                        <span class="text-neutral-300 italic">"I couldn't stop watching! The cliffhanger at the end of episode 3 completely blew my mind."</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role B -->
+                        <div class="glass-card rounded-2xl p-6 border-t-4 border-t-purple-500 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold px-2.5 py-1 rounded-lg">ROLE B</span>
+                                    <i class="fa-solid fa-chart-line text-purple-400 text-xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-white mb-1">The Culture & Media Critic</h4>
+                                <p class="text-xs text-purple-300 font-medium mb-3">Focus: Social media trends, production budgets, cultural impact</p>
+                                <p class="text-sm text-neutral-300 mb-4">You analyze why shows go viral on TikTok or Instagram. You pay attention to soundtrack quality, famous actors, and critical acclaim.</p>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">🎯 B1 Vocabulary:</strong>
+                                        <span class="text-neutral-400">Viral trend, overrated, soundtrack, production budget, performance.</span>
+                                    </div>
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">💬 Signature Line:</strong>
+                                        <span class="text-neutral-300 italic">"From a critical standpoint, what makes it popular is how it trends on social media."</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role C -->
+                        <div class="glass-card rounded-2xl p-6 border-t-4 border-t-emerald-500 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-2.5 py-1 rounded-lg">ROLE C</span>
+                                    <i class="fa-solid fa-mug-hot text-emerald-400 text-xl"></i>
+                                </div>
+                                <h4 class="text-xl font-bold text-white mb-1">The Casual Curator</h4>
+                                <p class="text-xs text-emerald-300 font-medium mb-3">Focus: Relaxation, light comedies, reality TV, mood watching</p>
+                                <p class="text-sm text-neutral-300 mb-4">You watch TV to unwind after work/school. You prefer short, comforting, easy-to-follow episodes or guilty-pleasure reality shows.</p>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">🎯 B1 Vocabulary:</strong>
+                                        <span class="text-neutral-400">Easy-to-watch, lighthearted, feel-good, unwind, broad appeal.</span>
+                                    </div>
+                                    <div class="bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-800">
+                                        <strong class="text-white block mb-1">💬 Signature Line:</strong>
+                                        <span class="text-neutral-300 italic">"After a long day, I just want something comforting that makes me laugh without heavy drama."</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: 10-MIN MASTER TIMER -->
+            <section id="tab-timer" class="tab-content hidden space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    
+                    <!-- Circular Timer Display -->
+                    <div class="lg:col-span-7 glass-card p-8 rounded-3xl flex flex-col items-center justify-center text-center relative glow-red">
+                        <!-- Stage Badge -->
+                        <div id="timer-stage-badge" class="mb-4 inline-flex items-center gap-2 bg-netflix-red/20 text-netflix-red border border-netflix-red/40 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest">
+                            <i class="fa-solid fa-microphone-lines"></i> Stage 1: Warm-Up (Min 0-1)
+                        </div>
+
+                        <!-- Progress SVG Circle -->
+                        <div class="relative w-64 h-64 sm:w-72 sm:h-72 my-4 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="6" class="text-neutral-800" fill="transparent" />
+                                <circle id="timer-progress-ring" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="6" class="text-netflix-red timer-circle" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" />
+                            </svg>
+                            <div class="absolute flex flex-col items-center justify-center">
+                                <span id="timer-display" class="text-5xl sm:text-6xl font-black tracking-tighter text-white">10:00</span>
+                                <span class="text-xs text-neutral-400 font-medium uppercase tracking-widest mt-1">Remaining Time</span>
+                            </div>
+                        </div>
+
+                        <!-- Timer Controls -->
+                        <div class="flex items-center gap-4 mt-4">
+                            <button onclick="toggleTimer()" id="btn-timer-start" class="w-14 h-14 rounded-2xl bg-netflix-red hover:bg-netflix-darkRed text-white flex items-center justify-center text-xl shadow-lg transition-transform active:scale-95">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button onclick="resetTimer()" class="w-12 h-12 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 flex items-center justify-center text-lg transition">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            <button onclick="toggleMute()" id="btn-timer-mute" class="w-12 h-12 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 flex items-center justify-center text-lg transition">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stage Guide & Active Prompt Preview -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <!-- Stage Details Card -->
+                        <div class="glass-card p-6 rounded-2xl space-y-4 border border-neutral-800">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bullhorn text-purple-400"></i> Phase Guidance
+                            </h3>
+                            <div id="phase-guidance-box" class="space-y-2 text-sm text-neutral-300">
+                                <p class="font-semibold text-netflix-red">📢 Phase 1: Warm-Up & Role Sync (0:00 - 1:00)</p>
+                                <p class="text-xs text-neutral-400">Greet your fellow panelists! State your role (Passionate Binge-Watcher, Culture Critic, or Casual Curator) and express how excited you are to discuss TV shows today.</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Prompt Card Widget -->
+                        <div class="glass-card p-6 rounded-2xl border border-neutral-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Quick Prompt Sync</span>
+                                <button onclick="randomizePrompt()" class="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                    <i class="fa-solid fa-shuffle text-xs"></i> Next
+                                </button>
+                            </div>
+                            <div id="timer-quick-prompt-text" class="text-base font-semibold text-white">
+                                "What genre of TV shows do you enjoy watching the most, and why?"
+                            </div>
+                            <div id="timer-quick-prompt-starter" class="text-xs text-purple-300 bg-purple-950/40 p-2.5 rounded-lg border border-purple-800/40 italic">
+                                Starter: "I'm really keen on... because it has..."
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- TAB 3: PROMPT DECK -->
+            <section id="tab-prompts" class="tab-content hidden space-y-6">
+                <!-- Filters & Controls Toolbar -->
+                <div class="glass-card p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 border border-neutral-800">
+                    <!-- Category Filter Buttons -->
+                    <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
+                        <button onclick="filterPrompts('all')" class="cat-filter active px-3.5 py-1.5 rounded-xl text-xs font-bold bg-netflix-red text-white">All (20)</button>
+                        <button onclick="filterPrompts('cat1')" class="cat-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-neutral-800 text-neutral-400 hover:text-white">1. Preferences</button>
+                        <button onclick="filterPrompts('cat2')" class="cat-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-neutral-800 text-neutral-400 hover:text-white">2. Trends</button>
+                        <button onclick="filterPrompts('cat3')" class="cat-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-neutral-800 text-neutral-400 hover:text-white">3. Quality</button>
+                        <button onclick="filterPrompts('cat4')" class="cat-filter px-3.5 py-1.5 rounded-xl text-xs font-bold bg-neutral-800 text-neutral-400 hover:text-white">4. Pitching</button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                        <button onclick="randomizePrompt()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 transition shadow">
+                            <i class="fa-solid fa-shuffle"></i> Random Prompt
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Flashcard Container -->
+                <div class="max-w-3xl mx-auto">
+                    <div id="flashcard" class="glass-card rounded-3xl p-6 sm:p-10 border border-neutral-800 relative transition-all duration-300">
+                        <!-- Top Metadata -->
+                        <div class="flex items-center justify-between border-b border-neutral-800/80 pb-4 mb-6">
+                            <span id="card-category-badge" class="bg-purple-900/40 text-purple-300 border border-purple-500/30 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Category 1: Preferences
+                            </span>
+                            <span id="card-counter" class="text-xs font-bold text-neutral-400">
+                                Prompt 1 / 20
+                            </span>
+                        </div>
+
+                        <!-- Card Body / Question -->
+                        <div class="min-h-[140px] flex items-center justify-center text-center my-4">
+                            <h3 id="card-question" class="text-xl sm:text-2xl font-bold text-white leading-relaxed">
+                                What genre of TV shows do you enjoy watching the most, and why?
+                            </h3>
+                        </div>
+
+                        <!-- B1 Helper Sentence Frame Accordion -->
+                        <div class="mt-6 border-t border-neutral-800/80 pt-4">
+                            <button onclick="toggleSentenceStarters()" class="w-full flex items-center justify-between text-xs font-bold text-netflix-red hover:text-red-400 uppercase tracking-wider bg-netflix-red/10 px-4 py-2.5 rounded-xl">
+                                <span><i class="fa-solid fa-lightbulb mr-2"></i> B1 Sentence Starters Helper</span>
+                                <i id="starter-arrow" class="fa-solid fa-chevron-down transition-transform"></i>
+                            </button>
+                            <div id="starter-box" class="mt-3 p-4 bg-neutral-900/80 rounded-xl border border-neutral-800 space-y-2 text-sm text-neutral-300">
+                                <ul id="card-starters-list" class="list-disc list-inside space-y-1 text-xs text-neutral-300">
+                                    <li>"I'm really keen on watching..."</li>
+                                    <li>"What stands out to me is..."</li>
+                                    <li>"To be honest, I tend to prefer..."</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Card Action Footer -->
+                        <div class="flex flex-col sm:flex-row items-center justify-between mt-8 gap-4 pt-4 border-t border-neutral-800/80">
+                            <div class="flex items-center gap-2">
+                                <button onclick="prevPrompt()" class="bg-neutral-800 hover:bg-neutral-700 text-white w-10 h-10 rounded-xl flex items-center justify-center transition">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <button onclick="nextPrompt()" class="bg-neutral-800 hover:bg-neutral-700 text-white px-4 h-10 rounded-xl font-bold text-xs flex items-center gap-2 transition">
+                                    Next Prompt <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+
+                            <button onclick="toggleDiscussedCurrent()" id="btn-mark-discussed" class="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700">
+                                <i class="fa-regular fa-circle-check text-base"></i> Mark as Discussed
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: ROLE GENERATOR & TOOLKIT -->
+            <section id="tab-toolkit" class="tab-content hidden space-y-8">
+                
+                <!-- Random Role Generator Section -->
+                <div class="glass-card p-6 md:p-8 rounded-3xl border border-neutral-800 space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-800 pb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-dice text-netflix-red"></i> Interactive Role Generator
+                            </h3>
+                            <p class="text-xs text-neutral-400 mt-1">Assign panel personalities to students in your breakout group.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="assignRoles(2)" class="bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition">
+                                👥 2 Players
+                            </button>
+                            <button onclick="assignRoles(3)" class="bg-netflix-red hover:bg-netflix-darkRed text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow">
+                                👥👥 3 Players
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Output Grid for Roles -->
+                    <div id="role-generator-output" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-neutral-900/60 p-5 rounded-2xl border border-neutral-800 text-center text-neutral-500 py-8">
+                            Click a button above to randomly assign roles!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B1 Cheat Sheet Toolkit -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-purple-400"></i> B1 Panel Language Cheat Sheet
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Box 1 -->
+                        <div class="glass-card p-5 rounded-2xl border border-neutral-800 space-y-3">
+                            <h4 class="font-bold text-netflix-red text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-heart"></i> Expressing Personal Likes & Dislikes
+                            </h4>
+                            <ul class="space-y-2 text-xs text-neutral-300">
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"I'm really keen on..."</strong> (e.g., sci-fi shows with strong female leads)</li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"I tend to avoid..."</strong> (e.g., reality shows because they feel scripted)</li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"What draws me to a show is..."</strong> (e.g., unexpected plot twists)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Box 2 -->
+                        <div class="glass-card p-5 rounded-2xl border border-neutral-800 space-y-3">
+                            <h4 class="font-bold text-purple-400 text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-fire-flame-curved"></i> Explaining Viral Popularity
+                            </h4>
+                            <ul class="space-y-2 text-xs text-neutral-300">
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"The main reason for its popularity is..."</strong> (e.g., social media hype)</li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"It spread rapidly on TikTok because..."</strong> (e.g., iconic soundtrack)</li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"It appeals to a global audience due to..."</strong> (e.g., relatable characters)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Box 3 -->
+                        <div class="glass-card p-5 rounded-2xl border border-neutral-800 space-y-3">
+                            <h4 class="font-bold text-emerald-400 text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-comments"></i> Agreeing & Disagreeing Politely
+                            </h4>
+                            <ul class="space-y-2 text-xs text-neutral-300">
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"I completely agree with you on..."</strong> (e.g., the soundtrack being amazing)</li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"That's a valid point, but from my perspective..."</strong></li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"I see what you mean, though I felt that..."</strong> (e.g., the ending was rushed)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Box 4 -->
+                        <div class="glass-card p-5 rounded-2xl border border-neutral-800 space-y-3">
+                            <h4 class="font-bold text-amber-400 text-sm uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-trophy"></i> Pitching & Recommending
+                            </h4>
+                            <ul class="space-y-2 text-xs text-neutral-300">
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"If I could recommend only one series..."</strong></li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"It is definitely worth watching because..."</strong></li>
+                                <li class="bg-neutral-900/70 p-2 rounded-lg border border-neutral-800/80"><strong class="text-white">"You shouldn't miss it if you enjoy..."</strong></li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 5: REFLECTION & NOTES -->
+            <section id="tab-notes" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Checklist Column -->
+                    <div class="lg:col-span-5 glass-card p-6 rounded-3xl border border-neutral-800 space-y-4">
+                        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+                            <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-netflix-red"></i> Prompts Checklist
+                            </h3>
+                            <span id="notes-discussed-count" class="text-xs font-bold bg-neutral-800 px-2.5 py-1 rounded-full text-neutral-300">0/20 Done</span>
+                        </div>
+                        
+                        <p class="text-xs text-neutral-400">Check off the prompts your group discussed during the panel:</p>
+                        
+                        <div id="checklist-container" class="space-y-2 max-h-[420px] overflow-y-auto pr-2">
+                            <!-- Checklist items injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Notes Editor Column -->
+                    <div class="lg:col-span-7 glass-card p-6 rounded-3xl border border-neutral-800 space-y-4 flex flex-col justify-between">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+                                <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-box-archive text-purple-400"></i> Panel Summary & Key Takeaways
+                                </h3>
+                            </div>
+                            <p class="text-xs text-neutral-400">Record key opinions, favorite TV shows mentioned, and new B1 vocabulary learned:</p>
+                            
+                            <textarea id="panel-notes-input" rows="12" class="w-full bg-neutral-900/90 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-200 focus:outline-none focus:border-netflix-red resize-none font-sans" placeholder="• Show recommended by Role A: ...&#10;• Reason why it went viral: ...&#10;• New vocabulary learned: cliffhanger, overrated, plot twist...&#10;• Consensus winner TV show: ..."></textarea>
+                        </div>
+
+                        <!-- Export / Copy Tools -->
+                        <div class="flex flex-wrap gap-3 pt-3 border-t border-neutral-800">
+                            <button onclick="copyNotes()" class="bg-netflix-red hover:bg-netflix-darkRed text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow">
+                                <i class="fa-regular fa-copy"></i> Copy Notes
+                            </button>
+                            <button onclick="downloadNotes()" class="bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+                                <i class="fa-solid fa-download"></i> Download (.txt)
+                            </button>
+                            <button onclick="clearNotes()" class="bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-bold px-3 py-2.5 rounded-xl transition ml-auto">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="max-w-6xl mx-auto w-full px-6 mt-12 pt-6 border-t border-neutral-800/60 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
+        <div>
+            <p>TV Show Talk: Preferences & Popularity Summit • B1 ESL Activity</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <span>⏱️ 10 Minutes</span>
+            <span>💬 20 Outcome Prompts</span>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           PROMPTS DATA (20 B1 Prompts in 4 Categories)
+           ========================================================================== */
+        const PROMPTS = [
+            // Category 1: Preferences & Viewing Habits (1-5)
+            {
+                id: 1,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Habits',
+                question: "What genre of TV shows do you enjoy watching the most, and why?",
+                starters: [
+                    "I'm really keen on [genre] because...",
+                    "I tend to prefer... over... because it has...",
+                    "What appeals to me most in a show is..."
+                ],
+                discussed: false
+            },
+            {
+                id: 2,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Habits',
+                question: "Do you prefer watching entire seasons in one weekend or watching one episode a week? Why?",
+                starters: [
+                    "I definitely prefer binge-watching because...",
+                    "To be honest, I prefer taking my time because...",
+                    "Watching weekly creates more anticipation for..."
+                ],
+                discussed: false
+            },
+            {
+                id: 3,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Habits',
+                question: "How do you usually choose a new TV show to watch? (e.g., friend recommendations, trailers, social media trends)",
+                starters: [
+                    "I usually rely on recommendations from...",
+                    "Before choosing a show, I always check...",
+                    "If a trailer catches my attention on..."
+                ],
+                discussed: false
+            },
+            {
+                id: 4,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Habits',
+                question: "What is one TV show you stopped watching halfway through? What disappointed you?",
+                starters: [
+                    "I gave up on [Show Name] because...",
+                    "What disappointed me was the lazy storyline where...",
+                    "The story became too predictable after..."
+                ],
+                discussed: false
+            },
+            {
+                id: 5,
+                cat: 'cat1',
+                categoryName: '1. Preferences & Habits',
+                question: "Do you prefer watching TV shows in their original language with subtitles or dubbed in your language?",
+                starters: [
+                    "I find it much easier to watch dubbed because...",
+                    "I always choose original audio with subtitles so that...",
+                    "Subtitles help me experience the real voice acting of..."
+                ],
+                discussed: false
+            },
+
+            // Category 2: Explaining Popularity & Trends (6-10)
+            {
+                id: 6,
+                cat: 'cat2',
+                categoryName: '2. Explaining Popularity',
+                question: "Why do you think cliffhangers at the end of episodes make TV shows so popular?",
+                starters: [
+                    "The main reason cliffhangers work is that...",
+                    "It keeps viewers hooked on the edge of their seat because...",
+                    "People feel a strong urge to find out what happens next..."
+                ],
+                discussed: false
+            },
+            {
+                id: 7,
+                cat: 'cat2',
+                categoryName: '2. Explaining Popularity',
+                question: "What makes a TV show go viral on platforms like TikTok or Instagram?",
+                starters: [
+                    "A show goes viral when viewers share meme scenes of...",
+                    "Social media hype spreads quickly due to iconic characters like...",
+                    "Unforgettable music tracks or dance trends cause..."
+                ],
+                discussed: false
+            },
+            {
+                id: 8,
+                cat: 'cat2',
+                categoryName: '2. Explaining Popularity',
+                question: "In your opinion, why are reality TV shows so popular even if people complain about them?",
+                starters: [
+                    "In my opinion, people secretly enjoy the drama because...",
+                    "It is easy-to-watch entertainment after a stressful day...",
+                    "Viewers love to discuss and judge the contestants..."
+                ],
+                discussed: false
+            },
+            {
+                id: 9,
+                cat: 'cat2',
+                categoryName: '2. Explaining Popularity',
+                question: "How do famous actor performances or celebrity cameos contribute to a show's success?",
+                starters: [
+                    "Having a well-known actor brings an existing fanbase to...",
+                    "A strong performance makes the story feel much more...",
+                    "Famous cameos generate instant headlines on..."
+                ],
+                discussed: false
+            },
+            {
+                id: 10,
+                cat: 'cat2',
+                categoryName: '2. Explaining Popularity',
+                question: "Why do nostalgic or retro TV show settings (like 1980s or 1990s themes) attract large audiences?",
+                starters: [
+                    "Nostalgic settings appeal to older viewers who remember...",
+                    "Younger audiences find retro fashion and music fascinating because...",
+                    "It creates a cozy, comfortable atmosphere for..."
+                ],
+                discussed: false
+            },
+
+            // Category 3: Storytelling, Characters & Quality (11-15)
+            {
+                id: 11,
+                cat: 'cat3',
+                categoryName: '3. Characters & Quality',
+                question: "What makes a main character relatable or interesting to international viewers?",
+                starters: [
+                    "A character is relatable when they face real human flaws like...",
+                    "What makes [Character Name] interesting is their internal conflict...",
+                    "International audiences connect with universal emotions such as..."
+                ],
+                discussed: false
+            },
+            {
+                id: 12,
+                cat: 'cat3',
+                categoryName: '3. Characters & Quality',
+                question: "Do you think expensive special effects and high budgets are necessary for a TV show to be good?",
+                starters: [
+                    "I don't think high budgets are necessary because strong writing...",
+                    "While CGI looks impressive, what really matters is...",
+                    "Expensive effects help create immersive sci-fi worlds, but..."
+                ],
+                discussed: false
+            },
+            {
+                id: 13,
+                cat: 'cat3',
+                categoryName: '3. Characters & Quality',
+                question: "How does good background music or soundtrack change the emotional impact of a TV scene?",
+                starters: [
+                    "The background music creates suspense during...",
+                    "A poignant soundtrack enhances emotional scenes by...",
+                    "Without good sound design, intense moments would feel..."
+                ],
+                discussed: false
+            },
+            {
+                id: 14,
+                cat: 'cat3',
+                categoryName: '3. Characters & Quality',
+                question: "Why are unexpected plot twists so important for holding audience attention?",
+                starters: [
+                    "Plot twists challenge what the viewer expected to happen...",
+                    "A great twist makes the series memorable because...",
+                    "It prevents the storyline from becoming boring or..."
+                ],
+                discussed: false
+            },
+            {
+                id: 15,
+                cat: 'cat3',
+                categoryName: '3. Characters & Quality',
+                question: "What makes a series finale satisfying versus disappointing for fans?",
+                starters: [
+                    "A satisfying finale resolves all character story arcs...",
+                    "Fans feel disappointed when the ending feels rushed or...",
+                    "What matters most at the end is emotional closure for..."
+                ],
+                discussed: false
+            },
+
+            // Category 4: Recommendations & Pitching (16-20)
+            {
+                id: 16,
+                cat: 'cat4',
+                categoryName: '4. Pitching & Recommending',
+                question: "If you could recommend only ONE TV show to a stranger, which one would it be and why?",
+                starters: [
+                    "If I had to pick just one show, I'd recommend [Show] because...",
+                    "It is an absolute masterpiece in terms of...",
+                    "Anyone who watches the first episode will definitely..."
+                ],
+                discussed: false
+            },
+            {
+                id: 17,
+                cat: 'cat4',
+                categoryName: '4. Pitching & Recommending',
+                question: "What TV show do you think is overrated by critics, and why didn't you like it?",
+                starters: [
+                    "In my opinion, [Show Name] is totally overrated because...",
+                    "Despite all the critical praise, I found the story...",
+                    "It didn't live up to the massive social media hype for me..."
+                ],
+                discussed: false
+            },
+            {
+                id: 18,
+                cat: 'cat4',
+                categoryName: '4. Pitching & Recommending',
+                question: "What is a hidden gem (underrated show) that more people should watch?",
+                starters: [
+                    "A hidden gem that deserves way more attention is...",
+                    "Not many people know about this series, but it features...",
+                    "What makes this underrated show so brilliant is..."
+                ],
+                discussed: false
+            },
+            {
+                id: 19,
+                cat: 'cat4',
+                categoryName: '4. Pitching & Recommending',
+                question: "If you were producing a new TV show, what topic or story would you choose to guarantee high popularity?",
+                starters: [
+                    "If I produced a show, I would focus on a futuristic concept where...",
+                    "To guarantee a global hit, my plot would involve...",
+                    "The main attraction of my proposed TV show would be..."
+                ],
+                discussed: false
+            },
+            {
+                id: 20,
+                cat: 'cat4',
+                categoryName: '4. Pitching & Recommending',
+                question: "How have streaming services changed the way people talk about TV shows compared to ten years ago?",
+                starters: [
+                    "Nowadays, everyone watches entire series at their own pace instead of...",
+                    "Streaming platforms allow international shows to go viral globally within...",
+                    "Ten years ago people discussed weekly episodes, whereas today..."
+                ],
+                discussed: false
+            }
+        ];
+
+        /* ==========================================================================
+           STATE MANAGEMENT
+           ========================================================================== */
+        let currentPromptIndex = 0;
+        let activeCategoryFilter = 'all';
+
+        // Timer State (600 seconds = 10 mins)
+        const TOTAL_SECONDS = 600;
+        let timerSecondsRemaining = TOTAL_SECONDS;
+        let timerInterval = null;
+        let isMuted = false;
+
+        /* ==========================================================================
+           DOM INITIALIZATION
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderPromptCard();
+            renderChecklist();
+            updateProgressStats();
+            updateTimerDisplay();
+        });
+
+        /* ==========================================================================
+           TAB NAVIGATION SYSTEM
+           ========================================================================== */
+        function switchTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Show target
+            document.getElementById(tabId).classList.remove('hidden');
+
+            // Reset tab button states
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-netflix-red', 'text-white', 'shadow-lg');
+                btn.classList.add('bg-neutral-900/80', 'text-neutral-400');
+            });
+
+            // Highlight active button
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-neutral-900/80', 'text-neutral-400');
+                activeBtn.classList.add('bg-netflix-red', 'text-white', 'shadow-lg');
+            }
+        }
+
+        /* ==========================================================================
+           PROMPT DECK LOGIC
+           ========================================================================== */
+        function getFilteredPrompts() {
+            if (activeCategoryFilter === 'all') return PROMPTS;
+            return PROMPTS.filter(p => p.cat === activeCategoryFilter);
+        }
+
+        function renderPromptCard() {
+            const filtered = getFilteredPrompts();
+            if (filtered.length === 0) return;
+
+            // Ensure index bounds
+            if (currentPromptIndex >= filtered.length) currentPromptIndex = 0;
+            if (currentPromptIndex < 0) currentPromptIndex = filtered.length - 1;
+
+            const prompt = filtered[currentPromptIndex];
+
+            // Category badge & counter
+            document.getElementById('card-category-badge').innerText = prompt.categoryName;
+            document.getElementById('card-counter').innerText = `Prompt ${currentPromptIndex + 1} / ${filtered.length}`;
+            
+            // Question Text
+            document.getElementById('card-question').innerText = `"${prompt.question}"`;
+
+            // Sentence Starters List
+            const startersList = document.getElementById('card-starters-list');
+            startersList.innerHTML = '';
+            prompt.starters.forEach(s => {
+                const li = document.createElement('li');
+                li.innerText = s;
+                startersList.appendChild(li);
+            });
+
+            // Update Discussed Button state
+            const btnDiscussed = document.getElementById('btn-mark-discussed');
+            if (prompt.discussed) {
+                btnDiscussed.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition bg-emerald-600/20 border-emerald-500 text-emerald-400";
+                btnDiscussed.innerHTML = `<i class="fa-solid fa-circle-check text-base"></i> Marked as Discussed`;
+            } else {
+                btnDiscussed.className = "w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700";
+                btnDiscussed.innerHTML = `<i class="fa-regular fa-circle-check text-base"></i> Mark as Discussed`;
+            }
+
+            // Sync Quick Prompt Widget on Timer Screen
+            document.getElementById('timer-quick-prompt-text').innerText = `"${prompt.question}"`;
+            document.getElementById('timer-quick-prompt-starter').innerText = `Starter: "${prompt.starters[0]}"`;
+        }
+
+        function nextPrompt() {
+            const filtered = getFilteredPrompts();
+            currentPromptIndex = (currentPromptIndex + 1) % filtered.length;
+            animateCardFlip();
+            renderPromptCard();
+        }
+
+        function prevPrompt() {
+            const filtered = getFilteredPrompts();
+            currentPromptIndex = (currentPromptIndex - 1 + filtered.length) % filtered.length;
+            animateCardFlip();
+            renderPromptCard();
+        }
+
+        function randomizePrompt() {
+            const filtered = getFilteredPrompts();
+            const randomIndex = Math.floor(Math.random() * filtered.length);
+            currentPromptIndex = randomIndex;
+            animateCardFlip();
+            renderPromptCard();
+            showToast("Random prompt selected!");
+        }
+
+        function animateCardFlip() {
+            const card = document.getElementById('flashcard');
+            card.classList.add('scale-95', 'opacity-80');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-80');
+            }, 150);
+        }
+
+        function filterPrompts(catKey) {
+            activeCategoryFilter = catKey;
+            currentPromptIndex = 0;
+
+            // Highlight category tab
+            document.querySelectorAll('.cat-filter').forEach(btn => {
+                btn.classList.remove('bg-netflix-red', 'text-white');
+                btn.classList.add('bg-neutral-800', 'text-neutral-400');
+            });
+            event.target.classList.remove('bg-neutral-800', 'text-neutral-400');
+            event.target.classList.add('bg-netflix-red', 'text-white');
+
+            renderPromptCard();
+        }
+
+        function toggleSentenceStarters() {
+            const box = document.getElementById('starter-box');
+            const arrow = document.getElementById('starter-arrow');
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                box.classList.add('hidden');
+                arrow.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        function toggleDiscussedCurrent() {
+            const filtered = getFilteredPrompts();
+            const prompt = filtered[currentPromptIndex];
+            
+            // Toggle
+            prompt.discussed = !prompt.discussed;
+            
+            renderPromptCard();
+            renderChecklist();
+            updateProgressStats();
+
+            showToast(prompt.discussed ? "Marked prompt as discussed!" : "Removed from discussed list");
+        }
+
+        /* ==========================================================================
+           PROGRESS & CHECKLIST
+           ========================================================================== */
+        function updateProgressStats() {
+            const discussedCount = PROMPTS.filter(p => p.discussed).length;
+            const percentage = Math.round((discussedCount / PROMPTS.length) * 100);
+
+            document.getElementById('header-progress-text').innerText = `${discussedCount} / ${PROMPTS.length}`;
+            document.getElementById('header-progress-circle').innerText = `${percentage}%`;
+            document.getElementById('notes-discussed-count').innerText = `${discussedCount}/${PROMPTS.length} Done`;
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = '';
+
+            PROMPTS.forEach(prompt => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl border flex items-start gap-3 transition cursor-pointer ${
+                    prompt.discussed ? 'bg-emerald-950/20 border-emerald-800/40 text-neutral-300' : 'bg-neutral-900/60 border-neutral-800 text-neutral-400'
+                }`;
+                
+                item.onclick = () => {
+                    prompt.discussed = !prompt.discussed;
+                    renderChecklist();
+                    renderPromptCard();
+                    updateProgressStats();
+                };
+
+                item.innerHTML = `
+                    <input type="checkbox" ${prompt.discussed ? 'checked' : ''} class="mt-1 rounded border-neutral-700 text-netflix-red focus:ring-netflix-red">
+                    <div class="text-xs">
+                        <p class="font-semibold text-white">${prompt.id}. ${prompt.question}</p>
+                        <span class="text-[10px] text-neutral-500 uppercase">${prompt.categoryName}</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        /* ==========================================================================
+           10-MINUTE TIMER & AUDIO API
+           ========================================================================== */
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSecondsRemaining / 60);
+            const seconds = timerSecondsRemaining % 60;
+            const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            document.getElementById('timer-display').innerText = formatted;
+
+            // Circular progress calculation
+            const radius = 42;
+            const circumference = 2 * Math.PI * radius; // ~263.89
+            const progress = (TOTAL_SECONDS - timerSecondsRemaining) / TOTAL_SECONDS;
+            const strokeOffset = circumference * progress;
+            document.getElementById('timer-progress-ring').style.strokeDashoffset = strokeOffset;
+
+            // Phase Stage guidance updates
+            updatePhaseGuidance(timerSecondsRemaining);
+        }
+
+        function updatePhaseGuidance(secondsLeft) {
+            const stageBadge = document.getElementById('timer-stage-badge');
+            const guidanceBox = document.getElementById('phase-guidance-box');
+
+            if (secondsLeft > 540) {
+                // Min 0:00 - 1:00 (Phase 1)
+                stageBadge.className = "mb-4 inline-flex items-center gap-2 bg-netflix-red/20 text-netflix-red border border-netflix-red/40 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest";
+                stageBadge.innerHTML = `<i class="fa-solid fa-microphone-lines"></i> Phase 1: Warm-Up & Role Sync (Min 0-1)`;
+
+                guidanceBox.innerHTML = `
+                    <p class="font-semibold text-netflix-red">📢 Phase 1: Warm-Up & Role Sync (0:00 - 1:00)</p>
+                    <p class="text-xs text-neutral-400">Greet your fellow panelists! State your role (Passionate Binge-Watcher, Culture Critic, or Casual Curator) and express how excited you are to discuss TV shows today.</p>
+                `;
+            } else if (secondsLeft > 120) {
+                // Min 1:00 - 8:00 (Phase 2)
+                stageBadge.className = "mb-4 inline-flex items-center gap-2 bg-purple-500/20 text-purple-400 border border-purple-500/40 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest";
+                stageBadge.innerHTML = `<i class="fa-solid fa-comments"></i> Phase 2: Core Panel Discussion (Min 1-8)`;
+
+                guidanceBox.innerHTML = `
+                    <p class="font-semibold text-purple-400">💬 Phase 2: Core Panel Discussion (1:00 - 8:00)</p>
+                    <p class="text-xs text-neutral-400">Draw prompts from the Prompt Deck! Express preferences, debate why shows go viral, and analyze character quality. Aim for at least 5-8 cards.</p>
+                `;
+            } else {
+                // Min 8:00 - 10:00 (Phase 3)
+                stageBadge.className = "mb-4 inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest";
+                stageBadge.innerHTML = `<i class="fa-solid fa-trophy"></i> Phase 3: Pitch & Wrap-Up (Min 8-10)`;
+
+                guidanceBox.innerHTML = `
+                    <p class="font-semibold text-emerald-400">🏆 Phase 3: Final Pitch & Consensus (8:00 - 10:00)</p>
+                    <p class="text-xs text-neutral-400">Time for final pitches! Each member presents their top TV show recommendation. Agree on one ultimate show to recommend to international audiences.</p>
+                `;
+            }
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-start');
+            if (timerInterval) {
+                // Pause
+                clearInterval(timerInterval);
+                timerInterval = null;
+                btn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+                btn.classList.replace('bg-amber-600', 'bg-netflix-red');
+            } else {
+                // Start
+                if (timerSecondsRemaining <= 0) timerSecondsRemaining = TOTAL_SECONDS;
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+                btn.classList.replace('bg-netflix-red', 'bg-amber-600');
+
+                timerInterval = setInterval(() => {
+                    timerSecondsRemaining--;
+                    updateTimerDisplay();
+
+                    // Phase transitions audio feedback
+                    if (timerSecondsRemaining === 540 || timerSecondsRemaining === 120) {
+                        playTone(600, 0.3);
+                        showToast("Transitioning to the next summit phase!");
+                    }
+
+                    if (timerSecondsRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        btn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+                        playTone(880, 0.8);
+                        showToast("⏱️ Time is up! Session completed!");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('btn-timer-start').innerHTML = `<i class="fa-solid fa-play"></i>`;
+            timerSecondsRemaining = TOTAL_SECONDS;
+            updateTimerDisplay();
+            showToast("Timer reset to 10:00");
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const muteBtn = document.getElementById('btn-timer-mute');
+            if (isMuted) {
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-xmark text-neutral-500"></i>`;
+            } else {
+                muteBtn.innerHTML = `<i class="fa-solid fa-volume-high text-neutral-300"></i>`;
+            }
+        }
+
+        function playTone(freq, duration) {
+            if (isMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio play blocked");
+            }
+        }
+
+        /* ==========================================================================
+           ROLE GENERATOR
+           ========================================================================== */
+        const ROLE_DEFINITIONS = [
+            {
+                code: 'Role A',
+                title: 'The Passionate Binge-Watcher',
+                colorClass: 'border-netflix-red text-netflix-red bg-netflix-red/10',
+                desc: 'Focus: Thrilling cliffhangers, sci-fi/dramas, and watching whole seasons in one weekend.'
+            },
+            {
+                code: 'Role B',
+                title: 'The Culture Critic',
+                colorClass: 'border-purple-500 text-purple-400 bg-purple-500/10',
+                desc: 'Focus: Viral TikTok trends, social media hype, production budgets, and character depth.'
+            },
+            {
+                code: 'Role C',
+                title: 'The Casual Curator',
+                colorClass: 'border-emerald-500 text-emerald-400 bg-emerald-500/10',
+                desc: 'Focus: Easy-to-watch comedy, reality TV, mood watching, and lighthearted entertainment.'
+            }
+        ];
+
+        function assignRoles(playerCount) {
+            const output = document.getElementById('role-generator-output');
+            output.innerHTML = '';
+
+            // Shuffle roles
+            const shuffledRoles = [...ROLE_DEFINITIONS].sort(() => 0.5 - Math.random());
+
+            for (let i = 0; i < playerCount; i++) {
+                const role = shuffledRoles[i];
+                const card = document.createElement('div');
+                card.className = "glass-card p-5 rounded-2xl border flex flex-col justify-between space-y-3";
+                
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg border ${role.colorClass}">
+                                Player ${i + 1}
+                            </span>
+                            <span class="text-xs font-bold text-neutral-400">${role.code}</span>
+                        </div>
+                        <h4 class="font-bold text-white text-base">${role.title}</h4>
+                        <p class="text-xs text-neutral-300 mt-2">${role.desc}</p>
+                    </div>
+                `;
+                output.appendChild(card);
+            }
+
+            showToast(`Assigned roles for ${playerCount} players!`);
+        }
+
+        /* ==========================================================================
+           NOTES & EXPORT TOOLS
+           ========================================================================== */
+        function copyNotes() {
+            const notesText = document.getElementById('panel-notes-input').value;
+            const discussedList = PROMPTS.filter(p => p.discussed).map(p => `• [${p.categoryName}] ${p.question}`).join('\n');
+            
+            const fullContent = `=== TV SHOW TALK: SUMMIT NOTES ===\n\nDISCUSSED PROMPTS:\n${discussedList || 'None marked yet.'}\n\nPANEL NOTES & REFLECTION:\n${notesText}`;
+
+            const tempArea = document.createElement('textarea');
+            tempArea.value = fullContent;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+
+            showToast("Notes copied to clipboard!");
+        }
+
+        function downloadNotes() {
+            const notesText = document.getElementById('panel-notes-input').value;
+            const discussedList = PROMPTS.filter(p => p.discussed).map(p => `• [${p.categoryName}] ${p.question}`).join('\n');
+            
+            const fullContent = `=== TV SHOW TALK: SUMMIT NOTES ===\n\nDISCUSSED PROMPTS:\n${discussedList || 'None marked yet.'}\n\nPANEL NOTES & REFLECTION:\n${notesText}`;
+
+            const blob = new Blob([fullContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'TV_Show_Summit_Notes.txt';
+            link.click();
+
+            showToast("Notes downloaded as .txt!");
+        }
+
+        function clearNotes() {
+            document.getElementById('panel-notes-input').value = '';
+            showToast("Notes area cleared.");
+        }
+
+        /* ==========================================================================
+           TOAST NOTIFICATION UTILITY
+           ========================================================================== */
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            
+            toastMsg.innerText = message;
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
