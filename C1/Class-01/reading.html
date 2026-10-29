@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tongue Gym - Interactive ESL Pronunciation Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        accent: {
+                            purple: '#a855f7',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* Custom scrollbars and glassmorphism styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .glow-green {
+            box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.3);
+        }
+        .glow-purple {
+            box-shadow: 0 0 25px -5px rgba(168, 85, 247, 0.3);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #4ade80 0%, #06b6d4 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300 selection:bg-brand-500 selection:text-slate-950">
+
+    <!-- TOP NAV / HEADER -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-accent-cyan flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid font-bold fa-bolt"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-display font-extrabold text-xl tracking-tight text-white">TONGUE GYM</h1>
+                        <span class="bg-brand-500/10 text-brand-400 text-xs font-semibold px-2 py-0.5 rounded-full border border-brand-500/20">INT-FOR-118</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">SmartZone English Interactive Pronunciation Studio</p>
+                </div>
+            </div>
+
+            <!-- Level Selector Toggle -->
+            <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/60 shadow-inner">
+                <button id="btn-level-a1" onclick="switchLevel('A1-A2')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-brand-500 text-slate-950 shadow">
+                    <i class="fa-solid fa-seedling text-xs"></i>
+                    <span>A1 - A2 Beginner</span>
+                </button>
+                <button id="btn-level-b1" onclick="switchLevel('B1-C1')" class="px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-xs text-accent-rose"></i>
+                    <span>B1 - C1 Advanced</span>
+                </button>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-2">
+                <button onclick="togglePlannerModal()" title="View SMARTZONE Lesson Plan" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700 text-sm flex items-center gap-2 px-3">
+                    <i class="fa-solid fa-clipboard-list text-brand-400"></i>
+                    <span class="hidden md:inline text-xs font-medium">Planner Info</span>
+                </button>
+                <button id="theme-toggle" onclick="toggleTheme()" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-8">
+
+        <!-- LEVEL BANNER HERO -->
+        <section class="relative overflow-hidden rounded-2xl glass-panel p-6 lg:p-8 border border-slate-800">
+            <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-12 -top-12 w-64 h-64 bg-accent-cyan/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-semibold text-brand-400">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span id="level-badge-text">Target Level: A1 - A2 (Foundation & Minimal Pairs)</span>
+                    </div>
+                    <h2 id="level-hero-title" class="text-2xl lg:text-3xl font-display font-extrabold text-white">
+                        Master Sound Isolation & Minimal Pairs
+                    </h2>
+                    <p id="level-hero-desc" class="text-slate-300 text-sm lg:text-base leading-relaxed">
+                        Train your speech muscles to distinguish tricky phoneme contrasts (<code class="text-brand-300 bg-slate-900 px-1 py-0.5 rounded">/s/</code> vs <code class="text-brand-300 bg-slate-900 px-1 py-0.5 rounded">/ʃ/</code>, <code class="text-brand-300 bg-slate-900 px-1 py-0.5 rounded">/p/</code> vs <code class="text-brand-300 bg-slate-900 px-1 py-0.5 rounded">/b/</code>) using speed ladder drills and interactive vocal mirroring.
+                    </p>
+                </div>
+
+                <!-- Quick Stats / Focus Pill -->
+                <div class="grid grid-cols-2 gap-3 min-w-[240px]">
+                    <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                        <span class="text-xs text-slate-400 block">Focus Mode</span>
+                        <span id="stat-focus" class="text-sm font-bold text-brand-400">Phonemic Clarity</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                        <span class="text-xs text-slate-400 block">Methodology</span>
+                        <span id="stat-method" class="text-sm font-bold text-accent-cyan">Task-Based TPR</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGATION TABS FOR STUDIO MODULES -->
+        <div class="flex items-center gap-2 border-b border-slate-800 overflow-x-auto pb-2">
+            <button onclick="switchTab('tab-speed-trainer')" id="nav-speed-trainer" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 bg-slate-800 text-brand-400 border border-brand-500/30 whitespace-nowrap">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Speed Trainer & Mic</span>
+            </button>
+            <button onclick="switchTab('tab-roulette')" id="nav-roulette" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap">
+                <i class="fa-solid fa-arrows-spin text-accent-purple"></i>
+                <span>Intonation Roulette <span id="roulette-level-tag" class="text-[10px] bg-accent-purple/20 text-accent-purple px-1.5 py-0.5 rounded">B1-C1 Focus</span></span>
+            </button>
+            <button onclick="switchTab('tab-roleplay')" id="nav-roleplay" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap">
+                <i class="fa-solid fa-people-arrows text-accent-cyan"></i>
+                <span>Role-Play Deck</span>
+            </button>
+            <button onclick="switchTab('tab-rubric')" id="nav-rubric" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap">
+                <i class="fa-solid fa-award text-accent-amber"></i>
+                <span>Assessment & Certificate</span>
+            </button>
+        </div>
+
+        <!-- MODULE 1: SPEED TRAINER & AUDIO STUDIO -->
+        <section id="tab-speed-trainer" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left: Drill Selector & Text Card (2 cols) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-5">
+                        
+                        <!-- Header & Category Dropdown -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
+                                    <span>Target Drill Selector</span>
+                                </h3>
+                                <p class="text-xs text-slate-400">Select a tongue twister or minimal pair challenge</p>
+                            </div>
+
+                            <select id="drill-select" onchange="loadDrill(this.value)" class="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                                <!-- Populated dynamically based on Level -->
+                            </select>
+                        </div>
+
+                        <!-- Target Drill Display Card -->
+                        <div class="p-6 rounded-xl bg-slate-950/80 border border-slate-800 text-center space-y-4 relative overflow-hidden group">
+                            <div id="drill-badge" class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                                Target Sounds: /s/ vs /ʃ/
+                            </div>
+
+                            <p id="drill-text" class="text-xl sm:text-2xl font-display font-bold text-white tracking-wide leading-relaxed">
+                                "She sells sea shells by the sea shore."
+                            </p>
+
+                            <p id="drill-phonetic" class="text-sm font-mono text-slate-400 italic">
+                                /ʃiː sɛlz siː ʃɛlz baɪ ðə siː ʃɔːr/
+                            </p>
+                            
+                            <!-- Connected Speech Visual Overlay toggle (For B1-C1) -->
+                            <div id="connected-speech-bar" class="hidden pt-2 flex justify-center gap-3 text-xs text-slate-300 border-t border-slate-800">
+                                <span><strong class="text-accent-cyan">⁀</strong> Catenation</span>
+                                <span><strong class="text-accent-purple">/w/, /j/</strong> Intrusive</span>
+                                <span><strong class="text-accent-amber">/ə/</strong> Schwa Weak Form</span>
+                            </div>
+                        </div>
+
+                        <!-- Speech Synthesis Rate Controls -->
+                        <div class="space-y-3">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                <span>Model Voice Pace (Web Speech TTS)</span>
+                                <span id="speed-label" class="text-brand-400 font-mono">0.8x (Rabbit Pace)</span>
+                            </label>
+                            
+                            <div class="grid grid-cols-3 gap-3">
+                                <button onclick="setSpeed(0.5, 'Turtle Pace')" id="btn-speed-turtle" class="speed-btn p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 flex flex-col items-center justify-center gap-1 transition">
+                                    <i class="fa-solid fa-turtle text-emerald-400 text-lg"></i>
+                                    <span class="text-xs font-bold">Turtle (0.5x)</span>
+                                </button>
+                                <button onclick="setSpeed(0.8, 'Rabbit Pace')" id="btn-speed-rabbit" class="speed-btn p-3 rounded-xl bg-slate-800 border-2 border-brand-500 flex flex-col items-center justify-center gap-1 transition">
+                                    <i class="fa-solid fa-rabbit text-brand-400 text-lg"></i>
+                                    <span class="text-xs font-bold text-brand-400">Rabbit (0.8x)</span>
+                                </button>
+                                <button onclick="setSpeed(1.2, 'Cheetah Pace')" id="btn-speed-cheetah" class="speed-btn p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 flex flex-col items-center justify-center gap-1 transition">
+                                    <i class="fa-solid fa-bolt text-accent-amber text-lg"></i>
+                                    <span class="text-xs font-bold">Cheetah (1.2x)</span>
+                                </button>
+                            </div>
+
+                            <button onclick="speakCurrentDrill()" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-slate-950 font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 active:scale-[0.99] transition">
+                                <i class="fa-solid fa-volume-high text-lg"></i>
+                                <span>Listen to Model Pronunciation</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right: Recording Studio & Speed Ladder Challenge (1 col) -->
+                <div class="space-y-6">
+                    
+                    <!-- Microphone Studio -->
+                    <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4">
+                        <h3 class="font-display font-bold text-lg text-white flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-microphone text-accent-rose"></i>
+                                <span>Voice Recorder Studio</span>
+                            </span>
+                            <span id="rec-status" class="text-xs font-normal px-2 py-0.5 rounded bg-slate-800 text-slate-400">Ready</span>
+                        </h3>
+
+                        <!-- Audio Wave Visualizer Canvas -->
+                        <div class="relative h-24 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
+                            <canvas id="visualizer-canvas" class="w-full h-full absolute top-0 left-0"></canvas>
+                            <div id="mic-placeholder" class="text-slate-500 text-xs flex flex-col items-center gap-1 z-10 pointer-events-none">
+                                <i class="fa-solid fa-wave-square text-lg"></i>
+                                <span>Press Record and speak into mic</span>
+                            </div>
+                        </div>
+
+                        <!-- Recording Controls -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="btn-record" onclick="toggleRecord()" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center justify-center gap-2 transition shadow">
+                                <i class="fa-solid fa-circle text-xs"></i>
+                                <span id="record-btn-text">Record</span>
+                            </button>
+                            <button id="btn-playback" onclick="playRecordedAudio()" disabled class="py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold flex items-center justify-center gap-2 border border-slate-700 cursor-not-allowed transition">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Play Back</span>
+                            </button>
+                        </div>
+
+                        <!-- Live Speech Accuracy Recognition Output -->
+                        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span>Speech Recognition Match</span>
+                                <span id="match-percent" class="font-mono text-brand-400 font-bold">--%</span>
+                            </div>
+                            <p id="speech-recognized-text" class="text-xs font-mono text-slate-300 italic min-h-[1.5rem]">
+                                Speech transcript will appear here...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Speed Ladder Stopwatch & Score Tracker -->
+                    <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4">
+                        <h3 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-accent-amber"></i>
+                            <span>Speed Ladder Challenge</span>
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                                <span class="text-xs text-slate-400 block">Timer (15s)</span>
+                                <span id="stopwatch-display" class="font-mono font-extrabold text-2xl text-accent-amber">00:15</span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                                <span class="text-xs text-slate-400 block">Clear Reps</span>
+                                <span id="rep-counter" class="font-mono font-extrabold text-2xl text-brand-400">0</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="startSpeedChallenge()" id="btn-start-challenge" class="flex-1 py-2.5 rounded-xl bg-accent-amber hover:bg-amber-400 text-slate-950 font-bold flex items-center justify-center gap-2 shadow transition">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Start 15s Drill</span>
+                            </button>
+                            <button onclick="countRepetition()" id="btn-add-rep" disabled class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold border border-slate-700 cursor-not-allowed transition">
+                                <i class="fa-solid fa-plus"></i> Rep
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 2: INTONATION ROULETTES (B1-C1) -->
+        <section id="tab-roulette" class="tab-content space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Wheel Canvas Column (5 cols) -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col items-center justify-center space-y-4">
+                    <div class="text-center space-y-1">
+                        <h3 class="font-display font-bold text-xl text-white">Intonation Roulette Wheel</h3>
+                        <p class="text-xs text-slate-400">Spin to get your expressive performance persona</p>
+                    </div>
+
+                    <!-- Canvas Wheel -->
+                    <div class="relative w-64 h-64 sm:w-72 sm:h-72 my-2">
+                        <!-- Wheel Pointer -->
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-accent-rose text-2xl filter drop-shadow">
+                            <i class="fa-solid fa-caret-down"></i>
+                        </div>
+                        <canvas id="roulette-canvas" width="300" height="300" class="w-full h-full rounded-full shadow-2xl border-4 border-slate-800"></canvas>
+                    </div>
+
+                    <button onclick="spinRoulette()" id="btn-spin" class="w-full py-3 rounded-xl bg-gradient-to-r from-accent-purple to-indigo-600 hover:from-accent-purple hover:to-indigo-500 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 active:scale-95 transition">
+                        <i class="fa-solid fa-arrows-spin"></i>
+                        <span>Spin the Wheel!</span>
+                    </button>
+                </div>
+
+                <!-- Assigned Stance & Sentence Studio (7 cols) -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-6 border border-slate-800 space-y-6 flex flex-col justify-between">
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Performance Stance</span>
+                            <span id="stance-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-accent-purple/20 text-accent-purple border border-accent-purple/30">
+                                Spin Required
+                            </span>
+                        </div>
+
+                        <!-- Active Persona Card -->
+                        <div id="stance-card" class="p-5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                            <div class="flex items-center gap-3">
+                                <div id="stance-icon" class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-accent-purple text-2xl">
+                                    <i class="fa-solid fa-masks-theater"></i>
+                                </div>
+                                <div>
+                                    <h4 id="stance-title" class="font-display font-bold text-lg text-white">Ready to Spin</h4>
+                                    <p id="stance-desc" class="text-xs text-slate-400">Click 'Spin the Wheel' to draw an emotional stance, rhythm contour, and sentence.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Sentence with Visual Connected Speech Markers -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Sentence & Phonetic Map</label>
+                            <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                                <p id="roulette-sentence" class="text-lg font-display font-bold text-white leading-relaxed">
+                                    "What do you want to do after work today?"
+                                </p>
+                                
+                                <!-- Marked Connected Speech -->
+                                <div id="roulette-marked" class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-sm font-mono text-accent-cyan leading-loose">
+                                    /wə-də-jə-wɑ-nə-du-w-æf-tər-wɜrk-tə-deɪ?/
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audio Practice for Roulette -->
+                    <div class="pt-4 border-t border-slate-800 flex items-center gap-3">
+                        <button onclick="speakRouletteSentence()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm flex items-center justify-center gap-2 border border-slate-700 transition">
+                            <i class="fa-solid fa-volume-high text-brand-400"></i>
+                            <span>Listen Reference</span>
+                        </button>
+                        <button onclick="toggleRecord()" class="flex-1 py-2.5 rounded-xl bg-accent-purple hover:bg-purple-600 text-white font-bold text-sm flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span>Perform & Record</span>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 3: DIGITAL ROLE-PLAY CARDS DECK -->
+        <section id="tab-roleplay" class="tab-content space-y-6 hidden">
+            
+            <!-- Scenario Tabs -->
+            <div class="flex flex-wrap items-center gap-3 justify-between">
+                <div>
+                    <h3 class="font-display font-bold text-lg text-white">Interactive Partner Role-Play Deck</h3>
+                    <p class="text-xs text-slate-400">Select a real-world scenario designed for your target level</p>
+                </div>
+
+                <div class="flex items-center gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                    <button onclick="loadRolePlay('icecream')" id="rp-nav-icecream" class="rp-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-500 text-slate-950">
+                        🍦 Ice Cream (A1-A2)
+                    </button>
+                    <button onclick="loadRolePlay('radio')" id="rp-nav-radio" class="rp-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        📻 Radio Audition (A1-A2)
+                    </button>
+                    <button onclick="loadRolePlay('auction')" id="rp-nav-auction" class="rp-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        🔨 Art Auction (B1-C1)
+                    </button>
+                    <button onclick="loadRolePlay('news')" id="rp-nav-news" class="rp-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        📺 Live News (B1-C1)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dual Partner Cards Deck (Side by Side or Stacked) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Partner A Card -->
+                <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-500 border-x border-b border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-brand-500/20 text-brand-400 font-bold text-xs flex items-center justify-center">A</span>
+                            <h4 id="rp-role-a" class="font-display font-bold text-base text-white">Customer</h4>
+                        </div>
+                        <span id="rp-focus-a" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-brand-400 border border-slate-700 font-mono">
+                            Target: /s/, /ʃ/, /v/, /b/
+                        </span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 min-h-[140px] flex flex-col justify-between">
+                        <p id="rp-text-a" class="text-sm lg:text-base text-slate-200 leading-relaxed">
+                            "Hello! I would like six sweet scoops of strawberry ice cream and vanilla in a big bowl, please! Is that the very best?"
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-900">
+                            <span>Phonetic Drill Highlighted</span>
+                            <button onclick="speakText('rp-text-a')" class="text-brand-400 hover:text-brand-300 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen Line
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Partner B Card -->
+                <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-accent-cyan border-x border-b border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-accent-cyan/20 text-accent-cyan font-bold text-xs flex items-center justify-center">B</span>
+                            <h4 id="rp-role-b" class="font-display font-bold text-base text-white">Ice Cream Server</h4>
+                        </div>
+                        <span id="rp-focus-b" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-accent-cyan border border-slate-700 font-mono">
+                            Target: /s/, /ʃ/, /v/, /b/
+                        </span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 min-h-[140px] flex flex-col justify-between">
+                        <p id="rp-text-b" class="text-sm lg:text-base text-slate-200 leading-relaxed">
+                            "Sure! We have six special scoops of super sweet strawberry and very vanilla. That will be seven silver dollars!"
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-900">
+                            <span>Phonetic Drill Highlighted</span>
+                            <button onclick="speakText('rp-text-b')" class="text-accent-cyan hover:text-cyan-300 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen Line
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- MODULE 4: ASSESSMENT RUBRIC & CERTIFICATE -->
+        <section id="tab-rubric" class="tab-content space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Interactive Scoring Rubric (7 cols) -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-6 border border-slate-800 space-y-6">
+                    <div>
+                        <h3 class="font-display font-bold text-xl text-white flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-check text-accent-amber"></i>
+                            <span>SmartZone INT-FOR-118 Evaluation Rubric</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Score student performance across 3 core criteria</p>
+                    </div>
+
+                    <!-- Student Name Input -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-400 uppercase">Student Full Name</label>
+                        <input id="student-name-input" type="text" value="Student Name" placeholder="Enter student name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-brand-500 outline-none text-sm font-semibold">
+                    </div>
+
+                    <!-- Criteria 1: Phonemic Precision -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">1. Phonemic Precision (Minimal Pairs & Consonants)</span>
+                            <span id="score-val-1" class="text-xs font-bold text-brand-400">5 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Flawless distinction between target minimal pairs and sounds.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-crit-1">
+                            <!-- Star buttons -->
+                        </div>
+                    </div>
+
+                    <!-- Criteria 2: Fluency & Connected Speech -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">2. Fluency & Connected Speech (Linking / Weak Forms)</span>
+                            <span id="score-val-2" class="text-xs font-bold text-brand-400">4 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Smooth catenation, weak forms, and natural sentence pace.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-crit-2">
+                            <!-- Star buttons -->
+                        </div>
+                    </div>
+
+                    <!-- Criteria 3: Intonation & Expression -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">3. Intonation & Expression (Pitch & Persona)</span>
+                            <span id="score-val-3" class="text-xs font-bold text-brand-400">5 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Dynamic pitch modulation and persuasive role-play delivery.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-crit-3">
+                            <!-- Star buttons -->
+                        </div>
+                    </div>
+
+                    <button onclick="generateCertificate()" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-brand-500 hover:from-amber-400 hover:to-brand-400 text-slate-950 font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition">
+                        <i class="fa-solid fa-award"></i>
+                        <span>Generate Tongue Gym Master Badge</span>
+                    </button>
+                </div>
+
+                <!-- Live Generated Badge / Certificate Preview (5 cols) -->
+                <div class="lg:col-span-5 glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col justify-between items-center text-center space-y-4">
+                    <div id="certificate-card" class="w-full p-6 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-500/40 space-y-4 relative overflow-hidden shadow-2xl">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 text-amber-400 text-8xl pointer-events-none">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-[10px] uppercase tracking-widest font-bold text-amber-400">SMARTZONE PRESENCIAL INGLÉS</span>
+                            <h4 class="font-display font-extrabold text-2xl text-white">TONGUE GYM MASTER</h4>
+                            <p class="text-xs text-slate-400">Official Pronunciation Certificate</p>
+                        </div>
+
+                        <div class="py-3 border-y border-slate-800 space-y-1">
+                            <span class="text-xs text-slate-400 block">Awarded To</span>
+                            <span id="cert-student-name" class="font-display font-bold text-lg text-brand-400">Student Name</span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-slate-500 block text-[10px]">Precision</span>
+                                <span id="cert-score-1" class="font-bold text-white">5/5</span>
+                            </div>
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-slate-500 block text-[10px]">Fluency</span>
+                                <span id="cert-score-2" class="font-bold text-white">4/5</span>
+                            </div>
+                            <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                                <span class="text-slate-500 block text-[10px]">Intonation</span>
+                                <span id="cert-score-3" class="font-bold text-white">5/5</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between text-[10px] text-slate-500">
+                            <span>Teacher: Leonardo Pabón</span>
+                            <span>Code: INT-FOR-118</span>
+                        </div>
+                    </div>
+
+                    <button onclick="triggerConfetti()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-sparkles text-amber-400"></i>
+                        <span>Celebrate Victory (Confetti)</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SMARTZONE LESSON PLANNER MODAL -->
+    <div id="planner-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-2xl border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
+            
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-lg text-white">FORMATO PLANEADOR SMARTZONE PRESENCIAL INGLÉS</h3>
+                        <p class="text-xs text-slate-400">CÓDIGO: INT-FOR-118 | VERSIÓN: 2 | Teacher: Leonardo Pabón Agudelo</p>
+                    </div>
+                </div>
+                <button onclick="togglePlannerModal()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300">
+                
+                <!-- A1-A2 Summary -->
+                <div class="space-y-3">
+                    <h4 class="font-display font-bold text-base text-brand-400 border-b border-brand-500/20 pb-1">
+                        1. LESSON PLAN: A1 - A2 (BEGINNER / PRE-INTERMEDIATE)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                            <strong class="text-white block mb-1">Communicative Objective:</strong>
+                            Distinguish, isolate, and accurately pronounce key English phoneme contrasts (/s/ vs /ʃ/, /p/ vs /b/, /ɪ/ vs /iː/) through mouth gymnastics and minimal pair drills.
+                        </div>
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                            <strong class="text-white block mb-1">Cultural & Pedagogical:</strong>
+                            Nursery rhymes and tongue twisters. Task-Based Learning (TBL), Communicative Language Teaching (CLT), and TPR mouth gestures.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B1-C1 Summary -->
+                <div class="space-y-3">
+                    <h4 class="font-display font-bold text-base text-accent-purple border-b border-accent-purple/20 pb-1">
+                        2. LESSON PLAN: B1 - C1 (INTERMEDIATE / ADVANCED)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                            <strong class="text-white block mb-1">Communicative Objective:</strong>
+                            Master connected speech mechanics (catenation/linking, intrusive /w/ & /j/, elision, schwa reduction) and expressive intonation contours.
+                        </div>
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                            <strong class="text-white block mb-1">Cultural & Pedagogical:</strong>
+                            Oratorical styles in public speaking, fast broadcasts. Dogme ELT, Speech Shadowing, and Intonation Theater.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Table -->
+                <div class="space-y-2">
+                    <h4 class="font-display font-bold text-sm text-white">Session Timeline (60 Mins)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                    <th class="p-2">Phase</th>
+                                    <th class="p-2">Time</th>
+                                    <th class="p-2">A1 - A2 Focus</th>
+                                    <th class="p-2">B1 - C1 Focus</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60">
+                                <tr>
+                                    <td class="p-2 font-semibold text-white">Warm-Up</td>
+                                    <td class="p-2 text-brand-400">10 min</td>
+                                    <td class="p-2">Jaw/lip gym, vowel stretches (/iː/, /ɪ/)</td>
+                                    <td class="p-2">Diaphragm breath, consonant clusters (/str/)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold text-white">Input & Shadowing</td>
+                                    <td class="p-2 text-brand-400">15 min</td>
+                                    <td class="p-2">Minimal pair video & visual mouth models</td>
+                                    <td class="p-2">Connected speech analysis & transcript marking</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold text-white">Interactive Gym</td>
+                                    <td class="p-2 text-brand-400">15 min</td>
+                                    <td class="p-2">Speed Twister Ladder Relay</td>
+                                    <td class="p-2">Intonation Roulette Emotional Stances</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold text-white">Role-Play Practice</td>
+                                    <td class="p-2 text-brand-400">15 min</td>
+                                    <td class="p-2">Ice Cream / Radio Host Cards</td>
+                                    <td class="p-2">Art Auctioneer / Live News Anchor Cards</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold text-white">Cool-Down</td>
+                                    <td class="p-2 text-brand-400">5 min</td>
+                                    <td class="p-2">Self-reflection & peer badge</td>
+                                    <td class="p-2">Smartphone 15s self-recording audit</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-slate-800 bg-slate-900 flex justify-end">
+                <button onclick="togglePlannerModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs">
+                    Close Planner
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIS & SCRIPT LOGIC -->
+    <script>
+        /* GLOBAL APPLICATION STATE */
+        let currentLevel = 'A1-A2'; // 'A1-A2' or 'B1-C1'
+        let currentSpeed = 0.8;
+        let activeDrillIndex = 0;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioUrl = null;
+        let speechRecognition = null;
+
+        // Speed Challenge State
+        let challengeTimer = null;
+        let challengeTimeLeft = 15;
+        let challengeReps = 0;
+
+        // Rubric Scores
+        let scores = [5, 4, 5];
+
+        /* DATA: DRILLS PER LEVEL */
+        const DRILLS = {
+            'A1-A2': [
+                {
+                    title: "She sells sea shells (/s/ vs /ʃ/)",
+                    text: "She sells sea shells by the sea shore.",
+                    phonetic: "/ʃiː sɛlz siː ʃɛlz baɪ ðə siː ʃɔːr/",
+                    badge: "Target: /s/ vs /ʃ/"
+                },
+                {
+                    title: "Peter Piper Picked (/p/ vs /b/)",
+                    text: "Peter Piper picked a peck of pickled peppers.",
+                    phonetic: "/ˈpiː.tər ˈpaɪ.pər pɪkt ə pɛk əv ˈpɪk.əld ˈpɛp.ərz/",
+                    badge: "Target: /p/ vs /b/"
+                },
+                {
+                    title: "Five Fresh Fish (/f/ vs /v/)",
+                    text: "Five fresh fish fly fast.",
+                    phonetic: "/faɪv frɛʃ fɪʃ flaɪ fæst/",
+                    badge: "Target: /f/ vs /v/"
+                },
+                {
+                    title: "Betty Bought Better Butter",
+                    text: "Betty bought a bit of better butter.",
+                    phonetic: "/ˈbɛt.i bɔːt ə bɪt əv ˈbɛt.ər ˈbʌt.ər/",
+                    badge: "Target: /b/ & /t/"
+                }
+            ],
+            'B1-C1': [
+                {
+                    title: "Connected Speech: Work Today",
+                    text: "What do you want to do after work today?",
+                    phonetic: "/wə-də-jə-wɑ-nə-du-w-æf-tər-wɜrk-tə-deɪ?/",
+                    badge: "Linking ⁀ & Schwa /ə/"
+                },
+                {
+                    title: "Auctioneer Cadence Challenge",
+                    text: "Thirty-three thousand once, thirty-three thousand twice! Going, going, sold!",
+                    phonetic: "/ˈθɜː.ti θriː ˈθaʊ.zənd wʌns, ˈθɜː.ti θriː ˈθaʊ.zənd twaɪs/",
+                    badge: "Rapid Cadence & Consonant Clusters"
+                },
+                {
+                    title: "Intrusive /w/ & /j/ Glide",
+                    text: "Go in and ask if I ought to stay or go away.",
+                    phonetic: "/ɡoʊ-w-ɪn ænd æsk ɪf aɪ-j-ɔːt tu steɪ-j-ər ɡoʊ-w-əˈweɪ/",
+                    badge: "Intrusive /w/ & /j/"
+                },
+                {
+                    title: "Severe Storm Live Broadcast",
+                    text: "A sudden, severe storm has created chaotic conditions across the city center.",
+                    phonetic: "/ə ˈsʌd.ən sɪˈvɪər stɔːrm hæz kriˈeɪ.tɪd keɪˈɒt.ɪk kənˈdɪʃ.ənz/",
+                    badge: "Thought Grouping & Pitch Elevation"
+                }
+            ]
+        };
+
+        /* DATA: ROLE PLAY SCENARIOS */
+        const ROLE_PLAYS = {
+            icecream: {
+                roleA: "Customer",
+                focusA: "Target: /s/, /ʃ/, /v/, /b/",
+                textA: "Hello! I would like six sweet scoops of strawberry ice cream and vanilla in a big bowl, please! Is that the very best?",
+                roleB: "Ice Cream Server",
+                focusB: "Target: /s/, /ʃ/, /v/, /b/",
+                textB: "Sure! We have six special scoops of super sweet strawberry and very vanilla. That will be seven silver dollars!"
+            },
+            radio: {
+                roleA: "Radio Host Candidate",
+                focusA: "Target: /p/, /b/, /t/, /d/",
+                textA: "Good morning! Today we have ten tiny tigers taking a big blue bus to the downtown pet park.",
+                roleB: "Audition Producer",
+                focusB: "Target: /p/, /b/, /t/, /d/",
+                textB: "Please repeat! Make the P and B sounds stronger! Say: 'Betty bought a bit of better butter'!"
+            },
+            auction: {
+                roleA: "Rapid Art Auctioneer",
+                focusA: "Fast connected speech & pitch climbing",
+                textA: "Do I hear thirty-three thousand? Thirty-three thousand once, thirty-three thousand twice! Look at this rare, pristine, painted porcelain plate! Going, going, sold!",
+                roleB: "Art Collector On Phone",
+                focusB: "Stress emphasis & contrastive pitch",
+                textB: "Wait! I'll offer thirty-four thousand five hundred! You said 'rare painted porcelain', right? I won't let this priceless piece pass me by!"
+            },
+            news: {
+                roleA: "On-Scene TV Reporter",
+                focusA: "Intonation contour & catenation",
+                textA: "We're reporting live from the center of the city where a sudden, severe storm has created chaotic conditions! Citizens must stay indoors!",
+                roleB: "Studio News Anchor",
+                focusB: "Question intonation & smooth handovers",
+                textB: "Thanks, Alex! Can you clarify—are emergency services already responding, or are key roads completely blocked off by debris?"
+            }
+        };
+
+        /* ROULETTES STANCES (B1-C1) */
+        const ROULETTE_STANCES = [
+            {
+                title: "Breaking News Anchor",
+                icon: "fa-satellite-dish",
+                desc: "Authoritative tone, falling pitch on final statements, heavy sentence stress.",
+                badge: "Authoritative & Urgent"
+            },
+            {
+                title: "Whispering Secret Agent",
+                icon: "fa-[#06b6d4] fa-user-ninja",
+                desc: "Low volume, high friction, tight consonant control, mysterious cadence.",
+                badge: "Low Volume Friction"
+            },
+            {
+                title: "Excited Game Show Host",
+                icon: "fa-microphone-lines",
+                desc: "High pitch, dynamic stress, rising intonation, fast rhythm bursts.",
+                badge: "High Energy & Rising Pitch"
+            },
+            {
+                title: "Sarcastic Office Colleague",
+                icon: "fa-face-rolling-eyes",
+                desc: "Drawn-out vowels, flat intonation contour, exaggerated pause length.",
+                badge: "Flat & Drawn-out"
+            },
+            {
+                title: "Rapid Art Auctioneer",
+                icon: "fa-gavel",
+                desc: "Ultra-fast rhythm, intrusive glides, seamless catenation across words.",
+                badge: "Maximum Speed Catenation"
+            }
+        ];
+
+        /* INITIALIZATION ON DOM LOAD */
+        window.addEventListener('DOMContentLoaded', () => {
+            initStars();
+            loadDrillsDropdown();
+            loadDrill(0);
+            initWebSpeechRecognition();
+            initRouletteWheel();
+            drawCanvasVisualizerPlaceholder();
+        });
+
+        /* LEVEL SWITCHING LOGIC */
+        function switchLevel(level) {
+            currentLevel = level;
+            
+            const btnA1 = document.getElementById('btn-level-a1');
+            const btnB1 = document.getElementById('btn-level-b1');
+            const heroTitle = document.getElementById('level-hero-title');
+            const heroDesc = document.getElementById('level-hero-desc');
+            const heroBadge = document.getElementById('level-badge-text');
+            const statFocus = document.getElementById('stat-focus');
+            const connectedSpeechBar = document.getElementById('connected-speech-bar');
+
+            if (level === 'A1-A2') {
+                btnA1.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-brand-500 text-slate-950 shadow";
+                btnB1.className = "px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2";
+                
+                heroBadge.innerText = "Target Level: A1 - A2 (Foundation & Minimal Pairs)";
+                heroTitle.innerText = "Master Sound Isolation & Minimal Pairs";
+                heroDesc.innerHTML = "Train your speech muscles to distinguish tricky phoneme contrasts (<code class=\"text-brand-300 bg-slate-900 px-1 py-0.5 rounded\">/s/</code> vs <code class=\"text-brand-300 bg-slate-900 px-1 py-0.5 rounded\">/ʃ/</code>, <code class=\"text-brand-300 bg-slate-900 px-1 py-0.5 rounded\">/p/</code> vs <code class=\"text-brand-300 bg-slate-900 px-1 py-0.5 rounded\">/b/</code>) using speed ladder drills and interactive vocal mirroring.";
+                statFocus.innerText = "Phonemic Clarity";
+                connectedSpeechBar.classList.add('hidden');
+            } else {
+                btnB1.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-accent-purple text-white shadow";
+                btnA1.className = "px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2";
+                
+                heroBadge.innerText = "Target Level: B1 - C1 (Connected Speech & Expressive Cadence)";
+                heroTitle.innerText = "Master Connected Speech & Intonation Roulette";
+                heroDesc.innerHTML = "Perfect your speech rhythm with catenation (linking <code class=\"text-accent-cyan bg-slate-900 px-1 py-0.5 rounded\">⁀</code>), intrusive glides (<code class=\"text-accent-purple bg-slate-900 px-1 py-0.5 rounded\">/w/ /j/</code>), schwa reductions (<code class=\"text-accent-amber bg-slate-900 px-1 py-0.5 rounded\">/ə/</code>), and perform in randomized emotional stances.";
+                statFocus.innerText = "Connected Rhythm";
+                connectedSpeechBar.classList.remove('hidden');
+            }
+
+            loadDrillsDropdown();
+            loadDrill(0);
+        }
+
+        /* TAB NAVIGATION LOGIC */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900 transition whitespace-nowrap";
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            const activeBtn = document.getElementById('nav-' + tabId.replace('tab-', ''));
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 bg-slate-800 text-brand-400 border border-brand-500/30 whitespace-nowrap";
+            }
+        }
+
+        /* LOAD DRILLS DROPDOWN */
+        function loadDrillsDropdown() {
+            const select = document.getElementById('drill-select');
+            select.innerHTML = '';
+            
+            DRILLS[currentLevel].forEach((drill, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = drill.title;
+                select.appendChild(opt);
+            });
+        }
+
+        function loadDrill(index) {
+            activeDrillIndex = parseInt(index);
+            const drill = DRILLS[currentLevel][activeDrillIndex];
+            
+            document.getElementById('drill-badge').innerText = drill.badge;
+            document.getElementById('drill-text').innerText = `"${drill.text}"`;
+            document.getElementById('drill-phonetic').innerText = drill.phonetic;
+        }
+
+        /* SPEECH SYNTHESIS (TTS) */
+        function setSpeed(rate, label) {
+            currentSpeed = rate;
+            document.getElementById('speed-label').innerText = `${rate}x (${label})`;
+            
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.classList.remove('border-2', 'border-brand-500');
+            });
+            event.currentTarget.classList.add('border-2', 'border-brand-500');
+        }
+
+        function speakCurrentDrill() {
+            const text = DRILLS[currentLevel][activeDrillIndex].text;
+            speakTextString(text, currentSpeed);
+        }
+
+        function speakText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            speakTextString(text, 0.9);
+        }
+
+        function speakTextString(text, speed) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = speed || 0.8;
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("Speech Synthesis is not supported in this browser.");
+            }
+        }
+
+        /* VOICE RECORDER & AUDIO VISUALIZER */
+        async function toggleRecord() {
+            const recBtnText = document.getElementById('record-btn-text');
+            const recStatus = document.getElementById('rec-status');
+            const btnRecord = document.getElementById('btn-record');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        recordedAudioUrl = URL.createObjectURL(audioBlob);
+                        const playbackBtn = document.getElementById('btn-playback');
+                        playbackBtn.disabled = false;
+                        playbackBtn.className = "py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold flex items-center justify-center gap-2 border border-brand-500/30 shadow transition cursor-pointer";
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recBtnText.innerText = "Stop Rec";
+                    recStatus.innerText = "Recording...";
+                    recStatus.className = "text-xs font-semibold px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 animate-pulse";
+                    btnRecord.className = "py-2.5 rounded-xl bg-rose-700 hover:bg-rose-600 text-white font-bold flex items-center justify-center gap-2 transition shadow ring-4 ring-rose-500/30";
+
+                    // Start visualizer animation
+                    visualizeAudioStream(stream);
+
+                    // Start speech recognition if available
+                    if (speechRecognition) {
+                        try { speechRecognition.start(); } catch(e) {}
+                    }
+
+                } catch (err) {
+                    alert("Microphone access denied or not supported.");
+                }
+            } else {
+                if (mediaRecorder) mediaRecorder.stop();
+                isRecording = false;
+                recBtnText.innerText = "Record";
+                recStatus.innerText = "Ready";
+                recStatus.className = "text-xs font-normal px-2 py-0.5 rounded bg-slate-800 text-slate-400";
+                btnRecord.className = "py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center justify-center gap-2 transition shadow";
+            }
+        }
+
+        function playRecordedAudio() {
+            if (recordedAudioUrl) {
+                const audio = new Audio(recordedAudioUrl);
+                audio.play();
+            }
+        }
+
+        function drawCanvasVisualizerPlaceholder() {
+            const canvas = document.getElementById('visualizer-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function visualizeAudioStream(stream) {
+            const canvas = document.getElementById('visualizer-canvas');
+            const ctx = canvas.getContext('2d');
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            analyser.fftSize = 64;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                if (!isRecording) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 1.5;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                    x += barWidth;
+                }
+            }
+            draw();
+        }
+
+        /* WEB SPEECH RECOGNITION MATCHING */
+        function initWebSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+                speechRecognition = new SpeechRec();
+                speechRecognition.continuous = false;
+                speechRecognition.interimResults = false;
+                speechRecognition.lang = 'en-US';
+
+                speechRecognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('speech-recognized-text').innerText = `"${transcript}"`;
+                    
+                    // Compare with current drill
+                    const targetText = DRILLS[currentLevel][activeDrillIndex].text;
+                    const matchScore = calculateMatchScore(transcript, targetText);
+                    document.getElementById('match-percent').innerText = `${matchScore}%`;
+                };
+            }
+        }
+
+        function calculateMatchScore(text1, text2) {
+            const clean1 = text1.toLowerCase().replace(/[^\w\s]/gi, '').split(' ');
+            const clean2 = text2.toLowerCase().replace(/[^\w\s]/gi, '').split(' ');
+            let matches = 0;
+            clean1.forEach(w => {
+                if (clean2.includes(w)) matches++;
+            });
+            return Math.min(100, Math.round((matches / Math.max(clean2.length, 1)) * 100));
+        }
+
+        /* SPEED LADDER STOPWATCH */
+        function startSpeedChallenge() {
+            clearInterval(challengeTimer);
+            challengeTimeLeft = 15;
+            challengeReps = 0;
+            document.getElementById('rep-counter').innerText = '0';
+            document.getElementById('stopwatch-display').innerText = '00:15';
+
+            const addRepBtn = document.getElementById('btn-add-rep');
+            addRepBtn.disabled = false;
+            addRepBtn.className = "px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold border border-brand-400 shadow transition cursor-pointer";
+
+            challengeTimer = setInterval(() => {
+                challengeTimeLeft--;
+                const secStr = challengeTimeLeft < 10 ? `0${challengeTimeLeft}` : `${challengeTimeLeft}`;
+                document.getElementById('stopwatch-display').innerText = `00:${secStr}`;
+
+                if (challengeTimeLeft <= 0) {
+                    clearInterval(challengeTimer);
+                    addRepBtn.disabled = true;
+                    addRepBtn.className = "px-4 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold border border-slate-700 cursor-not-allowed transition";
+                    triggerConfetti();
+                }
+            }, 1000);
+        }
+
+        function countRepetition() {
+            challengeReps++;
+            document.getElementById('rep-counter').innerText = challengeReps;
+        }
+
+        /* INTONATION ROULETTE WHEEL CANVAS */
+        function initRouletteWheel() {
+            const canvas = document.getElementById('roulette-canvas');
+            const ctx = canvas.getContext('2d');
+            const slices = ROULETTE_STANCES.length;
+            const sliceAngle = (2 * Math.PI) / slices;
+            const colors = ['#a855f7', '#06b6d4', '#f59e0b', '#22c55e', '#f43f5e'];
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < slices; i++) {
+                ctx.beginPath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, 140, i * sliceAngle, (i + 1) * sliceAngle);
+                ctx.fill();
+                ctx.stroke();
+
+                // Text labels
+                ctx.save();
+                ctx.translate(150, 150);
+                ctx.rotate(i * sliceAngle + sliceAngle / 2);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 11px Inter, sans-serif";
+                ctx.fillText(ROULETTE_STANCES[i].title.split(' ')[0], 65, 4);
+                ctx.restore();
+            }
+        }
+
+        function spinRoulette() {
+            const btn = document.getElementById('btn-spin');
+            btn.disabled = true;
+
+            const randomIdx = Math.floor(Math.random() * ROULETTE_STANCES.length);
+            const stance = ROULETTE_STANCES[randomIdx];
+
+            // Animate spin UI
+            let duration = 2000;
+            let startTime = null;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let elapsed = timestamp - startTime;
+
+                if (elapsed < duration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    btn.disabled = false;
+                    // Set active stance card
+                    document.getElementById('stance-badge').innerText = stance.badge;
+                    document.getElementById('stance-title').innerText = stance.title;
+                    document.getElementById('stance-desc').innerText = stance.desc;
+                    document.getElementById('stance-icon').innerHTML = `<i class="fa-solid ${stance.icon}"></i>`;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function speakRouletteSentence() {
+            const text = document.getElementById('roulette-sentence').innerText;
+            speakTextString(text, 0.9);
+        }
+
+        /* ROLE-PLAY CARDS LOADER */
+        function loadRolePlay(key) {
+            const data = ROLE_PLAYS[key];
+            if (!data) return;
+
+            document.querySelectorAll('.rp-btn').forEach(b => {
+                b.className = "rp-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white";
+            });
+            event.currentTarget.className = "rp-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-500 text-slate-950";
+
+            document.getElementById('rp-role-a').innerText = data.roleA;
+            document.getElementById('rp-focus-a').innerText = data.focusA;
+            document.getElementById('rp-text-a').innerText = `"${data.textA}"`;
+
+            document.getElementById('rp-role-b').innerText = data.roleB;
+            document.getElementById('rp-focus-b').innerText = data.focusB;
+            document.getElementById('rp-text-b').innerText = `"${data.textB}"`;
+        }
+
+        /* RUBRIC & STARS SYSTEM */
+        function initStars() {
+            [1, 2, 3].forEach(critId => {
+                const container = document.getElementById(`stars-crit-${critId}`);
+                container.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('i');
+                    star.className = i <= scores[critId - 1] ? 'fa-solid fa-star' : 'fa-regular fa-star';
+                    star.onclick = () => setScore(critId, i);
+                    container.appendChild(star);
+                }
+            });
+        }
+
+        function setScore(critId, val) {
+            scores[critId - 1] = val;
+            document.getElementById(`score-val-${critId}`).innerText = `${val} / 5`;
+            initStars();
+        }
+
+        function generateCertificate() {
+            const name = document.getElementById('student-name-input').value || 'Student Name';
+            document.getElementById('cert-student-name').innerText = name;
+            document.getElementById('cert-score-1').innerText = `${scores[0]}/5`;
+            document.getElementById('cert-score-2').innerText = `${scores[1]}/5`;
+            document.getElementById('cert-score-3').innerText = `${scores[2]}/5`;
+            triggerConfetti();
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        /* MODAL CONTROLS */
+        function togglePlannerModal() {
+            const modal = document.getElementById('planner-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        /* THEME TOGGLE */
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
+</body>
+</html>
