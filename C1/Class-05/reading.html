@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tongue Gym - Interactive Phonetic & Vocal Studio</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gym: {
+                            dark: '#090d16',
+                            card: '#111827',
+                            slate: '#1f2937',
+                            border: '#374151',
+                            amber: '#f59e0b',
+                            amberHover: '#d97706',
+                            cyan: '#06b6d4',
+                            cyanHover: '#0891b2',
+                            rose: '#f43f5e',
+                            emerald: '#10b981',
+                            violet: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar & Glassmorphism Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        .glass-gym {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        .cyan-glow {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+        }
+
+        .amber-glow {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
+        }
+
+        .violet-glow {
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
+        }
+
+        .text-amber-gradient {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #b45309 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-cyan-gradient {
+            background: linear-gradient(135deg, #a5f3fc 0%, #06b6d4 50%, #0e7490 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Pulse animation for Metronome Beat */
+        @keyframes beatFlash {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .beat-pulse {
+            animation: beatFlash 0.15s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gym-dark text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300 selection:bg-gym-cyan selection:text-slate-950">
+
+    <!-- HEADER / NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 w-full border-b border-gym-border/80 bg-gym-dark/95 backdrop-blur-xl px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Branding & Institutional Information -->
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-gym-cyan via-blue-600 to-gym-amber flex items-center justify-center text-white font-bold text-2xl shadow-lg cyan-glow">
+                    <i class="fa-solid fa-waveform"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-display font-black text-xl lg:text-2xl tracking-tight text-white">TONGUE GYM</h1>
+                        <span class="bg-gym-cyan/10 text-gym-cyan text-xs font-bold px-2.5 py-0.5 rounded-full border border-gym-cyan/30">INT-FOR-118</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Instituto Proceso Misional • SmartZone Presencial Inglés</p>
+                </div>
+            </div>
+
+            <!-- Level Toggle Switcher -->
+            <div class="flex items-center bg-gym-card p-1 rounded-xl border border-gym-border shadow-inner">
+                <button id="btn-level-a1" onclick="switchLevel('A1-A2')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 bg-gym-cyan text-slate-950 shadow">
+                    <i class="fa-solid fa-bolt text-xs"></i>
+                    <span>A1 - A2 Minimal Pair Sprint</span>
+                </button>
+                <button id="btn-level-b1" onclick="switchLevel('B1-C1')" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-xs text-gym-amber"></i>
+                    <span>B1 - C1 Advanced Dynamics</span>
+                </button>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button onclick="togglePlannerModal()" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-slate-300 hover:text-white transition border border-gym-border text-xs font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract text-gym-amber"></i>
+                    <span class="hidden md:inline">Planner Info</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APPLICATION CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-8">
+
+        <!-- DYNAMIC HERO BANNER -->
+        <section class="relative overflow-hidden rounded-2xl glass-gym p-6 lg:p-8 border border-gym-border">
+            <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-gym-cyan/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-16 -top-16 w-80 h-80 bg-gym-amber/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="space-y-2 max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gym-card border border-gym-border text-xs font-semibold text-gym-cyan">
+                        <i class="fa-solid fa-dumbbell"></i>
+                        <span id="hero-badge-text">Tongue Gym Category: A1 - A2 Elementary</span>
+                    </div>
+                    <h2 id="hero-title" class="text-2xl lg:text-3xl font-display font-black text-white leading-tight">
+                        Phonetic Mechanics & Minimal Pair Sprint
+                    </h2>
+                    <p id="hero-desc" class="text-slate-300 text-sm lg:text-base leading-relaxed">
+                        Isolate target minimal pairs (/s/ vs /ʃ/, /p/ vs /b/, /ɪ/ vs /iː/), master front vowel mouth mechanics, and compete in metronome-driven speed twister challenges.
+                    </p>
+                </div>
+
+                <!-- Instructor & Method Metadata -->
+                <div class="grid grid-cols-2 gap-3 min-w-[240px]">
+                    <div class="p-3 rounded-xl bg-gym-dark/80 border border-gym-border">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Instructor</span>
+                        <span class="text-xs font-bold text-gym-amber">Leonardo Pabón</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gym-dark/80 border border-gym-border">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Methodology</span>
+                        <span id="hero-method" class="text-xs font-bold text-white">Metronome Speed Drills</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE NAVIGATION TABS -->
+        <div class="flex items-center gap-2 border-b border-gym-border overflow-x-auto pb-2">
+            <button onclick="switchTab('tab-sprint')" id="nav-sprint" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-gym-card text-gym-cyan border border-gym-cyan/30 whitespace-nowrap">
+                <i class="fa-solid fa-gauge-high text-gym-cyan"></i>
+                <span>A1-A2 Minimal Pair Sprint</span>
+            </button>
+            <button onclick="switchTab('tab-dynamics')" id="nav-dynamics" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-gym-card transition whitespace-nowrap">
+                <i class="fa-solid fa-sliders text-gym-amber"></i>
+                <span>B1-C1 Advanced Vocal Dynamics <span class="text-[10px] bg-gym-amber/20 text-gym-amber px-1.5 py-0.5 rounded">B1-C1</span></span>
+            </button>
+            <button onclick="switchTab('tab-roleplay')" id="nav-roleplay" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-gym-card transition whitespace-nowrap">
+                <i class="fa-solid fa-users text-gym-emerald"></i>
+                <span>Role-Play Deck</span>
+            </button>
+            <button onclick="switchTab('tab-award')" id="nav-award" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-gym-card transition whitespace-nowrap">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>Rubric & Award Badges</span>
+            </button>
+        </div>
+
+        <!-- MODULE 1: A1-A2 MINIMAL PAIR SPRINT STUDIO -->
+        <section id="tab-sprint" class="tab-content space-y-6">
+            
+            <!-- Facial Gym Warm-Up & Vowel Stretch Continuum -->
+            <div class="glass-gym rounded-2xl p-6 border border-gym-border space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gym-border pb-4">
+                    <div>
+                        <span class="text-[10px] font-mono text-gym-cyan uppercase tracking-widest block">STAGE 1: WARM-UP & MOUTH MECHANICS</span>
+                        <h3 class="font-display font-bold text-xl text-white flex items-center gap-2">
+                            <i class="fa-solid fa-face-laugh-beam text-gym-cyan"></i>
+                            <span>Facial Gym & Front Vowel Continuum Stretch</span>
+                        </h3>
+                    </div>
+                    <!-- Physical Warm-up Trigger Buttons -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="playWarmupInstruction('yawn')" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                            😮 The Heavy Yawn
+                        </button>
+                        <button onclick="playWarmupInstruction('trill')" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                            🛵 Motorboat Trill
+                        </button>
+                        <button onclick="playWarmupInstruction('clock')" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                            ⏰ Tongue Clock
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Guided Vowel Continuum Interactive Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- /iː/ Cheese -->
+                    <div onclick="selectVowel('i')" id="vowel-card-i" class="vowel-card p-4 rounded-xl bg-gym-card border-2 border-gym-cyan cursor-pointer transition space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-mono font-black text-gym-cyan">/iː/</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-gym-cyan/20 text-gym-cyan font-bold">Wide Smile</span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-white block">Mouth Mechanics:</strong>
+                            <p class="text-slate-400">Lips stretched wide into a tense smile; tongue high near palate.</p>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-gym-amber block">Finger Gesture:</strong>
+                            <p class="text-slate-300">Stretch index fingers sideways from corners of lips.</p>
+                        </div>
+                        <div class="pt-2 border-t border-gym-border flex items-center justify-between">
+                            <span class="font-bold text-white text-xs">Target: "Cheese"</span>
+                            <button onclick="event.stopPropagation(); speakTextString('Cheese, See, Machine, Feet', 0.8);" class="text-gym-cyan hover:text-cyan-300 font-bold text-xs">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /ɪ/ Sit -->
+                    <div onclick="selectVowel('I')" id="vowel-card-I" class="vowel-card p-4 rounded-xl bg-gym-dark border border-gym-border cursor-pointer hover:border-gym-cyan transition space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-mono font-black text-slate-200">/ɪ/</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-gym-dark text-slate-400 font-bold">Slight Drop</span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-white block">Mouth Mechanics:</strong>
+                            <p class="text-slate-400">Lips relaxed; jaw drops 5mm; neutral tongue position.</p>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-gym-amber block">Finger Gesture:</strong>
+                            <p class="text-slate-300">Drop jaw slightly without smiling.</p>
+                        </div>
+                        <div class="pt-2 border-t border-gym-border flex items-center justify-between">
+                            <span class="font-bold text-white text-xs">Target: "Sit"</span>
+                            <button onclick="event.stopPropagation(); speakTextString('Sit, Lip, Fit, Ship', 0.8);" class="text-gym-cyan hover:text-cyan-300 font-bold text-xs">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /e/ Bed -->
+                    <div onclick="selectVowel('e')" id="vowel-card-e" class="vowel-card p-4 rounded-xl bg-gym-dark border border-gym-border cursor-pointer hover:border-gym-cyan transition space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-mono font-black text-slate-200">/e/</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-gym-dark text-slate-400 font-bold">1-Finger Open</span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-white block">Mouth Mechanics:</strong>
+                            <p class="text-slate-400">Jaw opens to a one-finger height; lip corners neutral.</p>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-gym-amber block">Finger Gesture:</strong>
+                            <p class="text-slate-300">Hold one finger horizontally between lips.</p>
+                        </div>
+                        <div class="pt-2 border-t border-gym-border flex items-center justify-between">
+                            <span class="font-bold text-white text-xs">Target: "Bed"</span>
+                            <button onclick="event.stopPropagation(); speakTextString('Bed, Red, Said, Met', 0.8);" class="text-gym-cyan hover:text-cyan-300 font-bold text-xs">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- /æ/ Cat -->
+                    <div onclick="selectVowel('ae')" id="vowel-card-ae" class="vowel-card p-4 rounded-xl bg-gym-dark border border-gym-border cursor-pointer hover:border-gym-cyan transition space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-mono font-black text-slate-200">/æ/</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-gym-dark text-slate-400 font-bold">2-Finger Open</span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-white block">Mouth Mechanics:</strong>
+                            <p class="text-slate-400">Jaw opens wide to two-finger height; tongue flat at bottom.</p>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <strong class="text-gym-amber block">Finger Gesture:</strong>
+                            <p class="text-slate-300">Hold two fingers vertically between teeth.</p>
+                        </div>
+                        <div class="pt-2 border-t border-gym-border flex items-center justify-between">
+                            <span class="font-bold text-white text-xs">Target: "Cat"</span>
+                            <button onclick="event.stopPropagation(); speakTextString('Cat, Apple, Flat, Map', 0.8);" class="text-gym-cyan hover:text-cyan-300 font-bold text-xs">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Continuous Mantra Drill Player -->
+                <div class="p-4 rounded-xl bg-gym-dark border border-gym-cyan/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-mono text-gym-cyan uppercase font-bold block">CONTINUOUS VOWEL MANTRA CHANT</span>
+                        <p class="text-sm text-white font-bold">"Cheese (/iː/) → Sit (/ɪ/) → Bed (/e/) → Cat (/æ/)"</p>
+                    </div>
+                    <button onclick="speakTextString('Cheese, Sit, Bed, Cat', 0.75);" class="px-4 py-2 rounded-xl bg-gym-cyan hover:bg-gym-cyanHover text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition whitespace-nowrap">
+                        <i class="fa-solid fa-play"></i> Play Mantra Chant
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Speed Twister Challenge with Metronome Engine -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Metronome & Speed Tier Controls (4 Cols) -->
+                <div class="lg:col-span-4 glass-gym rounded-2xl p-6 border border-gym-border space-y-6">
+                    <div class="border-b border-gym-border pb-3">
+                        <span class="text-[10px] font-mono text-gym-amber uppercase tracking-widest block">STAGE 3: SPEED TWISTER ENGINE</span>
+                        <h4 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-gym-amber"></i>
+                            <span>Web Audio Metronome</span>
+                        </h4>
+                    </div>
+
+                    <!-- Visual Metronome Pulse Indicator -->
+                    <div class="p-6 rounded-2xl bg-gym-dark border border-gym-border flex flex-col items-center justify-center space-y-3">
+                        <div id="metronome-visual-light" class="w-16 h-16 rounded-full bg-gym-slate border-4 border-gym-border flex items-center justify-center text-slate-500 text-2xl transition-all duration-100">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <div class="text-center">
+                            <span id="metro-bpm-display" class="font-mono font-black text-3xl text-white">90</span>
+                            <span class="text-xs text-slate-400 block font-semibold">BEATS PER MINUTE (BPM)</span>
+                        </div>
+                    </div>
+
+                    <!-- Tempo Tier Selection -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase block">Select Speed Tier:</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setMetronomeBpm(60, 'turtle')" id="btn-bpm-turtle" class="p-2.5 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-amber text-xs font-bold text-slate-300 transition">
+                                🐢 60 Turtle
+                            </button>
+                            <button onclick="setMetronomeBpm(90, 'rabbit')" id="btn-bpm-rabbit" class="p-2.5 rounded-xl bg-gym-card border-2 border-gym-amber text-xs font-bold text-gym-amber transition">
+                                🐇 90 Rabbit
+                            </button>
+                            <button onclick="setMetronomeBpm(120, 'cheetah')" id="btn-bpm-cheetah" class="p-2.5 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-amber text-xs font-bold text-slate-300 transition">
+                                🐆 120 Cheetah
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metronome Play / Stop Toggle -->
+                    <button id="btn-toggle-metro" onclick="toggleMetronome()" class="w-full py-3.5 rounded-xl bg-gym-amber hover:bg-gym-amberHover text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-xl amber-glow transition">
+                        <i class="fa-solid fa-play"></i>
+                        <span id="metro-play-label">Start Metronome Clicks</span>
+                    </button>
+
+                    <!-- Group Tally Scorekeeper -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-300">Group Competition Score</span>
+                            <span id="group-score-val" class="font-mono font-bold text-gym-amber text-base">0 Pts</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="updateGroupScore(1)" class="py-2 rounded-lg bg-emerald-600/20 text-emerald-400 font-bold text-xs border border-emerald-500/30 hover:bg-emerald-600/30">
+                                +1 Point (Pass)
+                            </button>
+                            <button onclick="updateGroupScore(-1)" class="py-2 rounded-lg bg-rose-600/20 text-rose-400 font-bold text-xs border border-rose-500/30 hover:bg-rose-600/30">
+                                -1 Penalty
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Twister Cards Deck & Speech Practice (8 Cols) -->
+                <div class="lg:col-span-8 glass-gym rounded-2xl p-6 border border-gym-border space-y-6">
+                    <div class="flex items-center justify-between border-b border-gym-border pb-3">
+                        <h4 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-cards text-gym-cyan"></i>
+                            <span>Minimal Pair Twister Deck</span>
+                        </h4>
+                        <span id="active-twister-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-gym-cyan/20 text-gym-cyan font-bold border border-gym-cyan/30">
+                            Card 1: /s/ vs /ʃ/
+                        </span>
+                    </div>
+
+                    <!-- Active Twister Display Box -->
+                    <div class="p-6 rounded-2xl bg-gym-dark border border-gym-cyan/40 space-y-4">
+                        <div class="space-y-1">
+                            <span id="twister-focus-title" class="text-xs font-mono font-bold text-gym-amber block">CONSONANT FOCUS: /s/ (Sea) vs /ʃ/ (She)</span>
+                            <p id="twister-rule-desc" class="text-xs text-slate-400">Keep lips flat for /s/ (smile); round and push lips forward for /ʃ/ (shush).</p>
+                        </div>
+
+                        <div class="py-4 border-y border-gym-border space-y-2">
+                            <p id="twister-body-text" class="font-display font-bold text-xl lg:text-2xl text-white leading-relaxed">
+                                "She sells six shiny sea shells by the silent shore."
+                            </p>
+                            <span id="twister-ipa-text" class="font-mono text-xs text-gym-cyan block opacity-80">
+                                /ʃiː seltz sɪks ˈʃaɪni siː ʃelz baɪ ðə ˈsaɪlənt ʃɔːr/
+                            </span>
+                        </div>
+
+                        <!-- Audio Speed Models -->
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <span class="text-xs text-slate-400">Listen Model Speech:</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="speakActiveTwister(0.6)" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                                    🐢 0.6x Slow
+                                </button>
+                                <button onclick="speakActiveTwister(0.85)" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                                    🐇 0.85x Medium
+                                </button>
+                                <button onclick="speakActiveTwister(1.1)" class="px-3 py-1.5 rounded-lg bg-gym-card hover:bg-gym-slate text-xs font-bold text-slate-300 border border-gym-border flex items-center gap-1.5 transition">
+                                    🐆 1.1x Fast
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Twister Card Selection Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="selectTwisterCard(1)" id="btn-card-1" class="p-3 rounded-xl bg-gym-card border-2 border-gym-cyan text-left space-y-1">
+                            <strong class="text-xs text-gym-cyan block">Card 1</strong>
+                            <span class="text-[10px] text-slate-300 block">/s/ vs /ʃ/</span>
+                        </button>
+                        <button onclick="selectTwisterCard(2)" id="btn-card-2" class="p-3 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-cyan text-left space-y-1">
+                            <strong class="text-xs text-slate-300 block">Card 2</strong>
+                            <span class="text-[10px] text-slate-400 block">/p/ vs /b/</span>
+                        </button>
+                        <button onclick="selectTwisterCard(3)" id="btn-card-3" class="p-3 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-cyan text-left space-y-1">
+                            <strong class="text-xs text-slate-300 block">Card 3</strong>
+                            <span class="text-[10px] text-slate-400 block">/ɪ/ vs /iː/</span>
+                        </button>
+                        <button onclick="selectTwisterCard(4)" id="btn-card-4" class="p-3 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-cyan text-left space-y-1">
+                            <strong class="text-xs text-slate-300 block">Card 4</strong>
+                            <span class="text-[10px] text-slate-400 block">/f/ vs /v/</span>
+                        </button>
+                    </div>
+
+                    <!-- Microphone Voice Recording Studio -->
+                    <div class="p-5 rounded-2xl bg-gym-dark border border-gym-border space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-microphone text-gym-rose"></i>
+                                <span>Student Audio Recorder & Waveform Visualizer</span>
+                            </span>
+                            <span id="rec-status-label" class="text-xs px-2 py-0.5 rounded bg-gym-card text-slate-400">Ready</span>
+                        </div>
+
+                        <!-- Live Audio Waveform Canvas -->
+                        <div class="relative h-16 bg-gym-card rounded-xl border border-gym-border flex items-center justify-center overflow-hidden">
+                            <canvas id="waveform-canvas" class="w-full h-full absolute top-0 left-0"></canvas>
+                            <span id="visualizer-hint" class="text-slate-500 text-xs z-10">Record your speech to analyze waveform</span>
+                        </div>
+
+                        <!-- Recording Action Controls -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="btn-mic-rec" onclick="toggleStudentRecording()" class="py-2.5 rounded-xl bg-gym-rose hover:bg-rose-600 text-white font-bold text-xs flex items-center justify-center gap-2 transition">
+                                <i class="fa-solid fa-circle text-[10px]"></i>
+                                <span id="mic-rec-label">Record Twister</span>
+                            </button>
+                            <button id="btn-mic-play" onclick="playStudentAudio()" disabled class="py-2.5 rounded-xl bg-gym-card text-slate-500 font-bold text-xs flex items-center justify-center gap-2 border border-gym-border cursor-not-allowed transition">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Playback Recording</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- MODULE 2: B1-C1 ADVANCED VOCAL DYNAMICS STUDIO -->
+        <section id="tab-dynamics" class="tab-content space-y-6 hidden">
+            
+            <!-- Diaphragmatic Breath & Sibilant Hiss Conditioning -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- 4-7-8 Breathing Timer (6 Cols) -->
+                <div class="lg:col-span-6 glass-gym rounded-2xl p-6 border border-gym-border space-y-5 text-center">
+                    <div class="border-b border-gym-border pb-3">
+                        <span class="text-[10px] font-mono text-gym-amber uppercase tracking-widest block">STAGE 1: ADVANCED VOCAL CONDITIONING</span>
+                        <h4 class="font-display font-bold text-lg text-white">4-7-8 Diaphragmatic Breath Circle</h4>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-gym-dark border border-gym-border flex flex-col items-center justify-center space-y-3">
+                        <div id="breath-circle" class="w-24 h-24 rounded-full border-4 border-gym-amber flex items-center justify-center text-gym-amber font-mono font-black text-3xl transition-all duration-300">
+                            4s
+                        </div>
+                        <span id="breath-phase-label" class="text-sm font-bold text-white uppercase tracking-wider">Inhale (Abdomen Expands)</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-breath-start" onclick="startBreathTimer()" class="py-2.5 rounded-xl bg-gym-amber hover:bg-gym-amberHover text-slate-950 font-bold text-xs shadow transition">
+                            Start 4-7-8 Cycle
+                        </button>
+                        <button onclick="resetBreathTimer()" class="py-2.5 rounded-xl bg-gym-dark text-slate-400 hover:text-white font-bold text-xs border border-gym-border transition">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 15-Second Sibilant Hiss Drill (6 Cols) -->
+                <div class="lg:col-span-6 glass-gym rounded-2xl p-6 border border-gym-border space-y-5 text-center">
+                    <div class="border-b border-gym-border pb-3">
+                        <span class="text-[10px] font-mono text-gym-cyan uppercase tracking-widest block">SUBGLOTTIC PRESSURE DRILL</span>
+                        <h4 class="font-display font-bold text-lg text-white">Staccato & Sustained Sibilant Hiss</h4>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-gym-dark border border-gym-border space-y-2">
+                        <span id="hiss-timer-val" class="font-mono font-black text-4xl text-gym-cyan">15s</span>
+                        <p id="hiss-instruction-text" class="text-xs text-slate-300">
+                            1. Execute 5 rapid bursts: <strong>"TS-TS-TS-TS-TS!"</strong><br>
+                            2. Hold sustained hiss: <strong>"SSSSSSSSSSSS..."</strong>
+                        </p>
+                    </div>
+
+                    <button id="btn-hiss-start" onclick="startHissTimer()" class="w-full py-2.5 rounded-xl bg-gym-cyan hover:bg-gym-cyanHover text-slate-950 font-bold text-xs shadow transition">
+                        Start 15s Sustained Hiss
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Complex Consonant Cluster Drills (/str/, /spl/, /ðs/) -->
+            <div class="glass-gym rounded-2xl p-6 border border-gym-border space-y-4">
+                <div class="flex items-center justify-between border-b border-gym-border pb-3">
+                    <h4 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shapes text-gym-amber"></i>
+                        <span>High-Density Consonant Cluster Mechanics</span>
+                    </h4>
+                    <span class="text-xs text-slate-400">Eliminate Schwa Insertion (/sətə/ → /str/)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- /str/ Cluster -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono font-black text-xl text-gym-amber">/str/</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-gym-card text-slate-400">Street, Strategy</span>
+                        </div>
+                        <p class="text-xs text-slate-300">Alveolar /s/ transitions to unvoiced stop /t/ with retroflex /r/ co-articulation.</p>
+                        <div class="p-2 rounded bg-gym-card text-[11px] text-rose-300 border border-rose-500/20">
+                            ⚠️ Avoid schwa: /sətəreɪ/ ❌
+                        </div>
+                        <button onclick="speakTextString('Street, Strategy, Strength, Stretch, Strong structure', 0.85);" class="w-full py-1.5 rounded-lg bg-gym-amber/20 hover:bg-gym-amber/30 text-gym-amber text-xs font-bold border border-gym-amber/30 transition">
+                            <i class="fa-solid fa-volume-high"></i> Listen /str/ Models
+                        </button>
+                    </div>
+
+                    <!-- /spl/ Cluster -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono font-black text-xl text-gym-cyan">/spl/</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-gym-card text-slate-400">Splash, Splendid</span>
+                        </div>
+                        <p class="text-xs text-slate-300">Unvoiced /s/ opens to bilabial plosive /p/ popping into lateral /l/.</p>
+                        <div class="p-2 rounded bg-gym-card text-[11px] text-rose-300 border border-rose-500/20">
+                            ⚠️ Avoid dropping /p/: /slæʃ/ ❌
+                        </div>
+                        <button onclick="speakTextString('Splash, Splendid, Split, Splurge, Splendid strategy', 0.85);" class="w-full py-1.5 rounded-lg bg-gym-cyan/20 hover:bg-gym-cyan/30 text-gym-cyan text-xs font-bold border border-gym-cyan/30 transition">
+                            <i class="fa-solid fa-volume-high"></i> Listen /spl/ Models
+                        </button>
+                    </div>
+
+                    <!-- /ðs/ Cluster -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono font-black text-xl text-gym-violet">/ðs/</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-gym-card text-slate-400">Months, Clothes</span>
+                        </div>
+                        <p class="text-xs text-slate-300">Interdental /ð/ retracts rapidly behind incisors to unvoiced /s/.</p>
+                        <div class="p-2 rounded bg-gym-card text-[11px] text-rose-300 border border-rose-500/20">
+                            ⚠️ Avoid dropping /ð/: /mʌns/ ❌
+                        </div>
+                        <button onclick="speakTextString('Months, Paths, Clothes, Widths, Six months clothes', 0.85);" class="w-full py-1.5 rounded-lg bg-gym-violet/20 hover:bg-gym-violet/30 text-gym-violet text-xs font-bold border border-gym-violet/30 transition">
+                            <i class="fa-solid fa-volume-high"></i> Listen /ðs/ Models
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Pitch Ladder Scaling & Pragmatic Stress Studio -->
+            <div class="glass-gym rounded-2xl p-6 border border-gym-border space-y-5">
+                <div class="border-b border-gym-border pb-3">
+                    <span class="text-[10px] font-mono text-gym-amber uppercase tracking-widest block">PRAGMATIC STRESS & REGISTER SHIFT</span>
+                    <h4 class="font-display font-bold text-lg text-white">Pitch Ladder Scaling Studio</h4>
+                    <p class="text-xs text-slate-400">Click different words in the sentence to change pitch emphasis and pragmatic subtext</p>
+                </div>
+
+                <!-- Target Sentence Interactive Words Grid -->
+                <div class="p-6 rounded-2xl bg-gym-dark border border-gym-amber/30 text-center space-y-4">
+                    <div class="flex flex-wrap items-center justify-center gap-2 text-lg sm:text-2xl font-display font-black">
+                        <button onclick="scalePitchWord(0)" id="pwd-0" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-amber text-slate-950 shadow">I</button>
+                        <button onclick="scalePitchWord(1)" id="pwd-1" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber">didn't</button>
+                        <button onclick="scalePitchWord(2)" id="pwd-2" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber">say</button>
+                        <button onclick="scalePitchWord(3)" id="pwd-3" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber">she</button>
+                        <button onclick="scalePitchWord(4)" id="pwd-4" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber">stole</button>
+                        <button onclick="scalePitchWord(5)" id="pwd-5" class="pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber">the money.</button>
+                    </div>
+
+                    <!-- Pragmatic Subtext Output -->
+                    <div class="p-4 rounded-xl bg-gym-card border border-gym-border space-y-1">
+                        <span class="text-[10px] uppercase font-bold text-gym-amber tracking-widest block">Pragmatic Meaning / Subtext:</span>
+                        <p id="pitch-subtext-display" class="text-sm font-semibold text-slate-200">
+                            "Someone else said it, not me." (Emphasis on speaker identity)
+                        </p>
+                    </div>
+
+                    <button onclick="playPitchScaledAudio()" class="px-5 py-2.5 rounded-xl bg-gym-amber hover:bg-gym-amberHover text-slate-950 font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-lg transition">
+                        <i class="fa-solid fa-volume-high"></i> Play Pitch-Shifted Audio
+                    </button>
+                </div>
+            </div>
+
+            <!-- Emotional Stance Performance Engine -->
+            <div class="glass-gym rounded-2xl p-6 border border-gym-border space-y-5">
+                <div class="border-b border-gym-border pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <span class="text-[10px] font-mono text-gym-cyan uppercase tracking-widest block">STAGE 3: INTONATION SHIFT GYM</span>
+                        <h4 class="font-display font-bold text-lg text-white">Emotional Stance Performance Engine</h4>
+                    </div>
+                    <!-- Persona Selector -->
+                    <div class="flex items-center gap-1 bg-gym-card p-1 rounded-xl border border-gym-border">
+                        <button onclick="setStancePersona('sarcastic')" id="persona-btn-sarcastic" class="persona-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-gym-cyan text-slate-950">
+                            😏 Sarcastic
+                        </button>
+                        <button onclick="setStancePersona('news')" id="persona-btn-news" class="persona-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                            🎙️ News Anchor
+                        </button>
+                        <button onclick="setStancePersona('crisis')" id="persona-btn-crisis" class="persona-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                            🚨 Crisis Alert
+                        </button>
+                        <button onclick="setStancePersona('keynote')" id="persona-btn-keynote" class="persona-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                            🎤 Keynote
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Master Twister Text Display -->
+                <div class="p-5 rounded-2xl bg-gym-dark border border-gym-border space-y-3">
+                    <p id="stance-twister-text" class="font-display font-bold text-lg text-white leading-relaxed">
+                        "Three thousand thrilling threats thoroughly thwarted throughout thirty-three months of strategic splitting."
+                    </p>
+
+                    <div id="stance-acoustic-info" class="p-3 rounded-xl bg-gym-card border border-gym-border text-xs space-y-1">
+                        <strong class="text-gym-cyan block font-bold">Acoustic Parameters (Sarcastic Persona):</strong>
+                        <p class="text-slate-300">Low monotone pitch (0.6x), slow tempo (70 BPM), dry glottal onset, prolonged vowel length.</p>
+                    </div>
+
+                    <button onclick="speakStanceAudio()" class="w-full py-3 rounded-xl bg-gym-cyan hover:bg-gym-cyanHover text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition">
+                        <i class="fa-solid fa-masks-theater"></i> Perform Twister in Active Persona
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- MODULE 3: INTERACTIVE ROLE-PLAY CARDS DECK -->
+        <section id="tab-roleplay" class="tab-content space-y-6 hidden">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-display font-bold text-xl text-white">Interactive Partner Role-Play Deck</h3>
+                    <p class="text-xs text-slate-400">Select scenario to display Partner A and Partner B cards</p>
+                </div>
+
+                <!-- Scenario Buttons -->
+                <div class="flex items-center gap-2 bg-gym-card p-1 rounded-xl border border-gym-border overflow-x-auto">
+                    <button onclick="loadRoleCard('icecream')" id="rp-btn-icecream" class="rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gym-cyan text-slate-950">
+                        🍦 Ice Cream Shop (A1-A2)
+                    </button>
+                    <button onclick="loadRoleCard('radio')" id="rp-btn-radio" class="rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        📻 Radio Audition (A1-A2)
+                    </button>
+                    <button onclick="loadRoleCard('auction')" id="rp-btn-auction" class="rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        🖼️ Art Auction (B1-C1)
+                    </button>
+                    <button onclick="loadRoleCard('news')" id="rp-btn-news" class="rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        📺 Field News Anchor (B1-C1)
+                    </button>
+                    <button onclick="loadRoleCard('press')" id="rp-btn-press" class="rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white">
+                        🏛️ Press Briefing (B1-C1)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Side-by-Side Dual Role Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Partner A Card -->
+                <div class="glass-gym rounded-2xl p-6 border-t-4 border-t-gym-cyan border-x border-b border-gym-border space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-gym-cyan/20 text-gym-cyan font-bold text-xs flex items-center justify-center">A</span>
+                            <h4 id="rp-role-a" class="font-display font-bold text-base text-white">Ice Cream Customer</h4>
+                        </div>
+                        <span id="rp-badge-a" class="text-xs px-2 py-0.5 rounded bg-gym-dark text-gym-cyan border border-gym-border font-mono">
+                            Target: /s/, /ʃ/, /v/, /b/
+                        </span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3 min-h-[140px] flex flex-col justify-between">
+                        <p id="rp-text-a" class="text-sm lg:text-base text-slate-200 leading-relaxed">
+                            "Hello! I would like six sweet scoops of strawberry ice cream and vanilla in a big bowl, please! Is that the very best price?"
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-gym-border">
+                            <span>Phonetic Speech Targets</span>
+                            <button onclick="speakText('rp-text-a')" class="text-gym-cyan hover:text-cyan-300 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen Line
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Partner B Card -->
+                <div class="glass-gym rounded-2xl p-6 border-t-4 border-t-gym-amber border-x border-b border-gym-border space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-gym-amber/20 text-gym-amber font-bold text-xs flex items-center justify-center">B</span>
+                            <h4 id="rp-role-b" class="font-display font-bold text-base text-white">Ice Cream Server</h4>
+                        </div>
+                        <span id="rp-badge-b" class="text-xs px-2 py-0.5 rounded bg-gym-dark text-gym-amber border border-gym-border font-mono">
+                            Target: /s/, /ʃ/, /v/, /b/
+                        </span>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-3 min-h-[140px] flex flex-col justify-between">
+                        <p id="rp-text-b" class="text-sm lg:text-base text-slate-200 leading-relaxed">
+                            "Sure! We have six special scoops of super sweet strawberry and very vanilla. That will be seven silver dollars!"
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-gym-border">
+                            <span>Phonetic Speech Targets</span>
+                            <button onclick="speakText('rp-text-b')" class="text-gym-amber hover:text-amber-300 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high"></i> Listen Line
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 4: COOL-DOWN, RUBRIC & AWARD BADGE GENERATOR -->
+        <section id="tab-award" class="tab-content space-y-6 hidden">
+            
+            <!-- 15-Second Smartphone Audio Peer Audit Bar -->
+            <div class="glass-gym rounded-2xl p-6 border border-gym-border space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gym-border pb-3">
+                    <div>
+                        <span class="text-[10px] font-mono text-gym-amber uppercase tracking-widest block">STAGE 5: COOL-DOWN & SELF-AUDIT</span>
+                        <h4 class="font-display font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-mobile-screen-button text-gym-amber"></i>
+                            <span>15-Second Smartphone Audio Audit</span>
+                        </h4>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="audit-timer-val" class="font-mono font-black text-2xl text-gym-amber">15s</span>
+                        <button id="btn-audit-rec" onclick="startAuditTimer()" class="px-4 py-2 rounded-xl bg-gym-amber hover:bg-gym-amberHover text-slate-950 font-bold text-xs transition">
+                            Start 15s Timer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4-Point Peer Checklist Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <label class="p-3 rounded-xl bg-gym-dark border border-gym-border flex items-start gap-2 cursor-pointer hover:border-gym-amber">
+                        <input type="checkbox" class="mt-0.5 accent-gym-amber">
+                        <span><strong>1. Catenation:</strong> Smooth consonant-to-vowel links ("First_of_all").</span>
+                    </label>
+                    <label class="p-3 rounded-xl bg-gym-dark border border-gym-border flex items-start gap-2 cursor-pointer hover:border-gym-amber">
+                        <input type="checkbox" class="mt-0.5 accent-gym-amber">
+                        <span><strong>2. Clusters:</strong> Crisp /str/, /spl/, /ðs/ execution without schwa.</span>
+                    </label>
+                    <label class="p-3 rounded-xl bg-gym-dark border border-gym-border flex items-start gap-2 cursor-pointer hover:border-gym-amber">
+                        <input type="checkbox" class="mt-0.5 accent-gym-amber">
+                        <span><strong>3. Elision:</strong> Dropped /t/ in "must act" and schwa prepositions.</span>
+                    </label>
+                    <label class="p-3 rounded-xl bg-gym-dark border border-gym-border flex items-start gap-2 cursor-pointer hover:border-gym-amber">
+                        <input type="checkbox" class="mt-0.5 accent-gym-amber">
+                        <span><strong>4. Pitch Modulation:</strong> Expressive pitch matching stance without monotony.</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Assessment Rubric Form (7 Cols) -->
+                <div class="lg:col-span-7 glass-gym rounded-2xl p-6 border border-gym-border space-y-6">
+                    <div>
+                        <h3 class="font-display font-bold text-xl text-white flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-check text-gym-cyan"></i>
+                            <span>SmartZone INT-FOR-118 Assessment Rubric</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Evaluate student phonemic accuracy, connected speech, and pitch modulation</p>
+                    </div>
+
+                    <!-- Student Name Input -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-400 uppercase block">Student Full Name</label>
+                        <input id="rubric-name-input" type="text" value="Student Name" class="w-full bg-gym-dark border border-gym-border rounded-xl px-4 py-2.5 text-white font-semibold text-sm focus:ring-2 focus:ring-gym-cyan outline-none">
+                    </div>
+
+                    <!-- Select Award Badge Type -->
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-slate-400 uppercase block">Award Badge Type</label>
+                        <select id="rubric-badge-select" class="w-full bg-gym-dark border border-gym-border rounded-xl px-4 py-2.5 text-white font-semibold text-sm focus:ring-2 focus:ring-gym-cyan outline-none">
+                            <option value="Mouth Mechanic Badge">🏆 Mouth Mechanic Badge (Precision)</option>
+                            <option value="Speed Demon Badge">⚡ Speed Demon Badge (Cheetah Pace)</option>
+                            <option value="Clarity Champion Badge">🎯 Clarity Champion Badge (Minimal Pairs)</option>
+                            <option value="Radio Announcer Badge">🎙️ Radio Announcer Badge (Dynamic Pitch)</option>
+                        </select>
+                    </div>
+
+                    <!-- Criteria 1: Phonemic Accuracy & Clusters -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">1. Phonemic Accuracy & Clusters</span>
+                            <span id="score-text-1" class="text-xs font-bold text-gym-cyan">5 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Minimal pair distinction (/s/ vs /ʃ/), /str/ & /spl/ clusters without schwa.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-1"></div>
+                    </div>
+
+                    <!-- Criteria 2: Connected Speech & Linking -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">2. Connected Speech & Linking</span>
+                            <span id="score-text-2" class="text-xs font-bold text-gym-cyan">4 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Catenation, elision of /t/, and schwa vowel reduction.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-2"></div>
+                    </div>
+
+                    <!-- Criteria 3: Pitch Modulation & Vocal Stance -->
+                    <div class="p-4 rounded-xl bg-gym-dark border border-gym-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-white">3. Pitch Modulation & Vocal Stance</span>
+                            <span id="score-text-3" class="text-xs font-bold text-gym-cyan">5 / 5</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Contrastive stress, pitch ladder scaling, and persona execution.</p>
+                        <div class="flex items-center gap-2 text-amber-400 text-lg cursor-pointer" id="stars-3"></div>
+                    </div>
+
+                    <button onclick="generateTongueGymBadge()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 via-gym-cyan to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black flex items-center justify-center gap-2 shadow-xl cyan-glow transition">
+                        <i class="fa-solid fa-award"></i>
+                        <span>Generate Printable Peer Award Badge</span>
+                    </button>
+                </div>
+
+                <!-- Award Badge Card Display (5 Cols) -->
+                <div class="lg:col-span-5 glass-gym rounded-2xl p-6 border border-gym-border flex flex-col justify-between items-center text-center space-y-4">
+                    
+                    <div id="badge-card-display" class="w-full p-6 rounded-2xl bg-gradient-to-b from-slate-900 via-gym-dark to-slate-950 border-2 border-gym-cyan/60 space-y-4 relative overflow-hidden shadow-2xl cyan-glow">
+                        <div class="absolute -right-8 -top-8 p-4 opacity-10 text-gym-cyan text-9xl pointer-events-none">
+                            <i class="fa-solid fa-waveform"></i>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="text-[10px] uppercase tracking-widest font-bold text-gym-cyan block">INSTITUTO PROCESO MISIONAL</span>
+                            <h4 id="badge-cert-title" class="font-display font-black text-xl text-white tracking-wide">MOUTH MECHANIC BADGE</h4>
+                            <p class="text-xs text-slate-400">Award for Exceptional Articulation Clarity</p>
+                        </div>
+
+                        <div class="py-3 border-y border-gym-border space-y-1">
+                            <span class="text-xs text-slate-400 block">Conferred Upon</span>
+                            <span id="cert-student-name" class="font-display font-black text-xl text-gym-amber">Student Name</span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div class="p-2 rounded bg-gym-dark border border-gym-border">
+                                <span class="text-slate-500 block text-[10px]">Phonetics</span>
+                                <span id="cert-score-1" class="font-bold text-white">5/5</span>
+                            </div>
+                            <div class="p-2 rounded bg-gym-dark border border-gym-border">
+                                <span class="text-slate-500 block text-[10px]">Linking</span>
+                                <span id="cert-score-2" class="font-bold text-white">4/5</span>
+                            </div>
+                            <div class="p-2 rounded bg-gym-dark border border-gym-border">
+                                <span class="text-slate-500 block text-[10px]">Pitch</span>
+                                <span id="cert-score-3" class="font-bold text-white">5/5</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between text-[10px] text-slate-500">
+                            <span>Teacher: Leonardo Pabón</span>
+                            <span>Code: INT-FOR-118</span>
+                        </div>
+                    </div>
+
+                    <button onclick="triggerConfettiCelebration()" class="px-4 py-2 rounded-xl bg-gym-card hover:bg-gym-slate text-slate-300 text-xs font-bold border border-gym-border flex items-center gap-2 transition">
+                        <i class="fa-solid fa-sparkles text-gym-amber"></i>
+                        <span>Celebrate Award (Confetti Fireworks)</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- LESSON PLANNER MODAL (INT-FOR-118 DETAILS) -->
+    <div id="planner-modal" class="fixed inset-0 z-50 bg-gym-dark/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-gym w-full max-w-4xl max-h-[90vh] rounded-2xl border border-gym-border flex flex-col overflow-hidden shadow-2xl">
+            
+            <div class="p-5 border-b border-gym-border flex items-center justify-between bg-gym-card">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-gym-cyan/20 text-gym-cyan flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-lg text-white">FORMATO PLANEADOR SMARTZONE PRESENCIAL INGLÉS</h3>
+                        <p class="text-xs text-slate-400">CÓDIGO: INT-FOR-118 | VERSIÓN: 2 | Teacher: Leonardo Pabón Agudelo</p>
+                    </div>
+                </div>
+                <button onclick="togglePlannerModal()" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-300">
+                
+                <div class="space-y-3">
+                    <h4 class="font-display font-bold text-base text-gym-cyan border-b border-gym-cyan/20 pb-1">
+                        1. LESSON PLAN: A1 - A2 (TONGUE GYM: PHONETIC MECHANICS & MINIMAL PAIR SPRINT)
+                    </h4>
+                    <p class="text-xs leading-relaxed">
+                        <strong>Communicative Objective:</strong> Improve pronunciation clarity, phonemic awareness, and articulation speed by isolating minimal pairs (/s/ vs /ʃ/, /p/ vs /b/, /ɪ/ vs /iː/), mastering front vowel mouth mechanics, and completing metronome-driven speed twister challenges.
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="font-display font-bold text-base text-gym-amber border-b border-gym-amber/20 pb-1">
+                        2. LESSON PLAN: B1 - C1 (TONGUE GYM: ADVANCED VOCAL DYNAMICS & CONNECTED SPEECH)
+                    </h4>
+                    <p class="text-xs leading-relaxed">
+                        <strong>Communicative Objective:</strong> Master connected speech phenomena (catenation, elision, schwa reduction), execute high-density consonant clusters (/str/, /spl/, /ðs/) without schwa insertion, control diaphragmatic breath, and manipulate pitch contours across distinct pragmatic stances.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-gym-border bg-gym-card flex justify-end">
+                <button onclick="togglePlannerModal()" class="px-4 py-2 rounded-xl bg-gym-dark text-white font-bold text-xs border border-gym-border">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION JAVASCRIPT ENGINE -->
+    <script>
+        /* APPLICATION STATE */
+        let currentLevel = 'A1-A2';
+        let activeTwisterCard = 1;
+        let groupScore = 0;
+        let rubricScores = [5, 4, 5];
+
+        // Web Audio Metronome State
+        let audioCtx = null;
+        let metronomeTimer = null;
+        let metroIsPlaying = false;
+        let metroBpm = 90;
+
+        // Microphone Recording State
+        let micIsRecording = false;
+        let micMediaRecorder = null;
+        let micAudioChunks = [];
+        let micAudioUrl = null;
+
+        // Breathing & Hiss Timers
+        let breathTimer = null;
+        let hissTimer = null;
+
+        // Pitch Word Scaling Index
+        let activePitchWordIdx = 0;
+        const PITCH_SUBTEXTS = [
+            `"Someone else said it, not me." (Emphasis on speaker identity)`,
+            `"Emphatic denial of having spoken it aloud." (Denial)`,
+            `"I implied or wrote it, but didn't state it." (Medium)`,
+            `"Someone stole it, but not that specific woman." (Target)`,
+            `"She borrowed or took it, but didn't steal it." (Action)`,
+            `"She stole something else, but not the cash." (Object)`
+        ];
+
+        // Active Stance Persona
+        let activePersona = 'sarcastic';
+
+        // Twister Cards Content
+        const TWISTER_CARDS = {
+            1: {
+                focus: "CONSONANT FOCUS: /s/ (Sea) vs /ʃ/ (She)",
+                rule: "Keep lips flat for /s/ (smile); round and push lips forward for /ʃ/ (shush).",
+                body: `"She sells six shiny sea shells by the silent shore."`,
+                ipa: "/ʃiː seltz sɪks ˈʃaɪni siː ʃelz baɪ ðə ˈsaɪlənt ʃɔːr/"
+            },
+            2: {
+                focus: "CONSONANT FOCUS: /p/ (Pat) vs /b/ (Bat)",
+                rule: "/p/ releases a puff of air (hold paper strip); /b/ vibrates throat vocal cords.",
+                body: `"Peter Piper bought a big blue backpack for his pet puppy."`,
+                ipa: "/ˈpiːtər ˈpaɪpər bɔːt ə bɪɡ bluː ˈbækˌpæk fɔːr hɪz pet ˈpʌpi/"
+            },
+            3: {
+                focus: "VOWEL FOCUS: /ɪ/ (Ship) vs /iː/ (Sheep)",
+                rule: "/ɪ/ is short and neutral; /iː/ is held longer with tight lip-corner tension.",
+                body: `"Six slick ships carry green beans and cheap tin chips."`,
+                ipa: "/sɪks slɪk ʃɪps ˈkæri ɡriːn biːnz ænd tʃiːp tɪn tʃɪps/"
+            },
+            4: {
+                focus: "CONSONANT FOCUS: /f/ (Fish) vs /v/ (Van)",
+                rule: "Place upper teeth on lower lip. /f/ is voiceless air; /v/ adds vocal cord humming.",
+                body: `"Five fresh fish fly over four very fast vans."`,
+                ipa: "/faɪv freʃ fɪʃ flaɪ ˈoʊvər fɔːr ˈveri fæst vænz/"
+            }
+        };
+
+        // Role Play Cards Content
+        const ROLE_PLAY_SCENARIOS = {
+            icecream: {
+                roleA: "Ice Cream Customer",
+                badgeA: "Target: /s/, /ʃ/, /v/, /b/",
+                textA: "Hello! I would like six sweet scoops of strawberry ice cream and vanilla in a big bowl, please! Is that the very best price?",
+                roleB: "Ice Cream Server",
+                badgeB: "Target: /s/, /ʃ/, /v/, /b/",
+                textB: "Sure! We have six special scoops of super sweet strawberry and very vanilla. That will be seven silver dollars!"
+            },
+            radio: {
+                roleA: "DJ Candidate",
+                badgeA: "Target: /p/, /b/, /t/, /d/",
+                textA: "Good morning! Today ten tiny tigers are taking a big blue bus to the downtown pet park. Put on your boots and dance!",
+                roleB: "Radio Producer",
+                badgeB: "Target: Plosive Pops",
+                textB: "Please repeat! Make the P and B sounds stronger! Say: 'Betty bought a bit of better butter for her breakfast'!"
+            },
+            auction: {
+                roleA: "Fine Art Auctioneer",
+                badgeA: "Target: Rapid Catenation",
+                textA: "Do I hear three hundred thousand dollars for this splendid sculpture? Three hundred thousand once_and_twice! Sold_to_the_gentleman for three hundred_and_fifty thousand!",
+                roleB: "Bidding Art Collector",
+                badgeB: "Target: Interruptive Stress",
+                textB: "Objection! Four hundred thousand dollars! That piece holds extraordinary strategic value for my private collection, and I will not be outbid!"
+            },
+            news: {
+                roleA: "Field Reporter",
+                badgeA: "Target: Urgent Stance",
+                textA: "We are live_at the scene! Strong winds_have split several structural beams across downtown. Authorities_are urgently asking residents to clear_the_street!",
+                roleB: "Studio Anchor",
+                badgeB: "Target: Authoritative Fall-Rise",
+                textB: "Thank you, Sarah. Can you confirm if_emergency services_have reached the central district? What is the immediate structural assessment?"
+            },
+            press: {
+                roleA: "Press Secretary",
+                badgeA: "Target: Diplomatic Hedging",
+                textA: "Let_me_be perfectly clear. The administration has_implemented a rigorous strategy to stabilize the market over the next six_months.",
+                roleB: "Investigative Journalist",
+                badgeB: "Target: Challenging Spikes",
+                textB: "But isn't it true that three major economic reports contradict that exact statement? How can you justify such_a massive splurge?"
+            }
+        };
+
+        /* INITIALIZATION */
+        window.addEventListener('DOMContentLoaded', () => {
+            initStars();
+            selectTwisterCard(1);
+        });
+
+        /* LEVEL SWITCHING */
+        function switchLevel(level) {
+            currentLevel = level;
+            const btnA1 = document.getElementById('btn-level-a1');
+            const btnB1 = document.getElementById('btn-level-b1');
+            const heroBadge = document.getElementById('hero-badge-text');
+            const heroTitle = document.getElementById('hero-title');
+            const heroDesc = document.getElementById('hero-desc');
+            const heroMethod = document.getElementById('hero-method');
+
+            if (level === 'A1-A2') {
+                btnA1.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 bg-gym-cyan text-slate-950 shadow";
+                btnB1.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2";
+                heroBadge.innerText = "Tongue Gym Category: A1 - A2 Elementary";
+                heroTitle.innerText = "Phonetic Mechanics & Minimal Pair Sprint";
+                heroDesc.innerText = "Isolate target minimal pairs (/s/ vs /ʃ/, /p/ vs /b/, /ɪ/ vs /iː/), master front vowel mouth mechanics, and compete in metronome-driven speed twister challenges.";
+                heroMethod.innerText = "Metronome Speed Drills";
+                switchTab('tab-sprint');
+            } else {
+                btnB1.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-2 bg-gym-amber text-slate-950 shadow";
+                btnA1.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all duration-200 flex items-center gap-2";
+                heroBadge.innerText = "Tongue Gym Category: B1 - C1 Advanced";
+                heroTitle.innerText = "Advanced Vocal Dynamics & Connected Speech";
+                heroDesc.innerText = "Master connected speech phenomena (catenation, elision, schwa reduction), execute complex clusters (/str/, /spl/, /ðs/), and manipulate pitch contours across emotional stances.";
+                heroMethod.innerText = "Acoustic Deconstruction";
+                switchTab('tab-dynamics');
+            }
+        }
+
+        /* TAB SWITCHING */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.className = "tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 text-slate-400 hover:text-white hover:bg-gym-card transition whitespace-nowrap";
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId.replace('tab-', ''));
+            if (activeNav) {
+                activeNav.className = "tab-btn px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 bg-gym-card text-gym-cyan border border-gym-cyan/30 whitespace-nowrap";
+            }
+        }
+
+        /* PHYSICAL WARMUP INSTRUCTIONS */
+        function playWarmupInstruction(type) {
+            if (type === 'yawn') {
+                speakTextString("The Heavy Yawn. Inhale deeply, dropping lower jaw silently. Hold for three seconds, then exhale with a soft H sound.", 0.85);
+            } else if (type === 'trill') {
+                speakTextString("The Motorboat Trill. Relax your lips completely. Blow air through closed lips to create a sustained motorboat sound.", 0.85);
+            } else if (type === 'clock') {
+                speakTextString("The Tongue Clock. Circle your tongue tip along the outside of your teeth behind your lips: 12 o'clock, 3, 6, 9 o'clock.", 0.85);
+            }
+        }
+
+        /* VOWEL CARD SELECTION */
+        function selectVowel(vowelKey) {
+            document.querySelectorAll('.vowel-card').forEach(c => {
+                c.className = "vowel-card p-4 rounded-xl bg-gym-dark border border-gym-border cursor-pointer hover:border-gym-cyan transition space-y-3";
+            });
+            document.getElementById('vowel-card-' + vowelKey).className = "vowel-card p-4 rounded-xl bg-gym-card border-2 border-gym-cyan cursor-pointer transition space-y-3";
+        }
+
+        /* METRONOME ENGINE */
+        function setMetronomeBpm(bpm, btnKey) {
+            metroBpm = bpm;
+            document.getElementById('metro-bpm-display').innerText = bpm;
+            
+            document.querySelectorAll('#btn-bpm-turtle, #btn-bpm-rabbit, #btn-bpm-cheetah').forEach(b => {
+                b.className = "p-2.5 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-amber text-xs font-bold text-slate-300 transition";
+            });
+            document.getElementById('btn-bpm-' + btnKey).className = "p-2.5 rounded-xl bg-gym-card border-2 border-gym-amber text-xs font-bold text-gym-amber transition";
+
+            if (metroIsPlaying) {
+                stopMetronome();
+                startMetronome();
+            }
+        }
+
+        function toggleMetronome() {
+            if (metroIsPlaying) {
+                stopMetronome();
+            } else {
+                startMetronome();
+            }
+        }
+
+        function startMetronome() {
+            metroIsPlaying = true;
+            document.getElementById('metro-play-label').innerText = "Stop Metronome Clicks";
+            const interval = (60 / metroBpm) * 1000;
+
+            playClickSound();
+            metronomeTimer = setInterval(() => {
+                playClickSound();
+            }, interval);
+        }
+
+        function stopMetronome() {
+            metroIsPlaying = false;
+            if (metronomeTimer) clearInterval(metronomeTimer);
+            document.getElementById('metro-play-label').innerText = "Start Metronome Clicks";
+        }
+
+        function playClickSound() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+
+                // Visual Pulse
+                const visual = document.getElementById('metronome-visual-light');
+                visual.className = "w-16 h-16 rounded-full bg-gym-amber border-4 border-amber-300 text-slate-950 text-2xl beat-pulse flex items-center justify-center transition-all duration-100";
+                setTimeout(() => {
+                    visual.className = "w-16 h-16 rounded-full bg-gym-slate border-4 border-gym-border flex items-center justify-center text-slate-500 text-2xl transition-all duration-100";
+                }, 100);
+            } catch(e) { console.log(e); }
+        }
+
+        function updateGroupScore(delta) {
+            groupScore += delta;
+            if (groupScore < 0) groupScore = 0;
+            document.getElementById('group-score-val').innerText = `${groupScore} Pts`;
+        }
+
+        /* TWISTER CARD SELECTION */
+        function selectTwisterCard(id) {
+            activeTwisterCard = id;
+            const card = TWISTER_CARDS[id];
+
+            document.querySelectorAll('[id^="btn-card-"]').forEach(b => {
+                b.className = "p-3 rounded-xl bg-gym-dark border border-gym-border hover:border-gym-cyan text-left space-y-1";
+            });
+            document.getElementById('btn-card-' + id).className = "p-3 rounded-xl bg-gym-card border-2 border-gym-cyan text-left space-y-1";
+
+            document.getElementById('active-twister-badge').innerText = `Card ${id}: ${card.focus.split(':')[1]}`;
+            document.getElementById('twister-focus-title').innerText = card.focus;
+            document.getElementById('twister-rule-desc').innerText = card.rule;
+            document.getElementById('twister-body-text').innerText = card.body;
+            document.getElementById('twister-ipa-text').innerText = card.ipa;
+        }
+
+        function speakActiveTwister(speed) {
+            const card = TWISTER_CARDS[activeTwisterCard];
+            speakTextString(card.body.replace(/"/g, ''), speed);
+        }
+
+        /* STUDENT MIC RECORDING & VISUALIZER */
+        async function toggleStudentRecording() {
+            const label = document.getElementById('mic-rec-label');
+            const status = document.getElementById('rec-status-label');
+
+            if (!micIsRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micMediaRecorder = new MediaRecorder(stream);
+                    micAudioChunks = [];
+
+                    micMediaRecorder.ondataavailable = e => micAudioChunks.push(e.data);
+                    micMediaRecorder.onstop = () => {
+                        const blob = new Blob(micAudioChunks, { type: 'audio/wav' });
+                        micAudioUrl = URL.createObjectURL(blob);
+                        const playBtn = document.getElementById('btn-mic-play');
+                        playBtn.disabled = false;
+                        playBtn.className = "py-2.5 rounded-xl bg-gym-card hover:bg-gym-slate text-gym-cyan font-bold text-xs flex items-center justify-center gap-2 border border-gym-cyan/30 transition cursor-pointer";
+                    };
+
+                    micMediaRecorder.start();
+                    micIsRecording = true;
+                    label.innerText = "Stop Rec";
+                    status.innerText = "Recording...";
+                    status.className = "text-xs px-2 py-0.5 rounded bg-gym-rose/20 text-gym-rose font-bold animate-pulse";
+
+                    visualizeMicStream(stream);
+                } catch(e) {
+                    alert("Microphone permission denied or unsupported device.");
+                }
+            } else {
+                if (micMediaRecorder) micMediaRecorder.stop();
+                micIsRecording = false;
+                label.innerText = "Record Twister";
+                status.innerText = "Ready";
+                status.className = "text-xs px-2 py-0.5 rounded bg-gym-card text-slate-400";
+            }
+        }
+
+        function playStudentAudio() {
+            if (micAudioUrl) {
+                const audio = new Audio(micAudioUrl);
+                audio.play();
+            }
+        }
+
+        function visualizeMicStream(stream) {
+            const canvas = document.getElementById('waveform-canvas');
+            const ctx = canvas.getContext('2d');
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = actx.createAnalyser();
+            const source = actx.createMediaStreamSource(stream);
+            source.connect(analyser);
+
+            analyser.fftSize = 64;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                if (!micIsRecording) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 1.5;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height;
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                    x += barWidth;
+                }
+            }
+            draw();
+        }
+
+        /* 4-7-8 BREATH TIMER */
+        function startBreathTimer() {
+            if (breathTimer) clearInterval(breathTimer);
+            let sec = 4;
+            let phase = 'Inhale';
+            const circle = document.getElementById('breath-circle');
+            const label = document.getElementById('breath-phase-label');
+
+            circle.innerText = sec + 's';
+            label.innerText = "Inhale (Abdomen Expands)";
+
+            breathTimer = setInterval(() => {
+                sec--;
+                if (sec <= 0) {
+                    if (phase === 'Inhale') {
+                        phase = 'Hold';
+                        sec = 7;
+                        label.innerText = "Hold Breath (Subglottic Pressure)";
+                        circle.style.borderColor = '#f59e0b';
+                    } else if (phase === 'Hold') {
+                        phase = 'Exhale';
+                        sec = 8;
+                        label.innerText = "Exhale Softly (/s/ Hiss)";
+                        circle.style.borderColor = '#06b6d4';
+                    } else {
+                        phase = 'Inhale';
+                        sec = 4;
+                        label.innerText = "Inhale (Abdomen Expands)";
+                        circle.style.borderColor = '#f59e0b';
+                    }
+                }
+                circle.innerText = sec + 's';
+            }, 1000);
+        }
+
+        function resetBreathTimer() {
+            if (breathTimer) clearInterval(breathTimer);
+            document.getElementById('breath-circle').innerText = '4s';
+            document.getElementById('breath-phase-label').innerText = 'Inhale (Abdomen Expands)';
+        }
+
+        /* 15s SIBILANT HISS TIMER */
+        function startHissTimer() {
+            if (hissTimer) clearInterval(hissTimer);
+            let sec = 15;
+            const display = document.getElementById('hiss-timer-val');
+            display.innerText = '15s';
+
+            hissTimer = setInterval(() => {
+                sec--;
+                display.innerText = sec + 's';
+                if (sec <= 0) {
+                    clearInterval(hissTimer);
+                    display.innerText = 'Complete!';
+                }
+            }, 1000);
+        }
+
+        /* PITCH LADDER SCALING */
+        function scalePitchWord(idx) {
+            activePitchWordIdx = idx;
+            document.querySelectorAll('.pwd-btn').forEach((b, i) => {
+                if (i === idx) {
+                    b.className = "pwd-btn px-3 py-1.5 rounded-xl bg-gym-amber text-slate-950 shadow font-black";
+                } else {
+                    b.className = "pwd-btn px-3 py-1.5 rounded-xl bg-gym-card text-white hover:text-gym-amber font-normal";
+                }
+            });
+            document.getElementById('pitch-subtext-display').innerText = PITCH_SUBTEXTS[idx];
+            playPitchScaledAudio();
+        }
+
+        function playPitchScaledAudio() {
+            const words = ["I", "didn't", "say", "she", "stole", "the money"];
+            const text = words.join(" ");
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.rate = 0.85;
+                u.pitch = 0.9 + (activePitchWordIdx * 0.15); // Adjust pitch based on selection
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        /* PERSONA STANCE ENGINE */
+        function setStancePersona(p) {
+            activePersona = p;
+            document.querySelectorAll('.persona-btn').forEach(b => {
+                b.className = "persona-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white";
+            });
+            event.currentTarget.className = "persona-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-gym-cyan text-slate-950";
+
+            const info = document.getElementById('stance-acoustic-info');
+            if (p === 'sarcastic') {
+                info.innerHTML = `<strong class="text-gym-cyan block font-bold">Acoustic Parameters (Sarcastic Persona):</strong><p class="text-slate-300">Low monotone pitch (0.6x), slow tempo (70 BPM), dry glottal onset, prolonged vowel length.</p>`;
+            } else if (p === 'news') {
+                info.innerHTML = `<strong class="text-gym-cyan block font-bold">Acoustic Parameters (Prime-Time News Anchor):</strong><p class="text-slate-300">Authoritative Fall-Rise contour, medium-fast tempo (110 BPM), sharp plosive releases (/p/, /t/, /k/).</p>`;
+            } else if (p === 'crisis') {
+                info.innerHTML = `<strong class="text-gym-cyan block font-bold">Acoustic Parameters (Crisis Emergency Alert):</strong><p class="text-slate-300">High pitch register (1.4x), rapid staccato (140+ BPM), zero pause time, high subglottic air pressure.</p>`;
+            } else if (p === 'keynote') {
+                info.innerHTML = `<strong class="text-gym-cyan block font-bold">Acoustic Parameters (Keynote Speaker):</strong><p class="text-slate-300">Wide sweeping pitch range, warm resonance, rich chest voice, elongated key terms.</p>`;
+            }
+        }
+
+        function speakStanceAudio() {
+            const text = document.getElementById('stance-twister-text').innerText.replace(/"/g, '');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                if (activePersona === 'sarcastic') { u.pitch = 0.6; u.rate = 0.7; }
+                else if (activePersona === 'news') { u.pitch = 1.0; u.rate = 1.1; }
+                else if (activePersona === 'crisis') { u.pitch = 1.4; u.rate = 1.35; }
+                else if (activePersona === 'keynote') { u.pitch = 0.95; u.rate = 0.9; }
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        /* ROLE PLAY CARDS LOADER */
+        function loadRoleCard(key) {
+            const data = ROLE_PLAY_SCENARIOS[key];
+            if (!data) return;
+
+            document.querySelectorAll('.rp-tab-btn').forEach(b => {
+                b.className = "rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white";
+            });
+            event.currentTarget.className = "rp-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gym-cyan text-slate-950";
+
+            document.getElementById('rp-role-a').innerText = data.roleA;
+            document.getElementById('rp-badge-a').innerText = data.badgeA;
+            document.getElementById('rp-text-a').innerText = `"${data.textA}"`;
+
+            document.getElementById('rp-role-b').innerText = data.roleB;
+            document.getElementById('rp-badge-b').innerText = data.badgeB;
+            document.getElementById('rp-text-b').innerText = `"${data.textB}"`;
+        }
+
+        /* 15s SMARTPHONE AUDIT TIMER */
+        function startAuditTimer() {
+            let sec = 15;
+            const display = document.getElementById('audit-timer-val');
+            display.innerText = '15s';
+            const t = setInterval(() => {
+                sec--;
+                display.innerText = sec + 's';
+                if (sec <= 0) {
+                    clearInterval(t);
+                    display.innerText = 'Done!';
+                }
+            }, 1000);
+        }
+
+        /* TTS AUDIO HELPERS */
+        function speakText(id) {
+            const text = document.getElementById(id).innerText.replace(/"/g, '');
+            speakTextString(text, 0.85);
+        }
+
+        function speakTextString(text, speed) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = speed || 0.85;
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /* RUBRIC & STARS SYSTEM */
+        function initStars() {
+            [1, 2, 3].forEach(critId => {
+                const container = document.getElementById(`stars-${critId}`);
+                container.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    const star = document.createElement('i');
+                    star.className = i <= rubricScores[critId - 1] ? 'fa-solid fa-star' : 'fa-regular fa-star';
+                    star.onclick = () => {
+                        rubricScores[critId - 1] = i;
+                        document.getElementById(`score-text-${critId}`).innerText = `${i} / 5`;
+                        initStars();
+                    };
+                    container.appendChild(star);
+                }
+            });
+        }
+
+        function generateTongueGymBadge() {
+            const studentName = document.getElementById('rubric-name-input').value || 'Student Name';
+            const badgeTitle = document.getElementById('rubric-badge-select').value;
+
+            document.getElementById('badge-cert-title').innerText = badgeTitle.toUpperCase();
+            document.getElementById('cert-student-name').innerText = studentName;
+            document.getElementById('cert-score-1').innerText = `${rubricScores[0]}/5`;
+            document.getElementById('cert-score-2').innerText = `${rubricScores[1]}/5`;
+            document.getElementById('cert-score-3').innerText = `${rubricScores[2]}/5`;
+
+            triggerConfettiCelebration();
+        }
+
+        function triggerConfettiCelebration() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        /* MODAL CONTROLS */
+        function togglePlannerModal() {
+            document.getElementById('planner-modal').classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
