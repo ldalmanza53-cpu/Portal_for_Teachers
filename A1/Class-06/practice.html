@@ -21,6 +21,16 @@
             color: #ffffff;
             box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.38);
         }
+        .drag-over {
+            border-style: dashed !important;
+            transform: scale(1.02);
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+        .selected-chip {
+            ring: 3px solid #dc2626;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-12">
@@ -68,16 +78,20 @@
                     </h2>
                     <p class="text-sm text-slate-500 mt-1">Select the correct preposition or time expression for each daily routine sentence.</p>
                 </div>
-                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
-                    <i class="fa-solid fa-trophy text-red-500"></i> Score: <span id="ex-score" class="text-lg font-bold">0</span> / 18
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-red-500"></i> Score: <span id="ex-score" class="text-lg font-bold">0</span> / <span id="ex-total">22</span>
+                    </div>
+                    <button onclick="resetExercise()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Reset
+                    </button>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="sentences-container">
-                <!-- Javascript populates 12 sentence cards here -->
+                <!-- Dynamic cards loaded via JavaScript -->
             </div>
         </section>
-
 
         <!-- ================= MODE 2: ROUTINE BUILDER ================= -->
         <section id="sec-builder" class="hidden space-y-6">
@@ -93,7 +107,7 @@
                     <!-- Step 1: Action Verb -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">1. Activity</label>
-                        <select id="build-action" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700">
+                        <select id="build-action" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="I get up">I get up</option>
                             <option value="I leave work">I leave work</option>
                             <option value="I go to bed">I go to bed</option>
@@ -108,7 +122,7 @@
                     <!-- Step 2: Time Preposition / Expression -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">2. Time / Marker</label>
-                        <select id="build-prep" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700">
+                        <select id="build-prep" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="at 7:00">at 7:00</option>
                             <option value="early">early</option>
                             <option value="around 11:00">around 11:00</option>
@@ -120,10 +134,10 @@
                         </select>
                     </div>
 
-                    <!-- Step 3: Part of Day / Context -->
+                    <!-- Step 3: Part of Day -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">3. Part of Day</label>
-                        <select id="build-part" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700">
+                        <select id="build-part" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="in the morning">in the morning</option>
                             <option value="in the afternoon">in the afternoon</option>
                             <option value="in the evening">in the evening</option>
@@ -135,7 +149,7 @@
                     <!-- Step 4: Day Marker -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">4. Day of Week</label>
-                        <select id="build-day" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700">
+                        <select id="build-day" onchange="updateBuilderSentence()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500">
                             <option value="on weekdays">on weekdays</option>
                             <option value="on Thursdays">on Thursdays</option>
                             <option value="on weeknights">on weeknights</option>
@@ -160,63 +174,76 @@
             </div>
         </section>
 
-
         <!-- ================= MODE 3: PREPOSITION SPEED SORTER ================= -->
         <section id="sec-sorter" class="hidden space-y-6">
-            <div class="glass-card rounded-2xl p-6 shadow-sm">
-                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-red-600"></i> Preposition Category Sorter
-                </h2>
-                <p class="text-sm text-slate-500 mt-1">Classify time expressions into the correct preposition buckets: <strong>AT</strong>, <strong>IN</strong>, <strong>ON</strong>, or <strong>MARKERS</strong>.</p>
+            <div class="glass-card rounded-2xl p-6 shadow-sm flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-red-600"></i> Preposition Category Sorter
+                    </h2>
+                    <p class="text-sm text-slate-500 mt-1">Click a phrase below, then click its destination bucket (or drag and drop it).</p>
+                </div>
+                <button onclick="initPrepSorter()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all">
+                    <i class="fa-solid fa-rotate-right mr-1.5"></i> Reset Sorter
+                </button>
             </div>
 
+            <!-- Category Baskets -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- AT Basket -->
-                <div class="glass-card rounded-2xl p-4 border-2 border-amber-200 bg-amber-50/40 text-center space-y-2">
-                    <h3 class="font-bold text-amber-800 text-sm"><i class="fa-solid fa-clock"></i> AT</h3>
+                <div onclick="dropSelectedIntoCategory('at')" ondragover="allowDrop(event)" ondragleave="clearDragStyle(event)" ondrop="handleDrop(event, 'at')" class="basket-box glass-card rounded-2xl p-4 border-2 border-amber-300 bg-amber-50/50 text-center space-y-2 cursor-pointer transition-all hover:border-amber-500">
+                    <h3 class="font-bold text-amber-900 text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-clock text-amber-600"></i> AT
+                    </h3>
                     <p class="text-[11px] text-slate-500">Clock times & night</p>
-                    <div id="basket-at" class="min-h-[120px] bg-white border border-amber-200 rounded-xl p-2 flex flex-col gap-1.5 justify-center items-center">
-                        <span class="text-xs text-slate-400 italic">Drop AT items</span>
+                    <div id="basket-at" class="min-h-[130px] bg-white border border-amber-200 rounded-xl p-2.5 flex flex-col gap-2 justify-start items-center">
+                        <span class="placeholder-text text-xs text-slate-400 italic my-auto">Drop or click here for AT</span>
                     </div>
                 </div>
 
                 <!-- IN Basket -->
-                <div class="glass-card rounded-2xl p-4 border-2 border-blue-200 bg-blue-50/40 text-center space-y-2">
-                    <h3 class="font-bold text-blue-800 text-sm"><i class="fa-solid fa-sun"></i> IN</h3>
+                <div onclick="dropSelectedIntoCategory('in')" ondragover="allowDrop(event)" ondragleave="clearDragStyle(event)" ondrop="handleDrop(event, 'in')" class="basket-box glass-card rounded-2xl p-4 border-2 border-blue-300 bg-blue-50/50 text-center space-y-2 cursor-pointer transition-all hover:border-blue-500">
+                    <h3 class="font-bold text-blue-900 text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-sun text-blue-600"></i> IN
+                    </h3>
                     <p class="text-[11px] text-slate-500">Parts of the day</p>
-                    <div id="basket-in" class="min-h-[120px] bg-white border border-blue-200 rounded-xl p-2 flex flex-col gap-1.5 justify-center items-center">
-                        <span class="text-xs text-slate-400 italic">Drop IN items</span>
+                    <div id="basket-in" class="min-h-[130px] bg-white border border-blue-200 rounded-xl p-2.5 flex flex-col gap-2 justify-start items-center">
+                        <span class="placeholder-text text-xs text-slate-400 italic my-auto">Drop or click here for IN</span>
                     </div>
                 </div>
 
                 <!-- ON Basket -->
-                <div class="glass-card rounded-2xl p-4 border-2 border-emerald-200 bg-emerald-50/40 text-center space-y-2">
-                    <h3 class="font-bold text-emerald-800 text-sm"><i class="fa-solid fa-calendar-day"></i> ON</h3>
+                <div onclick="dropSelectedIntoCategory('on')" ondragover="allowDrop(event)" ondragleave="clearDragStyle(event)" ondrop="handleDrop(event, 'on')" class="basket-box glass-card rounded-2xl p-4 border-2 border-emerald-300 bg-emerald-50/50 text-center space-y-2 cursor-pointer transition-all hover:border-emerald-500">
+                    <h3 class="font-bold text-emerald-900 text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-calendar-day text-emerald-600"></i> ON
+                    </h3>
                     <p class="text-[11px] text-slate-500">Days & weekends</p>
-                    <div id="basket-on" class="min-h-[120px] bg-white border border-emerald-200 rounded-xl p-2 flex flex-col gap-1.5 justify-center items-center">
-                        <span class="text-xs text-slate-400 italic">Drop ON items</span>
+                    <div id="basket-on" class="min-h-[130px] bg-white border border-emerald-200 rounded-xl p-2.5 flex flex-col gap-2 justify-start items-center">
+                        <span class="placeholder-text text-xs text-slate-400 italic my-auto">Drop or click here for ON</span>
                     </div>
                 </div>
 
                 <!-- MARKERS Basket -->
-                <div class="glass-card rounded-2xl p-4 border-2 border-purple-200 bg-purple-50/40 text-center space-y-2">
-                    <h3 class="font-bold text-purple-800 text-sm"><i class="fa-solid fa-arrows-left-right"></i> MARKERS</h3>
-                    <p class="text-[11px] text-slate-500">before, after, until, etc.</p>
-                    <div id="basket-markers" class="min-h-[120px] bg-white border border-purple-200 rounded-xl p-2 flex flex-col gap-1.5 justify-center items-center">
-                        <span class="text-xs text-slate-400 italic">Drop Markers</span>
+                <div onclick="dropSelectedIntoCategory('markers')" ondragover="allowDrop(event)" ondragleave="clearDragStyle(event)" ondrop="handleDrop(event, 'markers')" class="basket-box glass-card rounded-2xl p-4 border-2 border-purple-300 bg-purple-50/50 text-center space-y-2 cursor-pointer transition-all hover:border-purple-500">
+                    <h3 class="font-bold text-purple-900 text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-arrows-left-right text-purple-600"></i> MARKERS
+                    </h3>
+                    <p class="text-[11px] text-slate-500">before, after, until, around</p>
+                    <div id="basket-markers" class="min-h-[130px] bg-white border border-purple-200 rounded-xl p-2.5 flex flex-col gap-2 justify-start items-center">
+                        <span class="placeholder-text text-xs text-slate-400 italic my-auto">Drop or click here for Markers</span>
                     </div>
                 </div>
             </div>
 
             <!-- Words Pool -->
             <div class="glass-card rounded-2xl p-5 border border-slate-200 text-center space-y-3">
-                <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Click a card to classify:</h4>
-                <div id="prep-pool" class="flex flex-wrap gap-2.5 justify-center">
+                <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Unsorted Time Expressions</h4>
+                <div id="prep-pool" class="flex flex-wrap gap-2.5 justify-center min-h-[50px] p-2">
                     <!-- Dynamic JS buttons -->
                 </div>
+                <p id="sorter-feedback" class="text-xs font-bold h-4 text-center text-red-600"></p>
             </div>
         </section>
-
 
         <!-- ================= MODE 4: GRAMMAR FOCUS REFERENCE ================= -->
         <section id="sec-reference" class="hidden space-y-6">
@@ -369,27 +396,29 @@
             { id: "e12", num: 12, text: "I study [q1] 11:00 [q2] dinner.", q1: { answer: "until", opts: ["around", "until"] }, q2: { answer: "after", opts: ["after", "early"] } }
         ];
 
-        let totalScore = 0;
-        const checkedQuestions = new Set();
+        let totalQuestions = 0;
+        const userAnswers = {};
 
         function renderExerciseCards() {
             const container = document.getElementById('sentences-container');
             container.innerHTML = '';
+            totalQuestions = 0;
 
             exerciseData.forEach(item => {
+                totalQuestions++;
+                if (item.q2) totalQuestions++;
+
                 const card = document.createElement('div');
                 card.className = "glass-card rounded-xl p-4 border border-slate-200 shadow-sm space-y-2";
 
                 let formattedText = item.text;
 
-                // Replace q1 dropdown
                 const sel1 = `<select id="${item.id}_q1" onchange="checkExAnswer('${item.id}_q1', '${item.q1.answer}')" class="border rounded px-2 py-0.5 bg-white font-semibold text-xs border-slate-300">
                     <option value="">(${item.q1.opts.join(' / ')})</option>
                     ${item.q1.opts.map(o => `<option value="${o}">${o}</option>`).join('')}
                 </select>`;
                 formattedText = formattedText.replace('[q1]', sel1);
 
-                // Replace q2 dropdown if exists
                 if (item.q2) {
                     const sel2 = `<select id="${item.id}_q2" onchange="checkExAnswer('${item.id}_q2', '${item.q2.answer}')" class="border rounded px-2 py-0.5 bg-white font-semibold text-xs border-slate-300">
                         <option value="">(${item.q2.opts.join(' / ')})</option>
@@ -407,20 +436,35 @@
                 `;
                 container.appendChild(card);
             });
+
+            document.getElementById('ex-total').textContent = totalQuestions;
+            updateTotalScore();
         }
 
         function checkExAnswer(selectId, correctAnswer) {
             const selectEl = document.getElementById(selectId);
             if (selectEl.value === correctAnswer) {
                 selectEl.className = "border rounded px-2 py-0.5 font-semibold text-xs bg-emerald-100 text-emerald-900 border-emerald-500";
-                if (!checkedQuestions.has(selectId)) {
-                    checkedQuestions.add(selectId);
-                    totalScore++;
-                    document.getElementById('ex-score').textContent = totalScore;
+                userAnswers[selectId] = true;
+            } else {
+                userAnswers[selectId] = false;
+                if (selectEl.value !== "") {
+                    selectEl.className = "border rounded px-2 py-0.5 font-semibold text-xs bg-rose-100 text-rose-900 border-rose-400";
+                } else {
+                    selectEl.className = "border rounded px-2 py-0.5 bg-white font-semibold text-xs border-slate-300";
                 }
-            } else if (selectEl.value !== "") {
-                selectEl.className = "border rounded px-2 py-0.5 font-semibold text-xs bg-rose-100 text-rose-900 border-rose-400";
             }
+            updateTotalScore();
+        }
+
+        function updateTotalScore() {
+            const currentScore = Object.values(userAnswers).filter(Boolean).length;
+            document.getElementById('ex-score').textContent = currentScore;
+        }
+
+        function resetExercise() {
+            Object.keys(userAnswers).forEach(key => delete userAnswers[key]);
+            renderExerciseCards();
         }
 
         function speakSentenceText(itemId) {
@@ -442,54 +486,130 @@
             const part = document.getElementById('build-part').value;
             const day = document.getElementById('build-day').value;
 
-            const parts = [act, prep, part, day].filter(p => p.trim() !== '');
+            const parts = [act, prep, part, day].filter(p => p && p.trim() !== '');
             const finalSentence = parts.join(' ') + '.';
             document.getElementById('builder-output-text').textContent = `"${finalSentence}"`;
         }
 
-        // Mode 3: Preposition Sorter Logic
+        // Mode 3: Preposition Sorter Logic (Fixed without prompt)
         const prepItems = [
-            { word: "at 7:00", cat: "at" },
-            { word: "at night", cat: "at" },
-            { word: "in the morning", cat: "in" },
-            { word: "in the afternoon", cat: "in" },
-            { word: "in the evening", cat: "in" },
-            { word: "on weekdays", cat: "on" },
-            { word: "on Thursdays", cat: "on" },
-            { word: "on weekends", cat: "on" },
-            { word: "until midnight", cat: "markers" },
-            { word: "before noon", cat: "markers" },
-            { word: "after noon", cat: "markers" },
-            { word: "around 11:00", cat: "markers" }
+            { id: "p1", word: "at 7:00", cat: "at" },
+            { id: "p2", word: "at night", cat: "at" },
+            { id: "p3", word: "at 9:00 P.M.", cat: "at" },
+            { id: "p4", word: "in the morning", cat: "in" },
+            { id: "p5", word: "in the afternoon", cat: "in" },
+            { id: "p6", word: "in the evening", cat: "in" },
+            { id: "p7", word: "on weekdays", cat: "on" },
+            { id: "p8", word: "on Thursdays", cat: "on" },
+            { id: "p9", word: "on weekends", cat: "on" },
+            { id: "p10", word: "until midnight", cat: "markers" },
+            { id: "p11", word: "before noon", cat: "markers" },
+            { id: "p12", word: "after noon", cat: "markers" },
+            { id: "p13", word: "around 11:00", cat: "markers" }
         ];
+
+        let selectedPrepId = null;
 
         function initPrepSorter() {
             const pool = document.getElementById('prep-pool');
             pool.innerHTML = '';
-            prepItems.sort(() => Math.random() - 0.5);
+            document.getElementById('sorter-feedback').textContent = '';
+            selectedPrepId = null;
 
-            prepItems.forEach(item => {
-                const btn = document.createElement('button');
-                btn.id = `sort-prep-${item.word.replace(/\s+/g, '-')}`;
-                btn.className = "px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-xs text-slate-700 hover:bg-red-50 shadow-sm transition-all";
-                btn.textContent = item.word;
-                btn.onclick = () => classifyPrep(item);
+            // Reset basket containers
+            ['at', 'in', 'on', 'markers'].forEach(cat => {
+                const basket = document.getElementById(`basket-${cat}`);
+                basket.innerHTML = `<span class="placeholder-text text-xs text-slate-400 italic my-auto">Drop or click here for ${cat.toUpperCase()}</span>`;
+            });
+
+            // Shuffle items
+            const shuffled = [...prepItems].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(item => {
+                const btn = document.createElement('div');
+                btn.id = `chip-${item.id}`;
+                btn.draggable = true;
+                btn.className = "px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-xs text-slate-700 hover:bg-red-50 shadow-sm cursor-grab transition-all select-none flex items-center gap-1";
+                btn.innerHTML = `<i class="fa-solid fa-grip-vertical text-slate-300 text-[10px]"></i> ${item.word}`;
+                
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    selectChip(item.id);
+                };
+
+                btn.ondragstart = (e) => {
+                    e.dataTransfer.setData("text/plain", item.id);
+                    selectChip(item.id);
+                };
+
                 pool.appendChild(btn);
             });
         }
 
-        function classifyPrep(item) {
-            const catChoice = prompt(`Where does "${item.word}" belong?\nType '1' for AT\nType '2' for IN\nType '3' for ON\nType '4' for MARKERS (before, after, until, around)`);
-            const btn = document.getElementById(`sort-prep-${item.word.replace(/\s+/g, '-')}`);
+        function selectChip(id) {
+            document.querySelectorAll('#prep-pool div, [id^="basket-"] div').forEach(el => {
+                el.classList.remove('ring-2', 'ring-red-500', 'bg-red-50');
+            });
 
-            const categoryMap = { '1': 'at', '2': 'in', '3': 'on', '4': 'markers' };
-            const selectedCat = categoryMap[catChoice];
+            const chip = document.getElementById(`chip-${id}`);
+            if (chip && !chip.dataset.sorted) {
+                selectedPrepId = id;
+                chip.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                document.getElementById('sorter-feedback').textContent = `Selected: "${prepItems.find(i => i.id === id).word}". Now click a category basket above.`;
+                document.getElementById('sorter-feedback').className = "text-xs font-bold text-slate-600";
+            }
+        }
 
-            if (selectedCat === item.cat) {
-                document.getElementById(`basket-${item.cat}`).appendChild(btn);
-                btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
-            } else if (catChoice !== null) {
-                alert(`Oops! "${item.word}" belongs under ${item.cat.toUpperCase()}.`);
+        function dropSelectedIntoCategory(targetCat) {
+            if (!selectedPrepId) return;
+            processClassification(selectedPrepId, targetCat);
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function clearDragStyle(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, targetCat) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const itemId = e.dataTransfer.getData("text/plain") || selectedPrepId;
+            if (itemId) {
+                processClassification(itemId, targetCat);
+            }
+        }
+
+        function processClassification(itemId, targetCat) {
+            const item = prepItems.find(i => i.id === itemId);
+            const chip = document.getElementById(`chip-${itemId}`);
+            const feedback = document.getElementById('sorter-feedback');
+
+            if (!item || !chip) return;
+
+            if (item.cat === targetCat) {
+                const basket = document.getElementById(`basket-${targetCat}`);
+                const placeholder = basket.querySelector('.placeholder-text');
+                if (placeholder) placeholder.remove();
+
+                chip.dataset.sorted = "true";
+                chip.draggable = false;
+                chip.onclick = null;
+                chip.ondragstart = null;
+                chip.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 w-full text-center shadow-xs";
+                chip.innerHTML = `<i class="fa-solid fa-check mr-1"></i> ${item.word}`;
+                
+                basket.appendChild(chip);
+                selectedPrepId = null;
+
+                feedback.textContent = `Correct! "${item.word}" belongs to ${targetCat.toUpperCase()}.`;
+                feedback.className = "text-xs font-bold text-emerald-600";
+            } else {
+                feedback.textContent = `Try again! "${item.word}" does not belong to ${targetCat.toUpperCase()}.`;
+                feedback.className = "text-xs font-bold text-rose-600";
             }
         }
 
