@@ -269,7 +269,7 @@
             </div>
         </section>
 
-        <!-- TAB 3: SENTENCE SCRAMBLE (COMPARATIVE FOCUS) -->
+        <!-- TAB 3: SENTENCE SCRAMBLE (IMPROVED & EXPANDED) -->
         <section id="tab-scramble" class="tab-content hidden space-y-6">
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-6">
                 <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
@@ -278,25 +278,47 @@
                             <i class="fa-solid fa-puzzle-piece text-indigo-600"></i>
                             Comparative Sentence Unscramble
                         </h2>
-                        <p class="text-xs text-slate-500">Click the tokens in order to build correct comparative sentences.</p>
+                        <p class="text-xs text-slate-500">Read the situation context clue and tap the words in order to form the comparative sentence.</p>
                     </div>
-                    <span id="scrambleProgress" class="text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Sentence 1 of 4</span>
+                    <span id="scrambleProgress" class="text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 px-3 py-1 rounded-full">Sentence 1 of 10</span>
+                </div>
+
+                <!-- Context Clue Banner (Hides the exact answer text) -->
+                <div class="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 rounded-xl p-4 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info text-indigo-500 text-lg mt-0.5"></i>
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">Context Situation / Clue:</span>
+                        <p id="scrambleContextHint" class="text-sm font-semibold text-slate-800 dark:text-slate-200">Context loading...</p>
+                    </div>
                 </div>
 
                 <!-- Answer Drop Zone -->
-                <div id="scrambleDropZone" class="min-h-[70px] p-4 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-wrap gap-2 items-center">
-                    <span class="text-xs text-slate-400 italic">Tap words below to build sentence...</span>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Your Answer Sentence:</label>
+                    <div id="scrambleDropZone" class="min-h-[70px] p-4 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-wrap gap-2 items-center">
+                        <span class="text-xs text-slate-400 italic">Tap words from below to construct your sentence...</span>
+                    </div>
                 </div>
 
                 <!-- Word Tokens Pool -->
-                <div id="scramblePool" class="flex flex-wrap gap-2 p-2 justify-center">
-                    <!-- Tokens injected via JS -->
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Word Tokens:</label>
+                    <div id="scramblePool" class="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-700/60 justify-center min-h-[60px]">
+                        <!-- Tokens injected dynamically -->
+                    </div>
                 </div>
 
-                <!-- Actions -->
+                <!-- Feedback Banner -->
+                <div id="scrambleFeedback" class="hidden p-3 rounded-xl text-xs font-bold transition flex items-center gap-2"></div>
+
+                <!-- Controls -->
                 <div class="flex items-center justify-between pt-2">
-                    <button onclick="resetCurrentScramble()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200">Clear</button>
-                    <button onclick="checkScrambleAnswer()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md">Check Comparative</button>
+                    <button onclick="resetCurrentScramble()" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-200 transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Clear Selection
+                    </button>
+                    <button onclick="checkScrambleAnswer()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Check Comparative
+                    </button>
                 </div>
             </div>
         </section>
@@ -358,7 +380,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        // State
+        // Global State
         const state = {
             score: 0,
             soundEnabled: true,
@@ -366,7 +388,7 @@
             dark: false
         };
 
-        // Audio Effects (Synthesized using Web Audio API for zero broken assets)
+        // Synthesized Web Audio API FX
         function playSound(type) {
             if (!state.soundEnabled) return;
             try {
@@ -377,8 +399,8 @@
                 gain.connect(ctx.destination);
 
                 if (type === 'correct') {
-                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15);
                     gain.gain.setValueAtTime(0.15, ctx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
                     osc.start();
@@ -391,6 +413,12 @@
                     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
                     osc.start();
                     osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'click') {
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
                 }
             } catch(e) {}
         }
@@ -458,7 +486,6 @@
             const list = document.getElementById('comparativeSentencesList');
             let sentences = [];
 
-            // 1. Wake up comparison
             if (alexWake < samWake) {
                 sentences.push(`Alex wakes up <strong class="text-blue-400">earlier than</strong> Sam.`);
                 sentences.push(`Sam wakes up <strong class="text-indigo-300">later than</strong> Alex.`);
@@ -469,7 +496,6 @@
                 sentences.push(`Alex and Sam wake up at the same time.`);
             }
 
-            // 2. Work/Study comparison
             if (alexWork > samWork) {
                 sentences.push(`Alex studies <strong class="text-blue-400">more hours than</strong> Sam (${alexWork}h vs ${samWork}h).`);
                 sentences.push(`Alex works <strong class="text-blue-400">longer than</strong> Sam.`);
@@ -480,7 +506,6 @@
                 sentences.push(`Alex works as many hours as Sam (${alexWork}h).`);
             }
 
-            // 3. Exercise comparison
             if (alexEx > samEx) {
                 sentences.push(`Alex is <strong class="text-blue-400">more active than</strong> Sam.`);
             } else if (samEx > alexEx) {
@@ -521,7 +546,7 @@
             if (currentMatrixIdx < matrixItems.length) {
                 document.getElementById('matrixActiveCard').innerText = matrixItems[currentMatrixIdx].text;
             } else {
-                document.getElementById('matrixActiveCard').innerText = "🎉 Great Job!";
+                document.getElementById('matrixActiveCard').innerText = "🎉 Matrix Challenge Complete!";
             }
         }
 
@@ -554,62 +579,163 @@
             updateMatrixCard();
         }
 
-        // TAB 3 LOGIC: SENTENCE SCRAMBLE
+        // TAB 3 LOGIC: SENTENCE SCRAMBLE (IMPROVED & EXPANDED WITH 10 EXERCISES)
         const scrambleData = [
-            { target: "I wake up earlier than my brother", words: ["I", "wake up", "earlier", "than", "my brother"] },
-            { target: "She works more hours than me", words: ["She", "works", "more hours", "than", "me"] },
-            { target: "Sam goes to bed later than Alex", words: ["Sam", "goes to bed", "later", "than", "Alex"] },
-            { target: "My sister is more active than me", words: ["My sister", "is", "more active", "than", "me"] }
+            {
+                context: "Alex wakes up at 6:00 AM. Sam wakes up at 8:00 AM. Compare Alex to Sam.",
+                target: "Alex wakes up earlier than Sam",
+                tokens: ["Alex", "wakes up", "earlier", "than", "Sam"]
+            },
+            {
+                context: "She works 8 hours per day. I work 6 hours per day. Compare her working time to me.",
+                target: "She works more hours than me",
+                tokens: ["She", "works", "more hours", "than", "me"]
+            },
+            {
+                context: "Sam goes to bed at 11:00 PM. Alex goes to bed at 10:00 PM. Compare Sam to Alex.",
+                target: "Sam goes to bed later than Alex",
+                tokens: ["Sam", "goes to bed", "later", "than", "Alex"]
+            },
+            {
+                context: "My sister exercises daily. I rarely exercise. Compare my sister to me.",
+                target: "My sister is more active than me",
+                tokens: ["My sister", "is", "more active", "than", "me"]
+            },
+            {
+                context: "Dad reads for 3 hours. Mom reads for 1 hour. Compare Dad's reading time to Mom.",
+                target: "Dad reads longer than Mom",
+                tokens: ["Dad", "reads", "longer", "than", "Mom"]
+            },
+            {
+                context: "I drink 3 cups of coffee. You drink 1 cup. Compare my coffee consumption to yours.",
+                target: "I drink more coffee than you",
+                tokens: ["I", "drink", "more coffee", "than", "you"]
+            },
+            {
+                context: "Tom eats breakfast at 7:00 AM. Ben eats at 8:30 AM. Compare Tom to Ben.",
+                target: "Tom eats breakfast earlier than Ben",
+                tokens: ["Tom", "eats breakfast", "earlier", "than", "Ben"]
+            },
+            {
+                context: "We watch TV for 4 hours. They watch for 2 hours. Compare our TV time to them.",
+                target: "We watch TV more than them",
+                tokens: ["We", "watch TV", "more than", "them"]
+            },
+            {
+                context: "My brother sleeps 9 hours. I sleep 7 hours. Compare my brother's sleep to mine.",
+                target: "My brother sleeps longer than me",
+                tokens: ["My brother", "sleeps", "longer", "than", "me"]
+            },
+            {
+                context: "Sarah does yoga every day. Mark only rests. Compare Sarah's lifestyle to Mark.",
+                target: "Sarah is more relaxed than Mark",
+                tokens: ["Sarah", "is", "more relaxed", "than", "Mark"]
+            }
         ];
+
         let scrambleIdx = 0;
-        let currentUserTokens = [];
+        let poolTokens = [];
+        let selectedTokens = [];
+
+        // Shuffle utility that guarantees output is NOT equal to original order
+        function shuffleTokens(array) {
+            let shuffled = [...array];
+            if (shuffled.length <= 1) return shuffled;
+            let attempts = 0;
+            while (attempts < 10) {
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                if (shuffled.join(' ') !== array.join(' ')) break;
+                attempts++;
+            }
+            return shuffled;
+        }
 
         function loadScrambleQuestion() {
             const item = scrambleData[scrambleIdx];
             document.getElementById('scrambleProgress').innerText = `Sentence ${scrambleIdx + 1} of ${scrambleData.length}`;
-            document.getElementById('scrambleDropZone').innerHTML = `<span class="text-xs text-slate-400 italic">Tap words below to build sentence...</span>`;
-            currentUserTokens = [];
+            document.getElementById('scrambleContextHint').innerText = item.context;
+            
+            // Hide feedback banner
+            const fb = document.getElementById('scrambleFeedback');
+            fb.className = "hidden";
+            fb.innerText = "";
 
-            // Shuffle
-            const shuffled = [...item.words].sort(() => Math.random() - 0.5);
-            document.getElementById('scramblePool').innerHTML = shuffled.map((w, i) => `
-                <button onclick="pickToken('${w}', this)" class="token-btn px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-xs shadow-xs hover:border-blue-500">
-                    ${w}
-                </button>
-            `).join('');
+            selectedTokens = [];
+            poolTokens = shuffleTokens(item.tokens);
+            renderScrambleUI();
         }
 
-        function pickToken(word, btnEl) {
-            btnEl.disabled = true;
-            btnEl.classList.add('opacity-30', 'cursor-not-allowed');
-            currentUserTokens.push(word);
-
+        function renderScrambleUI() {
             const dropZone = document.getElementById('scrambleDropZone');
-            if (currentUserTokens.length === 1) dropZone.innerHTML = '';
-            
-            dropZone.innerHTML += `
-                <span class="px-3 py-1.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-xs">
-                    ${word}
-                </span>
-            `;
+            const poolZone = document.getElementById('scramblePool');
+
+            // Render Selected Tokens
+            if (selectedTokens.length === 0) {
+                dropZone.innerHTML = `<span class="text-xs text-slate-400 italic">Tap words from below to construct your sentence...</span>`;
+            } else {
+                dropZone.innerHTML = selectedTokens.map((token, idx) => `
+                    <button onclick="deselectToken(${idx})" class="token-btn px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5">
+                        <span>${token}</span>
+                        <i class="fa-solid fa-xmark text-[10px] opacity-75"></i>
+                    </button>
+                `).join('');
+            }
+
+            // Render Available Pool Tokens
+            if (poolTokens.length === 0) {
+                poolZone.innerHTML = `<span class="text-xs text-slate-400 italic">All words selected! Click "Check Comparative" below.</span>`;
+            } else {
+                poolZone.innerHTML = poolTokens.map((token, idx) => `
+                    <button onclick="selectToken(${idx})" class="token-btn px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-xs text-slate-700 dark:text-slate-200 shadow-xs hover:border-blue-500 hover:text-blue-600 transition">
+                        ${token}
+                    </button>
+                `).join('');
+            }
+        }
+
+        function selectToken(poolIndex) {
+            playSound('click');
+            const token = poolTokens.splice(poolIndex, 1)[0];
+            selectedTokens.push(token);
+            renderScrambleUI();
+        }
+
+        function deselectToken(selectedIndex) {
+            playSound('click');
+            const token = selectedTokens.splice(selectedIndex, 1)[0];
+            poolTokens.push(token);
+            renderScrambleUI();
         }
 
         function resetCurrentScramble() {
+            playSound('click');
             loadScrambleQuestion();
         }
 
         function checkScrambleAnswer() {
-            const userStr = currentUserTokens.join(" ");
+            const userStr = selectedTokens.join(" ");
             const target = scrambleData[scrambleIdx].target;
+            const fb = document.getElementById('scrambleFeedback');
 
             if (userStr === target) {
                 playSound('correct');
                 addScore(10);
                 speakText(target);
-                scrambleIdx = (scrambleIdx + 1) % scrambleData.length;
-                setTimeout(loadScrambleQuestion, 1200);
+                
+                fb.className = "p-3 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center gap-2 border border-emerald-300 dark:border-emerald-800";
+                fb.innerHTML = `<i class="fa-solid fa-circle-check text-base"></i> Perfect! "${target}"`;
+                
+                setTimeout(() => {
+                    scrambleIdx = (scrambleIdx + 1) % scrambleData.length;
+                    loadScrambleQuestion();
+                }, 1800);
             } else {
                 playSound('wrong');
+                fb.className = "p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 flex items-center gap-2 border border-rose-300 dark:border-rose-800";
+                fb.innerHTML = `<i class="fa-solid fa-circle-xmark text-base"></i> Not quite right. Tap words to adjust your sentence structure!`;
             }
         }
 
@@ -649,7 +775,7 @@
             `).join('');
         }
 
-        // Init App
+        // Initialization
         document.addEventListener('DOMContentLoaded', () => {
             generateComparativeSentences();
             updateMatrixCard();
