@@ -151,11 +151,6 @@
       box-shadow: 0 6px 16px rgba(37,99,235,0.1);
     }
 
-    .event-emoji {
-      font-size: 3.5rem;
-      margin-bottom: 8px;
-    }
-
     .event-title {
       font-weight: 700;
       font-size: 1.1rem;
@@ -193,7 +188,6 @@
     }
 
     .role-inviter { background: #e0e7ff; color: #3730a3; }
-    .role-you { background: #d1fae5; color: #065f46; }
 
     .response-options {
       display: grid;
@@ -308,7 +302,7 @@
 
     .feedback {
       margin-top: 12px;
-      padding: 12px;
+      padding: 14px;
       border-radius: 8px;
       font-weight: 600;
       display: none;
@@ -387,12 +381,6 @@
       margin: 4px 0;
       color: var(--text);
     }
-
-    @media print {
-      body * { visibility: hidden; }
-      #printable-area, #printable-area * { visibility: visible; }
-      #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
-    }
   </style>
 </head>
 <body>
@@ -403,11 +391,11 @@
   </header>
 
   <nav>
-    <button class="nav-btn active" onclick="switchTab('simulator')">💌 Invitation Simulator</button>
-    <button class="nav-btn" onclick="switchTab('grammar')">📐 Grammar Builder</button>
-    <button class="nav-btn" onclick="switchTab('planner')">📅 Weekend Planner</button>
-    <button class="nav-btn" onclick="switchTab('listening')">🎧 Listening Lab</button>
-    <button class="nav-btn" onclick="switchTab('cards')">✉️ Card Creator</button>
+    <button class="nav-btn active" onclick="switchTab(event, 'simulator')">💌 Invitation Simulator</button>
+    <button class="nav-btn" onclick="switchTab(event, 'grammar')">📐 Grammar Builder</button>
+    <button class="nav-btn" onclick="switchTab(event, 'planner')">📅 Weekend Planner</button>
+    <button class="nav-btn" onclick="switchTab(event, 'listening')">🎧 Listening Lab</button>
+    <button class="nav-btn" onclick="switchTab(event, 'cards')">✉️ Card Creator</button>
   </nav>
 
   <main>
@@ -455,14 +443,14 @@
         </tbody>
       </table>
 
-      <div class="builder-area">
+      <div class="builder-area" id="builder-container">
         <h3>🧩 Sentence Unscramble Drill</h3>
         <p id="builder-prompt" style="margin: 8px 0; color: var(--text-muted); font-weight: 600;"></p>
         
         <div class="sentence-slots" id="sentence-slots"></div>
         <div class="word-bank" id="word-bank"></div>
 
-        <div style="margin-top: 16px; display: flex; gap: 10px;">
+        <div style="margin-top: 16px; display: flex; gap: 10px;" id="builder-controls">
           <button class="btn btn-primary" onclick="checkBuilderAnswer()">Check Sentence</button>
           <button class="btn btn-secondary" onclick="resetBuilder()">Reset</button>
         </div>
@@ -537,6 +525,9 @@
     // Audio Context Synthesizer
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(freq = 600, duration = 0.1, type = 'sine') {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
@@ -569,11 +560,13 @@
     }
 
     // Tab Navigation
-    function switchTab(tabId) {
+    function switchTab(evt, tabId) {
       document.querySelectorAll('.section-card').forEach(sec => sec.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      event.currentTarget.classList.add('active');
+      if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+      }
     }
 
     // Events Data
@@ -688,75 +681,169 @@
       speak(resp.text);
     }
 
-    // Grammar Builder Engine
+    // Grammar Builder Engine (CORREGIDO)
     const builderDrills = [
-      { prompt: "Would you _____ to go to the cinema on Saturday?", answer: ["Would", "you", "like", "to", "go", "to", "the", "cinema", "on", "Saturday?"], bank: ["you", "like", "cinema", "Would", "to", "go", "on", "Saturday?", "the", "want"] },
-      { prompt: "I'm sorry, I _____. I have to study.", answer: ["I'm", "sorry,", "I", "can't.", "I", "have", "to", "study."], bank: ["can't.", "I'm", "have", "I", "sorry,", "study.", "to", "I"] }
+      {
+        prompt: "Would you _____ to go to the cinema on Saturday?",
+        translation: "¿Te gustaría ir al cine el sábado?",
+        answer: ["Would", "you", "like", "to", "go", "to", "the", "cinema", "on", "Saturday?"],
+        bank: ["you", "like", "cinema", "Would", "to", "go", "on", "Saturday?", "the", "to"], // Corregido: se incluyó la segunda palabra 'to'
+        explanation: "Patrón formal para invitar: 'Would you like to + [verbo infinitivo]...?'. Recuerda usar 'on' para días de la semana."
+      },
+      {
+        prompt: "I'm sorry, I _____. I have to study.",
+        translation: "Lo siento, no puedo. Tengo que estudiar.",
+        answer: ["I'm", "sorry,", "I", "can't.", "I", "have", "to", "study."],
+        bank: ["can't.", "I'm", "have", "I", "sorry,", "study.", "to", "I"],
+        explanation: "Patrón para declinar cortésmente: 'I'm sorry, I can't. I have to + [razón]'."
+      },
+      {
+        prompt: "Do you want to _____ coffee this Friday?",
+        translation: "¿Quieres tomar café este viernes?",
+        answer: ["Do", "you", "want", "to", "drink", "coffee", "this", "Friday?"],
+        bank: ["want", "Do", "coffee", "you", "drink", "to", "Friday?", "this"],
+        explanation: "Patrón informal para invitar: 'Do you want to + [verbo infinitivo]...?'"
+      }
     ];
 
     let currentBuilderIdx = 0;
-    let selectedWords = [];
+    let selectedWordObjects = [];
 
     function loadBuilderDrill() {
       const drill = builderDrills[currentBuilderIdx];
-      document.getElementById('builder-prompt').innerText = drill.prompt;
-      selectedWords = [];
+      const promptElem = document.getElementById('builder-prompt');
+      if (promptElem) {
+        promptElem.innerHTML = `
+          <strong>Ejercicio ${currentBuilderIdx + 1} de ${builderDrills.length}:</strong> ${drill.prompt}<br>
+          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">(${drill.translation})</span>
+        `;
+      }
+      
+      selectedWordObjects = [];
       renderBuilderSlots();
 
       const bankDiv = document.getElementById('word-bank');
-      bankDiv.innerHTML = '';
-      drill.bank.forEach(word => {
-        const tile = document.createElement('div');
-        tile.className = 'word-tile';
-        tile.innerText = word;
-        tile.onclick = () => selectWord(word, tile);
-        bankDiv.appendChild(tile);
-      });
+      if (bankDiv) {
+        bankDiv.innerHTML = '';
+        drill.bank.forEach((word, idx) => {
+          const tile = document.createElement('div');
+          tile.className = 'word-tile';
+          tile.dataset.id = idx;
+          tile.innerText = word;
+          tile.onclick = () => selectWord(idx, word, tile);
+          bankDiv.appendChild(tile);
+        });
+      }
 
-      document.getElementById('builder-feedback').className = 'feedback';
+      const feedback = document.getElementById('builder-feedback');
+      if (feedback) {
+        feedback.className = 'feedback';
+        feedback.style.display = 'none';
+        feedback.innerHTML = '';
+      }
     }
 
-    function selectWord(word, tileElement) {
+    function selectWord(id, text, tileElement) {
+      if (tileElement.style.visibility === 'hidden') return;
       playSound(800, 0.05);
-      selectedWords.push(word);
+      selectedWordObjects.push({ id, text });
       tileElement.style.visibility = 'hidden';
       renderBuilderSlots();
     }
 
     function renderBuilderSlots() {
       const slotsDiv = document.getElementById('sentence-slots');
+      if (!slotsDiv) return;
       slotsDiv.innerHTML = '';
-      selectedWords.forEach((word, idx) => {
+      selectedWordObjects.forEach((item, idx) => {
         const tile = document.createElement('div');
         tile.className = 'word-tile';
-        tile.innerText = word;
+        tile.innerText = item.text;
         tile.onclick = () => removeWord(idx);
         slotsDiv.appendChild(tile);
       });
     }
 
     function removeWord(idx) {
-      const removed = selectedWords.splice(idx, 1)[0];
+      const removed = selectedWordObjects.splice(idx, 1)[0];
       renderBuilderSlots();
-      document.querySelectorAll('#word-bank .word-tile').forEach(tile => {
-        if (tile.innerText === removed && tile.style.visibility === 'hidden') {
-          tile.style.visibility = 'visible';
-        }
-      });
+      const bankTile = document.querySelector(`#word-bank .word-tile[data-id="${removed.id}"]`);
+      if (bankTile) {
+        bankTile.style.visibility = 'visible';
+      }
     }
 
     function checkBuilderAnswer() {
       const drill = builderDrills[currentBuilderIdx];
       const feedback = document.getElementById('builder-feedback');
-      if (JSON.stringify(selectedWords) === JSON.stringify(drill.answer)) {
+      const userWords = selectedWordObjects.map(obj => obj.text);
+
+      if (JSON.stringify(userWords) === JSON.stringify(drill.answer)) {
         playSuccess();
-        feedback.innerText = "Correct sentence structure! 🎉";
         feedback.className = "feedback correct";
+        feedback.style.display = 'block';
+
+        const isLast = currentBuilderIdx === builderDrills.length - 1;
+
+        feedback.innerHTML = `
+          <div style="margin-bottom: 8px;">🎉 <strong>¡Excelente! Oración correcta.</strong></div>
+          <div style="font-size: 0.9rem; font-weight: normal; margin-bottom: 12px;">💡 <em>Nota gramatical:</em> ${drill.explanation}</div>
+          ${isLast ? 
+            `<button class="btn btn-primary" onclick="showFinalScrambleFeedback()">Finalizar y Ver Feedback General 🎓</button>` : 
+            `<button class="btn btn-primary" onclick="nextBuilderDrill()">Siguiente Ejercicio ➔</button>`
+          }
+        `;
       } else {
         playError();
-        feedback.innerText = "Not quite right. Try again!";
         feedback.className = "feedback wrong";
+        feedback.style.display = 'block';
+        feedback.innerHTML = `❌ <strong>Casi lo tienes.</strong> Revisa el orden de las palabras y la puntuación. ¡Inténtalo de nuevo!`;
       }
+    }
+
+    function nextBuilderDrill() {
+      if (currentBuilderIdx < builderDrills.length - 1) {
+        currentBuilderIdx++;
+        loadBuilderDrill();
+      }
+    }
+
+    function showFinalScrambleFeedback() {
+      const container = document.getElementById('builder-container');
+      container.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3 style="color: var(--secondary); font-size: 1.8rem; margin-bottom: 10px;">🏆 ¡Ejercicio Completado!</h3>
+          <p style="font-size: 1.1rem; margin-bottom: 16px;">Has completado exitosamente todas las oraciones de Scramble.</p>
+          <div style="background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: left; max-width: 650px; margin: 0 auto 20px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 1.1rem;">📊 Reporte de Retroalimentación y Aprendizaje (Nivel A1):</h4>
+            <ul style="padding-left: 20px; line-height: 1.8; color: var(--text);">
+              <li><strong>Invitaciones Formales e Informales:</strong> Aprendiste a estructurar invitaciones usando <code>Would you like to + verbo</code> y <code>Do you want to + verbo</code>.</li>
+              <li><strong>Rechazo Cortés:</strong> Dominas la estructura para declinar educadamente dando una excusa o razón: <code>I'm sorry, I can't. I have to + [razón]</code>.</li>
+              <li><strong>Uso de Preposiciones:</strong> Recuerda usar la preposición <code>on</code> para días (<em>on Saturday</em>) y <code>at</code> para horas (<em>at 4:00 PM</em>).</li>
+            </ul>
+          </div>
+          <button class="btn btn-primary" onclick="restartScrambleActivity()">🔄 Reiniciar Práctica de Scramble</button>
+        </div>
+      `;
+    }
+
+    function restartScrambleActivity() {
+      const container = document.getElementById('builder-container');
+      container.innerHTML = `
+        <h3>🧩 Sentence Unscramble Drill</h3>
+        <p id="builder-prompt" style="margin: 8px 0; color: var(--text-muted); font-weight: 600;"></p>
+        
+        <div class="sentence-slots" id="sentence-slots"></div>
+        <div class="word-bank" id="word-bank"></div>
+
+        <div style="margin-top: 16px; display: flex; gap: 10px;" id="builder-controls">
+          <button class="btn btn-primary" onclick="checkBuilderAnswer()">Check Sentence</button>
+          <button class="btn btn-secondary" onclick="resetBuilder()">Reset</button>
+        </div>
+        <div id="builder-feedback" class="feedback"></div>
+      `;
+      currentBuilderIdx = 0;
+      loadBuilderDrill();
     }
 
     function resetBuilder() {
@@ -824,6 +911,7 @@
       const optsDiv = document.getElementById('listening-options');
       optsDiv.innerHTML = '';
       document.getElementById('listening-feedback').className = 'feedback';
+      document.getElementById('listening-feedback').style.display = 'none';
 
       q.options.forEach((opt, idx) => {
         const btn = document.createElement('button');
@@ -838,6 +926,7 @@
     function checkListening(selectedIdx) {
       const q = listeningQuestions[currentListeningIdx];
       const feedback = document.getElementById('listening-feedback');
+      feedback.style.display = 'block';
       if (selectedIdx === q.ans) {
         playSuccess();
         feedback.innerText = "Correct! You correctly identified the response.";
