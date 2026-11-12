@@ -1,351 +1,747 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-import random
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoutinePulse B1 — 10-Minute Interactive Speaking Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .tab-active {
+      background-color: #4f46e5;
+      color: #ffffff;
+      border-color: #818cf8;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+    }
+    @keyframes pulseBorder {
+      0%, 100% { border-color: rgba(245, 158, 11, 0.8); }
+      50% { border-color: rgba(245, 158, 11, 0.2); }
+    }
+    .switch-alert { animation: pulseBorder 1.5s infinite; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
 
-class FlatmateRoutineApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
+  <!-- TOP STICKY HEADER & 10-MINUTE TIMER -->
+  <header class="bg-slate-900/95 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-xl">
+          🏠
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold tracking-tight text-white">RoutinePulse B1</h1>
+            <span class="text-[10px] font-mono uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">CEFR B1 • 10 Mins</span>
+          </div>
+          <p class="text-xs text-slate-400">Co-Living & Flatmate Routine Compatibility Task</p>
+        </div>
+      </div>
 
-        self.title("The New Flatmate Schedule Swap - A1 ESL Activity")
-        self.geometry("900 x 700")
-        self.minsize(800, 600)
+      <!-- 10-Minute Activity Timer -->
+      <div id="timerBox" class="flex items-center gap-3 bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-2xl">
+        <div class="text-right">
+          <div id="timerPhase" class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Ready • 10 Min Task</div>
+          <div id="timerDisplay" class="text-xl font-extrabold font-mono text-amber-400 leading-none">10:00</div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btnStartTimer" onclick="toggleTimer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition">
+            ▶ Start
+          </button>
+          <button onclick="resetTimer()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2.5 py-1.5 rounded-xl text-xs transition" title="Reset 10:00 Timer">
+            ↺
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Progress bar for 10 minutes -->
+    <div class="w-full bg-slate-800 h-1">
+      <div id="timerProgress" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-amber-400 h-1 transition-all duration-500" style="width: 100%"></div>
+    </div>
+  </header>
 
-        # Apply a clean theme
-        self.style = ttk.Style(self)
-        self.style.theme_use("clam")
-        
-        # Color Palette Configuration
-        self.configure(bg="#f4f6f9")
-        self.style.configure(".", font=("Helvetica", 10), background="#f4f6f9")
-        self.style.configure("TNotebook", background="#f4f6f9")
-        self.style.configure("TNotebook.Tab", font=("Helvetica", 10, "bold"), padding=[10, 5])
-        self.style.configure("Header.TLabel", font=("Helvetica", 16, "bold"), foreground="#2c3e50")
-        self.style.configure("SubHeader.TLabel", font=("Helvetica", 12, "bold"), foreground="#34495e")
-        self.style.configure("Timer.TLabel", font=("Helvetica", 36, "bold"), foreground="#2980b9")
-        self.style.configure("Accent.TButton", font=("Helvetica", 10, "bold"), background="#27ae60", foreground="white")
-        
-        # Timer Variables
-        self.total_seconds = 600  # 10 minutes
-        self.current_seconds = self.total_seconds
-        self.timer_running = False
-        self.timer_job = None
-        self.role_swapped = False
+  <!-- MAIN CONTENT -->
+  <main class="max-w-5xl mx-auto w-full p-4 space-y-5 flex-1">
 
-        # Outcome Prompts Data
-        self.prompts = [
-            ("Morning", "State what time you usually wake up on weekdays and what you do first."),
-            ("Morning", "Ask your partner: 'What time do you usually wake up in the morning?'"),
-            ("Morning", "Describe your morning breakfast routine (what you eat, drink, and what time)."),
-            ("Morning", "Ask your partner: 'Do you take a shower in the morning or at night?'"),
-            ("Commute", "Tell your partner what time you leave your house to go to work or school."),
-            ("Commute", "Ask your partner how they get to work or school as part of their commute."),
-            ("Daytime", "Describe your mid-morning routine at work, school, or home."),
-            ("Daytime", "Ask your partner: 'Where and with whom do you usually have lunch?'"),
-            ("Daytime", "State what time you have lunch and how long your break is."),
-            ("Afternoon", "Describe what you do in the afternoon after finishing work or classes."),
-            ("Evening", "Ask your partner what time they usually return home in the evening."),
-            ("Evening", "Describe your evening routine right after arriving home."),
-            ("Evening", "Tell your partner who cooks dinner at your house and what time you eat."),
-            ("Evening", "Ask your partner: 'What do you do to relax after dinner?'"),
-            ("Night", "Describe your nighttime routine right before going to bed."),
-            ("Night", "State what time you usually go to sleep on weeknights."),
-            ("Weekend", "Tell your partner how your weekend morning routine is different."),
-            ("Weekend", "Ask your partner: 'Do you study/work in the evening, or prefer to rest?'"),
-            ("Chores", "Describe a routine task or chore you do every evening."),
-            ("Summary", "Summarize your partner's schedule to check flatmate compatibility.")
-        ]
-        
-        self.prompt_vars = []
+    <!-- NAVIGATION TABS -->
+    <nav class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button onclick="switchTab('tab-brief')" id="nav-brief" class="tab-btn tab-active bg-slate-900 text-slate-300 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-800 hover:bg-slate-800 transition">
+        📋 1. Context & Roles
+      </button>
+      <button onclick="switchTab('tab-prompts')" id="nav-prompts" class="tab-btn bg-slate-900 text-slate-300 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-800 hover:bg-slate-800 transition">
+        💬 2. 24 Outcome Prompts
+      </button>
+      <button onclick="switchTab('tab-toolkit')" id="nav-toolkit" class="tab-btn bg-slate-900 text-slate-300 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-800 hover:bg-slate-800 transition">
+        🧰 3. B1 Language Bank
+      </button>
+      <button onclick="switchTab('tab-outcome')" id="nav-outcome" class="tab-btn bg-slate-900 text-slate-300 px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-800 hover:bg-slate-800 transition">
+        🏆 4. Outcome & Feedback
+      </button>
+    </nav>
 
-        self.create_widgets()
+    <!-- ========================================================= -->
+    <!-- TAB 1: CONTEXT, ROLES & 10-MINUTE INSTRUCTIONS            -->
+    <!-- ========================================================= -->
+    <section id="tab-brief" class="space-y-4">
+      <!-- Real Context Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+            🌍 Real-World Context: The Flatmate Compatibility Interview
+          </h2>
+          <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">Pair Work</span>
+        </div>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          You and your partner are young professionals/university students living in a busy city. A sunny, affordable <strong class="text-indigo-300">two-bedroom apartment</strong> has just become available, and you are considering signing a <strong class="text-indigo-300">12-month lease together</strong>.
+        </p>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Before signing the contract, you need to have an honest <strong>10-minute lifestyle interview</strong>. Sharing a bathroom, kitchen, and quiet study/work hours only works if your daily routines are compatible!
+        </p>
+      </div>
 
-    def create_widgets(self):
-        # Header Banner
-        header_frame = ttk.Frame(self, padding=15)
-        header_frame.pack(fill=tk.X)
-        
-        ttk.Label(header_frame, text="🏠 The New Flatmate Schedule Swap", style="Header.TLabel").pack(anchor=tk.W)
-        ttk.Label(header_frame, text="A1 Speaking Activity • Focus: Simple Present, Daily Routines & Time Expressions", foreground="#7f8c8d").pack(anchor=tk.W)
+      <!-- Roles Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Role A -->
+        <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider bg-indigo-600 text-white px-2.5 py-1 rounded-lg">Role A • Current Tenant</span>
+            <span class="text-xs text-slate-400 font-mono">Leads Mins 1–5</span>
+          </div>
+          <h3 class="text-base font-bold text-white">The Leaseholder (Host)</h3>
+          <ul class="text-xs text-slate-300 space-y-2 list-disc pl-4">
+            <li>You already hold the lease and work/study from home <strong>three days a week</strong>.</li>
+            <li>You need a reliable flatmate who respects quiet hours after <strong>10:30 PM</strong> and shares kitchen chores fairly.</li>
+            <li><strong>Your Goal:</strong> Ask 5–6 outcome prompts from Tab 2, ask follow-up questions (<em>"Why?"</em>, <em>"How often?"</em>), and note potential conflicts.</li>
+          </ul>
+          <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+            <span class="text-indigo-400 font-bold block">Useful Starter Lines:</span>
+            <p class="text-slate-400 italic">"To make sure we get along, walk me through your typical weekday..."</p>
+            <p class="text-slate-400 italic">"How often do you tend to stay up late during the week?"</p>
+          </div>
+        </div>
 
-        # Tabbed Notebook Layout
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
+        <!-- Role B -->
+        <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider bg-emerald-600 text-white px-2.5 py-1 rounded-lg">Role B • Applicant</span>
+            <span class="text-xs text-slate-400 font-mono">Leads Mins 5–9</span>
+          </div>
+          <h3 class="text-base font-bold text-white">The Prospective Flatmate</h3>
+          <ul class="text-xs text-slate-300 space-y-2 list-disc pl-4">
+            <li>You really want this apartment because it is close to your university/office, and you want to make a great impression.</li>
+            <li>Answer honestly about your morning, cooking, social, and weekend habits—while showing where you can be flexible.</li>
+            <li><strong>Your Goal:</strong> Give detailed B1 answers (using frequency adverbs & <em>used to / tend to</em>), then <strong>switch roles at 5:00</strong> to interview Role A!</li>
+          </ul>
+          <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+            <span class="text-emerald-400 font-bold block">Useful Starter Lines:</span>
+            <p class="text-slate-400 italic">"On a regular weekday, I usually wake up around..."</p>
+            <p class="text-slate-400 italic">"I used to be messy in college, but nowadays I always..."</p>
+          </div>
+        </div>
+      </div>
 
-        # Build Tabs
-        self.tab_overview = ttk.Frame(self.notebook, padding=15)
-        self.tab_timer = ttk.Frame(self.notebook, padding=15)
-        self.tab_prompts = ttk.Frame(self.notebook, padding=15)
-        self.tab_builder = ttk.Frame(self.notebook, padding=15)
-        self.tab_cheatsheet = ttk.Frame(self.notebook, padding=15)
+      <!-- Step-by-Step 10-Minute Instructions -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h3 class="text-base font-extrabold text-white">⏱️ Step-by-Step Instructions (10 Minutes Total)</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-1.5">
+            <span class="font-mono font-bold text-amber-400">STEP 1 • 0:00 – 1:00</span>
+            <h4 class="font-bold text-white text-sm">Assign & Start</h4>
+            <p class="text-slate-400">Decide who is <strong>Role A</strong> and <strong>Role B</strong>. Press <strong>▶ Start</strong> on the 10-minute timer above and open Tab 2.</p>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-1.5">
+            <span class="font-mono font-bold text-indigo-400">STEP 2 • 1:00 – 5:00</span>
+            <h4 class="font-bold text-white text-sm">Round 1 (A ➔ B)</h4>
+            <p class="text-slate-400">Role A draws or selects <strong>5–6 outcome prompts</strong>. Role B gives extended answers (30–45 sec each) with follow-ups.</p>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-1.5">
+            <span class="font-mono font-bold text-emerald-400">STEP 3 • 5:00 – 9:00</span>
+            <h4 class="font-bold text-white text-sm">Switch Roles (B ➔ A)</h4>
+            <p class="text-slate-400">When the 5-minute chime sounds, <strong>swap roles</strong>! Role B interviews Role A using new prompts from the deck.</p>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl space-y-1.5">
+            <span class="font-mono font-bold text-purple-400">STEP 4 • 9:00 – 10:00</span>
+            <h4 class="font-bold text-white text-sm">Outcome Verdict</h4>
+            <p class="text-slate-400">Open <strong>Tab 4</strong>, check off your outcomes, decide if you will sign the lease together, and generate feedback.</p>
+          </div>
+        </div>
+        <div class="pt-1 flex justify-end">
+          <button onclick="switchTab('tab-prompts')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition">
+            Go to 24 Outcome Question Prompts ➔
+          </button>
+        </div>
+      </div>
+    </section>
 
-        self.notebook.add(self.tab_overview, text="📋 Overview & Roles")
-        self.notebook.add(self.tab_timer, text="⏱️ 10-Min Timer")
-        self.notebook.add(self.tab_prompts, text="🎯 20 Outcome Prompts")
-        self.notebook.add(self.tab_builder, text="💬 Schedule Builder")
-        self.notebook.add(self.tab_cheatsheet, text="📚 Language Cheat Sheet")
+    <!-- ========================================================= -->
+    <!-- TAB 2: 24 B1 OUTCOME QUESTION PROMPTS                     -->
+    <!-- ========================================================= -->
+    <section id="tab-prompts" class="hidden space-y-4">
+      <!-- Interactive Prompt Spotlight / Random Card Drawer -->
+      <div class="bg-slate-900 border border-indigo-500/40 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-base font-extrabold text-white">🎲 Live Interview Prompt Card</h2>
+            <p class="text-xs text-slate-400">Draw a random prompt or click any question below to focus it during your interview.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl text-emerald-400 font-bold">
+              Discussed: <span id="discussedCount">0</span> / 24
+            </span>
+            <button onclick="drawRandomPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition">
+              🎲 Draw Random Prompt
+            </button>
+          </div>
+        </div>
 
-        self.build_overview_tab()
-        self.build_timer_tab()
-        self.build_prompts_tab()
-        self.build_builder_tab()
-        self.build_cheatsheet_tab()
+        <!-- Active Card -->
+        <div id="spotlightCard" class="bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span id="spotCategory" class="text-[11px] font-mono uppercase font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Morning & Energy
+            </span>
+            <span id="spotNumber" class="text-xs font-mono text-slate-500 font-bold">Prompt #1 of 24</span>
+          </div>
+          <p id="spotQuestion" class="text-base sm:text-lg font-bold text-white leading-snug">
+            "What does the first hour of your morning look like on a typical weekday, and how does it affect the rest of your day?"
+          </p>
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="text-amber-400 font-bold">🎯 B1 Target Focus: </span>
+              <span id="spotTip" class="text-slate-300">Use sequence connectors (First, As soon as, After that) + frequency adverbs (usually, rarely).</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="speakCurrentPrompt()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                🔊 Listen
+              </button>
+              <button id="btnToggleDiscussed" onclick="toggleCurrentDiscussed()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                ✓ Mark Discussed
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    # ------------------------------------------------------------------
-    # TAB 1: OVERVIEW & ROLES
-    # ------------------------------------------------------------------
-    def build_overview_tab(self):
-        canvas = tk.Canvas(self.tab_overview, bg="#f4f6f9", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.tab_overview, orient="vertical", command=canvas.yview)
-        scroll_frame = ttk.Frame(canvas, padding=10)
+      <!-- Filter & Complete List of 24 Prompts -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <h3 class="text-sm font-extrabold text-white">📚 All 24 B1 Outcome Question Prompts</h3>
+          <div class="flex flex-wrap gap-1.5" id="categoryFilters">
+            <button onclick="filterPrompts('all')" class="filter-btn bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold">All (24)</button>
+            <button onclick="filterPrompts('Morning & Energy')" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">🌅 Morning (6)</button>
+            <button onclick="filterPrompts('Work & Productivity')" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">💼 Work/Study (6)</button>
+            <button onclick="filterPrompts('Home & Chores')" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">🧹 Home/Chores (6)</button>
+            <button onclick="filterPrompts('Evenings & Weekends')" class="filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">🌙 Evenings/Weekends (6)</button>
+          </div>
+        </div>
 
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        <div id="promptsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+    <!-- ========================================================= -->
+    <!-- TAB 3: B1 LANGUAGE & GRAMMAR TOOLKIT                      -->
+    <!-- ========================================================= -->
+    <section id="tab-toolkit" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-base font-extrabold text-white">🧰 B1 Routine Expression Toolkit</h2>
+          <p class="text-xs text-slate-400">Click any phrase or phrasal verb to hear its pronunciation and upgrade your answers from A2 to B1.</p>
+        </div>
 
-        # Context Section
-        ttk.Label(scroll_frame, text="Real Context & Scenario", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
-        context_text = (
-            "You are moving into a shared apartment with a new flatmate. To coordinate bathroom schedules, "
-            "kitchen times, quiet hours, and house chores, you need to interview each other about your "
-            "typical daily routines from morning to night."
-        )
-        ttk.Label(scroll_frame, text=context_text, wraplength=700, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 15))
+        <!-- Grammar Structures -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2.5">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-indigo-400">1. B1 Habit Structures</h3>
+            <div onclick="speakText('I tend to wake up early even on weekends.')" class="p-2.5 bg-slate-900 hover:border-indigo-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>tend to + infinitive</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"I <strong>tend to</strong> wake up early even on weekends."</p>
+            </div>
+            <div onclick="speakText('I used to stay up until 2 AM, but now I sleep by 11.')" class="p-2.5 bg-slate-900 hover:border-indigo-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>used to + infinitive (past routine)</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"I <strong>used to</strong> stay up until 2 AM, but now I sleep by 11."</p>
+            </div>
+            <div onclick="speakText('I am used to sharing a kitchen with roommates.')" class="p-2.5 bg-slate-900 hover:border-indigo-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>be used to + -ing (accustomed to)</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"I <strong>am used to sharing</strong> a kitchen with roommates."</p>
+            </div>
+          </div>
 
-        # Roles Section
-        ttk.Label(scroll_frame, text="Roles & Objectives", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
-        roles_text = (
-            "• Role A (Host Flatmate): Asks structured questions about daily habits, schedules, and times "
-            "using 'What time do you...?', 'When do you usually...?', and 'What do you do after...?'\n\n"
-            "• Role B (New Flatmate): Describes daily routines chronologically using Simple Present verbs, "
-            "time prepositions (at 7:00, in the morning), and sequence connectors (First, Then, After that, Finally)."
-        )
-        ttk.Label(scroll_frame, text=roles_text, wraplength=700, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 15))
+          <!-- B1 Frequency Upgrades -->
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2.5">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">2. B1 Frequency Expressions</h3>
+            <div onclick="speakText('On a regular basis, I meal prep on Sunday afternoons.')" class="p-2.5 bg-slate-900 hover:border-emerald-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>on a regular basis / every other day</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"<strong>On a regular basis</strong>, I meal prep on Sunday afternoons."</p>
+            </div>
+            <div onclick="speakText('Every once in a while, I order takeout instead of cooking.')" class="p-2.5 bg-slate-900 hover:border-emerald-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>every once in a while / from time to time</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"<strong>Every once in a while</strong>, I order takeout instead of cooking."</p>
+            </div>
+            <div onclick="speakText('I seldom or rarely watch TV during the workweek.')" class="p-2.5 bg-slate-900 hover:border-emerald-500/50 border border-slate-800 rounded-lg cursor-pointer transition">
+              <div class="flex justify-between text-xs font-bold text-white"><span>seldom / rarely / hardly ever</span><span>🔊</span></div>
+              <p class="text-xs text-slate-400 mt-0.5">"I <strong>seldom</strong> watch TV during the workweek."</p>
+            </div>
+          </div>
+        </div>
 
-        # Instructions Breakdown
-        ttk.Label(scroll_frame, text="10-Minute Instructional Breakdown", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 5))
-        steps = [
-            ("0:00 - 2:00 (2 Min)", "Setup & Board Review: Review Simple Present routine verbs, time prepositions (at/in), and sequence words."),
-            ("2:00 - 5:00 (3 Min)", "Role A Interviews Role B: Student A picks prompt cards and interviews Student B about their daily schedule."),
-            ("5:00 - 8:00 (3 Min)", "Role Swap Alert! Student B interviews Student A using new prompt cards."),
-            ("8:00 - 10:00 (2 Min)", "Wrap-Up & Compatibility Check: Summarize flatmate schedules and confirm key routine times.")
-        ]
-        for time_frame, desc in steps:
-            f = ttk.Frame(scroll_frame, padding=5)
-            f.pack(fill=tk.X, pady=2)
-            ttk.Label(f, text=time_frame, font=("Helvetica", 9, "bold"), foreground="#2980b9", width=20).pack(side=tk.LEFT)
-            ttk.Label(f, text=desc, wraplength=520, justify=tk.LEFT).pack(side=tk.LEFT)
+        <!-- Phrasal Verbs for Daily Routines -->
+        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-amber-400">3. Essential Routine Phrasal Verbs (Click to Listen)</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <button onclick="speakText('sleep in')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">sleep in 🔊</span>
+              <span class="text-[11px] text-slate-400">wake up later than usual</span>
+            </button>
+            <button onclick="speakText('wind down')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">wind down 🔊</span>
+              <span class="text-[11px] text-slate-400">relax before sleeping</span>
+            </button>
+            <button onclick="speakText('catch up on')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">catch up on 🔊</span>
+              <span class="text-[11px] text-slate-400">do delayed sleep/work</span>
+            </button>
+            <button onclick="speakText('tidy up')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">tidy up 🔊</span>
+              <span class="text-[11px] text-slate-400">clean & organize a room</span>
+            </button>
+            <button onclick="speakText('work out')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">work out 🔊</span>
+              <span class="text-[11px] text-slate-400">exercise physically</span>
+            </button>
+            <button onclick="speakText('stay up')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">stay up 🔊</span>
+              <span class="text-[11px] text-slate-400">remain awake late</span>
+            </button>
+            <button onclick="speakText('rush out')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">rush out 🔊</span>
+              <span class="text-[11px] text-slate-400">leave home in a hurry</span>
+            </button>
+            <button onclick="speakText('cut down on')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-lg text-left">
+              <span class="font-bold text-white block">cut down on 🔊</span>
+              <span class="text-[11px] text-slate-400">reduce a habit (e.g. caffeine)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    # ------------------------------------------------------------------
-    # TAB 2: TIMER
-    # ------------------------------------------------------------------
-    def build_timer_tab(self):
-        timer_container = ttk.Frame(self.tab_timer, padding=20)
-        timer_container.pack(expand=True)
+    <!-- ========================================================= -->
+    <!-- TAB 4: LIVE OUTCOME TRACKER & FEEDBACK                    -->
+    <!-- ========================================================= -->
+    <section id="tab-outcome" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-base font-extrabold text-white">🏆 Interview Outcome & Speaking Feedback</h2>
+          <p class="text-xs text-slate-400">Complete your findings after the 10-minute interview to generate your outcome report and B1 self/peer feedback.</p>
+        </div>
 
-        ttk.Label(timer_container, text="Lesson Activity Timer", style="SubHeader.TLabel").pack(pady=5)
-        
-        self.timer_label = ttk.Label(timer_container, text="10:00", style="Timer.TLabel")
-        self.timer_label.pack(pady=15)
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Student A Name (Current Tenant)</label>
+            <input type="text" id="studentAName" placeholder="e.g., Sofia" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Student B Name (Applicant)</label>
+            <input type="text" id="studentBName" placeholder="e.g., Mateo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
 
-        self.status_label = ttk.Label(timer_container, text="Phase: Setup & Warm-up (2 Min)", font=("Helvetica", 12), foreground="#7f8c8d")
-        self.status_label.pack(pady=5)
+        <!-- Compatibility & Language Checklist -->
+        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2.5">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-400 block">Check All Outcomes Achieved During Your 10 Minutes:</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Aligned morning & bathroom schedules" />
+              <span>Aligned morning & bathroom schedules</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Agreed on weeknight quiet hours" />
+              <span>Agreed on weeknight quiet hours</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Clarified kitchen, cooking & chore routines" />
+              <span>Clarified kitchen & chore routines</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Discussed weekend & guest expectations" />
+              <span>Discussed weekend & guest habits</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Used B1 structures (tend to / used to)" />
+              <span>Used B1 structures (<em>tend to / used to</em>)</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800 cursor-pointer">
+              <input type="checkbox" class="outcome-check accent-indigo-500" value="Switched roles halfway & asked follow-ups" />
+              <span>Switched roles & asked follow-ups</span>
+            </label>
+          </div>
+        </div>
 
-        btn_frame = ttk.Frame(timer_container, padding=10)
-        btn_frame.pack(pady=15)
+        <!-- Final Verdict & Notes -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Final Lease Decision</label>
+            <select id="leaseVerdict" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500">
+              <option value="✅ Compatible! We are signing the 12-month lease together.">✅ Compatible! Sign the 12-month lease</option>
+              <option value="🤝 Mostly Compatible! We need a few house rules first.">🤝 Mostly Compatible! Need a few house rules</option>
+              <option value="❌ Not Compatible! Our daily schedules clash too much.">❌ Not Compatible! Schedules clash too much</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Biggest Routine Similarity or Difference</label>
+            <input type="text" id="keyTakeaway" placeholder="e.g., Both of us work out in the morning and sleep by 11 PM." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
 
-        self.start_btn = ttk.Button(btn_frame, text="Start Timer", command=self.start_timer, style="Accent.TButton")
-        self.start_btn.pack(side=tk.LEFT, padx=5)
+        <button onclick="generateOutcomeFeedback()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl text-xs transition shadow-lg">
+          🎯 Generate Final Outcome & B1 Feedback
+        </button>
 
-        self.pause_btn = ttk.Button(btn_frame, text="Pause", command=self.pause_timer, state=tk.DISABLED)
-        self.pause_btn.pack(side=tk.LEFT, padx=5)
+        <!-- Generated Feedback Card -->
+        <div id="finalReportCard" class="hidden bg-slate-950 border border-emerald-500/40 rounded-2xl p-5 space-y-3"></div>
+      </div>
+    </section>
 
-        self.reset_btn = ttk.Button(btn_frame, text="Reset", command=self.reset_timer)
-        self.reset_btn.pack(side=tk.LEFT, padx=5)
+  </main>
 
-    def start_timer(self):
-        if not self.timer_running:
-            self.timer_running = True
-            self.start_btn.config(state=tk.DISABLED)
-            self.pause_btn.config(state=tk.NORMAL)
-            self.update_timer()
+  <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+    RoutinePulse B1 • Interactive ESL Speaking Activity (10-Minute Routine & Lifestyle Task)
+  </footer>
 
-    def pause_timer(self):
-        if self.timer_running:
-            self.timer_running = False
-            if self.timer_job:
-                self.after_cancel(self.timer_job)
-            self.start_btn.config(state=tk.NORMAL)
-            self.pause_btn.config(state=tk.DISABLED)
+  <script>
+    // =========================================================
+    // 24 B1 OUTCOME QUESTION PROMPTS
+    // =========================================================
+    const promptsData = [
+      // Morning & Energy (1-6)
+      { id: 1, cat: "Morning & Energy", q: "What does the first hour of your morning look like on a typical weekday, and how does it affect the rest of your day?", tip: "Use sequence markers (First, Right after that) + frequency adverbs." },
+      { id: 2, cat: "Morning & Energy", q: "Are you naturally an early bird or a night owl, and how often do you have to fight against your natural rhythm?", tip: "Use 'tend to' and explain how this affects shared morning bathroom times." },
+      { id: 3, cat: "Morning & Energy", q: "How has your morning routine changed compared to how it used to be two or three years ago?", tip: "Contrast past and present using 'I used to..., but nowadays I...'." },
+      { id: 4, cat: "Morning & Energy", q: "What is one morning habit you rarely skip, even when you are rushing out the door?", tip: "Use 'rarely / seldom / hardly ever' + explain why it matters." },
+      { id: 5, cat: "Morning & Energy", q: "How often do you hit the snooze button, and what usually motivates you to finally get out of bed?", tip: "Be honest! Mention alarm habits that might wake up a flatmate." },
+      { id: 6, cat: "Morning & Energy", q: "Do you tend to eat a proper breakfast at home, grab something on the go, or skip it altogether?", tip: "Use 'tend to' and describe kitchen usage between 7:00 and 9:00 AM." },
 
-    def reset_timer(self):
-        self.pause_timer()
-        self.current_seconds = self.total_seconds
-        self.role_swapped = False
-        self.timer_label.config(text="10:00")
-        self.status_label.config(text="Phase: Setup & Warm-up (2 Min)", foreground="#7f8c8d")
+      // Work & Productivity (7-12)
+      { id: 7, cat: "Work & Productivity", q: "During a busy week, when do you feel most productive, and how do you organize your main tasks?", tip: "Mention peak focus hours and whether you need total silence." },
+      { id: 8, cat: "Work & Productivity", q: "How long does your daily commute usually take, and how do you make use of that time?", tip: "Use time expressions (takes about..., twice a day) + routine verbs." },
+      { id: 9, cat: "Work & Productivity", q: "How frequently do you take short breaks while studying or working, and what do you normally do during them?", tip: "Use 'every hour or so', 'from time to time', or 'occasionally'." },
+      { id: 10, cat: "Work & Productivity", q: "When deadlines or exams pile up, how does your daily schedule change?", tip: "Describe stress routines (e.g., staying up late, drinking more coffee)." },
+      { id: 11, cat: "Work & Productivity", q: "How often do you find yourself procrastinating, and what distractions usually interrupt your routine?", tip: "Use 'every once in a while' or 'more often than I'd like'." },
+      { id: 12, cat: "Work & Productivity", q: "Do you prefer keeping a strict daily schedule or leaving room for spontaneity? Why?", tip: "Give concrete examples from your normal Monday-to-Friday routine." },
 
-    def update_timer(self):
-        if not self.timer_running:
-            return
+      // Home & Chores (13-18)
+      { id: 13, cat: "Home & Chores", q: "How often do you cook at home versus ordering takeout or eating out during the week?", tip: "Use 'on a regular basis', 'three times a week', or 'every other day'." },
+      { id: 14, cat: "Home & Chores", q: "What is your usual routine for household chores like doing the dishes, laundry, and tidying up?", tip: "Use phrasal verbs ('tidy up', 'wash up') and clear frequency adverbs." },
+      { id: 15, cat: "Home & Chores", q: "When you share a living space, what daily habits from other people bother you the most?", tip: "Use polite B1 framing: 'I'm used to..., so I find it hard when...'." },
+      { id: 16, cat: "Home & Chores", q: "How often do you invite friends over or host small gatherings on weekdays versus weekends?", tip: "Compare weekday vs. weekend social habits for flatmate agreement." },
+      { id: 17, cat: "Home & Chores", q: "At what time do you usually expect the apartment to become quiet at night?", tip: "Negotiate realistic sleep/study boundaries using 'usually' and 'by + time'." },
+      { id: 18, cat: "Home & Chores", q: "How do you normally manage grocery shopping and meal prep so you don't run out of food?", tip: "Explain weekly planning habits (e.g., 'once a week on Sundays')." },
 
-        mins, secs = divmod(self.current_seconds, 60)
-        self.timer_label.config(text=f"{mins:02d}:{secs:02d}")
+      // Evenings & Weekends (19-24)
+      { id: 19, cat: "Evenings & Weekends", q: "What do you usually do to wind down and disconnect from screens before going to sleep?", tip: "Use the phrasal verb 'wind down' and describe your pre-sleep ritual." },
+      { id: 20, cat: "Evenings & Weekends", q: "How often do you work out during a normal week, and what time of day works best for you?", tip: "Use 'work out' + frequency expressions ('three times a week')." },
+      { id: 21, cat: "Evenings & Weekends", q: "How different is your weekend routine from your weekday schedule?", tip: "Use contrast linkers ('Whereas on weekdays I..., on weekends I...')." },
+      { id: 22, cat: "Evenings & Weekends", q: "Every once in a while, everyone needs to recharge—what is your go-to weekend ritual for relaxing?", tip: "Describe a favorite low-stress routine in detail." },
+      { id: 23, cat: "Evenings & Weekends", q: "How many hours of sleep do you normally get on weeknights, and how often do you sleep in on Sundays?", tip: "Use 'sleep in' and 'catch up on sleep'." },
+      { id: 24, cat: "Evenings & Weekends", q: "If you could add one healthy habit to your weekly routine—or quit one bad habit—what would it be and why?", tip: "Use second conditional ('If I could..., I would...') + 'cut down on'." }
+    ];
 
-        # Update Phase Status & Role Swap Check
-        if self.current_seconds > 480:
-            self.status_label.config(text="Phase 1: Teacher Setup & Warm-Up", foreground="#27ae60")
-        elif self.current_seconds > 300:
-            self.status_label.config(text="Phase 2: Role A Interviews Role B", foreground="#2980b9")
-        elif self.current_seconds == 300 and not self.role_swapped:
-            self.role_swapped = True
-            messagebox.showinfo("ROLE SWAP ALERT!", "🔔 5 Minutes Remaining!\n\nIt is time to SWAP ROLES! Role B now interviews Role A.")
-            self.status_label.config(text="Phase 3: Role B Interviews Role A (Role Swap)", foreground="#e67e22")
-        elif self.current_seconds > 120:
-            self.status_label.config(text="Phase 3: Role B Interviews Role A", foreground="#e67e22")
-        elif self.current_seconds > 0:
-            self.status_label.config(text="Phase 4: Wrap-Up & Compatibility Check", foreground="#c0392b")
-        else:
-            self.timer_running = False
-            self.status_label.config(text="Time's Up! Activity Complete 🎉", foreground="#27ae60")
-            messagebox.showinfo("Time's Up!", "10-Minute Activity Complete! Great job coordinating your schedules!")
-            self.start_btn.config(state=tk.DISABLED)
-            self.pause_btn.config(state=tk.DISABLED)
-            return
+    let currentPromptId = 1;
+    let activeCategory = 'all';
+    const discussedIds = new Set();
 
-        self.current_seconds -= 1
-        self.timer_job = self.after(1000, self.update_timer)
+    // =========================================================
+    // 10-MINUTE TIMER WITH 5-MIN ROLE SWITCH CHIME
+    // =========================================================
+    const TOTAL_SECONDS = 600; // 10 minutes
+    let remainingSeconds = TOTAL_SECONDS;
+    let timerInterval = null;
+    let isRunning = false;
+    let halfwayAlerted = false;
 
-    # ------------------------------------------------------------------
-    # TAB 3: 20 OUTCOME PROMPTS
-    # ------------------------------------------------------------------
-    def build_prompts_tab(self):
-        top_frame = ttk.Frame(self.tab_prompts)
-        top_frame.pack(fill=tk.X, pady=(0, 10))
+    function playChime(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(type === 'halfway' ? 587.33 : 880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.6);
+      } catch (e) {}
+    }
 
-        ttk.Label(top_frame, text="20 Outcome Speaking Tasks", style="SubHeader.TLabel").pack(side=tk.LEFT)
-        ttk.Button(top_frame, text="🎲 Pick Random Prompt", command=self.pick_random_prompt).pack(side=tk.RIGHT)
+    function updateTimerUI() {
+      const mins = Math.floor(remainingSeconds / 60);
+      const secs = remainingSeconds % 60;
+      document.getElementById('timerDisplay').textContent =
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-        # Scrollable Frame for Prompts
-        canvas = tk.Canvas(self.tab_prompts, bg="#f4f6f9", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.tab_prompts, orient="vertical", command=canvas.yview)
-        scroll_frame = ttk.Frame(canvas, padding=5)
+      const pct = (remainingSeconds / TOTAL_SECONDS) * 100;
+      document.getElementById('timerProgress').style.width = `${pct}%`;
 
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+      const phaseEl = document.getElementById('timerPhase');
+      const boxEl = document.getElementById('timerBox');
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+      if (remainingSeconds === 0) {
+        phaseEl.textContent = "⏰ Time's Up! Go to Tab 4";
+        phaseEl.className = "text-[10px] font-bold uppercase tracking-wider text-rose-400";
+        boxEl.classList.remove('switch-alert');
+      } else if (remainingSeconds <= 60) {
+        phaseEl.textContent = "Step 4 • Final Verdict (1m)";
+        phaseEl.className = "text-[10px] font-bold uppercase tracking-wider text-purple-400";
+      } else if (remainingSeconds <= 300) {
+        phaseEl.textContent = "🔄 Round 2 • B Interviews A";
+        phaseEl.className = "text-[10px] font-bold uppercase tracking-wider text-emerald-400";
+        if (!halfwayAlerted) {
+          halfwayAlerted = true;
+          playChime('halfway');
+          boxEl.classList.add('switch-alert');
+          setTimeout(() => boxEl.classList.remove('switch-alert'), 6000);
+        }
+      } else if (remainingSeconds <= 540) {
+        phaseEl.textContent = "🎙️ Round 1 • A Interviews B";
+        phaseEl.className = "text-[10px] font-bold uppercase tracking-wider text-indigo-400";
+      } else {
+        phaseEl.textContent = isRunning ? "Step 1 • Setup & Roles" : "Ready • 10 Min Task";
+        phaseEl.className = "text-[10px] font-bold uppercase tracking-wider text-indigo-400";
+      }
+    }
 
-        self.prompt_widgets = []
-        for idx, (category, text) in enumerate(self.prompts, 1):
-            frame = ttk.Frame(scroll_frame, padding=8)
-            frame.pack(fill=tk.X, pady=3, anchor=tk.W)
+    function toggleTimer() {
+      const btn = document.getElementById('btnStartTimer');
+      if (isRunning) {
+        clearInterval(timerInterval);
+        isRunning = false;
+        btn.textContent = "▶ Resume";
+        btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition";
+      } else {
+        if (remainingSeconds === 0) remainingSeconds = TOTAL_SECONDS;
+        isRunning = true;
+        btn.textContent = "⏸ Pause";
+        btn.className = "bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition";
+        timerInterval = setInterval(() => {
+          if (remainingSeconds > 0) {
+            remainingSeconds--;
+            updateTimerUI();
+          } else {
+            clearInterval(timerInterval);
+            isRunning = false;
+            playChime('end');
+            btn.textContent = "▶ Restart";
+            updateTimerUI();
+          }
+        }, 1000);
+      }
+      updateTimerUI();
+    }
 
-            var = tk.BooleanVar()
-            chk = ttk.Checkbutton(frame, variable=var)
-            chk.pack(side=tk.LEFT, padx=(0, 8))
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isRunning = false;
+      halfwayAlerted = false;
+      remainingSeconds = TOTAL_SECONDS;
+      const btn = document.getElementById('btnStartTimer');
+      btn.textContent = "▶ Start";
+      btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition";
+      document.getElementById('timerBox').classList.remove('switch-alert');
+      updateTimerUI();
+    }
 
-            badge = ttk.Label(frame, text=f" #{idx:02d} [{category}] ", font=("Helvetica", 8, "bold"), foreground="white", background="#34495e")
-            badge.pack(side=tk.LEFT, padx=(0, 8))
+    // =========================================================
+    // NAVIGATION & SPEECH
+    // =========================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
 
-            lbl = ttk.Label(frame, text=text, wraplength=600, justify=tk.LEFT)
-            lbl.pack(side=tk.LEFT)
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+      const map = {
+        'tab-brief': 'nav-brief',
+        'tab-prompts': 'nav-prompts',
+        'tab-toolkit': 'nav-toolkit',
+        'tab-outcome': 'nav-outcome'
+      };
+      document.getElementById(map[tabId]).classList.add('tab-active');
+    }
 
-            self.prompt_vars.append(var)
-            self.prompt_widgets.append((frame, lbl, idx, text))
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.95;
+        window.speechSynthesis.speak(u);
+      }
+    }
 
-    def pick_random_prompt(self):
-        idx, (cat, text) = random.choice(list(enumerate(self.prompts, 1)))
-        messagebox.showinfo(f"Random Prompt Selection #{idx}", f"Category: {cat}\n\nTask:\n{text}")
+    // =========================================================
+    // PROMPTS DECK & RENDERING
+    // =========================================================
+    function selectPrompt(id) {
+      currentPromptId = id;
+      const p = promptsData.find(item => item.id === id);
+      if (!p) return;
 
-    # ------------------------------------------------------------------
-    # TAB 4: SCHEDULE BUILDER
-    # ------------------------------------------------------------------
-    def build_builder_tab(self):
-        ttk.Label(self.tab_builder, text="Interactive Flatmate Schedule Builder", style="SubHeader.TLabel").pack(anchor=tk.W, pady=(0, 10))
+      document.getElementById('spotCategory').textContent = p.cat;
+      document.getElementById('spotNumber').textContent = `Prompt #${p.id} of 24`;
+      document.getElementById('spotQuestion').textContent = `"${p.q}"`;
+      document.getElementById('spotTip').textContent = p.tip;
 
-        form_frame = ttk.Frame(self.tab_builder, padding=10)
-        form_frame.pack(fill=tk.X)
+      const btn = document.getElementById('btnToggleDiscussed');
+      if (discussedIds.has(id)) {
+        btn.textContent = "✅ Discussed";
+        btn.className = "bg-slate-700 text-emerald-300 border border-emerald-500/40 font-bold px-3 py-1.5 rounded-lg text-xs transition";
+      } else {
+        btn.textContent = "✓ Mark Discussed";
+        btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition";
+      }
+      renderPromptsGrid();
+    }
 
-        # Form Inputs
-        ttk.Label(form_frame, text="Sequence Word:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.seq_cb = ttk.Combobox(form_frame, values=["First", "Then", "After that", "Finally"], state="readonly", width=15)
-        self.seq_cb.current(0)
-        self.seq_cb.grid(row=0, column=1, sticky=tk.W, pady=5, padx=5)
+    function drawRandomPrompt() {
+      const undiscussed = promptsData.filter(p => !discussedIds.has(p.id) && p.id !== currentPromptId);
+      const pool = undiscussed.length > 0 ? undiscussed : promptsData.filter(p => p.id !== currentPromptId);
+      const randomItem = pool[Math.floor(Math.random() * pool.length)];
+      selectPrompt(randomItem.id);
+    }
 
-        ttk.Label(form_frame, text="Routine Action:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.action_cb = ttk.Combobox(form_frame, values=[
-            "wake up", "take a shower", "eat breakfast", "leave home", 
-            "arrive at work/school", "have lunch", "return home", 
-            "cook dinner", "watch TV", "brush teeth", "go to sleep"
-        ], width=25)
-        self.action_cb.current(0)
-        self.action_cb.grid(row=1, column=1, sticky=tk.W, pady=5, padx=5)
+    function toggleCurrentDiscussed() {
+      if (discussedIds.has(currentPromptId)) {
+        discussedIds.delete(currentPromptId);
+      } else {
+        discussedIds.add(currentPromptId);
+      }
+      document.getElementById('discussedCount').textContent = discussedIds.size;
+      selectPrompt(currentPromptId);
+    }
 
-        ttk.Label(form_frame, text="Time / Preposition:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.prep_cb = ttk.Combobox(form_frame, values=["at 7:00 AM", "at 8:30 AM", "in the morning", "at 1:00 PM", "in the afternoon", "at 7:00 PM", "in the evening", "at night"], width=25)
-        self.prep_cb.current(0)
-        self.prep_cb.grid(row=2, column=1, sticky=tk.W, pady=5, padx=5)
+    function filterPrompts(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.className = "filter-btn bg-slate-800 text-slate-300 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold";
+      });
+      event.currentTarget.className = "filter-btn bg-indigo-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold";
+      renderPromptsGrid();
+    }
 
-        ttk.Button(form_frame, text="Generate Routine Sentence", command=self.generate_sentence, style="Accent.TButton").grid(row=3, column=0, columnspan=2, pady=15)
+    function renderPromptsGrid() {
+      const grid = document.getElementById('promptsGrid');
+      const filtered = activeCategory === 'all'
+        ? promptsData
+        : promptsData.filter(p => p.cat === activeCategory);
 
-        # Output Card
-        output_frame = ttk.LabelFrame(self.tab_builder, text=" Generated Routine & Flatmate Question ", padding=15)
-        output_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+      grid.innerHTML = filtered.map(p => {
+        const isCurrent = p.id === currentPromptId;
+        const isDone = discussedIds.has(p.id);
+        return `
+          <div onclick="selectPrompt(${p.id})" class="p-3.5 rounded-xl border cursor-pointer transition space-y-1.5 ${
+            isCurrent
+              ? 'bg-indigo-950/50 border-indigo-500'
+              : isDone
+                ? 'bg-slate-950/60 border-emerald-500/30 opacity-80'
+                : 'bg-slate-950 border-slate-800 hover:border-slate-600'
+          }">
+            <div class="flex items-center justify-between text-[11px] font-mono">
+              <span class="text-indigo-400 font-bold">#${p.id} • ${p.cat}</span>
+              <span>${isDone ? '✅ Discussed' : isCurrent ? '🎯 Active' : 'Click to focus'}</span>
+            </div>
+            <p class="text-xs font-semibold text-slate-200 leading-relaxed">${p.q}</p>
+          </div>
+        `;
+      }).join('');
+    }
 
-        self.statement_lbl = ttk.Label(output_frame, text="Statement: (Select options and click Generate)", font=("Helvetica", 11, "bold"), foreground="#2980b9", wraplength=700)
-        self.statement_lbl.pack(anchor=tk.W, pady=10)
+    function speakCurrentPrompt() {
+      const p = promptsData.find(item => item.id === currentPromptId);
+      if (p) speakText(p.q);
+    }
 
-        self.question_lbl = ttk.Label(output_frame, text="Partner Question: ", font=("Helvetica", 10, "italic"), foreground="#2c3e50", wraplength=700)
-        self.question_lbl.pack(anchor=tk.W, pady=5)
+    // =========================================================
+    // OUTCOME GENERATOR & B1 FEEDBACK
+    // =========================================================
+    function generateOutcomeFeedback() {
+      const nameA = document.getElementById('studentAName').value.trim() || "Student A";
+      const nameB = document.getElementById('studentBName').value.trim() || "Student B";
+      const verdict = document.getElementById('leaseVerdict').value;
+      const takeaway = document.getElementById('keyTakeaway').value.trim() || "Both partners shared their weekday and weekend habits.";
+      const checked = Array.from(document.querySelectorAll('.outcome-check:checked')).map(c => c.value);
 
-        self.validation_lbl = ttk.Label(output_frame, text="Validation Check: ", font=("Helvetica", 10), foreground="#27ae60", wraplength=700)
-        self.validation_lbl.pack(anchor=tk.W, pady=5)
+      const promptsCount = discussedIds.size;
+      const outcomeScore = checked.length;
 
-    def generate_sentence(self):
-        seq = self.seq_cb.get()
-        act = self.action_cb.get()
-        prep = self.prep_cb.get()
+      let feedbackMsg = "";
+      if (promptsCount >= 8 && outcomeScore >= 5) {
+        feedbackMsg = "🌟 Excellent B1 Fluency & Depth! You explored multiple aspects of daily routines, negotiated shared living expectations, and actively used B1 habit structures.";
+      } else if (promptsCount >= 5 && outcomeScore >= 3) {
+        feedbackMsg = "👏 Solid B1 Interaction! You covered core daily routines and reached a clear decision. Next time, challenge yourselves to contrast past vs. present routines using 'used to' and 'tend to'.";
+      } else {
+        feedbackMsg = "💡 Good Start! Try marking the prompts you discuss in Tab 2 and aim for at least 6–8 questions across both rounds with follow-up 'Why?' questions.";
+      }
 
-        statement = f"{seq}, I {act} {prep}."
-        question = f"Flatmate Question: 'What time do you usually {act}?'"
-        validation = f"Validation: 'So you {act} {prep}, right?'"
+      const card = document.getElementById('finalReportCard');
+      card.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-[11px] font-mono uppercase text-emerald-400 font-bold">10-Minute Speaking Outcome Report</span>
+            <h3 class="text-base font-extrabold text-white">${nameA} & ${nameB}</h3>
+          </div>
+          <button onclick="copyReport()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+            📋 Copy Summary
+          </button>
+        </div>
 
-        self.statement_lbl.config(text=f"Statement: \"{statement}\"")
-        self.question_lbl.config(text=question)
-        self.validation_lbl.config(text=validation)
+        <div class="grid grid-cols-2 gap-3 text-center font-mono text-xs">
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+            <span class="block text-slate-400">Prompts Discussed</span>
+            <span class="text-lg font-extrabold text-indigo-400">${promptsCount} / 24</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+            <span class="block text-slate-400">Task Outcomes Met</span>
+            <span class="text-lg font-extrabold text-emerald-400">${outcomeScore} / 6</span>
+          </div>
+        </div>
 
-    # ------------------------------------------------------------------
-    # TAB 5: CHEAT SHEET
-    # ------------------------------------------------------------------
-    def build_cheatsheet_tab(self):
-        canvas = tk.Canvas(self.tab_cheatsheet, bg="#f4f6f9", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.tab_cheatsheet, orient="vertical", command=canvas.yview)
-        scroll_frame = ttk.Frame(canvas, padding=10)
+        <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-xl text-xs space-y-1.5">
+          <p><strong class="text-amber-400">Final Verdict:</strong> <span class="text-white font-semibold">${verdict}</span></p>
+          <p><strong class="text-indigo-400">Key Routine Finding:</strong> <span class="text-slate-300">${takeaway}</span></p>
+          ${checked.length ? `<p><strong class="text-emerald-400">Completed Goals:</strong> <span class="text-slate-300">${checked.join(' • ')}</span></p>` : ''}
+        </div>
 
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        <div class="bg-indigo-950/40 border border-indigo-500/30 p-3.5 rounded-xl text-xs text-slate-200">
+          <strong class="text-indigo-300 block mb-1">Teacher / Peer Feedback:</strong>
+          ${feedbackMsg}
+        </div>
+      `;
+      card.classList.remove('hidden');
+    }
 
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+    function copyReport() {
+      const nameA = document.getElementById('studentAName').value.trim() || "Student A";
+      const nameB = document.getElementById('studentBName').value.trim() || "Student B";
+      const verdict = document.getElementById('leaseVerdict').value;
+      const takeaway = document.getElementById('keyTakeaway').value.trim() || "N/A";
+      const text = `RoutinePulse B1 Outcome (${nameA} & ${nameB})\nPrompts Discussed: ${discussedIds.size}/24\nVerdict: ${verdict}\nKey Takeaway: ${takeaway}`;
+      navigator.clipboard?.writeText(text);
+      alert("Summary copied to clipboard!");
+    }
 
-        sections = [
-            ("1. Simple Present Routine Verbs", "• I wake up\n• I take a shower\n• I eat breakfast / lunch / dinner\n• I leave home / return home\n• I go to work / school / bed"),
-            ("2. Time Prepositions (AT vs IN)", "• AT + Specific Time / Night: at 7:00 AM, at 10:30 PM, at night, at noon\n• IN + Part of Day: in the morning, in the afternoon, in the evening"),
-            ("3. Sequence Connectives", "• First (Start of routine)\n• Then / Next (Middle actions)\n• After that (Following action)\n• Finally (End of routine)"),
-            ("4. Schedule Coordination Questions", "• 'What time do you usually wake up?'\n• 'Do you take a shower in the morning or at night?'\n• 'When do you eat dinner?'\n• 'So you go to bed at 11:00 PM, correct?'")
-        ]
-
-        for title, content in sections:
-            lf = ttk.LabelFrame(scroll_frame, text=f" {title} ", padding=10)
-            lf.pack(fill=tk.X, pady=8)
-            ttk.Label(lf, text=content, justify=tk.LEFT, font=("Helvetica", 9)).pack(anchor=tk.W)
-
-if __name__ == "__main__":
-    app = FlatmateRoutineApp()
-    app.mainloop()
+    // INIT
+    window.onload = () => {
+      selectPrompt(1);
+      renderPromptsGrid();
+      updateTimerUI();
+    };
+  </script>
+</body>
+</html>
