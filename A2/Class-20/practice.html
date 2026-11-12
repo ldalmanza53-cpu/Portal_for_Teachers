@@ -161,20 +161,6 @@
       gap: 10px;
     }
 
-    .q-num {
-      background: var(--primary);
-      color: white;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
     .q-row {
       display: flex;
       align-items: center;
@@ -224,6 +210,7 @@
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -235,10 +222,12 @@
     .audio-btn {
       background: #e0f2fe;
       border: 1px solid #7dd3fc;
-      padding: 4px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary-dark);
       transition: background 0.2s;
     }
 
@@ -269,6 +258,29 @@
       text-align: center;
     }
 
+    .quiz-opt-btn {
+      padding: 14px 16px;
+      border: 2px solid #e9d5ff;
+      background: #faf5ff;
+      color: #581c87;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-opt-btn:hover:not(:disabled) {
+      background: #9333ea;
+      color: white;
+      border-color: #9333ea;
+    }
+
+    .quiz-opt-btn:disabled {
+      cursor: default;
+      opacity: 0.9;
+    }
+
     .score-banner {
       text-align: center;
       font-weight: 700;
@@ -289,11 +301,11 @@
     </header>
 
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('partA')">Part A: Vacation Advice</button>
-      <button class="tab-btn" onclick="switchTab('partB')">Part B: Travel Abroad Advice</button>
-      <button class="tab-btn" onclick="switchTab('grammar')">Grammar Rules</button>
-      <button class="tab-btn" onclick="switchTab('sim')">Pair Work Roleplay</button>
-      <button class="tab-btn" onclick="switchTab('arcade')">Modal Classifier Quiz</button>
+      <button class="tab-btn active" data-tab="partA" onclick="switchTab('partA')">Part A: Vacation Advice</button>
+      <button class="tab-btn" data-tab="partB" onclick="switchTab('partB')">Part B: Travel Abroad Advice</button>
+      <button class="tab-btn" data-tab="grammar" onclick="switchTab('grammar')">Grammar Rules</button>
+      <button class="tab-btn" data-tab="sim" onclick="switchTab('sim')">Pair Work Roleplay</button>
+      <button class="tab-btn" data-tab="arcade" onclick="switchTab('arcade')">Modal Classifier Quiz</button>
     </div>
 
     <!-- GRAMMAR SPOTLIGHT -->
@@ -372,8 +384,11 @@
       <p style="font-size:0.9rem; color:#701a75; margin-bottom:16px;">Test your knowledge! Classify each modal verb sentence.</p>
 
       <div id="quizContainer" style="background:white; padding:20px; border-radius:12px; border:1px solid #f0abfc;">
-        <div id="quizPrompt" style="font-size:1.1rem; font-weight:700; color:#4c1d95; margin-bottom:16px;"></div>
+        <div id="quizProgress" style="font-size:0.8rem; font-weight:700; color:#a21caf; text-transform:uppercase; margin-bottom:8px;"></div>
+        <div id="quizPrompt" style="font-size:1.15rem; font-weight:700; color:#4c1d95; margin-bottom:16px;"></div>
         <div id="quizOptions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+        <div id="quizFeedback" style="display:none; margin-top:14px; padding:10px; border-radius:8px; font-size:0.9rem; font-weight:600;"></div>
+        <button id="quizNextBtn" class="btn btn-primary" style="display:none; margin-top:14px; background:#86198f;" onclick="nextQuizQuestion()">Next Question ➔</button>
       </div>
       <div id="quizScore" style="margin-top:14px; font-weight:700; color:#86198f;"></div>
     </div>
@@ -400,24 +415,81 @@
       { id: 6, prompt: "6. Currency exchange:", start: "You", options: ["don't have to", "must"], correct: "don't have to", end: "change money before you go. You can do it when you arrive." }
     ];
 
-    function playSound(type) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      if (type === 'success') {
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      } else {
-        osc.frequency.setValueAtTime(220, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
+    const quizData = [
+      {
+        sentence: '"You <u>must</u> show your passport at immigration."',
+        spoken: "You must show your passport at immigration.",
+        type: "Necessity",
+        explanation: "Correct! 'Must' expresses a strict legal rule or requirement."
+      },
+      {
+        sentence: '"You <u>should</u> try the street food in Thailand."',
+        spoken: "You should try the street food in Thailand.",
+        type: "Suggestion",
+        explanation: "Correct! 'Should' gives friendly advice or a recommendation."
+      },
+      {
+        sentence: '"You <u>\'d better</u> book your flight early before prices go up."',
+        spoken: "You'd better book your flight early before prices go up.",
+        type: "Suggestion",
+        explanation: "Correct! ''d better' gives strong advice with a warning about a negative consequence."
+      },
+      {
+        sentence: '"You <u>have to</u> get a visa before visiting that country."',
+        spoken: "You have to get a visa before visiting that country.",
+        type: "Necessity",
+        explanation: "Correct! 'Have to' indicates a mandatory rule or requirement."
+      },
+      {
+        sentence: '"You <u>ought to</u> pack a comfortable pair of walking shoes."',
+        spoken: "You ought to pack a comfortable pair of walking shoes.",
+        type: "Suggestion",
+        explanation: "Correct! 'Ought to' is used to give good advice, similar to 'should'."
+      },
+      {
+        sentence: '"You <u>need to</u> check in at least two hours before an international flight."',
+        spoken: "You need to check in at least two hours before an international flight.",
+        type: "Necessity",
+        explanation: "Correct! 'Need to' describes a necessary practical requirement."
+      },
+      {
+        sentence: '"You <u>shouldn\'t</u> leave your luggage unattended at the airport."',
+        spoken: "You shouldn't leave your luggage unattended at the airport.",
+        type: "Suggestion",
+        explanation: "Correct! 'Shouldn't' advises against doing something unwise."
+      },
+      {
+        sentence: '"You <u>don\'t have to</u> bring a towel; the hotel provides them."',
+        spoken: "You don't have to bring a towel; the hotel provides them.",
+        type: "Necessity",
+        explanation: "Correct! 'Don't have to' expresses the absence of necessity (it is optional)."
       }
+    ];
+
+    let currentDialogueScript = "";
+    let quizIndex = 0;
+    let quizPoints = 0;
+
+    function playSound(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else {
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {}
     }
 
     function speakText(text, speed = 1.0) {
@@ -430,6 +502,28 @@
       }
     }
 
+    /* NAVIGATION TABS */
+    function switchTab(tabName) {
+      const sections = ['partA-section', 'partB-section', 'grammar-section', 'sim-section', 'arcade-section'];
+      sections.forEach(secId => {
+        const el = document.getElementById(secId);
+        if (el) el.style.display = 'none';
+      });
+
+      document.getElementById('score-banner').style.display = 'none';
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tabName) {
+          btn.classList.add('active');
+        }
+      });
+
+      const target = document.getElementById(`${tabName}-section`);
+      if (target) target.style.display = 'block';
+    }
+
+    /* PART A */
     function renderPartA() {
       const container = document.getElementById('partAList');
       container.innerHTML = '';
@@ -445,7 +539,7 @@
             <span>${item.start}</span>
             <select class="input-select" id="partA-${item.id}">${opts}</select>
             <span>${item.end}</span>
-            <button class="audio-btn" onclick="speakPartA(${item.id})">🔊</button>
+            <button class="audio-btn" onclick="speakPartA(${item.id})" title="Listen">🔊</button>
           </div>
         `;
         container.appendChild(card);
@@ -454,13 +548,13 @@
 
     function speakPartA(id) {
       const item = partAData.find(i => i.id === id);
-      const val = document.getElementById(`partA-${id}`).value || "...";
+      const val = document.getElementById(`partA-${id}`).value || "blank";
       speakText(`${item.start} ${val} ${item.end}`);
     }
 
     function checkPartA() {
       let correctCount = 0;
-      let total = partAData.length;
+      const total = partAData.length;
 
       partAData.forEach(item => {
         const select = document.getElementById(`partA-${item.id}`);
@@ -492,6 +586,7 @@
       document.getElementById('score-banner').style.display = 'none';
     }
 
+    /* PART B */
     function renderPartB() {
       const container = document.getElementById('partBList');
       container.innerHTML = '';
@@ -503,11 +598,12 @@
         const card = document.createElement('div');
         card.className = 'q-card';
         card.innerHTML = `
+          <div style="font-size:0.85rem; font-weight:700; color:var(--primary-dark);">${item.prompt}</div>
           <div class="q-row">
             <span>${item.start}</span>
             <select class="input-select" id="partB-${item.id}">${opts}</select>
             <span>${item.end}</span>
-            <button class="audio-btn" onclick="speakPartB(${item.id})">🔊</button>
+            <button class="audio-btn" onclick="speakPartB(${item.id})" title="Listen">🔊</button>
           </div>
         `;
         container.appendChild(card);
@@ -516,13 +612,13 @@
 
     function speakPartB(id) {
       const item = partBData.find(i => i.id === id);
-      const val = document.getElementById(`partB-${id}`).value || "...";
+      const val = document.getElementById(`partB-${id}`).value || "blank";
       speakText(`${item.start} ${val} ${item.end}`);
     }
 
     function checkPartB() {
       let correctCount = 0;
-      let total = partBData.length;
+      const total = partBData.length;
 
       partBData.forEach(item => {
         const select = document.getElementById(`partB-${item.id}`);
@@ -554,6 +650,7 @@
       document.getElementById('score-banner').style.display = 'none';
     }
 
+    /* PAIR WORK SIMULATOR */
     function generateDialogue() {
       const topic = document.getElementById('simTopic').value;
       const speed = document.getElementById('simSpeed').value;
@@ -576,5 +673,105 @@
         textB = "You shouldn't pack too many clothes, or you won't have room for gifts!";
       }
 
+      currentDialogueScript = `${textA} ${textB}`;
+
       output.style.display = 'block';
-      const fullScript = `Traveler A asks: ${textA} ... Travel Advisor B replies: ${textB}`;
+      output.innerHTML = `
+        <p style="margin-bottom:8px;"><strong>🧳 Traveler A:</strong> "${textA}"</p>
+        <p style="margin-bottom:12px;"><strong>🧭 Travel Advisor B:</strong> "${textB}"</p>
+        <button class="audio-btn" onclick="replayDialogue()">🔊 Replay Conversation</button>
+      `;
+
+      speakText(currentDialogueScript, speed);
+    }
+
+    function replayDialogue() {
+      const speed = document.getElementById('simSpeed').value;
+      speakText(currentDialogueScript, speed);
+    }
+
+    /* ARCADE MODAL CLASSIFIER QUIZ */
+    function renderQuizQuestion() {
+      const q = quizData[quizIndex];
+      document.getElementById('quizProgress').innerText = `Question ${quizIndex + 1} of ${quizData.length}`;
+      document.getElementById('quizPrompt').innerHTML = `
+        ${q.sentence}
+        <button class="audio-btn" style="margin-left:8px; vertical-align:middle;" onclick="speakText(quizData[${quizIndex}].spoken)">🔊</button>
+      `;
+
+      const optionsDiv = document.getElementById('quizOptions');
+      optionsDiv.innerHTML = `
+        <button class="quiz-opt-btn" id="opt-Necessity" onclick="answerQuiz('Necessity')">🔒 Necessity (Rule / Obligation)</button>
+        <button class="quiz-opt-btn" id="opt-Suggestion" onclick="answerQuiz('Suggestion')">💡 Suggestion (Advice / Warning)</button>
+      `;
+
+      document.getElementById('quizFeedback').style.display = 'none';
+      document.getElementById('quizNextBtn').style.display = 'none';
+      document.getElementById('quizScore').innerText = `Current Score: ${quizPoints} / ${quizData.length}`;
+    }
+
+    function answerQuiz(selectedType) {
+      const q = quizData[quizIndex];
+      const btnNec = document.getElementById('opt-Necessity');
+      const btnSug = document.getElementById('opt-Suggestion');
+      btnNec.disabled = true;
+      btnSug.disabled = true;
+
+      const feedback = document.getElementById('quizFeedback');
+      feedback.style.display = 'block';
+
+      if (selectedType === q.type) {
+        quizPoints++;
+        playSound('success');
+        document.getElementById(`opt-${selectedType}`).classList.add('correct');
+        feedback.style.background = 'var(--success-bg)';
+        feedback.style.color = 'var(--success)';
+        feedback.innerText = `✅ ${q.explanation}`;
+      } else {
+        playSound('error');
+        document.getElementById(`opt-${selectedType}`).classList.add('incorrect');
+        document.getElementById(`opt-${q.type}`).classList.add('correct');
+        feedback.style.background = 'var(--danger-bg)';
+        feedback.style.color = 'var(--danger)';
+        feedback.innerText = `❌ Not quite. This is a ${q.type}. ${q.explanation.replace('Correct! ', '')}`;
+      }
+
+      document.getElementById('quizScore').innerText = `Current Score: ${quizPoints} / ${quizData.length}`;
+      const nextBtn = document.getElementById('quizNextBtn');
+      nextBtn.style.display = 'inline-flex';
+      nextBtn.innerText = quizIndex < quizData.length - 1 ? 'Next Question ➔' : 'See Final Results 🏆';
+    }
+
+    function nextQuizQuestion() {
+      if (quizIndex < quizData.length - 1) {
+        quizIndex++;
+        renderQuizQuestion();
+      } else {
+        document.getElementById('quizProgress').innerText = 'Quiz Completed!';
+        document.getElementById('quizPrompt').innerText = `You scored ${quizPoints} out of ${quizData.length}!`;
+        document.getElementById('quizOptions').innerHTML = '';
+        document.getElementById('quizFeedback').style.display = 'none';
+        document.getElementById('quizNextBtn').style.display = 'none';
+
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'btn btn-primary';
+        restartBtn.style.background = '#86198f';
+        restartBtn.innerText = '🔄 Play Quiz Again';
+        restartBtn.onclick = () => {
+          quizIndex = 0;
+          quizPoints = 0;
+          renderQuizQuestion();
+        };
+        document.getElementById('quizOptions').appendChild(restartBtn);
+      }
+    }
+
+    /* INITIALIZE APP */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPartA();
+      renderPartB();
+      renderQuizQuestion();
+    });
+  </script>
+</body>
+</html>
