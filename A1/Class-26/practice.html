@@ -27,6 +27,7 @@
       <div class="flex items-center gap-4 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-mono">
         <div>⭐ Score: <span id="globalScore" class="text-amber-400 font-bold">0</span></div>
         <div>🔥 Streak: <span id="globalStreak" class="text-emerald-400 font-bold">0</span></div>
+        <div>🏆 Modules: <span id="modulesDone" class="text-purple-400 font-bold">0/3</span></div>
       </div>
     </div>
   </header>
@@ -35,15 +36,15 @@
   <main class="max-w-4xl mx-auto w-full p-4 space-y-6 flex-1">
 
     <!-- Mode Navigation Tabs -->
-    <nav class="flex gap-2 justify-center border-b border-slate-800 pb-3">
+    <nav class="flex flex-wrap gap-2 justify-center border-b border-slate-800 pb-3">
       <button onclick="switchMode('mode-reorder')" id="btn-reorder" class="tab-btn tab-active bg-slate-900 text-slate-300 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-800 hover:bg-slate-800 transition">
-        ✍️️ 1. Sentence Builder (Part A)
+        ✍ 1. Sentence Builder <span id="badge-m1"></span>
       </button>
       <button onclick="switchMode('mode-scale')" id="btn-scale" class="tab-btn bg-slate-900 text-slate-300 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-800 hover:bg-slate-800 transition">
-        📊 2. Frequency Scale (%)
+        📊 2. Frequency Scale (%) <span id="badge-m2"></span>
       </button>
       <button onclick="switchMode('mode-routine')" id="btn-routine" class="tab-btn bg-slate-900 text-slate-300 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-slate-800 hover:bg-slate-800 transition">
-        🗣️ 3. Personal Routines (Part C)
+        🗣️ 3. Personal Routines <span id="badge-m3"></span>
       </button>
     </nav>
 
@@ -64,17 +65,16 @@
     <!-- SECTION 1: SENTENCE BUILDER -->
     <section id="mode-reorder" class="space-y-4">
       <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
-        <div class="border-b border-slate-800 pb-3">
-          <h2 class="text-base font-bold text-slate-100">Part A: Insert Adverb in Correct Place</h2>
-          <p class="text-xs text-slate-400">Rewrite the base sentence incorporating the target frequency adverb.</p>
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-100">Part A: Insert Adverb in Correct Place</h2>
+            <p class="text-xs text-slate-400">Rewrite the base sentence incorporating the target frequency adverb.</p>
+          </div>
+          <span id="reorderIndex" class="text-xs font-mono bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-purple-400 font-bold">1 / 6</span>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 max-w-lg mx-auto">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Exercise Card</span>
-            <span id="reorderIndex" class="text-xs font-mono text-slate-500">1 / 6</span>
-          </div>
-
+        <!-- Exercise Area -->
+        <div id="m1-exercise-area" class="bg-slate-950 border border-slate-800 p-6 rounded-2xl space-y-4 max-w-lg mx-auto">
           <div class="space-y-1">
             <p class="text-xs text-slate-400 font-semibold">Original Sentence:</p>
             <p id="origSentence" class="text-base font-bold text-slate-200">I get up before 5 A.M.</p>
@@ -82,57 +82,132 @@
           </div>
 
           <div class="space-y-2 pt-2">
-            <input type="text" id="reorderInput" placeholder="Type complete sentence here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-purple-400">
-            <button onclick="checkReorder()" class="w-full bg-purple-600 hover:bg-purple-500 text-slate-950 font-bold py-2 rounded-xl text-xs transition">
-              Check Answer
-            </button>
+            <input type="text" id="reorderInput" onkeydown="if(event.key==='Enter') checkReorder()" placeholder="Type complete sentence here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-purple-400">
+            <div class="flex gap-2">
+              <button id="btnCheckM1" onclick="checkReorder()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                Check Answer
+              </button>
+              <button onclick="showReorderHint()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-2.5 rounded-xl text-xs transition">
+                💡 Hint
+              </button>
+            </div>
           </div>
+          <p id="reorderFeedback" class="text-xs font-bold min-h-[20px] text-center"></p>
         </div>
 
-        <p id="reorderFeedback" class="text-xs font-bold min-h-[20px] text-center"></p>
+        <!-- Module 1 Final Feedback -->
+        <div id="m1-summary" class="hidden bg-slate-950 border border-purple-500/40 p-6 rounded-2xl max-w-lg mx-auto text-center space-y-4"></div>
       </div>
     </section>
 
     <!-- SECTION 2: FREQUENCY SCALE -->
     <section id="mode-scale" class="hidden space-y-4">
+      <!-- Explorer -->
       <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
         <div class="border-b border-slate-800 pb-3">
-          <h2 class="text-base font-bold text-slate-100">Frequency Scale Explorer</h2>
-          <p class="text-xs text-slate-400">Slide to see percentage value for each frequency adverb.</p>
+          <h2 class="text-base font-bold text-slate-100">Part B1: Frequency Scale Explorer (Reference)</h2>
+          <p class="text-xs text-slate-400">Slide to review the percentage value for each frequency adverb before practicing.</p>
         </div>
 
-        <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl max-w-md mx-auto space-y-6 text-center">
-          <div class="space-y-1">
-            <span id="scalePercent" class="text-4xl font-extrabold text-amber-400 font-mono">100%</span>
-            <h3 id="scaleAdverb" class="text-2xl font-bold text-purple-300 tracking-wide uppercase">ALWAYS</h3>
+        <div class="bg-slate-950 border border-slate-800 p-5 rounded-2xl max-w-md mx-auto space-y-4 text-center">
+          <div class="flex items-center justify-center gap-4">
+            <span id="scalePercent" class="text-3xl font-extrabold text-amber-400 font-mono">100%</span>
+            <h3 id="scaleAdverb" class="text-xl font-bold text-purple-300 tracking-wide uppercase">ALWAYS</h3>
           </div>
 
           <input type="range" id="freqSlider" min="0" max="100" value="100" step="20" oninput="updateFreqScale()" class="w-full accent-purple-500 cursor-pointer">
 
           <div class="flex justify-between text-[10px] text-slate-500 font-mono">
             <span>0% (Never)</span>
-            <span>50% (Sometimes)</span>
+            <span>40% (Sometimes)</span>
             <span>100% (Always)</span>
           </div>
 
-          <div id="scaleExample" class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300 italic">
+          <div id="scaleExample" class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300 italic">
             "I always jog in the morning."
           </div>
         </div>
+      </div>
+
+      <!-- Practice Quiz -->
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-100">Part B2: Percentage & Habit Match Practice</h2>
+            <p class="text-xs text-slate-400">Select the adverb that best matches the frequency percentage or habit.</p>
+          </div>
+          <span id="scaleIndex" class="text-xs font-mono bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-purple-400 font-bold">1 / 6</span>
+        </div>
+
+        <div id="m2-exercise-area" class="bg-slate-950 border border-slate-800 p-6 rounded-2xl max-w-lg mx-auto space-y-4">
+          <div class="text-center space-y-2">
+            <span id="scaleQuestionBadge" class="inline-block bg-amber-500/10 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-mono font-bold">100% Frequency</span>
+            <p id="scaleQuestionText" class="text-sm font-bold text-slate-200">You drink water every single day without exception.</p>
+          </div>
+
+          <div id="scaleOptions" class="grid grid-cols-2 gap-2.5 pt-2">
+            <!-- JS populated -->
+          </div>
+
+          <p id="scaleFeedback" class="text-xs font-bold min-h-[20px] text-center"></p>
+        </div>
+
+        <!-- Module 2 Final Feedback -->
+        <div id="m2-summary" class="hidden bg-slate-950 border border-purple-500/40 p-6 rounded-2xl max-w-lg mx-auto text-center space-y-4"></div>
       </div>
     </section>
 
     <!-- SECTION 3: PERSONAL ROUTINES -->
     <section id="mode-routine" class="hidden space-y-4">
+      <!-- Audio Reference Cards -->
       <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
         <div class="border-b border-slate-800 pb-3">
-          <h2 class="text-base font-bold text-slate-100">Part C: Speaking & Pronunciation Practice</h2>
-          <p class="text-xs text-slate-400">Click a routine card to generate full audio sentence.</p>
+          <h2 class="text-base font-bold text-slate-100">Part C1: Listening & Pronunciation Models</h2>
+          <p class="text-xs text-slate-400">Click any routine card to listen to the correct rhythm and stress.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="routineContainer">
           <!-- JS populated -->
         </div>
+      </div>
+
+      <!-- Interactive Routine Builder Practice -->
+      <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-100">Part C2: Routine & Time Expression Builder</h2>
+            <p class="text-xs text-slate-400">Click the word blocks in the correct order (remember: time expressions go at the end).</p>
+          </div>
+          <span id="routineIndex" class="text-xs font-mono bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-purple-400 font-bold">1 / 5</span>
+        </div>
+
+        <div id="m3-exercise-area" class="bg-slate-950 border border-slate-800 p-6 rounded-2xl max-w-lg mx-auto space-y-4">
+          <p id="routinePrompt" class="text-xs text-amber-400 font-semibold text-center">Build a sentence about cycling twice each week:</p>
+
+          <!-- Constructed sentence zone -->
+          <div id="routineDropZone" class="min-h-[48px] bg-slate-900 border-2 border-dashed border-slate-700 rounded-xl p-2.5 flex flex-wrap gap-2 items-center justify-center">
+            <span class="text-xs text-slate-500 italic">Click words below to build sentence...</span>
+          </div>
+
+          <!-- Word bank -->
+          <div id="routineWordBank" class="flex flex-wrap gap-2 justify-center pt-1">
+            <!-- JS populated -->
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button id="btnCheckM3" onclick="checkRoutineBuilder()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+              Check Sentence
+            </button>
+            <button onclick="resetRoutineCurrent()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+              Clear
+            </button>
+          </div>
+
+          <p id="routineFeedback" class="text-xs font-bold min-h-[20px] text-center"></p>
+        </div>
+
+        <!-- Module 3 Final Feedback -->
+        <div id="m3-summary" class="hidden bg-slate-950 border border-purple-500/40 p-6 rounded-2xl max-w-lg mx-auto text-center space-y-4"></div>
       </div>
     </section>
 
@@ -145,61 +220,201 @@
   <script>
     let globalScore = 0;
     let globalStreak = 0;
+    const completedModules = { m1: false, m2: false, m3: false };
 
-    // Sentence Reorder Data
-    const reorderData = [
-      { orig: "I get up before 5 A.M.", adv: "never", ans: ["i never get up before 5 a.m.", "i never get up before 5 am"] },
-      { orig: "I don't have a big breakfast.", adv: "usually", ans: ["i don't usually have a big breakfast", "i usually don't have a big breakfast"] },
-      { orig: "I play tennis after work.", adv: "sometimes", ans: ["i sometimes play tennis after work", "sometimes i play tennis after work"] },
-      { orig: "I take a long walk on the weekend.", adv: "often", ans: ["i often take a long walk on the weekend"] },
-      { orig: "I watch TV.", adv: "never", ans: ["i never watch tv"] },
-      { orig: "I jog in the morning.", adv: "always", ans: ["i always jog in the morning"] }
-    ];
+    function updateScore() {
+      document.getElementById('globalScore').textContent = globalScore;
+      document.getElementById('globalStreak').textContent = globalStreak;
+      const doneCount = Object.values(completedModules).filter(Boolean).length;
+      document.getElementById('modulesDone').textContent = `${doneCount}/3`;
+    }
 
-    let currentReorderIdx = 0;
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.92;
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
 
     function switchMode(modeId) {
       document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
       document.getElementById(modeId).classList.remove('hidden');
 
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active'));
-      if(modeId === 'mode-reorder') document.getElementById('btn-reorder').classList.add('tab-active');
-      if(modeId === 'mode-scale') document.getElementById('btn-scale').classList.add('tab-active');
-      if(modeId === 'mode-routine') document.getElementById('btn-routine').classList.add('tab-active');
+      if (modeId === 'mode-reorder') document.getElementById('btn-reorder').classList.add('tab-active');
+      if (modeId === 'mode-scale') document.getElementById('btn-scale').classList.add('tab-active');
+      if (modeId === 'mode-routine') document.getElementById('btn-routine').classList.add('tab-active');
+    }
+
+    function renderModuleSummary(containerId, stats, grammarAdvice, restartFnName, nextTabId, nextTabLabel) {
+      const accuracy = Math.round((stats.firstTryCorrect / stats.total) * 100);
+      let badge = "🌟 Grammar Master!";
+      let badgeColor = "text-emerald-400";
+      if (accuracy < 60) {
+        badge = "📚 Keep Practicing!";
+        badgeColor = "text-amber-400";
+      } else if (accuracy < 90) {
+        badge = "👏 Great Job!";
+        badgeColor = "text-purple-400";
+      }
+
+      const el = document.getElementById(containerId);
+      el.innerHTML = `
+        <div class="text-3xl">🎉</div>
+        <h3 class="text-lg font-extrabold ${badgeColor}">${badge}</h3>
+        <p class="text-xs text-slate-300">Module completed! Here is your performance feedback:</p>
+        <div class="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-xl border border-slate-800 font-mono text-xs">
+          <div>
+            <span class="block text-slate-500">Completed</span>
+            <span class="text-slate-100 font-bold">${stats.total}/${stats.total}</span>
+          </div>
+          <div>
+            <span class="block text-slate-500">1st Try</span>
+            <span class="text-emerald-400 font-bold">${stats.firstTryCorrect}/${stats.total}</span>
+          </div>
+          <div>
+            <span class="block text-slate-500">Accuracy</span>
+            <span class="text-amber-400 font-bold">${accuracy}%</span>
+          </div>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-left text-xs text-slate-300 space-y-1">
+          <span class="text-purple-400 font-bold block">💡 Teacher Feedback:</span>
+          <p>${grammarAdvice}</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2 pt-2">
+          <button onclick="${restartFnName}()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs transition">
+            🔄 Practice Module Again
+          </button>
+          ${nextTabId ? `<button onclick="switchMode('${nextTabId}')" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition">${nextTabLabel} ➔</button>` : ''}
+        </div>
+      `;
+      el.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // MODULE 1: SENTENCE REORDER
+    // ==========================================
+    const reorderData = [
+      { orig: "I get up before 5 A.M.", adv: "never", ans: ["i never get up before 5 am"], hint: "Place 'never' right before the main verb 'get up'." },
+      { orig: "I don't have a big breakfast.", adv: "usually", ans: ["i don't usually have a big breakfast", "i do not usually have a big breakfast", "i usually don't have a big breakfast"], hint: "Place 'usually' after the negative auxiliary 'don't'." },
+      { orig: "I play tennis after work.", adv: "sometimes", ans: ["i sometimes play tennis after work", "sometimes i play tennis after work"], hint: "Place 'sometimes' before 'play' (or at the very beginning)." },
+      { orig: "I take a long walk on the weekend.", adv: "often", ans: ["i often take a long walk on the weekend"], hint: "Place 'often' before the verb 'take'." },
+      { orig: "I watch TV.", adv: "never", ans: ["i never watch tv"], hint: "Place 'never' between 'I' and 'watch'." },
+      { orig: "I jog in the morning.", adv: "always", ans: ["i always jog in the morning"], hint: "Place 'always' before 'jog'." }
+    ];
+
+    let currentReorderIdx = 0;
+    let m1Transitioning = false;
+    let m1HadMistake = false;
+    let m1FirstTry = 0;
+
+    function normalizeText(str) {
+      return str
+        .toLowerCase()
+        .trim()
+        .replace(/a\.m\.?/g, 'am')
+        .replace(/p\.m\.?/g, 'pm')
+        .replace(/[.!?]+$/g, '')
+        .replace(/\s+/g, ' ');
     }
 
     function loadReorderItem() {
+      m1Transitioning = false;
+      m1HadMistake = false;
       const item = reorderData[currentReorderIdx];
       document.getElementById('origSentence').textContent = item.orig;
       document.getElementById('targetAdverb').textContent = `(${item.adv})`;
       document.getElementById('reorderIndex').textContent = `${currentReorderIdx + 1} / ${reorderData.length}`;
-      document.getElementById('reorderInput').value = '';
+      const input = document.getElementById('reorderInput');
+      input.value = '';
+      input.disabled = false;
+      input.focus();
       document.getElementById('reorderFeedback').textContent = '';
     }
 
-    function checkReorder() {
-      const input = document.getElementById('reorderInput').value.trim().toLowerCase().replace('.', '');
+    function showReorderHint() {
       const item = reorderData[currentReorderIdx];
       const fb = document.getElementById('reorderFeedback');
+      fb.textContent = `💡 ${item.hint}`;
+      fb.className = "text-xs font-bold text-amber-400 text-center";
+    }
 
-      if (item.ans.some(a => input === a)) {
-        globalScore += 15;
+    function checkReorder() {
+      if (m1Transitioning) return;
+      const rawInput = document.getElementById('reorderInput').value;
+      const fb = document.getElementById('reorderFeedback');
+
+      if (!rawInput.trim()) {
+        fb.textContent = "⚠️ Please write the complete sentence first.";
+        fb.className = "text-xs font-bold text-amber-400 text-center";
+        return;
+      }
+
+      const cleanInput = normalizeText(rawInput);
+      const item = reorderData[currentReorderIdx];
+
+      if (item.ans.includes(cleanInput)) {
+        m1Transitioning = true;
+        document.getElementById('reorderInput').disabled = true;
+        if (!m1HadMistake) m1FirstTry++;
+
+        globalScore += m1HadMistake ? 10 : 15;
         globalStreak += 1;
         fb.textContent = "🎯 Perfect word placement!";
         fb.className = "text-xs font-bold text-emerald-400 text-center";
-        speakText(input);
+        speakText(rawInput);
 
-        currentReorderIdx = (currentReorderIdx + 1) % reorderData.length;
-        setTimeout(loadReorderItem, 1800);
+        setTimeout(() => {
+          currentReorderIdx++;
+          if (currentReorderIdx < reorderData.length) {
+            loadReorderItem();
+          } else {
+            finishModule1();
+          }
+        }, 1400);
       } else {
+        m1HadMistake = true;
         globalStreak = 0;
-        fb.textContent = `💡 Hint: Place "${item.adv}" before main verbs or after don't.`;
-        fb.className = "text-xs font-bold text-amber-400 text-center";
+        fb.textContent = `❌ Not quite. ${item.hint}`;
+        fb.className = "text-xs font-bold text-rose-400 text-center";
       }
       updateScore();
     }
 
-    // Scale Explorer
+    function finishModule1() {
+      completedModules.m1 = true;
+      document.getElementById('badge-m1').textContent = '✅';
+      updateScore();
+
+      document.getElementById('m1-exercise-area').classList.add('hidden');
+      const advice = m1FirstTry === reorderData.length
+        ? "Flawless! You mastered placing frequency adverbs before main verbs and after negative auxiliaries (don't)."
+        : "Remember: Frequency adverbs go BEFORE main verbs (I always jog), and AFTER 'don't/doesn't' (I don't usually have breakfast).";
+
+      renderModuleSummary(
+        'm1-summary',
+        { total: reorderData.length, firstTryCorrect: m1FirstTry },
+        advice,
+        'restartModule1',
+        'mode-scale',
+        'Go to Module 2'
+      );
+    }
+
+    function restartModule1() {
+      currentReorderIdx = 0;
+      m1FirstTry = 0;
+      document.getElementById('m1-summary').classList.add('hidden');
+      document.getElementById('m1-exercise-area').classList.remove('hidden');
+      loadReorderItem();
+    }
+
+    // ==========================================
+    // MODULE 2: FREQUENCY SCALE EXPLORER & QUIZ
+    // ==========================================
     const scaleMap = {
       100: { adv: "ALWAYS", ex: "I always jog in the morning." },
       80: { adv: "USUALLY", ex: "I usually have a light breakfast." },
@@ -217,7 +432,106 @@
       document.getElementById('scaleExample').textContent = `"${data.ex}"`;
     }
 
-    // Routine Cards
+    const scaleQuizData = [
+      { badge: "100% Frequency", q: "You brush your teeth every single day without exception.", ans: "Always", opts: ["Always", "Sometimes", "Hardly ever", "Never"] },
+      { badge: "0% Frequency", q: "You hate coffee and drink it zero times a year.", ans: "Never", opts: ["Often", "Usually", "Never", "Always"] },
+      { badge: "80% Frequency", q: "You eat breakfast at home 6 out of 7 days a week.", ans: "Usually", opts: ["Never", "Usually", "Hardly ever", "Sometimes"] },
+      { badge: "40% Frequency", q: "You play video games on weekends, maybe twice a month.", ans: "Sometimes", opts: ["Always", "Sometimes", "Never", "Usually"] },
+      { badge: "20% Frequency", q: "You stay awake past 2 A.M. only once or twice a year.", ans: "Hardly ever", opts: ["Hardly ever", "Always", "Often", "Usually"] },
+      { badge: "60% Frequency", q: "You go for a walk in the park about 4 days a week.", ans: "Often", opts: ["Never", "Hardly ever", "Often", "Always"] }
+    ];
+
+    let currentScaleIdx = 0;
+    let m2Transitioning = false;
+    let m2HadMistake = false;
+    let m2FirstTry = 0;
+
+    function loadScaleQuestion() {
+      m2Transitioning = false;
+      m2HadMistake = false;
+      const item = scaleQuizData[currentScaleIdx];
+      document.getElementById('scaleIndex').textContent = `${currentScaleIdx + 1} / ${scaleQuizData.length}`;
+      document.getElementById('scaleQuestionBadge').textContent = item.badge;
+      document.getElementById('scaleQuestionText').textContent = item.q;
+      document.getElementById('scaleFeedback').textContent = '';
+
+      const optsContainer = document.getElementById('scaleOptions');
+      optsContainer.innerHTML = '';
+      item.opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold py-2.5 px-3 rounded-xl text-xs transition";
+        btn.textContent = opt;
+        btn.onclick = () => checkScaleOption(btn, opt);
+        optsContainer.appendChild(btn);
+      });
+    }
+
+    function checkScaleOption(btn, selected) {
+      if (m2Transitioning) return;
+      const item = scaleQuizData[currentScaleIdx];
+      const fb = document.getElementById('scaleFeedback');
+
+      if (selected === item.ans) {
+        m2Transitioning = true;
+        btn.className = "bg-emerald-600 border border-emerald-400 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition";
+        if (!m2HadMistake) m2FirstTry++;
+
+        globalScore += m2HadMistake ? 5 : 10;
+        globalStreak += 1;
+        fb.textContent = `✅ Correct! ${item.badge} = ${item.ans}.`;
+        fb.className = "text-xs font-bold text-emerald-400 text-center";
+        speakText(item.ans);
+
+        setTimeout(() => {
+          currentScaleIdx++;
+          if (currentScaleIdx < scaleQuizData.length) {
+            loadScaleQuestion();
+          } else {
+            finishModule2();
+          }
+        }, 1200);
+      } else {
+        m2HadMistake = true;
+        globalStreak = 0;
+        btn.className = "bg-rose-900/60 border border-rose-500 text-rose-200 font-bold py-2.5 px-3 rounded-xl text-xs transition opacity-70";
+        btn.disabled = true;
+        fb.textContent = `❌ "${selected}" doesn't match ${item.badge}. Use the slider above to check!`;
+        fb.className = "text-xs font-bold text-rose-400 text-center";
+      }
+      updateScore();
+    }
+
+    function finishModule2() {
+      completedModules.m2 = true;
+      document.getElementById('badge-m2').textContent = '✅';
+      updateScore();
+
+      document.getElementById('m2-exercise-area').classList.add('hidden');
+      const advice = m2FirstTry === scaleQuizData.length
+        ? "Outstanding! You know the exact intensity scale from 0% (Never) to 100% (Always)."
+        : "Keep the scale in mind: Always (100%) > Usually (80%) > Often (60%) > Sometimes (40%) > Hardly ever (20%) > Never (0%).";
+
+      renderModuleSummary(
+        'm2-summary',
+        { total: scaleQuizData.length, firstTryCorrect: m2FirstTry },
+        advice,
+        'restartModule2',
+        'mode-routine',
+        'Go to Module 3'
+      );
+    }
+
+    function restartModule2() {
+      currentScaleIdx = 0;
+      m2FirstTry = 0;
+      document.getElementById('m2-summary').classList.add('hidden');
+      document.getElementById('m2-exercise-area').classList.remove('hidden');
+      loadScaleQuestion();
+    }
+
+    // ==========================================
+    // MODULE 3: PERSONAL ROUTINES & BUILDER
+    // ==========================================
     const routines = [
       { act: "go to sleep by 10 P.M.", time: "every evening", text: "I go to sleep by 10 P.M. every evening." },
       { act: "work late", time: "about three times a month", text: "I work late about three times a month." },
@@ -231,35 +545,172 @@
 
       routines.forEach((r, idx) => {
         const card = document.createElement('div');
-        card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 hover:border-purple-500/50 transition cursor-pointer";
+        card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1.5 hover:border-purple-500/50 transition cursor-pointer";
         card.onclick = () => speakText(r.text);
         card.innerHTML = `
-          <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Routine ${idx + 1} 🔊</span>
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">Routine Model ${idx + 1}</span>
+            <span class="text-xs bg-slate-900 px-2 py-0.5 rounded text-slate-300">🔊 Listen</span>
+          </div>
           <p class="text-xs font-semibold text-amber-300">Activity: ${r.act}</p>
-          <p class="text-xs text-slate-300 pl-2 border-l border-slate-700">Sentence: "${r.text}"</p>
+          <p class="text-xs text-slate-300 pl-2 border-l-2 border-purple-500/40">"${r.text}"</p>
         `;
         container.appendChild(card);
       });
     }
 
-    function updateScore() {
-      document.getElementById('globalScore').textContent = globalScore;
-      document.getElementById('globalStreak').textContent = globalStreak;
-    }
+    const routineBuilderData = [
+      { prompt: "Build: Riding a bicycle 2 times per week", tokens: ["I", "ride a bicycle", "twice a week."], answer: "I ride a bicycle twice a week." },
+      { prompt: "Build: Working late ~3 times each month", tokens: ["I", "work late", "about three times a month."], answer: "I work late about three times a month." },
+      { prompt: "Build: Going to sleep by 10 P.M. daily", tokens: ["I", "go to sleep", "by 10 P.M.", "every evening."], answer: "I go to sleep by 10 P.M. every evening." },
+      { prompt: "Build: Always jogging in the morning", tokens: ["I", "always", "jog", "in the morning."], answer: "I always jog in the morning." },
+      { prompt: "Build: Lifting weights with high frequency", tokens: ["I", "lift weights", "very often."], answer: "I lift weights very often." }
+    ];
 
-    function speakText(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.lang = 'en-US';
-        window.speechSynthesis.speak(utterance);
+    let currentRoutineIdx = 0;
+    let builtRoutineTokens = [];
+    let m3Transitioning = false;
+    let m3HadMistake = false;
+    let m3FirstTry = 0;
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
       }
+      return copy;
     }
 
+    function loadRoutineBuilder() {
+      m3Transitioning = false;
+      m3HadMistake = false;
+      builtRoutineTokens = [];
+      const item = routineBuilderData[currentRoutineIdx];
+      document.getElementById('routineIndex').textContent = `${currentRoutineIdx + 1} / ${routineBuilderData.length}`;
+      document.getElementById('routinePrompt').textContent = item.prompt;
+      document.getElementById('routineFeedback').textContent = '';
+
+      renderRoutineTokens(shuffleArray(item.tokens));
+    }
+
+    function renderRoutineTokens(bankTokens) {
+      const dropZone = document.getElementById('routineDropZone');
+      const wordBank = document.getElementById('routineWordBank');
+
+      if (builtRoutineTokens.length === 0) {
+        dropZone.innerHTML = `<span class="text-xs text-slate-500 italic">Click words below to build sentence...</span>`;
+      } else {
+        dropZone.innerHTML = '';
+        builtRoutineTokens.forEach((tok, idx) => {
+          const btn = document.createElement('button');
+          btn.className = "bg-purple-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-purple-500 transition";
+          btn.textContent = tok;
+          btn.onclick = () => {
+            if (m3Transitioning) return;
+            builtRoutineTokens.splice(idx, 1);
+            bankTokens.push(tok);
+            renderRoutineTokens(bankTokens);
+          };
+          dropZone.appendChild(btn);
+        });
+      }
+
+      wordBank.innerHTML = '';
+      bankTokens.forEach((tok, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "bg-slate-900 border border-slate-700 text-slate-200 font-bold px-3 py-1.5 rounded-lg text-xs hover:border-purple-400 transition";
+        btn.textContent = tok;
+        btn.onclick = () => {
+          if (m3Transitioning) return;
+          bankTokens.splice(idx, 1);
+          builtRoutineTokens.push(tok);
+          renderRoutineTokens(bankTokens);
+        };
+        wordBank.appendChild(btn);
+      });
+    }
+
+    function resetRoutineCurrent() {
+      if (m3Transitioning) return;
+      builtRoutineTokens = [];
+      document.getElementById('routineFeedback').textContent = '';
+      renderRoutineTokens(shuffleArray(routineBuilderData[currentRoutineIdx].tokens));
+    }
+
+    function checkRoutineBuilder() {
+      if (m3Transitioning) return;
+      const item = routineBuilderData[currentRoutineIdx];
+      const fb = document.getElementById('routineFeedback');
+      const userSentence = builtRoutineTokens.join(' ');
+
+      if (builtRoutineTokens.length < item.tokens.length) {
+        fb.textContent = "⚠️ Please use all the word blocks to complete the sentence.";
+        fb.className = "text-xs font-bold text-amber-400 text-center";
+        return;
+      }
+
+      if (userSentence === item.answer) {
+        m3Transitioning = true;
+        if (!m3HadMistake) m3FirstTry++;
+
+        globalScore += m3HadMistake ? 10 : 15;
+        globalStreak += 1;
+        fb.textContent = "🎯 Excellent structure and rhythm!";
+        fb.className = "text-xs font-bold text-emerald-400 text-center";
+        speakText(userSentence);
+
+        setTimeout(() => {
+          currentRoutineIdx++;
+          if (currentRoutineIdx < routineBuilderData.length) {
+            loadRoutineBuilder();
+          } else {
+            finishModule3();
+          }
+        }, 1500);
+      } else {
+        m3HadMistake = true;
+        globalStreak = 0;
+        fb.textContent = "❌ Check the word order: Subject + Verb + Time Expression at the end.";
+        fb.className = "text-xs font-bold text-rose-400 text-center";
+      }
+      updateScore();
+    }
+
+    function finishModule3() {
+      completedModules.m3 = true;
+      document.getElementById('badge-m3').textContent = '✅';
+      updateScore();
+
+      document.getElementById('m3-exercise-area').classList.add('hidden');
+      const advice = m3FirstTry === routineBuilderData.length
+        ? "Superb! You placed every time expression (twice a week, every evening, very often) accurately at the end of the sentence."
+        : "Tip: Longer time expressions like 'twice a week' or 'about three times a month' always go at the END of the sentence.";
+
+      renderModuleSummary(
+        'm3-summary',
+        { total: routineBuilderData.length, firstTryCorrect: m3FirstTry },
+        advice,
+        'restartModule3',
+        null,
+        null
+      );
+    }
+
+    function restartModule3() {
+      currentRoutineIdx = 0;
+      m3FirstTry = 0;
+      document.getElementById('m3-summary').classList.add('hidden');
+      document.getElementById('m3-exercise-area').classList.remove('hidden');
+      loadRoutineBuilder();
+    }
+
+    // INIT
     window.onload = function() {
       loadReorderItem();
+      loadScaleQuestion();
       loadRoutines();
+      loadRoutineBuilder();
     };
   </script>
 </body>
