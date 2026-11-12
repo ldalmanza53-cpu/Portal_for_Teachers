@@ -165,6 +165,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       font-size: 0.95rem;
     }
 
@@ -202,6 +203,8 @@
       border-radius: 8px;
       font-weight: bold;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .scenario-card {
@@ -249,11 +252,16 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
     }
 
-    .btn-option:hover {
+    .btn-option:hover:not(:disabled) {
       border-color: var(--primary);
       background: #F8FAFC;
+    }
+
+    .btn-option:disabled {
+      cursor: default;
     }
 
     .feedback-box {
@@ -317,6 +325,10 @@
       margin-bottom: 12px;
       line-height: 1.5;
       font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
 
     .chat-bubble.traveler {
@@ -361,18 +373,34 @@
     }
 
     .quiz-opt {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 10px 14px;
       background: white;
       border: 1px solid var(--border);
       border-radius: 6px;
       margin-bottom: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, border-color 0.2s;
     }
 
     .quiz-opt:hover {
       background: #F0F9FF;
+      border-color: var(--primary);
+    }
+
+    .quiz-opt.opt-correct {
+      background: #D1FAE5;
+      border-color: #10B981;
+      color: #065F46;
+      font-weight: 700;
+    }
+
+    .quiz-opt.opt-wrong {
+      background: #FEE2E2;
+      border-color: #EF4444;
+      color: #991B1B;
     }
 
     /* Boarding Pass Certificate */
@@ -395,6 +423,8 @@
       border-bottom: 2px solid var(--primary);
       padding-bottom: 12px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .bp-title {
@@ -434,7 +464,7 @@
     }
 
     @media print {
-      .nav-tabs, header, .btn-primary, .audio-btn { display: none !important; }
+      .nav-tabs, header, .btn-primary, .audio-btn, #quiz-form-area { display: none !important; }
       body { background: white; padding: 0; }
       .tab-content { display: block !important; box-shadow: none; border: none; }
       .boarding-pass { display: block !important; border: 2px solid #000; }
@@ -444,6 +474,693 @@
 <body>
 
   <header>
-    <h1>✈️️ Travel Master</h1>
+    <h1>✈ Travel Master</h1>
     <p>Practice Vacation Plans, Requests, Apologies & Excuses (Level A1)</p>
   </header>
+
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="openTab('tab-phrases', this)">📚 1. Phrasebook</button>
+    <button class="tab-btn" onclick="openTab('tab-game', this)">🎮 2. Travel Scenarios</button>
+    <button class="tab-btn" onclick="openTab('tab-builder', this)">💬 3. Dialogue Builder</button>
+    <button class="tab-btn" onclick="openTab('tab-quiz', this)">🎫 4. Final Quiz & Pass</button>
+  </nav>
+
+  <main class="container">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: PHRASEBOOK & AUDIO PRONUNCIATION    -->
+    <!-- ========================================== -->
+    <section id="tab-phrases" class="tab-content active">
+      <h2>📚 Essential A1 Travel Expressions</h2>
+      <p style="color: var(--text-muted); margin-bottom: 18px;">Click the speaker button <strong>(🔊)</strong> next to any sentence to listen to clear English pronunciation.</p>
+
+      <div class="grid-2" id="phrasebook-grid"></div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: INTERACTIVE SCENARIO GAME           -->
+    <!-- ========================================== -->
+    <section id="tab-game" class="tab-content">
+      <h2>🎮 Travel Roleplay Challenge</h2>
+
+      <div class="game-status-bar">
+        <span id="game-progress">Scenario: 1 / 6</span>
+        <span id="game-score">Score: 0 pts</span>
+        <span id="game-streak">Streak: 🔥 0</span>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon" id="scen-icon">🏨</div>
+        <div class="scenario-title" id="scen-title">Hotel Check-In</div>
+        <div class="scenario-desc" id="scen-desc">You arrive at your hotel and want a quiet room with a view. What do you say?</div>
+      </div>
+
+      <div class="options-grid" id="scen-options"></div>
+
+      <div class="feedback-box" id="scen-feedback"></div>
+
+      <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <button class="btn-primary" style="background: #64748B;" onclick="restartGame()">🔄 Restart Game</button>
+        <button class="btn-primary" id="btn-next-scen" style="display: none;" onclick="nextScenario()">Next Scenario ➔</button>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: CUSTOM DIALOGUE BUILDER             -->
+    <!-- ========================================== -->
+    <section id="tab-builder" class="tab-content">
+      <h2>💬 Travel Dialogue Builder</h2>
+      <p style="color: var(--text-muted); margin-bottom: 18px;">Create a personalized conversation combining vacation plans, polite requests, apologies, and excuses.</p>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="bld-name">Traveler Name:</label>
+          <input type="text" id="bld-name" value="Alex" placeholder="Enter your name..." oninput="updateDialogue()" />
+        </div>
+        <div class="form-group">
+          <label for="bld-dest">Destination City:</label>
+          <input type="text" id="bld-dest" value="London" placeholder="e.g., Tokyo, Paris, New York..." oninput="updateDialogue()" />
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="bld-plan">1. Vacation Plan (going to / want to):</label>
+          <select id="bld-plan" onchange="updateDialogue()">
+            <option value="I am going to visit the museums and take many photos.">I am going to visit the museums and take many photos.</option>
+            <option value="We are going to stay near the beach for five days.">We are going to stay near the beach for five days.</option>
+            <option value="I want to try local food and explore the city center.">I want to try local food and explore the city center.</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="bld-request">2. Polite Request (Can I / Could you):</label>
+          <select id="bld-request" onchange="updateDialogue()">
+            <option value="Could I have a window seat, please?">Could I have a window seat, please?</option>
+            <option value="Can you give me a city map, please?">Can you give me a city map, please?</option>
+            <option value="Could I check in early today, please?">Could I check in early today, please?</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="bld-apology">3. Apology & Excuse:</label>
+          <select id="bld-apology" onchange="updateDialogue()">
+            <option value="I'm sorry I'm late. The airport traffic was terrible!">I'm sorry I'm late. The airport traffic was terrible!</option>
+            <option value="Excuse me, I'm so sorry. I left my passport in my bag.">Excuse me, I'm so sorry. I left my passport in my bag.</option>
+            <option value="I apologize for the delay. My train arrived ten minutes late.">I apologize for the delay. My train arrived ten minutes late.</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="bld-response">4. Staff / Friend Response:</label>
+          <select id="bld-response" onchange="updateDialogue()">
+            <option value="No problem at all! Here is your boarding pass. Have a great trip!">No problem at all! Here is your boarding pass. Have a great trip!</option>
+            <option value="Don't worry about it! Of course, here you go.">Don't worry about it! Of course, here you go.</option>
+            <option value="That's okay! Welcome, and enjoy your vacation!">That's okay! Welcome, and enjoy your vacation!</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="playFullDialogue()">🔊 Listen to Full Conversation</button>
+
+      <div class="dialogue-preview" id="dialogue-preview"></div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: FINAL QUIZ & BOARDING PASS          -->
+    <!-- ========================================== -->
+    <section id="tab-quiz" class="tab-content">
+      <div id="quiz-form-area">
+        <h2>🎫 Final Travel Check-In Quiz</h2>
+        <p style="color: var(--text-muted); margin-bottom: 18px;">Answer all 5 questions (at least 4/5 correct) to unlock your official <strong>Travel Master Boarding Pass</strong>!</p>
+
+        <div class="grid-2" style="margin-bottom: 12px;">
+          <div class="form-group">
+            <label for="quiz-passenger">Passenger Name (for Certificate):</label>
+            <input type="text" id="quiz-passenger" placeholder="Your Full Name" value="Student Traveler" />
+          </div>
+          <div class="form-group">
+            <label for="quiz-destination">Dream Vacation Destination:</label>
+            <input type="text" id="quiz-destination" placeholder="e.g., Rome, Italy" value="Paris, France" />
+          </div>
+        </div>
+
+        <div id="quiz-questions-container"></div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn-primary" onclick="gradeFinalQuiz()">✅ Submit & Issue Boarding Pass</button>
+          <button class="btn-primary" style="background: #64748B;" onclick="resetFinalQuiz()">🔄 Reset Quiz</button>
+        </div>
+
+        <div class="feedback-box" id="quiz-result-banner"></div>
+      </div>
+
+      <!-- Boarding Pass Certificate -->
+      <div class="boarding-pass" id="boarding-pass">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="bp-header">
+          <div class="bp-title">✈ OFFICIAL BOARDING PASS • LEVEL A1</div>
+          <div style="background: #D1FAE5; color: #065F46; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 0.85rem;">CERTIFIED TRAVELER</div>
+        </div>
+
+        <div class="bp-body">
+          <div class="bp-field">
+            <label>Passenger Name</label>
+            <span id="bp-name">Student Traveler</span>
+          </div>
+          <div class="bp-field">
+            <label>Destination</label>
+            <span id="bp-dest">Paris, France</span>
+          </div>
+          <div class="bp-field">
+            <label>Gate / Module</label>
+            <span>A1 • Plans, Requests & Apologies</span>
+          </div>
+          <div class="bp-field">
+            <label>Flight Score</label>
+            <span id="bp-score">5 / 5 (100%)</span>
+          </div>
+          <div class="bp-field">
+            <label>Issue Date</label>
+            <span id="bp-date"></span>
+          </div>
+          <div class="bp-field">
+            <label>Boarding Status</label>
+            <span style="color: var(--success);">APPROVED FOR TAKEOFF</span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <span style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">||||| || |||| ||||| ||| |||| ||||| TM-A1-2026</span>
+          <button class="btn-primary" onclick="window.print()">🖨️ Print Boarding Pass</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* ========================================== */
+    /* SPEECH SYNTHESIS & SOUND EFFECTS           */
+    /* ========================================== */
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-US';
+      utter.rate = 0.9;
+      window.speechSynthesis.speak(utter);
+    }
+
+    function playTone(isSuccess) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (isSuccess) {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.35);
+        } else {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, ctx.currentTime);
+          osc.frequency.setValueAtTime(160, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        }
+      } catch (e) {}
+    }
+
+    /* ========================================== */
+    /* NAVIGATION TABS                            */
+    /* ========================================== */
+    function openTab(tabId, btnEl) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btnEl.classList.add('active');
+    }
+
+    /* ========================================== */
+    /* TAB 1: PHRASEBOOK DATA & RENDERER          */
+    /* ========================================== */
+    const phraseCategories = [
+      {
+        badgeClass: 'cat-plan',
+        badgeText: 'Vacation Plans',
+        title: 'Talking About Future Trips',
+        items: [
+          "I'm going to visit London next summer.",
+          "We're going to stay at a hotel near the beach.",
+          "I want to buy some souvenirs for my family.",
+          "She's going to take a train to Madrid."
+        ]
+      },
+      {
+        badgeClass: 'cat-request',
+        badgeText: 'Polite Requests',
+        title: 'Asking for Help & Services',
+        items: [
+          "Can I have a window seat, please?",
+          "Could you help me with my luggage, please?",
+          "Can we have the menu, please?",
+          "Could you tell me where the gate is?"
+        ]
+      },
+      {
+        badgeClass: 'cat-apology',
+        badgeText: 'Apologies',
+        title: 'Saying Sorry Politely',
+        items: [
+          "I'm so sorry I'm late!",
+          "Excuse me, I'm sorry for the mistake.",
+          "I apologize for the delay.",
+          "Sorry to bother you, do you have a minute?"
+        ]
+      },
+      {
+        badgeClass: 'cat-excuse',
+        badgeText: 'Excuses',
+        title: 'Explaining Travel Problems',
+        items: [
+          "My flight was delayed because of bad weather.",
+          "I missed the bus this morning.",
+          "There was a lot of traffic on the highway.",
+          "I left my ticket at the hotel."
+        ]
+      },
+      {
+        badgeClass: 'cat-response',
+        badgeText: 'Friendly Responses',
+        title: 'Accepting Apologies & Requests',
+        items: [
+          "No problem at all!",
+          "Don't worry about it.",
+          "Of course! Here you are.",
+          "That's totally fine. Have a safe trip!"
+        ]
+      }
+    ];
+
+    function renderPhrasebook() {
+      const grid = document.getElementById('phrasebook-grid');
+      grid.innerHTML = phraseCategories.map(cat => `
+        <div class="phrase-card">
+          <span class="phrase-category ${cat.badgeClass}">${cat.badgeText}</span>
+          <div class="phrase-title">${cat.title}</div>
+          <ul class="phrase-list">
+            ${cat.items.map(sentence => `
+              <li class="phrase-item">
+                <span>"${sentence}"</span>
+                <button class="audio-btn" onclick="speak('${sentence.replace(/'/g, "\\'")}')" title="Listen">🔊</button>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    /* ========================================== */
+    /* TAB 2: TRAVEL SCENARIOS GAME               */
+    /* ========================================== */
+    const scenariosData = [
+      {
+        icon: '✈️',
+        title: 'At the Airport Check-In',
+        desc: 'You want to sit next to the window on your flight. How do you make a polite request?',
+        options: [
+          { text: 'Give me a window seat now.', correct: false },
+          { text: 'Could I have a window seat, please?', correct: true },
+          { text: 'I am sorry for the window seat.', correct: false }
+        ],
+        feedback: 'Great job! "Could I have..., please?" is polite and natural for A1 travel requests.'
+      },
+      {
+        icon: '🚌',
+        title: 'Late for the Tour Bus',
+        desc: 'You arrive 10 minutes late for your city tour because your alarm did not ring. What do you say?',
+        options: [
+          { text: "I'm so sorry I'm late! My alarm didn't ring.", correct: true },
+          { text: "I'm going to visit the museum tomorrow.", correct: false },
+          { text: "No problem at all, don't worry!", correct: false }
+        ],
+        feedback: 'Spot on! You combined a polite apology ("I\'m so sorry I\'m late") with a clear excuse.'
+      },
+      {
+        icon: '🏖️',
+        title: 'Sharing Summer Plans',
+        desc: 'Your friend asks: "What are your plans for July?" Choose the best answer.',
+        options: [
+          { text: "Excuse me, I missed my train.", correct: false },
+          { text: "We're going to travel to Cancun and swim in the ocean.", correct: true },
+          { text: "Can you carry my suitcase, please?", correct: false }
+        ],
+        feedback: 'Correct! Use "be going to + verb" to talk about future vacation plans.'
+      },
+      {
+        icon: '🧳',
+        title: 'Heavy Suitcase at the Hotel',
+        desc: 'Your bag is very heavy and you need help taking it to your room.',
+        options: [
+          { text: 'Could you help me with my suitcase, please?', correct: true },
+          { text: 'I apologize for my heavy suitcase.', correct: false },
+          { text: 'I am going to pack my suitcase yesterday.', correct: false }
+        ],
+        feedback: 'Awesome! "Could you help me..., please?" is a polite way to ask for assistance.'
+      },
+      {
+        icon: '☕',
+        title: 'Spilled Coffee at a Cafe',
+        desc: 'A tourist accidentally bumps your table and says: "I\'m really sorry!" How do you respond politely?',
+        options: [
+          { text: "My flight is delayed.", correct: false },
+          { text: "Don't worry about it! It's okay.", correct: true },
+          { text: "Can I have a round-trip ticket?", correct: false }
+        ],
+        feedback: 'Well done! "Don\'t worry about it!" is a warm, polite way to accept an apology.'
+      },
+      {
+        icon: '🗺️',
+        title: 'Lost in the City Center',
+        desc: 'You cannot find the train station. You stop a police officer to ask for help.',
+        options: [
+          { text: "Where is the train station? Tell me.", correct: false },
+          { text: "Excuse me, could you tell me where the train station is, please?", correct: true },
+          { text: "I'm going to stay at a hotel.", correct: false }
+        ],
+        feedback: 'Excellent! Starting with "Excuse me" and using "could you..., please?" sounds very polite.'
+      }
+    ];
+
+    let scenIdx = 0;
+    let gamePoints = 0;
+    let gameStreak = 0;
+    let scenAnswered = false;
+
+    function renderScenario() {
+      const s = scenariosData[scenIdx];
+      scenAnswered = false;
+
+      document.getElementById('game-progress').innerText = `Scenario: ${scenIdx + 1} / ${scenariosData.length}`;
+      document.getElementById('game-score').innerText = `Score: ${gamePoints} pts`;
+      document.getElementById('game-streak').innerText = `Streak: 🔥 ${gameStreak}`;
+
+      document.getElementById('scen-icon').innerText = s.icon;
+      document.getElementById('scen-title').innerText = s.title;
+      document.getElementById('scen-desc').innerText = s.desc;
+
+      const fb = document.getElementById('scen-feedback');
+      fb.style.display = 'none';
+      document.getElementById('btn-next-scen').style.display = 'none';
+
+      const optsGrid = document.getElementById('scen-options');
+      optsGrid.innerHTML = s.options.map((opt, idx) => `
+        <button class="btn-option" id="scen-opt-${idx}" onclick="selectScenarioOption(${idx})">
+          <span>${opt.text}</span>
+          <span>➔</span>
+        </button>
+      `).join('');
+    }
+
+    function selectScenarioOption(idx) {
+      if (scenAnswered) return;
+      scenAnswered = true;
+
+      const s = scenariosData[scenIdx];
+      const chosen = s.options[idx];
+      const fb = document.getElementById('scen-feedback');
+
+      s.options.forEach((opt, i) => {
+        const btn = document.getElementById(`scen-opt-${i}`);
+        btn.disabled = true;
+        if (opt.correct) {
+          btn.style.borderColor = 'var(--success)';
+          btn.style.background = '#D1FAE5';
+        } else if (i === idx && !opt.correct) {
+          btn.style.borderColor = 'var(--danger)';
+          btn.style.background = '#FEE2E2';
+        }
+      });
+
+      fb.style.display = 'block';
+      if (chosen.correct) {
+        gamePoints += 20;
+        gameStreak += 1;
+        playTone(true);
+        speak(chosen.text);
+        fb.className = 'feedback-box feedback-correct';
+        fb.innerText = `✅ ${s.feedback}`;
+      } else {
+        gameStreak = 0;
+        playTone(false);
+        fb.className = 'feedback-box feedback-wrong';
+        fb.innerText = `❌ Not quite! ${s.feedback}`;
+      }
+
+      document.getElementById('game-score').innerText = `Score: ${gamePoints} pts`;
+      document.getElementById('game-streak').innerText = `Streak: 🔥 ${gameStreak}`;
+
+      const nextBtn = document.getElementById('btn-next-scen');
+      nextBtn.style.display = 'inline-flex';
+      nextBtn.innerText = scenIdx < scenariosData.length - 1 ? 'Next Scenario ➔' : 'Finish & Play Again 🔄';
+    }
+
+    function nextScenario() {
+      if (scenIdx < scenariosData.length - 1) {
+        scenIdx++;
+      } else {
+        scenIdx = 0;
+        gamePoints = 0;
+        gameStreak = 0;
+      }
+      renderScenario();
+    }
+
+    function restartGame() {
+      scenIdx = 0;
+      gamePoints = 0;
+      gameStreak = 0;
+      renderScenario();
+    }
+
+    /* ========================================== */
+    /* TAB 3: DIALOGUE BUILDER                    */
+    /* ========================================== */
+    function updateDialogue() {
+      const name = document.getElementById('bld-name').value.trim() || 'Traveler';
+      const dest = document.getElementById('bld-dest').value.trim() || 'London';
+      const plan = document.getElementById('bld-plan').value;
+      const request = document.getElementById('bld-request').value;
+      const apology = document.getElementById('bld-apology').value;
+      const response = document.getElementById('bld-response').value;
+
+      const line1 = `Hi! My name is ${name}, and I'm traveling to ${dest}. ${plan}`;
+      const line2 = `Welcome to ${dest}, ${name}! How can I help you today?`;
+      const line3 = `${apology} ${request}`;
+      const line4 = response;
+
+      const preview = document.getElementById('dialogue-preview');
+      preview.innerHTML = `
+        <div class="chat-bubble traveler">
+          <div><strong style="color:#38BDF8;">🧳 ${name}:</strong> "${line1}"</div>
+          <button class="audio-btn" onclick="speak('${line1.replace(/'/g, "\\'")}')">🔊</button>
+        </div>
+        <div class="chat-bubble agent">
+          <div><strong style="color:#34D399;">🛎️ Travel Agent:</strong> "${line2}"</div>
+          <button class="audio-btn" onclick="speak('${line2.replace(/'/g, "\\'")}')">🔊</button>
+        </div>
+        <div class="chat-bubble traveler">
+          <div><strong style="color:#38BDF8;">🧳 ${name}:</strong> "${line3}"</div>
+          <button class="audio-btn" onclick="speak('${line3.replace(/'/g, "\\'")}')">🔊</button>
+        </div>
+        <div class="chat-bubble agent">
+          <div><strong style="color:#34D399;">🛎️ Travel Agent:</strong> "${line4}"</div>
+          <button class="audio-btn" onclick="speak('${line4.replace(/'/g, "\\'")}')">🔊</button>
+        </div>
+      `;
+    }
+
+    function playFullDialogue() {
+      const name = document.getElementById('bld-name').value.trim() || 'Traveler';
+      const dest = document.getElementById('bld-dest').value.trim() || 'London';
+      const plan = document.getElementById('bld-plan').value;
+      const request = document.getElementById('bld-request').value;
+      const apology = document.getElementById('bld-apology').value;
+      const response = document.getElementById('bld-response').value;
+
+      const fullText = `Hi! My name is ${name}, and I'm traveling to ${dest}. ${plan} ... Welcome to ${dest}, ${name}! How can I help you today? ... ${apology} ${request} ... ${response}`;
+      speak(fullText);
+    }
+
+    /* ========================================== */
+    /* TAB 4: FINAL QUIZ & BOARDING PASS          */
+    /* ========================================== */
+    const finalQuizData = [
+      {
+        q: '1. Complete the vacation plan: "Next month, we ______ visit Rome."',
+        options: ['are going to', 'is going to', 'sorry to'],
+        correct: 0
+      },
+      {
+        q: '2. Choose the most polite request at an airport:',
+        options: ['I want water.', 'Could I have a glass of water, please?', 'My bus was late.'],
+        correct: 1
+      },
+      {
+        q: '3. Which sentence is a polite apology?',
+        options: ["I'm so sorry I'm late!", "We're going to stay in a hotel.", "Here is your passport."],
+        correct: 0
+      },
+      {
+        q: '4. Complete the excuse: "I missed my flight because ______."',
+        options: ['there was heavy traffic', 'could you help me', 'have a nice trip'],
+        correct: 0
+      },
+      {
+        q: '5. How do you politely accept an apology?',
+        options: ['You are late!', "Don't worry about it. No problem!", 'Can I have a map?'],
+        correct: 1
+      }
+    ];
+
+    function renderFinalQuiz() {
+      const container = document.getElementById('quiz-questions-container');
+      container.innerHTML = finalQuizData.map((item, qIdx) => `
+        <div class="quiz-card">
+          <p>${item.q}</p>
+          ${item.options.map((opt, oIdx) => `
+            <label class="quiz-opt" id="qopt-${qIdx}-${oIdx}">
+              <input type="radio" name="fq-${qIdx}" value="${oIdx}" />
+              <span>${opt}</span>
+            </label>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    function gradeFinalQuiz() {
+      let score = 0;
+      let unanswered = 0;
+
+      finalQuizData.forEach((item, qIdx) => {
+        const selected = document.querySelector(`input[name="fq-${qIdx}"]:checked`);
+        item.options.forEach((_, oIdx) => {
+          const lbl = document.getElementById(`qopt-${qIdx}-${oIdx}`);
+          lbl.classList.remove('opt-correct', 'opt-wrong');
+        });
+
+        if (!selected) {
+          unanswered++;
+          return;
+        }
+
+        const val = parseInt(selected.value, 10);
+        if (val === item.correct) {
+          score++;
+          document.getElementById(`qopt-${qIdx}-${val}`).classList.add('opt-correct');
+        } else {
+          document.getElementById(`qopt-${qIdx}-${val}`).classList.add('opt-wrong');
+          document.getElementById(`qopt-${qIdx}-${item.correct}`).classList.add('opt-correct');
+        }
+      });
+
+      const banner = document.getElementById('quiz-result-banner');
+      banner.style.display = 'block';
+
+      if (unanswered > 0) {
+        playTone(false);
+        banner.className = 'feedback-box feedback-wrong';
+        banner.innerText = `⚠️ Please answer all ${finalQuizData.length} questions before submitting!`;
+        return;
+      }
+
+      if (score >= 4) {
+        playTone(true);
+        banner.className = 'feedback-box feedback-correct';
+        banner.innerText = `🎉 Congratulations! You scored ${score}/${finalQuizData.length}. Your Boarding Pass is ready below!`;
+
+        const passenger = document.getElementById('quiz-passenger').value.trim() || 'Student Traveler';
+        const dest = document.getElementById('quiz-destination').value.trim() || 'Paris, France';
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+        document.getElementById('bp-name').innerText = passenger;
+        document.getElementById('bp-dest').innerText = dest;
+        document.getElementById('bp-score').innerText = `${score} / ${finalQuizData.length} (${Math.round((score / finalQuizData.length) * 100)}%)`;
+        document.getElementById('bp-date').innerText = today;
+
+        const bp = document.getElementById('boarding-pass');
+        bp.style.display = 'block';
+        bp.scrollIntoView({ behavior: 'smooth' });
+        launchConfetti();
+      } else {
+        playTone(false);
+        banner.className = 'feedback-box feedback-wrong';
+        banner.innerText = `❌ You scored ${score}/${finalQuizData.length}. You need at least 4/5 to unlock your Boarding Pass. Review the red items and try again!`;
+        document.getElementById('boarding-pass').style.display = 'none';
+      }
+    }
+
+    function resetFinalQuiz() {
+      renderFinalQuiz();
+      document.getElementById('quiz-result-banner').style.display = 'none';
+      document.getElementById('boarding-pass').style.display = 'none';
+    }
+
+    /* Confetti animation on Boarding Pass canvas */
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const colors = ['#0284C7', '#0D9488', '#F59E0B', '#10B981', '#8B5CF6'];
+      const pieces = Array.from({ length: 65 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 5,
+        h: Math.random() * 6 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vy: Math.random() * 2.5 + 1.5,
+        vx: Math.random() * 2 - 1
+      }));
+
+      let frames = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+          p.y += p.vy;
+          p.x += p.vx;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+        });
+        frames++;
+        if (frames < 140) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      animate();
+    }
+
+    /* ========================================== */
+    /* INITIALIZE ALL MODULES                     */
+    /* ========================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPhrasebook();
+      renderScenario();
+      updateDialogue();
+      renderFinalQuiz();
+    });
+  </script>
+</body>
+</html>
