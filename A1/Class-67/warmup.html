@@ -1,623 +1,2145 @@
-#!/usr/bin/env python3
-"""
-===============================================================================
-POLYGLOT TELEPHONY & MESSAGING STUDIO - A1 ENGLISH LEARNING DESKTOP APP
-===============================================================================
-Language: Python 3 (Tkinter GUI Framework)
-Features:
- - 1. Phrase Matrix & Functional Classifier Drill
- - 2. DTMF Keypad & Number Dictation Audio Challenge
- - 3. Receptionist Digital Message Pad & Voicemail Simulator
- - 4. Interactive Call Console & Switchboard Dialogue Tree
- - 5. Learner Passport & Automated HTML Certificate Generator
- - Cross-platform Text-To-Speech (TTS) & Audio Feedback
-===============================================================================
-"""
-
-import os
-import sys
-import math
-import wave
-import struct
-import tempfile
-import subprocess
-import webbrowser
-from datetime import datetime
-
-import tkinter as tk
-from tkinter import ttk, messagebox
-
-# =============================================================================
-# CROSS-PLATFORM TEXT-TO-SPEECH (TTS) ENGINE
-# =============================================================================
-class TTSEngine:
-    """Provides native Text-To-Speech narration without required external PIP packages."""
-    def __init__(self):
-        self.platform = sys.platform
-
-    def speak(self, text):
-        if not text:
-            return
-        
-        # Clean text for command-line execution
-        clean_text = text.replace('"', '').replace("'", "")
-        
-        try:
-            if self.platform == "darwin":  # macOS
-                subprocess.Popen(["say", "-r", "160", clean_text])
-            elif self.platform.startswith("win"):  # Windows PowerShell SAPI
-                ps_script = f'Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = 0; $synth.Speak("{clean_text}");'
-                subprocess.Popen(["powershell", "-Command", ps_script], creationflags=subprocess.CREATE_NO_WINDOW)
-            else:  # Linux (espeak or spd-say fallback)
-                if subprocess.call(["which", "espeak"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
-                    subprocess.Popen(["espeak", "-s", "150", clean_text])
-                elif subprocess.call(["which", "spd-say"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
-                    subprocess.Popen(["spd-say", clean_text])
-        except Exception as e:
-            print(f"[TTS Error] Could not synthesize speech: {e}")
-
-# =============================================================================
-# AUDIO SYNTHESIZER (DTMF & TONES)
-# =============================================================================
-class ToneGenerator:
-    """Generates synthetic DTMF keypad tones using wave synthesis."""
-    dtmf_freqs = {
-        '1': (697, 1209), '2': (697, 1336), '3': (697, 1477),
-        '4': (770, 1209), '5': (770, 1336), '6': (770, 1477),
-        '7': (852, 1209), '8': (852, 1336), '9': (852, 1477),
-        '*': (941, 1209), '0': (941, 1336), '#': (941, 1477)
-    }
-
-    @staticmethod
-    def play_dtmf(key):
-        freqs = ToneGenerator.dtmf_freqs.get(key, (440, 480))
-        duration = 0.12  # seconds
-        sample_rate = 22050
-        n_samples = int(sample_rate * duration)
-        
-        # Generate dual sine waves
-        audio_data = bytearray()
-        for i in range(n_samples):
-            t = i / sample_rate
-            val1 = math.sin(2 * math.pi * freqs[0] * t)
-            val2 = math.sin(2 * math.pi * freqs[1] * t)
-            sample = int(((val1 + val2) / 2.0) * 16383)
-            audio_data.extend(struct.pack('<h', sample))
-
-        # Save to temporary WAV file and play
-        try:
-            temp_wav = os.path.join(tempfile.gettempdir(), f"dtmf_{key}.wav")
-            with wave.open(temp_wav, 'wb') as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(sample_rate)
-                wf.writeframes(audio_data)
-
-            if sys.platform == "darwin":
-                subprocess.Popen(["afplay", temp_wav])
-            elif sys.platform.startswith("win"):
-                import winsound
-                winsound.PlaySound(temp_wav, winsound.SND_FILENAME | winsound.SND_ASYNC)
-            else:
-                subprocess.Popen(["aplay", "-q", temp_wav])
-        except Exception:
-            pass  # Fallback gracefully if system audio is restricted
-
-# =============================================================================
-# CURRICULUM DATA MODEL
-# =============================================================================
-PHRASEBOOK = [
-    {"target": "Hello, this is David. Can I speak to Sarah, please?", "translation": "Starting a call & requesting a person", "purpose": "starting"},
-    {"target": "Just a moment, please. I'll check if she is free.", "translation": "Putting the caller on hold", "purpose": "hold"},
-    {"target": "I'm sorry, Mr. Lee is in a meeting right now.", "translation": "Explaining someone is unavailable", "purpose": "unavailable"},
-    {"target": "Would you like to leave a message?", "translation": "Offering to take a voicemail/message", "purpose": "message"},
-    {"target": "Please tell her to call me back at 555-0192.", "translation": "Leaving callback instructions", "purpose": "message"},
-    {"target": "Thank you for calling. Have a great day! Goodbye.", "translation": "Closing a phone call etiquette", "purpose": "closing"}
-]
-
-DICTATION_NUMBERS = ["555-0192", "555-8833", "555-4321", "555-9000"]
-
-VOICEMAIL_DATA = {
-    "caller": "Carlos",
-    "number": "555-8833",
-    "purpose": "car_repair",
-    "transcript": "Hi, this is Carlos from Auto Repair calling for Anna. Your car is ready to pick up! Please call me back at 555-8833."
-}
-
-SIMULATION_TREE = [
-    {
-        "speaker": "Receptionist",
-        "text": "Good morning, Apex Office Solutions. How can I help you?",
-        "options": [
-            {"label": "Request Mr. Lee", "text": "Hello, this is Alex. Can I speak to Mr. Lee, please?", "next": 1},
-            {"label": "Wrong Number", "text": "Oh, I'm sorry. I dialed the wrong number. Goodbye!", "next": -1}
-        ]
-    },
-    {
-        "speaker": "Receptionist",
-        "text": "I'm sorry, Mr. Lee is in a meeting right now. Would you like to leave a message?",
-        "options": [
-            {"label": "Leave callback message", "text": "Yes, please ask him to call me back at 555-3412.", "next": 2},
-            {"label": "Decline message", "text": "No thank you, I will call back later today.", "next": -1}
-        ]
-    },
-    {
-        "speaker": "Receptionist",
-        "text": "Certainly! I will give Mr. Lee your message right away. Have a wonderful day!",
-        "options": []
-    }
-]
-
-# =============================================================================
-# MAIN APPLICATION GUI CLASS
-# =============================================================================
-class TelephonyStudioApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-
-        self.title("A1 Telephony & Messaging Studio (Python Edition)")
-        self.geometry("980x700")
-        self.minsize(850, 600)
-        
-        # State tracking
-        self.tts = TTSEngine()
-        self.xp_score = 0
-        self.dialed_digits = ""
-        self.dictation_idx = 0
-        self.quiz_idx = 0
-        self.sim_step = 0
-
-        # Colors & Styling
-        self.bg_main = "#0f172a"      # Dark slate background
-        self.card_bg = "#1e293b"      # Card slate
-        self.accent_indigo = "#6366f1"
-        self.accent_green = "#10b981"
-        self.accent_amber = "#f59e0b"
-        self.text_light = "#f8fafc"
-        
-        self.configure(bg=self.bg_main)
-        self.setup_styles()
-        self.build_header()
-        self.build_notebook()
-
-    def setup_styles(self):
-        """Configure TTK widget themes."""
-        self.style = ttk.Style()
-        self.style.theme_use("clam")
-
-        # Notebook Tab Style
-        self.style.configure("TNotebook", background=self.bg_main, borderwidth=0)
-        self.style.configure("TNotebook.Tab", background="#334155", foreground="#94a3b8",
-                             font=("Helvetica", 10, "bold"), padding=[14, 8])
-        self.style.map("TNotebook.Tab", background=[("selected", self.accent_indigo)],
-                       foreground=[("selected", "#ffffff")])
-
-    def build_header(self):
-        """Top bar displaying title and XP score counter."""
-        header_frame = tk.Frame(self, bg="#1e293b", height=60, borderwidth=1, relief="solid")
-        header_frame.pack(fill="x", side="top")
-
-        # Logo / Title
-        title_label = tk.Label(header_frame, text="📞 PolyGlot Telephony Studio",
-                               font=("Helvetica", 16, "bold"), fg=self.text_light, bg="#1e293b")
-        title_label.pack(side="left", padx=20, pady=12)
-
-        subtitle = tk.Label(header_frame, text="A1 English Phone & Message Master",
-                            font=("Helvetica", 9, "bold"), fg="#94a3b8", bg="#1e293b")
-        subtitle.pack(side="left", padx=0, pady=12)
-
-        # XP Counter Display
-        self.xp_label = tk.Label(header_frame, text="⚡ XP: 0",
-                                 font=("Consolas", 12, "bold"), fg=self.accent_amber, bg="#0f172a",
-                                 padx=12, pady=4)
-        self.xp_label.pack(side="right", padx=20)
-
-    def build_notebook(self):
-        """Tabs for the 5 curriculum modules."""
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill="both", expand=True, padx=15, pady=15)
-
-        # Module Tabs
-        self.tab_phrases = tk.Frame(self.notebook, bg=self.card_bg)
-        self.tab_keypad = tk.Frame(self.notebook, bg=self.card_bg)
-        self.tab_message = tk.Frame(self.notebook, bg=self.card_bg)
-        self.tab_sim = tk.Frame(self.notebook, bg=self.card_bg)
-        self.tab_cert = tk.Frame(self.notebook, bg=self.card_bg)
-
-        self.notebook.add(self.tab_phrases, text=" 1. Phrase Matrix ")
-        self.notebook.add(self.tab_keypad, text=" 2. Keypad & Dictation ")
-        self.notebook.add(self.tab_message, text=" 3. Message Pad ")
-        self.notebook.add(self.tab_sim, text=" 4. Call Console ")
-        self.notebook.add(self.tab_cert, text=" 5. Certificate ")
-
-        # Build each tab view
-        self.init_tab_phrases()
-        self.init_tab_keypad()
-        self.init_tab_message()
-        self.init_tab_sim()
-        self.init_tab_cert()
-
-    def add_xp(self, amount):
-        """Update learner experience points."""
-        self.xp_score += amount
-        self.xp_label.config(text=f"⚡ XP: {self.xp_score}")
-
-    # =========================================================================
-    # MODULE 1: PHRASE MATRIX & DRILL
-    # =========================================================================
-    def init_tab_phrases(self):
-        left_frame = tk.Frame(self.tab_phrases, bg="#0f172a", width=500)
-        left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-        right_frame = tk.Frame(self.tab_phrases, bg="#0f172a", width=380)
-        right_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-
-        # Title Left
-        tk.Label(left_frame, text="📖 Telephony Phrasebook", font=("Helvetica", 13, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(5, 10))
-
-        # Phrase List Box
-        for phrase in PHRASEBOOK:
-            item_frame = tk.Frame(left_frame, bg="#1e293b", relief="groove", borderwidth=1)
-            item_frame.pack(fill="x", pady=4, padx=5)
-
-            text_sub = tk.Frame(item_frame, bg="#1e293b")
-            text_sub.pack(side="left", fill="both", expand=True, padx=8, pady=6)
-
-            tk.Label(text_sub, text=f'"{phrase["target"]}"', font=("Helvetica", 10, "bold"),
-                     fg="#6366f1", bg="#1e293b", anchor="w", wraplength=380, justify="left").pack(anchor="w")
-            tk.Label(text_sub, text=phrase["translation"], font=("Helvetica", 8, "italic"),
-                     fg="#94a3b8", bg="#1e293b", anchor="w").pack(anchor="w")
-
-            btn_speak = tk.Button(item_frame, text="🔊 Play", font=("Helvetica", 8, "bold"),
-                                  bg="#334155", fg="white", activebackground=self.accent_indigo,
-                                  command=lambda t=phrase["target"]: self.tts.speak(t))
-            btn_speak.pack(side="right", padx=8)
-
-        # Right Classifier Drill
-        tk.Label(right_frame, text="🎯 Classifier Drill", font=("Helvetica", 13, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(5, 10))
-
-        quiz_box = tk.Frame(right_frame, bg="#1e293b", padding=15)
-        quiz_box.pack(fill="both", expand=True)
-
-        self.quiz_phrase_lbl = tk.Label(quiz_box, text="", font=("Helvetica", 11, "bold"),
-                                        fg=self.accent_amber, bg="#1e293b", wraplength=300, justify="center")
-        self.quiz_phrase_lbl.pack(pady=10)
-
-        btn_listen = tk.Button(quiz_box, text="🔊 Listen Audio", font=("Helvetica", 9, "bold"),
-                               bg="#334155", fg="white", command=self.speak_quiz_phrase)
-        btn_listen.pack(pady=5)
-
-        tk.Label(quiz_box, text="Select Purpose:", font=("Helvetica", 9, "bold"),
-                 fg="#94a3b8", bg="#1e293b").pack(anchor="w", pady=(10, 5))
-
-        options = [
-            ("Starting Call", "starting"),
-            ("Putting on Hold", "hold"),
-            ("Unavailability", "unavailable"),
-            ("Leaving Message", "message"),
-            ("Closing Call", "closing")
-        ]
-
-        for text, code in options:
-            btn = tk.Button(quiz_box, text=text, font=("Helvetica", 9, "bold"), bg="#0f172a", fg="white",
-                            activebackground=self.accent_indigo, anchor="w", padx=10,
-                            command=lambda c=code: self.check_quiz(c))
-            btn.pack(fill="x", pady=3)
-
-        self.quiz_feedback = tk.Label(quiz_box, text="", font=("Helvetica", 10, "bold"), bg="#1e293b")
-        self.quiz_feedback.pack(pady=10)
-
-        self.load_quiz_item()
-
-    def load_quiz_item(self):
-        item = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]
-        self.quiz_phrase_lbl.config(text=f'"{item["target"]}"')
-        self.quiz_feedback.config(text="")
-
-    def speak_quiz_phrase(self):
-        item = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]
-        self.tts.speak(item["target"])
-
-    def check_quiz(self, selected):
-        correct = PHRASEBOOK[self.quiz_idx % len(PHRASEBOOK)]["purpose"]
-        if selected == correct:
-            self.quiz_feedback.config(text="✅ Correct Purpose! (+15 XP)", fg=self.accent_green)
-            self.add_xp(15)
-            self.quiz_idx += 1
-            self.after(1200, self.load_quiz_item)
-        else:
-            self.quiz_feedback.config(text="❌ Incorrect. Try again!", fg="#ef4444")
-
-    # =========================================================================
-    # MODULE 2: DTMF KEYPAD & DICTATION
-    # =========================================================================
-    def init_tab_keypad(self):
-        keypad_frame = tk.Frame(self.tab_keypad, bg="#0f172a", padding=15)
-        keypad_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-        task_frame = tk.Frame(self.tab_keypad, bg="#0f172a", padding=15)
-        task_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-
-        # Dial display
-        self.dial_display = tk.Label(keypad_frame, text="---", font=("Consolas", 20, "bold"),
-                                     fg=self.accent_green, bg="#000000", width=14, height=2, relief="sunken")
-        self.dial_display.pack(pady=(0, 15))
-
-        # Keypad Grid
-        grid_frame = tk.Frame(keypad_frame, bg="#0f172a")
-        grid_frame.pack()
-
-        keys = [
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-            ['*', '0', '#']
-        ]
-
-        for r, row in enumerate(keys):
-            for c, key in enumerate(row):
-                btn = tk.Button(grid_frame, text=key, font=("Helvetica", 14, "bold"),
-                                width=4, height=1, bg="#1e293b", fg="white",
-                                activebackground=self.accent_indigo,
-                                command=lambda k=key: self.press_keypad(k))
-                btn.grid(row=r, column=c, padx=5, pady=5)
-
-        # Clear & Submit controls
-        ctrl_box = tk.Frame(keypad_frame, bg="#0f172a")
-        ctrl_box.pack(fill="x", pady=15)
-
-        tk.Button(ctrl_box, text="Clear", font=("Helvetica", 9, "bold"), bg="#ef4444", fg="white",
-                  command=self.clear_keypad).pack(side="left", expand=True, fill="x", padx=4)
-        tk.Button(ctrl_box, text="Submit Dial", font=("Helvetica", 9, "bold"), bg=self.accent_green, fg="white",
-                  command=self.verify_dictation).pack(side="right", expand=True, fill="x", padx=4)
-
-        # Task Frame Right
-        tk.Label(task_frame, text="🎧 Phone Number Dictation Challenge", font=("Helvetica", 12, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(0, 10))
-
-        tk.Label(task_frame, text="Listen to the audio phone number and dial it on the DTMF keypad.",
-                 font=("Helvetica", 9), fg="#94a3b8", bg="#0f172a", wraplength=300, justify="left").pack(anchor="w", pady=(0, 15))
-
-        tk.Button(task_frame, text="▶ Play Phone Number Audio", font=("Helvetica", 11, "bold"),
-                  bg=self.accent_indigo, fg="white", padding=10,
-                  command=self.play_dictation_audio).pack(fill="x", pady=10)
-
-        self.dictation_feedback = tk.Label(task_frame, text="", font=("Helvetica", 10, "bold"), bg="#0f172a")
-        self.dictation_feedback.pack(pady=15)
-
-        tk.Button(task_frame, text="Next Number Challenge ➔", font=("Helvetica", 9, "bold"),
-                  bg="#334155", fg="white", command=self.next_dictation_challenge).pack(anchor="e", pady=20)
-
-    def press_keypad(self, key):
-        ToneGenerator.play_dtmf(key)
-        if len(self.dialed_digits) < 12:
-            self.dialed_digits += key
-            self.dial_display.config(text=self.dialed_digits)
-
-    def clear_keypad(self):
-        self.dialed_digits = ""
-        self.dial_display.config(text="---")
-
-    def play_dictation_audio(self):
-        target = DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)]
-        # Read digits clearly
-        spoken = " ".join([c if c != '-' else " " for c in target])
-        self.tts.speak(f"The number is {spoken}")
-
-    def verify_dictation(self):
-        target = DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)].replace("-", "")
-        clean_dialed = self.dialed_digits.replace("-", "")
-
-        if clean_dialed == target:
-            self.dictation_feedback.config(text="🎉 Perfect Match! (+25 XP)", fg=self.accent_green)
-            self.add_xp(25)
-        else:
-            self.dictation_feedback.config(
-                text=f"❌ Incorrect. Target was {DICTATION_NUMBERS[self.dictation_idx % len(DICTATION_NUMBERS)]}",
-                fg="#ef4444"
-            )
-
-    def next_dictation_challenge(self):
-        self.dictation_idx += 1
-        self.clear_keypad()
-        self.dictation_feedback.config(text="")
-        self.play_dictation_audio()
-
-    # =========================================================================
-    # MODULE 3: MESSAGE PAD & RECEPTIONIST LOG
-    # =========================================================================
-    def init_tab_message(self):
-        audio_frame = tk.Frame(self.tab_message, bg="#0f172a", padding=15)
-        audio_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-        form_frame = tk.Frame(self.tab_message, bg="#1e293b", padding=15, relief="groove", borderwidth=1)
-        form_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-
-        # Left Audio Box
-        tk.Label(audio_frame, text="📼 Voicemail Inbox", font=("Helvetica", 13, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(anchor="w", pady=(0, 10))
-
-        tk.Button(audio_frame, text="▶ Play Voicemail Recording", font=("Helvetica", 10, "bold"),
-                  bg=self.accent_indigo, fg="white", padding=8,
-                  command=lambda: self.tts.speak(VOICEMAIL_DATA["transcript"])).pack(fill="x", pady=10)
-
-        tk.Label(audio_frame, text="Instructions:", font=("Helvetica", 9, "bold"),
-                 fg="#94a3b8", bg="#0f172a").pack(anchor="w", pady=(15, 2))
-        tk.Label(audio_frame, text="Listen to the voicemail recording and complete the receptionist log on the right.",
-                 font=("Helvetica", 9), fg="#94a3b8", bg="#0f172a", wraplength=250, justify="left").pack(anchor="w")
-
-        # Form Right
-        tk.Label(form_frame, text="📋 RECEPTIONIST MESSAGE LOG", font=("Helvetica", 11, "bold"),
-                 fg=self.accent_amber, bg="#1e293b").pack(anchor="w", pady=(0, 15))
-
-        tk.Label(form_frame, text="Caller Name:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
-        self.entry_caller = tk.Entry(form_frame, font=("Helvetica", 10), bg="#0f172a", fg="white", insertbackground="white")
-        self.entry_caller.pack(fill="x", pady=(2, 10))
-
-        tk.Label(form_frame, text="Callback Number:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
-        self.entry_callback = tk.Entry(form_frame, font=("Helvetica", 10), bg="#0f172a", fg="white", insertbackground="white")
-        self.entry_callback.pack(fill="x", pady=(2, 10))
-
-        tk.Label(form_frame, text="Call Purpose:", font=("Helvetica", 9, "bold"), fg="white", bg="#1e293b").pack(anchor="w")
-        self.purpose_var = tk.StringVar(value="")
-        p_combo = ttk.Combobox(form_frame, textvariable=self.purpose_var, state="readonly",
-                               values=["Select Purpose...", "Car ready for pickup", "Doctor Appointment", "Job Interview"])
-        p_combo.current(0)
-        p_combo.pack(fill="x", pady=(2, 15))
-
-        tk.Button(form_frame, text="Verify & Submit Message", font=("Helvetica", 10, "bold"),
-                  bg=self.accent_green, fg="white", padding=6,
-                  command=self.verify_message_pad).pack(fill="x", pady=10)
-
-        self.pad_feedback = tk.Label(form_frame, text="", font=("Helvetica", 10, "bold"), bg="#1e293b")
-        self.pad_feedback.pack(pady=5)
-
-    def verify_message_pad(self):
-        caller = self.entry_caller.get().strip().lower()
-        callback = self.entry_callback.get().strip()
-        purpose = self.purpose_var.get()
-
-        if caller == VOICEMAIL_DATA["caller"].lower() and callback == VOICEMAIL_DATA["number"] and purpose == "Car ready for pickup":
-            self.pad_feedback.config(text="✅ Log Form Verified! (+30 XP)", fg=self.accent_green)
-            self.add_xp(30)
-        else:
-            self.pad_feedback.config(text="❌ Details mismatch. Listen to audio again!", fg="#ef4444")
-
-    # =========================================================================
-    # MODULE 4: CALL CONSOLE SIMULATOR
-    # =========================================================================
-    def init_tab_sim(self):
-        box = tk.Frame(self.tab_sim, bg="#0f172a", padding=20)
-        box.pack(fill="both", expand=True, padx=20, pady=20)
-
-        tk.Label(box, text="🎛️ Interactive Switchboard Simulator", font=("Helvetica", 14, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(pady=(0, 10))
-
-        # Dialogue Screen
-        self.sim_screen = tk.Label(box, text='Press "Start Call Simulation" to establish connection...',
-                                   font=("Consolas", 11, "bold"), fg=self.accent_amber, bg="#000000",
-                                   height=4, wraplength=700, relief="sunken", padding=10)
-        self.sim_screen.pack(fill="x", pady=10)
-
-        # Action Buttons
-        ctrl_box = tk.Frame(box, bg="#0f172a")
-        ctrl_box.pack(fill="x", pady=10)
-
-        self.btn_start_call = tk.Button(ctrl_box, text="📞 Start Call Simulation", font=("Helvetica", 10, "bold"),
-                                        bg=self.accent_green, fg="white", padding=8,
-                                        command=self.start_sim)
-        self.btn_start_call.pack(side="left", padx=5)
-
-        self.options_frame = tk.Frame(box, bg="#1e293b", padding=10)
-        self.options_frame.pack(fill="both", expand=True, pady=10)
-
-    def start_sim(self):
-        ToneGenerator.play_dtmf('2')
-        self.sim_step = 0
-        self.render_sim_step()
-
-    def render_sim_step(self):
-        # Clear previous options
-        for widget in self.options_frame.winfo_children():
-            widget.destroy()
-
-        if self.sim_step < 0 or self.sim_step >= len(SIMULATION_TREE):
-            self.sim_screen.config(text="[Call Ended / Disconnected]")
-            return
-
-        current = SIMULATION_TREE[self.sim_step]
-        self.sim_screen.config(text=f'{current["speaker"]}: "{current["text"]}"')
-        self.tts.speak(current["text"])
-
-        if not current["options"]:
-            tk.Label(self.options_frame, text="🎉 Conversation finished successfully! (+40 XP)",
-                     font=("Helvetica", 11, "bold"), fg=self.accent_green, bg="#1e293b").pack(pady=20)
-            self.add_xp(40)
-            return
-
-        tk.Label(self.options_frame, text="Choose Your Response:", font=("Helvetica", 9, "bold"),
-                 fg="#94a3b8", bg="#1e293b").pack(anchor="w", pady=(0, 5))
-
-        for opt in current["options"]:
-            btn = tk.Button(self.options_frame, text=f'"{opt["text"]}"', font=("Helvetica", 9, "bold"),
-                            bg="#0f172a", fg="white", activebackground=self.accent_indigo,
-                            anchor="w", padding=8, command=lambda o=opt: self.select_sim_opt(o))
-            btn.pack(fill="x", pady=3)
-
-    def select_sim_opt(self, opt):
-        self.tts.speak(opt["text"])
-        self.sim_step = opt["next"]
-        self.after(1400, self.render_sim_step)
-
-    # =========================================================================
-    # MODULE 5: CERTIFICATE GENERATOR
-    # =========================================================================
-    def init_tab_cert(self):
-        box = tk.Frame(self.tab_cert, bg="#0f172a", padding=20)
-        box.pack(fill="both", expand=True, padx=20, pady=20)
-
-        tk.Label(box, text="🎓 Learner Passport & Completion Certificate", font=("Helvetica", 14, "bold"),
-                 fg=self.text_light, bg="#0f172a").pack(pady=(0, 10))
-
-        tk.Label(box, text="Student Name:", font=("Helvetica", 10, "bold"), fg="white", bg="#0f172a").pack()
-        self.entry_student_name = tk.Entry(box, font=("Helvetica", 12, "bold"), bg="#1e293b", fg="white",
-                                           insertbackground="white", justify="center", width=25)
-        self.entry_student_name.insert(0, "Alex Johnson")
-        self.entry_student_name.pack(pady=5)
-
-        tk.Button(box, text="📄 Export Printable Certificate (HTML)", font=("Helvetica", 11, "bold"),
-                  bg=self.accent_indigo, fg="white", padding=10,
-                  command=self.export_certificate).pack(pady=20)
-
-    def export_certificate(self):
-        name = self.entry_student_name.get().strip() or "Student"
-        date_str = datetime.now().strftime("%B %d, %Y")
-
-        html_content = f"""<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>A1 Telephony Certificate - {name}</title>
-    <style>
-        body {{ font-family: 'Helvetica Neue', Arial, sans-serif; background: #0f172a; color: #fff; padding: 40px; text-align: center; }}
-        .cert {{ border: 10px solid #6366f1; border-radius: 20px; padding: 50px; background: #1e293b; max-width: 700px; margin: 0 auto; }}
-        h1 {{ color: #f59e0b; font-size: 36px; margin-bottom: 10px; }}
-        h2 {{ font-size: 28px; color: #6366f1; border-bottom: 2px solid #334155; display: inline-block; padding-bottom: 5px; }}
-        p {{ font-size: 16px; color: #94a3b8; line-height: 1.6; }}
-        .footer {{ margin-top: 40px; font-size: 12px; color: #64748b; font-family: monospace; }}
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phone Calls &amp; Messages (A1 Practice)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Nunito & Inter for friendly, clear A1 readability -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Nunito', 'Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Custom micro-animations & smartphone polish */
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: 'Nunito', sans-serif;
+    }
+
+    @keyframes popIn {
+      0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes gentleShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    @keyframes soundWave {
+      0%, 100% { transform: scaleY(0.35); }
+      50% { transform: scaleY(1); }
+    }
+
+    @keyframes pulseRing {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 12px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    @keyframes starPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.35) rotate(12deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .animate-pop-in {
+      animation: popIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-shake {
+      animation: gentleShake 0.38s ease-in-out;
+    }
+
+    .animate-pulse-ring {
+      animation: pulseRing 2s infinite;
+    }
+
+    .animate-star-pop {
+      animation: starPop 0.45s ease-out;
+    }
+
+    .sound-bar {
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      border-radius: 9999px;
+      background-color: currentColor;
+      animation: soundWave 0.75s ease-in-out infinite;
+    }
+    .sound-bar:nth-child(2) { animation-delay: 0.15s; }
+    .sound-bar:nth-child(3) { animation-delay: 0.3s; }
+    .sound-bar:nth-child(4) { animation-delay: 0.45s; }
+
+    /* Custom subtle scrollbars inside phone chat containers */
+    .phone-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .phone-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .phone-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 9999px;
+    }
+  </style>
 </head>
-<body>
-    <div class="cert">
-        <p style="text-transform: uppercase; tracking: 2px; color: #10b981; font-weight: bold;">Official Certificate of Mastery</p>
-        <h1>A1 Telephony & Messaging Master</h1>
-        <p>This certifies that</p>
-        <h2>{name}</h2>
-        <p>has successfully completed all practical A1 English communication modules including Phone Etiquette, Number Dictation, Voicemail Logs, and Interactive Switchboard Roleplays.</p>
-        <p><strong>Total XP Earned: {self.xp_score} XP</strong></p>
-        <div class="footer">
-            DATE: {date_str} | VERIFICATION CODE: PY-TELEPHONY-A1-{self.xp_score}
-        </div>
+<body class="min-h-screen bg-gradient-to-br from-sky-100 via-indigo-50 to-emerald-50 text-slate-800 py-2 px-2 sm:py-6 sm:px-4 flex flex-col items-center justify-start">
+
+  <!-- Main Smartphone-Inspired App Shell -->
+  <div class="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl border-4 border-slate-800 overflow-hidden flex flex-col min-h-[88vh] sm:min-h-[820px] relative">
+
+    <!-- Smartphone Top Status Bar -->
+    <div class="bg-slate-900 text-white px-5 py-1.5 flex items-center justify-between text-xs font-medium select-none">
+      <div class="flex items-center gap-2">
+        <span id="status-clock">9:41</span>
+        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide">CEFR A1</span>
+      </div>
+      <!-- Phone Notch Pill -->
+      <div class="hidden sm:block w-24 h-3.5 bg-black rounded-full border border-slate-700"></div>
+      <div class="flex items-center gap-2 text-slate-200">
+        <i class="fa-solid fa-signal text-[11px]"></i>
+        <i class="fa-solid fa-wifi text-[11px]"></i>
+        <i class="fa-solid fa-battery-full text-emerald-400 text-xs"></i>
+      </div>
     </div>
-    <script>window.print();</script>
+
+    <!-- App Header: Title, Star Score Counter & Progress Bar -->
+    <header class="bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 text-white px-4 sm:px-6 pt-4 pb-4 shadow-md">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl shadow-inner shrink-0">
+            <i class="fa-solid fa-phone-volume"></i>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-extrabold leading-tight tracking-tight">Phone Calls &amp; Messages</h1>
+            <p class="text-xs sm:text-sm text-sky-100 font-medium">A1 English Speaking &amp; Listening Practice</p>
+          </div>
+        </div>
+
+        <!-- Star Score Badge -->
+        <div id="star-badge" class="bg-amber-400 text-slate-900 px-3.5 py-1.5 rounded-2xl font-display font-extrabold text-sm sm:text-base flex items-center gap-1.5 shadow-md shrink-0">
+          <i class="fa-solid fa-star text-amber-700"></i>
+          <span id="star-count">0</span>
+          <span class="text-xs font-bold text-slate-700">/ 20</span>
+        </div>
+      </div>
+
+      <!-- Top Overall Progress Bar -->
+      <div class="mt-3.5">
+        <div class="flex justify-between items-center text-[11px] font-semibold text-sky-100 mb-1">
+          <span id="progress-label">Your Progress: Beginner Caller</span>
+          <span id="progress-percent">0%</span>
+        </div>
+        <div class="w-full h-2.5 bg-black/25 rounded-full overflow-hidden p-0.5">
+          <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-300 to-emerald-300 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 4 Interactive Mode Tabs -->
+    <nav aria-label="Learning Modes" class="bg-slate-100 border-b border-slate-200 px-2 py-2 grid grid-cols-4 gap-1.5 sticky top-0 z-20">
+      <button onclick="switchTab('learn')" id="tab-learn" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+        <i class="fa-solid fa-book-open text-sm"></i>
+        <span>1. Learn</span>
+      </button>
+      <button onclick="switchTab('order')" id="tab-order" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+        <i class="fa-solid fa-arrow-down-1-9 text-sm"></i>
+        <span>2. Build Call</span>
+      </button>
+      <button onclick="switchTab('roleplay')" id="tab-roleplay" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+        <i class="fa-solid fa-headset text-sm"></i>
+        <span>3. Roleplay</span>
+      </button>
+      <button onclick="switchTab('voicemail')" id="tab-voicemail" class="tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all">
+        <i class="fa-solid fa-voicemail text-sm"></i>
+        <span>4. Voicemail</span>
+      </button>
+    </nav>
+
+    <!-- Non-Blocking Toast Banner for Audio & Rewards -->
+    <div id="toast-container" class="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-sm px-4"></div>
+
+    <!-- Main Dynamic Content Viewport -->
+    <main id="app-content" class="flex-1 p-4 sm:p-6 bg-slate-50/70 overflow-y-auto">
+      <!-- Rendered dynamically by JS -->
+    </main>
+
+    <!-- Smartphone Bottom Home Indicator -->
+    <footer class="bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-between text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Tip: Tap any <strong>Listen</strong> button to hear clear English!</span>
+      </div>
+      <button onclick="resetProgressModal()" class="text-slate-400 hover:text-rose-600 font-semibold underline transition">
+        Reset
+      </button>
+    </footer>
+
+    <!-- Custom Non-Blocking Confirmation Modal (No window.confirm used) -->
+    <div id="reset-modal" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-xs z-40 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 animate-pop-in text-center">
+        <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3">
+          <i class="fa-solid fa-rotate-left"></i>
+        </div>
+        <h3 class="text-lg font-extrabold text-slate-800">Restart Practice?</h3>
+        <p class="text-sm text-slate-600 mt-1">This will reset your stars and progress back to 0 so you can practice again.</p>
+        <div class="mt-5 flex gap-2.5">
+          <button onclick="closeResetModal()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+            Cancel
+          </button>
+          <button onclick="confirmResetApp()" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition shadow-sm">
+            Yes, Restart
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. CEFR A1 CURRICULUM DATA
+       ========================================================================== */
+
+    // Mode 1: Phrasebook & Audio Data (4 categories, 12 key A1 phrases)
+    const PHRASEBOOK_CATEGORIES = [
+      {
+        id: 'starting',
+        title: 'Starting a Call',
+        icon: 'fa-phone-flip',
+        color: 'blue',
+        badgeBg: 'bg-blue-100 text-blue-700',
+        borderClass: 'border-blue-200',
+        btnClass: 'bg-blue-600 hover:bg-blue-700 text-white',
+        phrases: [
+          {
+            id: 'p1',
+            text: 'Hello, Anna speaking.',
+            highlight: 'Anna',
+            hint: 'Say this when you answer your phone.',
+            voicePitch: 1.05
+          },
+          {
+            id: 'p2',
+            text: 'Hi, could I speak to David, please?',
+            highlight: 'David',
+            hint: 'Ask politely for the person you want.',
+            voicePitch: 0.95
+          },
+          {
+            id: 'p3',
+            text: 'Just a moment, please.',
+            highlight: null,
+            hint: 'Ask the caller to wait a short time.',
+            voicePitch: 1.05
+          }
+        ]
+      },
+      {
+        id: 'unavailable',
+        title: 'Person Not Available',
+        icon: 'fa-user-clock',
+        color: 'amber',
+        badgeBg: 'bg-amber-100 text-amber-800',
+        borderClass: 'border-amber-200',
+        btnClass: 'bg-amber-500 hover:bg-amber-600 text-slate-900',
+        phrases: [
+          {
+            id: 'p4',
+            text: "I'm sorry, she isn't here right now.",
+            highlight: null,
+            hint: 'Say this when the person is out.',
+            voicePitch: 1.05
+          },
+          {
+            id: 'p5',
+            text: "He's at work at the moment.",
+            highlight: null,
+            hint: 'Tell the caller where the person is.',
+            voicePitch: 0.95
+          },
+          {
+            id: 'p6',
+            text: "I'm sorry, he's busy right now.",
+            highlight: null,
+            hint: 'Say this when the person cannot talk.',
+            voicePitch: 1.05
+          }
+        ]
+      },
+      {
+        id: 'messages',
+        title: 'Taking & Leaving Messages',
+        icon: 'fa-envelope-open-text',
+        color: 'emerald',
+        badgeBg: 'bg-emerald-100 text-emerald-800',
+        borderClass: 'border-emerald-200',
+        btnClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+        phrases: [
+          {
+            id: 'p7',
+            text: 'Can I take a message?',
+            highlight: null,
+            hint: 'Offer to write down information for someone.',
+            voicePitch: 1.05
+          },
+          {
+            id: 'p8',
+            text: 'Can I leave a message?',
+            highlight: null,
+            hint: 'Ask to leave information for someone.',
+            voicePitch: 0.95
+          },
+          {
+            id: 'p9',
+            text: 'Please ask him to call me back.',
+            highlight: null,
+            hint: 'Ask the person to phone you later.',
+            voicePitch: 0.95
+          },
+          {
+            id: 'p10',
+            text: 'My phone number is 555-0192.',
+            highlight: '555-0192',
+            hint: 'Give your number clearly so they can call you.',
+            voicePitch: 0.95
+          }
+        ]
+      },
+      {
+        id: 'ending',
+        title: 'Ending a Call',
+        icon: 'fa-phone-slash',
+        color: 'purple',
+        badgeBg: 'bg-purple-100 text-purple-800',
+        borderClass: 'border-purple-200',
+        btnClass: 'bg-purple-600 hover:bg-purple-700 text-white',
+        phrases: [
+          {
+            id: 'p11',
+            text: 'Thank you for your help.',
+            highlight: null,
+            hint: 'Be polite before you finish the call.',
+            voicePitch: 0.95
+          },
+          {
+            id: 'p12',
+            text: 'Thank you. Goodbye.',
+            highlight: null,
+            hint: 'Say goodbye politely at the end.',
+            voicePitch: 1.05
+          }
+        ]
+      }
+    ];
+
+    // Mode 2: Dialogue Ordering Scenarios (2 scenarios)
+    const ORDER_SCENARIOS = [
+      {
+        id: 'scA',
+        title: "Scenario A: Calling a Friend's House",
+        subtitle: "Tom calls his friend Sara's house. Put the 6 lines in the right order.",
+        contactName: "Sara's House",
+        contactAvatar: "🏡",
+        lines: [
+          {
+            step: 0,
+            speaker: 'Mrs. Lee',
+            side: 'left',
+            text: 'Hello, 555-0148. Mrs. Lee speaking.',
+            tip: 'First, Mrs. Lee answers the ringing phone.'
+          },
+          {
+            step: 1,
+            speaker: 'Tom',
+            side: 'right',
+            text: "Hello, Mrs. Lee. It's Tom. Could I speak to Sara, please?",
+            tip: 'Next, Tom says hello and asks to speak to Sara.'
+          },
+          {
+            step: 2,
+            speaker: 'Mrs. Lee',
+            side: 'left',
+            text: "Hi, Tom! I'm sorry, Sara isn't here right now.",
+            tip: 'Mrs. Lee explains that Sara is not at home.'
+          },
+          {
+            step: 3,
+            speaker: 'Tom',
+            side: 'right',
+            text: 'Oh, okay. Can I leave a message?',
+            tip: 'Because Sara is out, Tom asks to leave a message.'
+          },
+          {
+            step: 4,
+            speaker: 'Mrs. Lee',
+            side: 'left',
+            text: 'Yes, of course. Go ahead.',
+            tip: 'Mrs. Lee says yes so Tom can give his message.'
+          },
+          {
+            step: 5,
+            speaker: 'Tom',
+            side: 'right',
+            text: 'Please ask her to call me back. Thank you. Goodbye!',
+            tip: 'Finally, Tom leaves his message and says goodbye.'
+          }
+        ]
+      },
+      {
+        id: 'scB',
+        title: 'Scenario B: Calling an Office',
+        subtitle: 'Elena calls Green Office to talk to Mr. Park. Put the call in order.',
+        contactName: 'Green Office',
+        contactAvatar: '🏢',
+        lines: [
+          {
+            step: 0,
+            speaker: 'Receptionist',
+            side: 'left',
+            text: 'Good morning, Green Office. How can I help you?',
+            tip: 'First, the receptionist greets the caller.'
+          },
+          {
+            step: 1,
+            speaker: 'Elena',
+            side: 'right',
+            text: 'Good morning. Could I speak to Mr. Park, please?',
+            tip: 'Elena greets the receptionist and asks for Mr. Park.'
+          },
+          {
+            step: 2,
+            speaker: 'Receptionist',
+            side: 'left',
+            text: "I'm sorry, he's in a meeting right now. Can I take a message?",
+            tip: 'Mr. Park is busy, so the receptionist offers to take a message.'
+          },
+          {
+            step: 3,
+            speaker: 'Elena',
+            side: 'right',
+            text: 'Yes, please. My name is Elena, and my number is 555-0192.',
+            tip: 'Elena says yes and gives her name and phone number.'
+          },
+          {
+            step: 4,
+            speaker: 'Receptionist',
+            side: 'left',
+            text: '555-0192. Okay, I will tell him.',
+            tip: 'The receptionist repeats the number to check it.'
+          },
+          {
+            step: 5,
+            speaker: 'Elena',
+            side: 'right',
+            text: 'Thank you very much. Goodbye.',
+            tip: 'Finally, Elena says thank you and goodbye.'
+          }
+        ]
+      }
+    ];
+
+    // Mode 3: Interactive Call Simulator (2 playable roleplay missions)
+    const ROLEPLAY_MISSIONS = [
+      {
+        id: 'm1',
+        title: 'Mission 1: Invite Leo to the Cinema',
+        goal: "Call your friend Leo's house. Invite him to the cinema at 7:00, and leave a message with his sister Mia.",
+        contactName: 'Mia (Leo’s Sister)',
+        contactRole: "Leo's Home • +1 555-0134",
+        avatarEmoji: '👧🏽',
+        accentColor: 'indigo',
+        steps: [
+          {
+            incoming: 'Hello, 555-0134. Mia speaking.',
+            prompt: 'Mia answers the phone. How do you start the call?',
+            options: [
+              {
+                text: "Hi Mia, it's Alex. Could I speak to Leo, please?",
+                correct: true,
+                feedback: "Great job! Saying your name and using 'Could I speak to..., please?' is polite and clear."
+              },
+              {
+                text: 'Give the phone to Leo now.',
+                correct: false,
+                feedback: "Too direct! In English, we start with 'Hi' and ask politely: 'Could I speak to Leo, please?'"
+              },
+              {
+                text: 'Thank you. Goodbye.',
+                correct: false,
+                feedback: "Oops! You just started the call. Don't say goodbye yet!"
+              }
+            ]
+          },
+          {
+            incoming: "Hi Alex! I'm sorry, Leo isn't here right now. He's at the supermarket.",
+            prompt: 'Leo is not home. What do you say next?',
+            options: [
+              {
+                text: 'Just a moment, please.',
+                correct: false,
+                feedback: "'Just a moment, please' means 'Please wait.' You are calling Leo, so ask to leave a message."
+              },
+              {
+                text: 'Oh, okay. Can I leave a message for him?',
+                correct: true,
+                feedback: "Awesome! 'Can I leave a message?' is the best phrase when someone is out."
+              },
+              {
+                text: 'Can I take a message?',
+                correct: false,
+                feedback: "Almost! Mia is at home, so she 'takes' a message. You want to 'leave' a message."
+              }
+            ]
+          },
+          {
+            incoming: "Sure! What's your message?",
+            prompt: 'Tell Mia your message about the cinema.',
+            options: [
+              {
+                text: "Please ask him to call me back. Let's go to the cinema at 7 o'clock.",
+                correct: true,
+                feedback: 'Clear and friendly! You gave the plan and asked Leo to call you back.'
+              },
+              {
+                text: 'I am sitting in my kitchen.',
+                correct: false,
+                feedback: 'That does not tell Leo about the cinema! Tell Mia your invitation for Leo.'
+              },
+              {
+                text: 'Could I speak to Alex, please?',
+                correct: false,
+                feedback: 'You are Alex! Tell Mia the message you want to leave for Leo.'
+              }
+            ]
+          },
+          {
+            incoming: 'Okay! Cinema at 7 o’clock. I will tell him when he gets home.',
+            prompt: 'Mia has your message. How do you finish the call?',
+            options: [
+              {
+                text: 'Hello, Alex speaking.',
+                correct: false,
+                feedback: 'We only say that at the beginning when we answer a phone call.'
+              },
+              {
+                text: 'Thanks, Mia! Talk to you later. Goodbye.',
+                correct: true,
+                feedback: 'Perfect ending! Polite, warm, and natural A1 English.'
+              },
+              {
+                text: "I'm sorry, he isn't here right now.",
+                correct: false,
+                feedback: 'That is what Mia said earlier! Now it is time to say thank you and goodbye.'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'm2',
+        title: "Mission 2: Dr. Brown's Clinic",
+        goal: "Call Dr. Brown's clinic to change your appointment to Friday. Leave your name and phone number.",
+        contactName: "Dr. Brown's Clinic",
+        contactRole: 'Reception • +1 555-0177',
+        avatarEmoji: '🏥',
+        accentColor: 'teal',
+        steps: [
+          {
+            incoming: "Good afternoon, Dr. Brown's clinic. How can I help you?",
+            prompt: 'The receptionist answers. How do you reply politely?',
+            options: [
+              {
+                text: 'Good afternoon. Could I speak to Dr. Brown, please?',
+                correct: true,
+                feedback: "Polite and clear! Repeating 'Good afternoon' is a great way to start."
+              },
+              {
+                text: 'Hey! Who is this?',
+                correct: false,
+                feedback: "Too casual for a clinic, and the receptionist already said 'Dr. Brown's clinic'!"
+              },
+              {
+                text: 'My phone number is 555-0192. Bye.',
+                correct: false,
+                feedback: 'Slow down! First greet the receptionist and ask who you want to speak to.'
+              }
+            ]
+          },
+          {
+            incoming: "I'm sorry, Dr. Brown is with a patient right now. Can I take a message?",
+            prompt: 'The receptionist offers to take a message. Explain why you called.',
+            options: [
+              {
+                text: 'No, I am Dr. Brown.',
+                correct: false,
+                feedback: 'You are the patient calling the clinic! Say yes and explain about your appointment.'
+              },
+              {
+                text: 'Yes, please. I need to change my appointment to Friday.',
+                correct: true,
+                feedback: 'Excellent! Your message is short, polite, and easy to understand.'
+              },
+              {
+                text: 'Just a moment, please.',
+                correct: false,
+                feedback: 'Do not ask the receptionist to wait—tell them your message!'
+              }
+            ]
+          },
+          {
+            incoming: 'Certainly. What is your name and phone number, please?',
+            prompt: 'Give your name and phone number clearly.',
+            options: [
+              {
+                text: 'My name is Sam Taylor, and my number is 555-0192.',
+                correct: true,
+                feedback: 'Spot on! You gave both your name and phone number clearly.'
+              },
+              {
+                text: 'I like Fridays very much.',
+                correct: false,
+                feedback: 'The clinic needs your name and phone number so they can call you back!'
+              },
+              {
+                text: 'Can I take a message?',
+                correct: false,
+                feedback: 'You are leaving the message! Give your name and phone number.'
+              }
+            ]
+          },
+          {
+            incoming: 'Thank you, Sam. We will call you back soon to confirm Friday.',
+            prompt: 'Everything is done. End the phone call politely.',
+            options: [
+              {
+                text: 'Hi, could I speak to Dr. Brown?',
+                correct: false,
+                feedback: 'You already finished leaving your message! Now say thank you and goodbye.'
+              },
+              {
+                text: 'Okay, hurry up.',
+                correct: false,
+                feedback: 'That sounds rude. Always finish a call politely!'
+              },
+              {
+                text: 'Thank you very much for your help. Goodbye.',
+                correct: true,
+                feedback: 'Wonderful! Very polite and natural English.'
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // Mode 4A: Gap-Fill Voicemail Data
+    const VOICEMAIL_GAPS = {
+      wordBank: ['calling', 'message', 'number', 'back', 'speak', 'goodbye'],
+      segments: [
+        { type: 'text', value: 'Hello, Mr. Green. This is Maria ' },
+        { type: 'gap', index: 0, answer: 'calling' },
+        { type: 'text', value: '. I wanted to ' },
+        { type: 'gap', index: 1, answer: 'speak' },
+        { type: 'text', value: ' to you about our English homework. Could I leave a ' },
+        { type: 'gap', index: 2, answer: 'message' },
+        { type: 'text', value: '? Please call me ' },
+        { type: 'gap', index: 3, answer: 'back' },
+        { type: 'text', value: ' today. My phone ' },
+        { type: 'gap', index: 4, answer: 'number' },
+        { type: 'text', value: ' is 555-0184. Thank you. ' },
+        { type: 'gap', index: 5, answer: 'goodbye', capitalize: true },
+        { type: 'text', value: '!' }
+      ],
+      fullText: 'Hello, Mr. Green. This is Maria calling. I wanted to speak to you about our English homework. Could I leave a message? Please call me back today. My phone number is 555-0184. Thank you. Goodbye!'
+    };
+
+    /* ==========================================================================
+       2. APPLICATION STATE
+       ========================================================================== */
+    const TOTAL_MAX_STARS = 20;
+
+    let state = {
+      activeTab: 'learn',
+      stars: 0,
+      // Mode 1: Track which phrase IDs have been listened to & how many phrase-milestone stars awarded
+      listenedPhrases: new Set(),
+      learnStarsAwarded: 0, // max 4 (1 star per 3 phrases listened)
+
+      // Mode 2: Dialogue ordering
+      activeOrderScenarioIdx: 0,
+      orderProgress: {
+        scA: { placedSteps: [], scrambledOrder: [], solved: false, hintStep: null, lastWrongTip: '' },
+        scB: { placedSteps: [], scrambledOrder: [], solved: false, hintStep: null, lastWrongTip: '' }
+      },
+      playingDialogueId: null,
+      activeDialogueLineIdx: -1,
+
+      // Mode 3: Roleplay simulator
+      activeMissionIdx: 0,
+      missionState: {
+        m1: { stepIdx: 0, transcript: [], selectedOptionIdx: null, lastFeedback: null, completed: false, seconds: 0 },
+        m2: { stepIdx: 0, transcript: [], selectedOptionIdx: null, lastFeedback: null, completed: false, seconds: 0 }
+      },
+
+      // Mode 4: Voicemail lab
+      gapUserAnswers: [null, null, null, null, null, null],
+      activeGapIndex: 0,
+      gapChecked: false,
+      gapSolved: false,
+      customVm: {
+        recipient: 'Sarah',
+        callerName: 'Alex',
+        message: "Let's meet at the café at 4 o'clock.",
+        phone: '555-0192',
+        listenedRewarded: false
+      }
+    };
+
+    let callTimerInterval = null;
+    let currentlySpeakingId = null;
+
+    /* ==========================================================================
+       3. AUDIO & SPEECH SYNTHESIS HELPERS
+       ========================================================================== */
+
+    // Subtle Web Audio API UI sound effects (no external audio URLs)
+    function playUiTone(type = 'pop') {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (type === 'success') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.09); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.18); // G5
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        } else if (type === 'error') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.setValueAtTime(195, now + 0.12);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.start(now);
+          osc.stop(now + 0.27);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        }
+      } catch (e) {
+        // Ignore audio context errors on restricted devices
+      }
+    }
+
+    // Pick the clearest English voice available
+    function getBestEnglishVoice() {
+      if (!('speechSynthesis' in window)) return null;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return null;
+      return (
+        voices.find(v => v.lang === 'en-US' && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha'))) ||
+        voices.find(v => v.lang.startsWith('en-US')) ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0]
+      );
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        getBestEnglishVoice();
+      };
+    }
+
+    /**
+     * Speak a phrase clearly at beginner speed (rate 0.9) using Web Speech API
+     */
+    function speakText(text, options = {}) {
+      const { rate = 0.9, pitch = 1.0, elementId = null, onEnd = null } = options;
+
+      if (!('speechSynthesis' in window)) {
+        showToast('Audio not supported in this browser, read the text aloud!', 'info');
+        if (onEnd) onEnd();
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = getBestEnglishVoice();
+        if (voice) utterance.voice = voice;
+        utterance.lang = 'en-US';
+        utterance.rate = rate;
+        utterance.pitch = pitch;
+
+        currentlySpeakingId = elementId;
+        updateSpeakingVisuals();
+
+        utterance.onend = () => {
+          currentlySpeakingId = null;
+          updateSpeakingVisuals();
+          if (onEnd) onEnd();
+        };
+
+        utterance.onerror = () => {
+          currentlySpeakingId = null;
+          updateSpeakingVisuals();
+          if (onEnd) onEnd();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        currentlySpeakingId = null;
+        updateSpeakingVisuals();
+        if (onEnd) onEnd();
+      }
+    }
+
+    function updateSpeakingVisuals() {
+      document.querySelectorAll('[data-speak-id]').forEach(btn => {
+        const id = btn.getAttribute('data-speak-id');
+        const wave = btn.querySelector('.wave-indicator');
+        const icon = btn.querySelector('.static-icon');
+        if (id === currentlySpeakingId) {
+          if (wave) wave.classList.remove('hidden');
+          if (icon) icon.classList.add('hidden');
+        } else {
+          if (wave) wave.classList.add('hidden');
+          if (icon) icon.classList.remove('hidden');
+        }
+      });
+    }
+
+    /* ==========================================================================
+       4. REWARD STARS, PROGRESS BAR & TOASTS
+       ========================================================================== */
+
+    function awardStars(amount, reasonText) {
+      if (amount <= 0) return;
+      state.stars = Math.min(TOTAL_MAX_STARS, state.stars + amount);
+      playUiTone('success');
+
+      // Animate star badge
+      const badge = document.getElementById('star-badge');
+      if (badge) {
+        badge.classList.remove('animate-star-pop');
+        void badge.offsetWidth; // trigger reflow
+        badge.classList.add('animate-star-pop');
+      }
+
+      updateHeaderProgress();
+      showToast(`+${amount} Star${amount > 1 ? 's' : ''}! ${reasonText}`, 'star');
+    }
+
+    function updateHeaderProgress() {
+      const starEl = document.getElementById('star-count');
+      const barEl = document.getElementById('progress-bar');
+      const pctEl = document.getElementById('progress-percent');
+      const lblEl = document.getElementById('progress-label');
+
+      const pct = Math.round((state.stars / TOTAL_MAX_STARS) * 100);
+      if (starEl) starEl.textContent = state.stars;
+      if (barEl) barEl.style.width = `${pct}%`;
+      if (pctEl) pctEl.textContent = `${pct}%`;
+
+      if (lblEl) {
+        if (pct === 0) lblEl.textContent = 'Level: Beginner Caller';
+        else if (pct < 40) lblEl.textContent = 'Level: Polite Listener';
+        else if (pct < 75) lblEl.textContent = 'Level: Confident Caller';
+        else if (pct < 100) lblEl.textContent = 'Level: Message Pro';
+        else lblEl.textContent = '🏆 A1 Phone Superstar!';
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let colors = 'bg-slate-900 text-white border-slate-700';
+      let icon = '<i class="fa-solid fa-circle-info text-sky-400"></i>';
+
+      if (type === 'star') {
+        colors = 'bg-amber-400 text-slate-950 border-amber-500 font-extrabold';
+        icon = '<i class="fa-solid fa-star text-amber-800"></i>';
+      } else if (type === 'success') {
+        colors = 'bg-emerald-600 text-white border-emerald-500 font-bold';
+        icon = '<i class="fa-solid fa-circle-check text-emerald-200"></i>';
+      } else if (type === 'warn') {
+        colors = 'bg-rose-600 text-white border-rose-500 font-bold';
+        icon = '<i class="fa-solid fa-lightbulb text-amber-200"></i>';
+      }
+
+      toast.className = `px-4 py-2.5 rounded-2xl shadow-xl border text-xs sm:text-sm flex items-center gap-2 animate-pop-in ${colors}`;
+      toast.innerHTML = `${icon}<span>${message}</span>`;
+
+      container.innerHTML = '';
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.25s ease';
+          setTimeout(() => toast.remove(), 260);
+        }
+      }, 2400);
+    }
+
+    /* ==========================================================================
+       5. TAB NAVIGATION & INITIALIZATION
+       ========================================================================== */
+
+    function initScrambledScenarios() {
+      ORDER_SCENARIOS.forEach(sc => {
+        const indices = sc.lines.map((_, i) => i);
+        // Shuffle until not already solved
+        let shuffled = [...indices];
+        do {
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+        } while (shuffled.every((val, idx) => val === idx));
+
+        state.orderProgress[sc.id] = {
+          placedSteps: [],
+          scrambledOrder: shuffled,
+          solved: false,
+          hintStep: null,
+          lastWrongTip: ''
+        };
+      });
+    }
+
+    function switchTab(tabName) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      state.playingDialogueId = null;
+      state.activeTab = tabName;
+
+      // Manage roleplay call timer
+      if (tabName === 'roleplay') {
+        startCallTimer();
+      } else {
+        stopCallTimer();
+      }
+
+      // Update tab button styles
+      ['learn', 'order', 'roleplay', 'voicemail'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (!btn) return;
+        if (t === tabName) {
+          btn.className = 'tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-600 text-white shadow-sm transition-all';
+        } else {
+          btn.className = 'tab-btn flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 px-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-white hover:text-indigo-600 transition-all';
+        }
+      });
+
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      const container = document.getElementById('app-content');
+      if (!container) return;
+
+      if (state.activeTab === 'learn') {
+        container.innerHTML = renderLearnView();
+      } else if (state.activeTab === 'order') {
+        container.innerHTML = renderOrderView();
+      } else if (state.activeTab === 'roleplay') {
+        container.innerHTML = renderRoleplayView();
+      } else if (state.activeTab === 'voicemail') {
+        container.innerHTML = renderVoicemailView();
+      }
+      updateSpeakingVisuals();
+    }
+
+    /* ==========================================================================
+       6. MODE 1: PHRASEBOOK & AUDIO (LEARN)
+       ========================================================================== */
+
+    function handleListenPhrase(phraseId) {
+      let targetPhrase = null;
+      PHRASEBOOK_CATEGORIES.forEach(cat => {
+        const found = cat.phrases.find(p => p.id === phraseId);
+        if (found) targetPhrase = found;
+      });
+      if (!targetPhrase) return;
+
+      speakText(targetPhrase.text, {
+        rate: 0.9,
+        pitch: targetPhrase.voicePitch || 1.0,
+        elementId: phraseId
+      });
+
+      if (!state.listenedPhrases.has(phraseId)) {
+        state.listenedPhrases.add(phraseId);
+        // Award 1 star for every 3 phrases practiced (up to 4 stars)
+        const possibleStars = Math.min(4, Math.floor(state.listenedPhrases.size / 3));
+        if (possibleStars > state.learnStarsAwarded) {
+          const diff = possibleStars - state.learnStarsAwarded;
+          state.learnStarsAwarded = possibleStars;
+          awardStars(diff, `Practiced ${state.listenedPhrases.size}/12 phrases!`);
+        }
+        renderCurrentView();
+      }
+    }
+
+    function formatPhraseWithHighlight(phrase) {
+      if (!phrase.highlight) return phrase.text;
+      return phrase.text.replace(
+        phrase.highlight,
+        `<span class="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-md font-extrabold">${phrase.highlight}</span>`
+      );
+    }
+
+    function renderLearnView() {
+      const listenedCount = state.listenedPhrases.size;
+      const totalPhrases = 12;
+
+      let categoriesHtml = PHRASEBOOK_CATEGORIES.map(cat => {
+        const cardsHtml = cat.phrases.map(p => {
+          const isListened = state.listenedPhrases.has(p.id);
+          return `
+            <div class="bg-white rounded-2xl p-3.5 sm:p-4 border ${isListened ? 'border-emerald-300 bg-emerald-50/20' : cat.borderClass} shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
+                    "${formatPhraseWithHighlight(p)}"
+                  </p>
+                  ${isListened ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full"><i class="fa-solid fa-check"></i> Heard</span>' : ''}
+                </div>
+                <p class="text-xs sm:text-sm text-slate-500 flex items-center gap-1.5">
+                  <i class="fa-regular fa-lightbulb text-amber-500"></i>
+                  <span>${p.hint}</span>
+                </p>
+              </div>
+
+              <button
+                onclick="handleListenPhrase('${p.id}')"
+                data-speak-id="${p.id}"
+                aria-label="Listen to ${p.text}"
+                class="${cat.btnClass} shrink-0 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs active:scale-95 transition min-w-[106px]"
+              >
+                <span class="static-icon"><i class="fa-solid fa-volume-high"></i></span>
+                <span class="wave-indicator hidden inline-flex items-end gap-0.5 h-3.5">
+                  <span class="sound-bar"></span>
+                  <span class="sound-bar"></span>
+                  <span class="sound-bar"></span>
+                </span>
+                <span>Listen</span>
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <section class="mb-6">
+            <div class="flex items-center gap-2.5 mb-2.5">
+              <span class="w-8 h-8 rounded-xl ${cat.badgeBg} flex items-center justify-center text-sm shadow-2xs">
+                <i class="fa-solid ${cat.icon}"></i>
+              </span>
+              <h3 class="font-display font-extrabold text-base sm:text-lg text-slate-800">${cat.title}</h3>
+            </div>
+            <div class="space-y-2.5">
+              ${cardsHtml}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      return `
+        <div class="animate-pop-in">
+          <!-- Mode Intro Card -->
+          <div class="bg-white rounded-2xl p-4 border border-indigo-100 shadow-xs mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="font-display font-extrabold text-lg text-slate-800">Phone Phrasebook</h2>
+              <p class="text-xs sm:text-sm text-slate-600">Tap <strong>Listen</strong> on each phrase to hear slow, clear English (0.9x speed).</p>
+            </div>
+            <div class="bg-indigo-50 text-indigo-800 px-3.5 py-2 rounded-xl text-xs font-extrabold border border-indigo-100 shrink-0 text-center">
+              Heard: ${listenedCount} / ${totalPhrases} Phrases
+            </div>
+          </div>
+
+          ${categoriesHtml}
+
+          <!-- Step-by-Step Progression Button -->
+          <div class="mt-6 pt-4 border-t border-slate-200 flex justify-end">
+            <button onclick="switchTab('order')" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-md flex items-center justify-center gap-2 transition active:scale-95">
+              <span>Next: Build the Call</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       7. MODE 2: DIALOGUE ORDERING (BUILD THE CALL)
+       ========================================================================== */
+
+    function selectOrderScenario(idx) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      state.playingDialogueId = null;
+      state.activeOrderScenarioIdx = idx;
+      renderCurrentView();
+    }
+
+    function placeOrderLine(lineStepIdx) {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      const prog = state.orderProgress[sc.id];
+      if (prog.solved) return;
+
+      const expectedStep = prog.placedSteps.length;
+      prog.hintStep = null;
+
+      if (lineStepIdx === expectedStep) {
+        // Correct chronological placement!
+        prog.placedSteps.push(lineStepIdx);
+        prog.lastWrongTip = '';
+        playUiTone('pop');
+
+        const lineObj = sc.lines[lineStepIdx];
+        speakText(lineObj.text, {
+          rate: 0.92,
+          pitch: lineObj.side === 'left' ? 1.08 : 0.94
+        });
+
+        // Check if all 6 lines placed
+        if (prog.placedSteps.length === sc.lines.length) {
+          prog.solved = true;
+          awardStars(3, `${sc.title} solved!`);
+        }
+      } else {
+        // Incorrect order — gentle feedback & shake
+        playUiTone('error');
+        const expectedLine = sc.lines[expectedStep];
+        prog.lastWrongTip = `Not quite! ${expectedLine.tip}`;
+        showToast('Wrong order! Check the hint below.', 'warn');
+      }
+
+      renderCurrentView();
+    }
+
+    function undoOrderLine() {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      const prog = state.orderProgress[sc.id];
+      if (prog.solved || prog.placedSteps.length === 0) return;
+
+      prog.placedSteps.pop();
+      prog.lastWrongTip = '';
+      prog.hintStep = null;
+      playUiTone('pop');
+      renderCurrentView();
+    }
+
+    function showOrderHint() {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      const prog = state.orderProgress[sc.id];
+      if (prog.solved) return;
+
+      const expectedStep = prog.placedSteps.length;
+      prog.hintStep = expectedStep;
+      prog.lastWrongTip = `Hint: ${sc.lines[expectedStep].tip}`;
+      playUiTone('pop');
+      renderCurrentView();
+    }
+
+    function resetCurrentOrderScenario() {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      const prog = state.orderProgress[sc.id];
+      prog.placedSteps = [];
+      prog.lastWrongTip = '';
+      prog.hintStep = null;
+      // Keep solved star status if already earned, or allow replay cleanly
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      state.playingDialogueId = null;
+      renderCurrentView();
+    }
+
+    function playFullOrderedDialogue() {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      if (state.playingDialogueId === sc.id) {
+        // Stop playback
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        state.playingDialogueId = null;
+        state.activeDialogueLineIdx = -1;
+        renderCurrentView();
+        return;
+      }
+
+      state.playingDialogueId = sc.id;
+      let currentIndex = 0;
+
+      function speakNextLine() {
+        if (state.playingDialogueId !== sc.id || currentIndex >= sc.lines.length) {
+          state.playingDialogueId = null;
+          state.activeDialogueLineIdx = -1;
+          renderCurrentView();
+          return;
+        }
+
+        state.activeDialogueLineIdx = currentIndex;
+        renderCurrentView();
+
+        const line = sc.lines[currentIndex];
+        speakText(line.text, {
+          rate: 0.9,
+          pitch: line.side === 'left' ? 1.1 : 0.92,
+          onEnd: () => {
+            currentIndex++;
+            setTimeout(speakNextLine, 350);
+          }
+        });
+      }
+
+      speakNextLine();
+    }
+
+    function renderOrderView() {
+      const sc = ORDER_SCENARIOS[state.activeOrderScenarioIdx];
+      const prog = state.orderProgress[sc.id];
+
+      // Scenario selector pills
+      const selectorHtml = ORDER_SCENARIOS.map((item, idx) => {
+        const isActive = idx === state.activeOrderScenarioIdx;
+        const isDone = state.orderProgress[item.id].solved;
+        return `
+          <button onclick="selectOrderScenario(${idx})" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold border transition flex items-center justify-center gap-2 ${
+            isActive
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-300'
+          }">
+            <span>${item.contactAvatar}</span>
+            <span class="truncate">${idx === 0 ? 'Scenario A: Friend' : 'Scenario B: Office'}</span>
+            ${isDone ? '<i class="fa-solid fa-circle-check text-emerald-300"></i>' : ''}
+          </button>
+        `;
+      }).join('');
+
+      // Placed bubbles inside phone screen
+      const chatHtml = prog.placedSteps.length === 0
+        ? `
+          <div class="h-44 flex flex-col items-center justify-center text-center text-slate-400 px-4">
+            <i class="fa-regular fa-comments text-3xl mb-2 text-slate-300"></i>
+            <p class="text-xs sm:text-sm font-semibold">Tap the scrambled bubbles below in the right order to build the phone call!</p>
+          </div>
+        `
+        : prog.placedSteps.map((stepIdx, orderPos) => {
+            const line = sc.lines[stepIdx];
+            const isSpeakingThis = state.playingDialogueId === sc.id && state.activeDialogueLineIdx === orderPos;
+            const isLeft = line.side === 'left';
+            return `
+              <div class="flex flex-col ${isLeft ? 'items-start' : 'items-end'} animate-pop-in">
+                <span class="text-[11px] font-bold text-slate-500 mb-0.5 px-1">
+                  ${orderPos + 1}. ${line.speaker}
+                </span>
+                <div class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-medium shadow-2xs transition-all ${
+                  isLeft
+                    ? 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
+                    : 'bg-indigo-600 text-white rounded-tr-xs'
+                } ${isSpeakingThis ? 'ring-4 ring-amber-400 scale-[1.02]' : ''}">
+                  <div class="flex items-start justify-between gap-2">
+                    <span>${line.text}</span>
+                    <button onclick="speakText('${line.text.replace(/'/g, "\\'")}', { rate: 0.9, pitch: ${isLeft ? 1.08 : 0.94} })" aria-label="Listen to line" class="opacity-75 hover:opacity-100 mt-0.5 shrink-0">
+                      <i class="fa-solid fa-volume-high text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      // Remaining scrambled choices
+      const remainingSteps = prog.scrambledOrder.filter(stepIdx => !prog.placedSteps.includes(stepIdx));
+      const scrambledHtml = remainingSteps.map(stepIdx => {
+        const line = sc.lines[stepIdx];
+        const isHinted = prog.hintStep === stepIdx;
+        return `
+          <button
+            onclick="placeOrderLine(${stepIdx})"
+            class="w-full text-left p-3 rounded-2xl border-2 transition-all active:scale-[0.99] flex items-center justify-between gap-3 ${
+              isHinted
+                ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-300'
+                : 'bg-white border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 shadow-2xs'
+            }"
+          >
+            <div>
+              <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md mb-1 ${
+                line.side === 'left' ? 'bg-purple-100 text-purple-700' : 'bg-sky-100 text-sky-700'
+              }">
+                ${line.speaker}
+              </span>
+              <p class="text-xs sm:text-sm font-semibold text-slate-800">${line.text}</p>
+            </div>
+            <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-plus"></i>
+            </span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="animate-pop-in">
+          <!-- Scenario Switcher -->
+          <div class="flex gap-2 mb-4">
+            ${selectorHtml}
+          </div>
+
+          <div class="mb-3">
+            <h2 class="font-display font-extrabold text-lg text-slate-800">${sc.title}</h2>
+            <p class="text-xs sm:text-sm text-slate-600">${sc.subtitle}</p>
+          </div>
+
+          <!-- Phone Chat Screen Container -->
+          <div class="bg-slate-100 rounded-3xl border-2 border-slate-300 overflow-hidden shadow-inner mb-4">
+            <!-- Phone Mini Header -->
+            <div class="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <span class="text-lg">${sc.contactAvatar}</span>
+                <div>
+                  <p class="text-xs sm:text-sm font-bold leading-none">${sc.contactName}</p>
+                  <p class="text-[10px] text-emerald-400 font-semibold mt-0.5">Phone Transcript (${prog.placedSteps.length}/${sc.lines.length})</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                ${!prog.solved && prog.placedSteps.length > 0 ? `
+                  <button onclick="undoOrderLine()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition">
+                    <i class="fa-solid fa-rotate-left"></i> Undo
+                  </button>
+                ` : ''}
+                ${!prog.solved ? `
+                  <button onclick="showOrderHint()" class="bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition">
+                    <i class="fa-solid fa-lightbulb"></i> Hint
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="p-3.5 sm:p-4 space-y-3 max-h-80 overflow-y-auto phone-scroll">
+              ${chatHtml}
+            </div>
+          </div>
+
+          <!-- Supportive Tip / Error Banner -->
+          ${prog.lastWrongTip ? `
+            <div class="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-shake">
+              <i class="fa-solid fa-circle-exclamation text-amber-600 text-base shrink-0"></i>
+              <span>${prog.lastWrongTip}</span>
+            </div>
+          ` : ''}
+
+          <!-- Solved Banner OR Scrambled Bubbles -->
+          ${prog.solved ? `
+            <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-center space-y-3 animate-pop-in">
+              <div class="inline-flex items-center gap-2 bg-emerald-600 text-white text-xs font-extrabold px-3 py-1 rounded-full">
+                <i class="fa-solid fa-star text-amber-300"></i> Great Job! Dialogue Complete!
+              </div>
+              <p class="text-xs sm:text-sm text-emerald-900 font-medium">
+                Listen to the whole phone call from start to finish!
+              </p>
+              <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+                <button onclick="playFullOrderedDialogue()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-sm flex items-center justify-center gap-2 transition">
+                  <i class="fa-solid ${state.playingDialogueId === sc.id ? 'fa-stop' : 'fa-play'}"></i>
+                  <span>${state.playingDialogueId === sc.id ? 'Stop Audio' : 'Play Full Dialogue'}</span>
+                </button>
+                <button onclick="resetCurrentOrderScenario()" class="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs sm:text-sm px-4 py-3 rounded-xl transition">
+                  Practice Again
+                </button>
+              </div>
+            </div>
+          ` : `
+            <div>
+              <p class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+                Tap the next line in the call:
+              </p>
+              <div class="space-y-2">
+                ${scrambledHtml}
+              </div>
+            </div>
+          `}
+
+          <!-- Next Activity Navigation -->
+          <div class="mt-6 pt-4 border-t border-slate-200 flex justify-between items-center gap-2">
+            <button onclick="switchTab('learn')" class="text-slate-600 hover:text-indigo-600 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl transition">
+              <i class="fa-solid fa-arrow-left mr-1"></i> Phrasebook
+            </button>
+            <button onclick="switchTab('roleplay')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-md flex items-center gap-2 transition active:scale-95">
+              <span>Next: Call Simulator</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       8. MODE 3: INTERACTIVE CALL SIMULATOR (ROLEPLAY)
+       ========================================================================== */
+
+    function startCallTimer() {
+      stopCallTimer();
+      callTimerInterval = setInterval(() => {
+        const mission = ROLEPLAY_MISSIONS[state.activeMissionIdx];
+        const mState = state.missionState[mission.id];
+        if (!mState.completed) {
+          mState.seconds++;
+          const timerEl = document.getElementById('live-call-timer');
+          if (timerEl) timerEl.textContent = formatSeconds(mState.seconds);
+        }
+      }, 1000);
+    }
+
+    function stopCallTimer() {
+      if (callTimerInterval) {
+        clearInterval(callTimerInterval);
+        callTimerInterval = null;
+      }
+    }
+
+    function formatSeconds(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function initMissionIfNeeded(missionId) {
+      const mission = ROLEPLAY_MISSIONS.find(m => m.id === missionId);
+      const mState = state.missionState[missionId];
+      if (mState.transcript.length === 0 && mission) {
+        mState.transcript.push({
+          sender: 'other',
+          text: mission.steps[0].incoming
+        });
+      }
+    }
+
+    function selectRoleplayMission(idx) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      state.activeMissionIdx = idx;
+      const mission = ROLEPLAY_MISSIONS[idx];
+      initMissionIfNeeded(mission.id);
+      renderCurrentView();
+      // Speak the active incoming prompt if not completed
+      const mState = state.missionState[mission.id];
+      if (!mState.completed && mState.selectedOptionIdx === null) {
+        speakText(mission.steps[mState.stepIdx].incoming, { rate: 0.9, pitch: 1.06 });
+      }
+    }
+
+    function chooseRoleplayOption(optIdx) {
+      const mission = ROLEPLAY_MISSIONS[state.activeMissionIdx];
+      const mState = state.missionState[mission.id];
+      if (mState.completed) return;
+
+      const currentStep = mission.steps[mState.stepIdx];
+      const chosen = currentStep.options[optIdx];
+
+      mState.selectedOptionIdx = optIdx;
+      mState.lastFeedback = {
+        correct: chosen.correct,
+        text: chosen.feedback
+      };
+
+      if (chosen.correct) {
+        playUiTone('pop');
+        speakText(chosen.text, { rate: 0.92, pitch: 0.95 });
+        // Add user reply to transcript if not already added for this step
+        const expectedLen = mState.stepIdx * 2 + 1;
+        if (mState.transcript.length === expectedLen) {
+          mState.transcript.push({
+            sender: 'user',
+            text: chosen.text
+          });
+        }
+      } else {
+        playUiTone('error');
+      }
+
+      renderCurrentView();
+    }
+
+    function advanceRoleplayStep() {
+      const mission = ROLEPLAY_MISSIONS[state.activeMissionIdx];
+      const mState = state.missionState[mission.id];
+
+      if (mState.stepIdx + 1 < mission.steps.length) {
+        mState.stepIdx++;
+        mState.selectedOptionIdx = null;
+        mState.lastFeedback = null;
+        const nextIncoming = mission.steps[mState.stepIdx].incoming;
+        mState.transcript.push({
+          sender: 'other',
+          text: nextIncoming
+        });
+        renderCurrentView();
+        speakText(nextIncoming, { rate: 0.9, pitch: 1.06 });
+      } else {
+        // Mission finished!
+        const wasAlreadyCompleted = mState.completed;
+        mState.completed = true;
+        mState.selectedOptionIdx = null;
+        mState.lastFeedback = null;
+        if (!wasAlreadyCompleted) {
+          awardStars(3, `${mission.title} complete!`);
+        }
+        renderCurrentView();
+      }
+    }
+
+    function restartRoleplayMission() {
+      const mission = ROLEPLAY_MISSIONS[state.activeMissionIdx];
+      state.missionState[mission.id] = {
+        stepIdx: 0,
+        transcript: [{ sender: 'other', text: mission.steps[0].incoming }],
+        selectedOptionIdx: null,
+        lastFeedback: null,
+        completed: false,
+        seconds: 0
+      };
+      renderCurrentView();
+      speakText(mission.steps[0].incoming, { rate: 0.9, pitch: 1.06 });
+    }
+
+    function renderRoleplayView() {
+      const mission = ROLEPLAY_MISSIONS[state.activeMissionIdx];
+      initMissionIfNeeded(mission.id);
+      const mState = state.missionState[mission.id];
+      const currentStep = mission.steps[mState.stepIdx];
+
+      // Mission selector buttons
+      const missionTabs = ROLEPLAY_MISSIONS.map((m, idx) => {
+        const isActive = idx === state.activeMissionIdx;
+        const isDone = state.missionState[m.id].completed;
+        return `
+          <button onclick="selectRoleplayMission(${idx})" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold border transition flex items-center justify-center gap-2 ${
+            isActive
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-300'
+          }">
+            <span>${m.avatarEmoji}</span>
+            <span class="truncate">${idx === 0 ? 'Mission 1: Friend' : 'Mission 2: Clinic'}</span>
+            ${isDone ? '<i class="fa-solid fa-circle-check text-amber-300"></i>' : ''}
+          </button>
+        `;
+      }).join('');
+
+      // Transcript bubbles
+      const transcriptHtml = mState.transcript.map(msg => {
+        const isOther = msg.sender === 'other';
+        return `
+          <div class="flex flex-col ${isOther ? 'items-start' : 'items-end'} animate-pop-in">
+            <div class="max-w-[86%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-medium shadow-2xs ${
+              isOther
+                ? 'bg-slate-800 text-white border border-slate-700 rounded-tl-xs'
+                : 'bg-emerald-500 text-slate-950 font-semibold rounded-tr-xs'
+            }">
+              <div class="flex items-start gap-2">
+                <span>${msg.text}</span>
+                <button onclick="speakText('${msg.text.replace(/'/g, "\\'")}', { rate: 0.9, pitch: ${isOther ? 1.06 : 0.95} })" aria-label="Replay voice" class="opacity-80 hover:opacity-100 mt-0.5 shrink-0">
+                  <i class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Options or Completion Screen
+      let bottomInteractionHtml = '';
+      if (mState.completed) {
+        bottomInteractionHtml = `
+          <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-center space-y-2.5 animate-pop-in">
+            <div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xl mx-auto shadow-md">
+              <i class="fa-solid fa-phone-slash"></i>
+            </div>
+            <h3 class="font-display font-extrabold text-base sm:text-lg text-emerald-950">Call Ended — Great Job!</h3>
+            <p class="text-xs sm:text-sm text-emerald-800">
+              You finished <strong>${mission.title}</strong> politely and clearly!
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2 justify-center pt-1">
+              <button onclick="restartRoleplayMission()" class="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition">
+                <i class="fa-solid fa-rotate-right mr-1"></i> Call Again
+              </button>
+              ${state.activeMissionIdx === 0 ? `
+                <button onclick="selectRoleplayMission(1)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition">
+                  Try Mission 2 <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+              ` : `
+                <button onclick="switchTab('voicemail')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition">
+                  Next: Voicemail Lab <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      } else {
+        const isCorrectChosen = mState.lastFeedback && mState.lastFeedback.correct;
+        const optionsHtml = currentStep.options.map((opt, idx) => {
+          const isSelected = mState.selectedOptionIdx === idx;
+          let btnStyle = 'bg-white border-slate-200 hover:border-indigo-400 text-slate-800';
+          if (isSelected) {
+            btnStyle = opt.correct
+              ? 'bg-emerald-50 border-emerald-500 text-emerald-950 ring-2 ring-emerald-300'
+              : 'bg-rose-50 border-rose-400 text-rose-950 animate-shake';
+          }
+          return `
+            <button
+              onclick="chooseRoleplayOption(${idx})"
+              ${isCorrectChosen && !isSelected ? 'disabled' : ''}
+              class="w-full text-left p-3.5 rounded-2xl border-2 font-semibold text-xs sm:text-sm transition-all flex items-center justify-between gap-3 ${btnStyle} ${isCorrectChosen && !isSelected ? 'opacity-50' : ''}"
+            >
+              <span>${opt.text}</span>
+              <span class="shrink-0 text-base">
+                ${isSelected ? (opt.correct ? '<i class="fa-solid fa-circle-check text-emerald-600"></i>' : '<i class="fa-solid fa-circle-xmark text-rose-500"></i>') : '<i class="fa-regular fa-circle text-slate-300"></i>'}
+              </span>
+            </button>
+          `;
+        }).join('');
+
+        bottomInteractionHtml = `
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-extrabold uppercase tracking-wider text-indigo-700">
+                Step ${mState.stepIdx + 1} of ${mission.steps.length}: ${currentStep.prompt}
+              </p>
+            </div>
+
+            <div class="space-y-2">
+              ${optionsHtml}
+            </div>
+
+            ${mState.lastFeedback ? `
+              <div class="p-3.5 rounded-2xl border text-xs sm:text-sm animate-pop-in ${
+                mState.lastFeedback.correct
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                  : 'bg-rose-50 border-rose-300 text-rose-950'
+              }">
+                <p class="font-bold flex items-start gap-2">
+                  <i class="fa-solid ${mState.lastFeedback.correct ? 'fa-star text-amber-500' : 'fa-circle-info text-rose-600'} mt-0.5"></i>
+                  <span>${mState.lastFeedback.text}</span>
+                </p>
+                ${mState.lastFeedback.correct ? `
+                  <button onclick="advanceRoleplayStep()" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs sm:text-sm shadow-sm flex items-center justify-center gap-2 transition">
+                    <span>${mState.stepIdx + 1 < mission.steps.length ? 'Continue Call' : 'Finish Call'}</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </button>
+                ` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="animate-pop-in">
+          <!-- Mission Selector -->
+          <div class="flex gap-2 mb-4">
+            ${missionTabs}
+          </div>
+
+          <!-- Mission Objective Card -->
+          <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-3.5 mb-4 flex items-start gap-3">
+            <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm shrink-0 mt-0.5">
+              <i class="fa-solid fa-bullseye"></i>
+            </span>
+            <div>
+              <h2 class="font-display font-extrabold text-sm sm:text-base text-indigo-950">${mission.title}</h2>
+              <p class="text-xs sm:text-sm text-indigo-800 mt-0.5">${mission.goal}</p>
+            </div>
+          </div>
+
+          <!-- Realistic Smartphone Active Call Screen -->
+          <div class="bg-slate-900 rounded-3xl p-4 text-white shadow-xl border-2 border-slate-800 mb-4">
+            <!-- Caller Top Info & Live Timer -->
+            <div class="flex items-center justify-between pb-3.5 border-b border-slate-800">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-slate-800 border-2 border-emerald-400 flex items-center justify-center text-2xl ${!mState.completed ? 'animate-pulse-ring' : ''}">
+                  ${mission.avatarEmoji}
+                </div>
+                <div>
+                  <h3 class="font-display font-extrabold text-base leading-tight">${mission.contactName}</h3>
+                  <p class="text-xs text-slate-400">${mission.contactRole}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                  mState.completed ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/20 text-emerald-300'
+                }">
+                  <span class="w-2 h-2 rounded-full ${mState.completed ? 'bg-slate-500' : 'bg-emerald-400 animate-ping'}"></span>
+                  ${mState.completed ? 'Ended' : 'On Call'}
+                </span>
+                <p id="live-call-timer" class="text-xs font-mono text-slate-300 mt-1">${formatSeconds(mState.seconds)}</p>
+              </div>
+            </div>
+
+            <!-- Live Call Transcript -->
+            <div class="py-3.5 space-y-2.5 max-h-60 overflow-y-auto phone-scroll">
+              ${transcriptHtml}
+            </div>
+          </div>
+
+          <!-- Multiple Choice Response Area -->
+          ${bottomInteractionHtml}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       9. MODE 4: VOICEMAIL LAB (LEAVE A MESSAGE)
+       ========================================================================== */
+
+    function selectGapSlot(slotIdx) {
+      if (state.gapSolved) return;
+      state.activeGapIndex = slotIdx;
+      state.gapChecked = false;
+      renderCurrentView();
+    }
+
+    function clickWordChip(word) {
+      if (state.gapSolved) return;
+      state.gapChecked = false;
+
+      // If word is already used in a slot, remove it from that slot first
+      const existingIdx = state.gapUserAnswers.indexOf(word);
+      if (existingIdx !== -1) {
+        state.gapUserAnswers[existingIdx] = null;
+      }
+
+      // Place word into active slot (or first empty slot)
+      let targetSlot = state.activeGapIndex;
+      if (targetSlot === null || targetSlot < 0 || targetSlot >= 6) {
+        targetSlot = state.gapUserAnswers.indexOf(null);
+      }
+      if (targetSlot !== -1) {
+        state.gapUserAnswers[targetSlot] = word;
+        // Move active focus to next empty gap
+        const nextEmpty = state.gapUserAnswers.indexOf(null);
+        state.activeGapIndex = nextEmpty !== -1 ? nextEmpty : targetSlot;
+        playUiTone('pop');
+      }
+
+      renderCurrentView();
+    }
+
+    function clearGapSlot(slotIdx) {
+      if (state.gapSolved) return;
+      state.gapUserAnswers[slotIdx] = null;
+      state.activeGapIndex = slotIdx;
+      state.gapChecked = false;
+      playUiTone('pop');
+      renderCurrentView();
+    }
+
+    function checkVoicemailGaps() {
+      if (state.gapUserAnswers.includes(null)) {
+        showToast('Fill all 6 spaces first!', 'warn');
+        playUiTone('error');
+        return;
+      }
+
+      state.gapChecked = true;
+      const gapSegments = VOICEMAIL_GAPS.segments.filter(s => s.type === 'gap');
+      const allRight = gapSegments.every((seg, idx) => state.gapUserAnswers[idx] === seg.answer);
+
+      if (allRight) {
+        if (!state.gapSolved) {
+          state.gapSolved = true;
+          awardStars(2, 'Voicemail gap-fill solved!');
+        } else {
+          playUiTone('success');
+        }
+      } else {
+        playUiTone('error');
+        showToast('Some words are in the wrong spot. Tap red words to fix!', 'warn');
+      }
+
+      renderCurrentView();
+    }
+
+    function updateCustomVmField(field, value) {
+      state.customVm[field] = value;
+      const previewEl = document.getElementById('custom-vm-script-text');
+      if (previewEl) {
+        previewEl.textContent = buildCustomVoicemailScript();
+      }
+    }
+
+    function applyQuickVmIdea(ideaText) {
+      state.customVm.message = ideaText;
+      playUiTone('pop');
+      renderCurrentView();
+    }
+
+    function buildCustomVoicemailScript() {
+      const who = state.customVm.recipient.trim() || 'Sarah';
+      const name = state.customVm.callerName.trim() || 'Alex';
+      let msg = state.customVm.message.trim() || "Let's meet at the café at 4 o'clock.";
+      if (!/[.!?]$/.test(msg)) msg += '.';
+      const phone = state.customVm.phone.trim() || '555-0192';
+
+      return `Hello, ${who}. This is ${name} calling. ${msg} Please call me back. My phone number is ${phone}. Thank you. Goodbye!`;
+    }
+
+    function listenCustomVoicemail() {
+      const script = buildCustomVoicemailScript();
+      speakText(script, {
+        rate: 0.9,
+        pitch: 1.0,
+        elementId: 'custom-vm-btn'
+      });
+
+      if (!state.customVm.listenedRewarded) {
+        state.customVm.listenedRewarded = true;
+        awardStars(2, 'Created & listened to your voicemail!');
+        renderCurrentView();
+      }
+    }
+
+    function copyCustomVoicemail() {
+      const script = buildCustomVoicemailScript();
+      try {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = script;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        playUiTone('pop');
+        showToast('Voicemail script copied!', 'success');
+      } catch (e) {
+        showToast('Could not copy automatically.', 'warn');
+      }
+    }
+
+    function renderVoicemailView() {
+      // Part A: Render text with interactive gap slots
+      const gapSegments = VOICEMAIL_GAPS.segments.filter(s => s.type === 'gap');
+      const paragraphHtml = VOICEMAIL_GAPS.segments.map(seg => {
+        if (seg.type === 'text') return `<span>${seg.value}</span>`;
+
+        const idx = seg.index;
+        const userWord = state.gapUserAnswers[idx];
+        const isActive = state.activeGapIndex === idx && !state.gapSolved;
+        const isCorrect = userWord === seg.answer;
+
+        let displayWord = userWord ? (seg.capitalize ? userWord.charAt(0).toUpperCase() + userWord.slice(1) : userWord) : `(${idx + 1})`;
+        let slotClasses = 'inline-flex items-center justify-center min-w-[82px] px-2.5 py-1 mx-0.5 rounded-xl font-extrabold text-xs sm:text-sm border-2 transition cursor-pointer ';
+
+        if (state.gapSolved || (state.gapChecked && userWord && isCorrect)) {
+          slotClasses += 'bg-emerald-100 border-emerald-500 text-emerald-900';
+        } else if (state.gapChecked && userWord && !isCorrect) {
+          slotClasses += 'bg-rose-100 border-rose-500 text-rose-900 animate-shake';
+        } else if (userWord) {
+          slotClasses += 'bg-indigo-100 border-indigo-400 text-indigo-900';
+        } else if (isActive) {
+          slotClasses += 'bg-amber-50 border-amber-400 text-amber-700 ring-2 ring-amber-200';
+        } else {
+          slotClasses += 'bg-slate-100 border-dashed border-slate-300 text-slate-400 hover:border-indigo-400';
+        }
+
+        return `<button type="button" onclick="${userWord && !state.gapSolved ? `clearGapSlot(${idx})` : `selectGapSlot(${idx})`}" class="${slotClasses}">${displayWord}</button>`;
+      }).join('');
+
+      // Word bank chips
+      const chipsHtml = VOICEMAIL_GAPS.wordBank.map(word => {
+        const isUsed = state.gapUserAnswers.includes(word);
+        return `
+          <button
+            type="button"
+            onclick="clickWordChip('${word}')"
+            ${state.gapSolved ? 'disabled' : ''}
+            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold border-2 transition active:scale-95 ${
+              isUsed
+                ? 'bg-slate-100 border-slate-200 text-slate-400 line-through'
+                : 'bg-white border-purple-200 text-purple-900 hover:border-purple-500 hover:bg-purple-50 shadow-2xs'
+            }"
+          >
+            ${word}
+          </button>
+        `;
+      }).join('');
+
+      const generatedScript = buildCustomVoicemailScript();
+
+      return `
+        <div class="animate-pop-in space-y-6">
+          <!-- PART A: GAP-FILL VOICEMAIL -->
+          <section class="bg-white rounded-3xl p-4 sm:p-5 border border-purple-200 shadow-xs">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-base">
+                  <i class="fa-solid fa-voicemail"></i>
+                </span>
+                <div>
+                  <h2 class="font-display font-extrabold text-base sm:text-lg text-slate-800">Part A: Complete the Voicemail</h2>
+                  <p class="text-xs text-slate-500">Tap a word below to fill each blank space.</p>
+                </div>
+              </div>
+              ${state.gapSolved ? '<span class="bg-emerald-100 text-emerald-800 text-xs font-extrabold px-2.5 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>Done</span>' : ''}
+            </div>
+
+            <!-- Word Bank -->
+            <div class="bg-purple-50/70 p-3 rounded-2xl border border-purple-100 mb-4">
+              <p class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 mb-2">Word Bank:</p>
+              <div class="flex flex-wrap gap-2">
+                ${chipsHtml}
+              </div>
+            </div>
+
+            <!-- Gap-fill Message Box -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-sm sm:text-base leading-loose text-slate-800 font-medium mb-4">
+              ${paragraphHtml}
+            </div>
+
+            <!-- Part A Actions -->
+            <div class="flex flex-wrap items-center gap-2.5">
+              ${!state.gapSolved ? `
+                <button onclick="checkVoicemailGaps()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm py-3 px-5 rounded-xl shadow-sm flex items-center justify-center gap-2 transition active:scale-95">
+                  <i class="fa-solid fa-check-double"></i>
+                  <span>Check Answers</span>
+                </button>
+              ` : `
+                <button onclick="speakText('${VOICEMAIL_GAPS.fullText.replace(/'/g, "\\'")}', { rate: 0.9, elementId: 'vm-parta-listen' })" data-speak-id="vm-parta-listen" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm py-3 px-5 rounded-xl shadow-sm flex items-center justify-center gap-2 transition">
+                  <span class="static-icon"><i class="fa-solid fa-volume-high"></i></span>
+                  <span class="wave-indicator hidden inline-flex items-end gap-0.5 h-3.5">
+                    <span class="sound-bar"></span>
+                    <span class="sound-bar"></span>
+                    <span class="sound-bar"></span>
+                  </span>
+                  <span>Listen to Voicemail</span>
+                </button>
+              `}
+            </div>
+          </section>
+
+          <!-- PART B: CUSTOM VOICEMAIL BUILDER -->
+          <section class="bg-white rounded-3xl p-4 sm:p-5 border border-sky-200 shadow-xs">
+            <div class="flex items-center gap-2.5 mb-3">
+              <span class="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-base">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </span>
+              <div>
+                <h2 class="font-display font-extrabold text-base sm:text-lg text-slate-800">Part B: Your Turn (Voicemail Builder)</h2>
+                <p class="text-xs text-slate-500">Write your own simple A1 voicemail and listen to it!</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">1. Who are you calling?</label>
+                <input
+                  type="text"
+                  value="${state.customVm.recipient.replace(/"/g, '&quot;')}"
+                  oninput="updateCustomVmField('recipient', this.value)"
+                  placeholder="e.g., Sarah"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm font-medium"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">2. Your name:</label>
+                <input
+                  type="text"
+                  value="${state.customVm.callerName.replace(/"/g, '&quot;')}"
+                  oninput="updateCustomVmField('callerName', this.value)"
+                  placeholder="e.g., Alex"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm font-medium"
+                />
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-xs font-bold text-slate-700 mb-1">3. Your short message:</label>
+              <input
+                type="text"
+                value="${state.customVm.message.replace(/"/g, '&quot;')}"
+                oninput="updateCustomVmField('message', this.value)"
+                placeholder="e.g., Let's meet at the café at 4 o'clock."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm font-medium"
+              />
+              <!-- Quick A1 Idea Pills -->
+              <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                <span class="text-[11px] font-bold text-slate-400">Ideas:</span>
+                <button type="button" onclick="applyQuickVmIdea(&quot;Let's meet at the café at 4 o'clock.&quot;)" class="text-[11px] bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition">
+                  Meet at café
+                </button>
+                <button type="button" onclick="applyQuickVmIdea(&quot;I cannot come to English class today.&quot;)" class="text-[11px] bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition">
+                  Miss class today
+                </button>
+                <button type="button" onclick="applyQuickVmIdea(&quot;Please call me about Saturday's party.&quot;)" class="text-[11px] bg-slate-100 hover:bg-sky-100 text-slate-700 px-2.5 py-1 rounded-lg font-semibold transition">
+                  Saturday party
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-bold text-slate-700 mb-1">4. Your phone number:</label>
+              <input
+                type="text"
+                value="${state.customVm.phone.replace(/"/g, '&quot;')}"
+                oninput="updateCustomVmField('phone', this.value)"
+                placeholder="e.g., 555-0192"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm font-medium"
+              />
+            </div>
+
+            <!-- Live Generated Voicemail Card -->
+            <div class="bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200 rounded-2xl p-4 mb-4">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-700">Your Voicemail Script</span>
+                <button type="button" onclick="copyCustomVoicemail()" class="text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1">
+                  <i class="fa-regular fa-copy"></i> Copy
+                </button>
+              </div>
+              <p id="custom-vm-script-text" class="text-sm sm:text-base font-semibold text-slate-800 leading-relaxed">
+                ${generatedScript}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onclick="listenCustomVoicemail()"
+              data-speak-id="custom-vm-btn"
+              class="w-full bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm py-3.5 px-5 rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition active:scale-95"
+            >
+              <span class="static-icon"><i class="fa-solid fa-volume-high text-base"></i></span>
+              <span class="wave-indicator hidden inline-flex items-end gap-0.5 h-4">
+                <span class="sound-bar"></span>
+                <span class="sound-bar"></span>
+                <span class="sound-bar"></span>
+                <span class="sound-bar"></span>
+              </span>
+              <span>Listen to My Voicemail</span>
+            </button>
+          </section>
+
+          <!-- Final Completion Banner if all 20 stars earned -->
+          ${state.stars >= TOTAL_MAX_STARS ? `
+            <div class="bg-gradient-to-r from-amber-400 via-yellow-300 to-emerald-300 rounded-3xl p-5 text-center text-slate-950 shadow-lg border-2 border-amber-500 animate-pop-in">
+              <div class="text-3xl mb-1">🏆⭐🎉</div>
+              <h3 class="font-display font-extrabold text-lg sm:text-xl">Congratulations! 20 / 20 Stars!</h3>
+              <p class="text-xs sm:text-sm font-semibold mt-1">
+                You can now make phone calls, understand messages, and leave polite voicemails in English!
+              </p>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    /* ==========================================================================
+       10. RESET MODAL & BOOTSTRAP
+       ========================================================================== */
+
+    function resetProgressModal() {
+      const modal = document.getElementById('reset-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      const modal = document.getElementById('reset-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function confirmResetApp() {
+      closeResetModal();
+      stopCallTimer();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+      state.stars = 0;
+      state.listenedPhrases = new Set();
+      state.learnStarsAwarded = 0;
+      state.activeOrderScenarioIdx = 0;
+      initScrambledScenarios();
+      state.activeMissionIdx = 0;
+      state.missionState = {
+        m1: { stepIdx: 0, transcript: [], selectedOptionIdx: null, lastFeedback: null, completed: false, seconds: 0 },
+        m2: { stepIdx: 0, transcript: [], selectedOptionIdx: null, lastFeedback: null, completed: false, seconds: 0 }
+      };
+      state.gapUserAnswers = [null, null, null, null, null, null];
+      state.activeGapIndex = 0;
+      state.gapChecked = false;
+      state.gapSolved = false;
+      state.customVm.listenedRewarded = false;
+
+      updateHeaderProgress();
+      switchTab('learn');
+      showToast('Progress reset! Ready to practice.', 'info');
+    }
+
+    // Update top phone status clock with local time
+    function updateStatusClock() {
+      const clockEl = document.getElementById('status-clock');
+      if (!clockEl) return;
+      const now = new Date();
+      const hrs = now.getHours();
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      clockEl.textContent = `${hrs}:${mins}`;
+    }
+
+    // Initialize app on load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateStatusClock();
+      setInterval(updateStatusClock, 30000);
+      initScrambledScenarios();
+      updateHeaderProgress();
+      switchTab('learn');
+    });
+  </script>
 </body>
-</html>"""
-
-        try:
-            filepath = os.path.join(tempfile.gettempdir(), f"A1_Telephony_Certificate_{name.replace(' ', '_')}.html")
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(html_content)
-
-            webbrowser.open(f"file://{filepath}")
-            messagebox.showinfo("Certificate Generated", f"Certificate exported successfully!\nOpening in default web browser.")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to export certificate: {e}")
-
-# =============================================================================
-# MAIN ENTRY POINT
-# =============================================================================
-if __name__ == "__main__":
-    app = TelephonyStudioApp()
-    app.mainloop()
+</html>
