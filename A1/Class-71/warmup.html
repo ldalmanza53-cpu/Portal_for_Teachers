@@ -1,956 +1,1142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pulse Studio: Interactive Task, Habit & Focus Arena</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life Shifts & Future Goals Studio</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Outfit', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .font-display { font-family: 'Outfit', sans-serif; }
 
-    body {
-      font-family: 'Inter', sans-serif;
+    .tab-panel { display: none; }
+    .tab-panel.active {
+      display: block;
+      animation: fadeSlide 0.25s ease-out forwards;
     }
 
-    @keyframes popIn {
-      0% { opacity: 0; transform: translateY(8px) scale(0.98); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .animate-pop {
-      animation: popIn 0.22s ease-out forwards;
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
     }
+    .animate-shake { animation: shake 0.3s ease-in-out; }
 
-    .dragging {
-      opacity: 0.45;
-      border-style: dashed !important;
-      border-color: #818cf8 !important;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-4 sm:p-8 selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
   <!-- Confetti Canvas -->
-  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
 
-  <!-- Live Feedback Toast Container -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <main class="max-w-3xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6">
-
-    <!-- Top Gamified Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
-      <div class="flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/25">
-          <i class="fa-solid fa-bolt"></i>
+  <!-- Sticky Header HUD -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-amber-500 text-white flex items-center justify-center text-xl shadow-md">
+          <i class="fa-solid fa-compass"></i>
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
-              Pulse Studio
-            </h1>
-            <span id="levelBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              LVL 1
-            </span>
-          </div>
-          <p id="rankTitle" class="text-xs text-slate-400 font-medium mt-0.5">Focus Apprentice • Organize, build streaks & level up</p>
+          <h1 class="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-indigo-600 via-violet-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent">
+            Life Shifts & Future Goals
+          </h1>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Interactive ESL Studio • Describing Changes & Future Plans
+          </p>
         </div>
       </div>
 
-      <!-- XP, Streak & Sound Controls -->
-      <div class="flex items-center gap-2.5 self-start sm:self-center">
-        <div class="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-extrabold flex items-center gap-1.5" title="Active Habit Check-ins">
-          <i class="fa-solid fa-fire text-amber-400"></i>
-          <span id="streakDisplay">0</span>
+      <!-- HUD Counters & Controls -->
+      <div class="flex items-center gap-2">
+        <div class="px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5" title="Current Streak">
+          <i class="fa-solid fa-fire text-amber-500"></i>
+          <span id="hud-streak">0</span>
         </div>
 
-        <div class="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-extrabold flex items-center gap-1.5" title="Experience Points">
-          <i class="fa-solid fa-star text-indigo-400"></i>
-          <span id="xpDisplay">0 XP</span>
+        <div class="px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 border border-indigo-300 dark:border-indigo-800 text-indigo-800 dark:text-indigo-300 text-xs font-extrabold flex items-center gap-1.5" title="Experience Points">
+          <i class="fa-solid fa-bolt text-indigo-500"></i>
+          <span id="hud-xp">0 XP</span>
         </div>
 
-        <button onclick="toggleSound()" id="soundBtn" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition" title="Toggle Sound FX">
-          <i id="soundIcon" class="fa-solid fa-volume-high text-indigo-400"></i>
+        <button onclick="studio.toggleAudio()" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-sm transition" title="Toggle Sound & TTS">
+          <i id="icon-audio" class="fa-solid fa-volume-high text-indigo-600 dark:text-indigo-400"></i>
         </button>
-      </div>
-    </header>
 
-    <!-- Dual Progress Bars (Daily Completion + Level XP) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80">
-      <div class="space-y-1.5">
-        <div class="flex justify-between text-xs font-bold">
-          <span class="text-slate-400">Daily Task Completion</span>
-          <span id="completionRate" class="text-emerald-400">0%</span>
-        </div>
-        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-          <div id="progressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-500"></div>
-        </div>
-      </div>
-
-      <div class="space-y-1.5">
-        <div class="flex justify-between text-xs font-bold">
-          <span class="text-slate-400">Next Level Progress</span>
-          <span id="xpProgressText" class="text-indigo-400">0 / 100 XP</span>
-        </div>
-        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-          <div id="xpProgressBar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full w-0 transition-all duration-500"></div>
-        </div>
+        <button onclick="studio.toggleTheme()" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-sm transition" title="Toggle Dark Mode">
+          <i id="icon-theme" class="fa-solid fa-moon"></i>
+        </button>
       </div>
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="flex gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
-      <button onclick="switchView('tasks')" id="nav-tasks" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md">
-        <i class="fa-solid fa-list-check"></i>
-        <span>Smart Tasks</span>
-        <span id="badge-tasks" class="px-1.5 py-0.2 rounded-md bg-white/20 text-[10px]">0</span>
+    <nav class="max-w-6xl mx-auto px-4 pb-2.5 flex gap-2 overflow-x-auto no-scrollbar">
+      <button onclick="studio.switchTab('classifier', this)" class="nav-tab active px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-indigo-600 text-white shadow-xs transition flex items-center gap-2">
+        <i class="fa-solid fa-code-branch"></i> 1. Changes vs. Plans
       </button>
-      <button onclick="switchView('habits')" id="nav-habits" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-calendar-week"></i>
-        <span>7-Day Habits</span>
+      <button onclick="studio.switchTab('builder', this)" class="nav-tab px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-puzzle-piece"></i> 2. Grammar & Sentence Lab
       </button>
-      <button onclick="switchView('focus')" id="nav-focus" class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
-        <i class="fa-solid fa-stopwatch"></i>
-        <span>Focus Timer</span>
+      <button onclick="studio.switchTab('roadmap', this)" class="nav-tab px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-map-location-dot"></i> 3. Personal Life Roadmap
+      </button>
+      <button onclick="studio.switchTab('quiz', this)" class="nav-tab px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2">
+        <i class="fa-solid fa-trophy"></i> 4. Milestone Challenge
       </button>
     </nav>
+  </header>
 
-    <!-- ========================================== -->
-    <!-- VIEW 1: SMART TASKS (DRAG, FILTER, FOCUS)  -->
-    <!-- ========================================== -->
-    <section id="view-tasks" class="space-y-5">
-      <!-- Add Task Form -->
-      <form id="taskForm" onsubmit="handleAddTask(event)" class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 space-y-3">
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input
-            id="taskTitle"
-            type="text"
-            placeholder="What do you want to accomplish? (e.g. Read 20 pages)"
-            required
-            class="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-100 placeholder-slate-500"
-          />
-          <button
-            type="submit"
-            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 font-bold rounded-xl text-sm transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 shrink-0"
-          >
-            <i class="fa-solid fa-plus"></i> Add Task
-          </button>
+  <!-- Main Content -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- Quick Grammar Reference Strip -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-900/60 rounded-2xl p-4 shadow-xs flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 text-lg">
+          <i class="fa-solid fa-clock-rotate-left"></i>
         </div>
-
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <select id="taskCategory" class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="Work">💼 Work</option>
-            <option value="Personal">👤 Personal</option>
-            <option value="Health">🏋️ Health</option>
-          </select>
-
-          <select id="taskPriority" class="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="high">🔥 High Priority (+30 XP)</option>
-            <option value="medium" selected>⚡ Medium Priority (+20 XP)</option>
-            <option value="low">🌱 Low Priority (+10 XP)</option>
-          </select>
-
-          <div class="flex-1 min-w-[160px] relative">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-            <input
-              id="searchInput"
-              type="text"
-              oninput="render()"
-              placeholder="Search tasks..."
-              class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
-      </form>
-
-      <!-- Filter Pills -->
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 text-xs">
-        <div class="flex gap-1.5 overflow-x-auto">
-          <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-lg font-bold bg-indigo-600 text-white transition">All</button>
-          <button onclick="setFilter('Work')" id="filter-Work" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 hover:text-white transition">💼 Work</button>
-          <button onclick="setFilter('Personal')" id="filter-Personal" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 hover:text-white transition">👤 Personal</button>
-          <button onclick="setFilter('Health')" id="filter-Health" class="px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 hover:text-white transition">🏋️ Health</button>
-        </div>
-
-        <select id="statusFilter" onchange="render()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-semibold focus:outline-none">
-          <option value="all">Status: All</option>
-          <option value="pending">Pending Only</option>
-          <option value="completed">Completed Only</option>
-        </select>
-      </div>
-
-      <!-- Task List (Drag & Drop Enabled) -->
-      <ul id="taskList" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-        <!-- Populated dynamically -->
-      </ul>
-
-      <!-- Footer Controls -->
-      <div class="flex flex-wrap justify-between items-center pt-3 border-t border-slate-800 text-xs text-slate-400 gap-2">
-        <span id="taskCounter" class="font-semibold">0 tasks pending</span>
-        <div class="flex items-center gap-4">
-          <span class="text-slate-500 hidden sm:inline"><i class="fa-solid fa-grip-vertical mr-1"></i>Drag to reorder</span>
-          <button onclick="clearCompleted()" class="text-rose-400 hover:text-rose-300 font-bold transition">
-            <i class="fa-solid fa-broom mr-1"></i>Clear Completed
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- VIEW 2: 7-DAY INTERACTIVE HABIT MATRIX     -->
-    <!-- ========================================== -->
-    <section id="view-habits" class="hidden space-y-5">
-      <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-2">
-        <input
-          id="habitTitleInput"
-          type="text"
-          placeholder="Add a recurring habit (e.g. Drink 2L water, 15m meditation)..."
-          class="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <button onclick="addHabit()" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 font-bold rounded-xl text-sm transition flex items-center justify-center gap-2 shrink-0">
-          <i class="fa-solid fa-plus"></i> Add Habit
-        </button>
-      </div>
-
-      <div class="overflow-x-auto bg-slate-950/60 rounded-2xl border border-slate-800 p-4">
-        <table class="w-full text-left border-collapse min-w-[520px]">
-          <thead>
-            <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
-              <th class="pb-3 font-extrabold">Habit</th>
-              <th class="pb-3 text-center font-extrabold">Mon</th>
-              <th class="pb-3 text-center font-extrabold">Tue</th>
-              <th class="pb-3 text-center font-extrabold">Wed</th>
-              <th class="pb-3 text-center font-extrabold">Thu</th>
-              <th class="pb-3 text-center font-extrabold">Fri</th>
-              <th class="pb-3 text-center font-extrabold">Sat</th>
-              <th class="pb-3 text-center font-extrabold">Sun</th>
-              <th class="pb-3 text-right font-extrabold">Streak</th>
-            </tr>
-          </thead>
-          <tbody id="habitMatrixBody" class="divide-y divide-slate-800/70 text-sm">
-            <!-- Populated dynamically -->
-          </tbody>
-        </table>
-      </div>
-
-      <div class="flex justify-between items-center text-xs text-slate-400">
-        <span>Each daily check-in grants <strong class="text-indigo-400">+15 XP</strong>!</span>
-        <button onclick="resetHabitWeek()" class="text-slate-400 hover:text-amber-400 font-bold transition">
-          <i class="fa-solid fa-rotate-left mr-1"></i> Reset Week Check-ins
-        </button>
-      </div>
-    </section>
-
-    <!-- ========================================== -->
-    <!-- VIEW 3: INTERACTIVE FOCUS TIMER (POMODORO) -->
-    <!-- ========================================== -->
-    <section id="view-focus" class="hidden space-y-6">
-      <div class="bg-slate-950/80 border border-slate-800 rounded-3xl p-6 text-center space-y-6">
         <div class="space-y-1">
-          <span class="text-[11px] uppercase tracking-widest font-extrabold text-indigo-400">Deep Work Session</span>
-          <h2 id="activeFocusTaskTitle" class="text-lg sm:text-xl font-black text-slate-100">
-            Select a task or start a free focus session
-          </h2>
+          <h2 class="text-sm font-black text-teal-700 dark:text-teal-300">Describing Changes (Past → Now)</h2>
+          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Use <strong>Present Perfect</strong> (<em>"I've moved to a new city"</em>), <strong>Simple Past</strong> (<em>"I got a new job"</em>), <strong>Present</strong> (<em>"I'm not in school anymore"</em>), or <strong>Comparatives</strong> (<em>"My life is busier now"</em>).
+          </p>
         </div>
+      </div>
 
-        <!-- Mode Selector Pills -->
-        <div class="flex justify-center gap-2">
-          <button onclick="setTimerPreset(25 * 60, 'Pomodoro (25m)')" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-600 text-xs font-bold transition">
-            🍅 25m Focus
-          </button>
-          <button onclick="setTimerPreset(5 * 60, 'Short Break (5m)')" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs font-bold transition">
-            ☕ 5m Break
-          </button>
-          <button onclick="setTimerPreset(10, 'Quick Demo (10s)')" class="px-3.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500 hover:text-slate-950 text-xs font-extrabold transition">
-            ⚡ 10s Demo
-          </button>
+      <div class="bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/60 rounded-2xl p-4 shadow-xs flex items-start gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 text-lg">
+          <i class="fa-solid fa-rocket"></i>
         </div>
-
-        <!-- Circular SVG Timer -->
-        <div class="relative w-48 h-48 mx-auto flex items-center justify-center">
-          <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="52" stroke="#1e293b" stroke-width="8" fill="none" />
-            <circle
-              id="timerRing"
-              cx="60"
-              cy="60"
-              r="52"
-              stroke="#6366f1"
-              stroke-width="8"
-              stroke-linecap="round"
-              fill="none"
-              stroke-dasharray="326.72"
-              stroke-dashoffset="0"
-              class="transition-all duration-500"
-            />
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span id="timerDisplay" class="text-4xl font-black tracking-tight text-white font-mono">25:00</span>
-            <span id="timerModeLabel" class="text-[11px] font-bold text-slate-400 mt-1">Pomodoro (25m)</span>
-          </div>
+        <div class="space-y-1">
+          <h2 class="text-sm font-black text-amber-700 dark:text-amber-300">Describing Future Plans (Now → Ahead)</h2>
+          <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Use <strong>Verb + Infinitive</strong>: <em>hope to, plan to, want to, would like to ('d love to) + base verb</em> (<em>"I hope to travel abroad"</em>) or <strong>be going to</strong> (<em>"I'm going to learn Italian"</em>).
+          </p>
         </div>
+      </div>
+    </section>
 
-        <!-- Timer Controls -->
-        <div class="flex justify-center gap-3">
-          <button onclick="toggleTimer()" id="timerStartBtn" class="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 font-extrabold text-sm shadow-lg shadow-indigo-600/25 transition flex items-center gap-2">
-            <i class="fa-solid fa-play"></i> Start Focus
-          </button>
-          <button onclick="resetTimer()" class="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 font-bold text-sm text-slate-300 transition flex items-center gap-2">
-            <i class="fa-solid fa-rotate-right"></i> Reset
+    <!-- ===================================================== -->
+    <!-- TAB 1: CHANGES VS. FUTURE PLANS CLASSIFIER            -->
+    <!-- ===================================================== -->
+    <section id="panel-classifier" class="tab-panel active space-y-6">
+      <div class="bg-gradient-to-r from-indigo-600 via-violet-600 to-teal-600 rounded-3xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-[11px] font-black uppercase tracking-wider mb-2">Module 1 • Recognition</span>
+          <h2 class="text-2xl font-black">Life Change or Future Plan?</h2>
+          <p class="text-sm text-indigo-100 mt-1">
+            Read or listen to each statement and classify whether it describes a <strong>Life Change</strong> or a <strong>Future Plan</strong>.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="classifier-progress" class="px-3 py-2 rounded-xl bg-black/20 text-xs font-extrabold">0 / 6 Classified</span>
+          <button onclick="studio.classifier.reset()" class="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-extrabold transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
           </button>
         </div>
+      </div>
 
-        <p class="text-xs text-slate-400">
-          Completing a focus session rewards <strong class="text-emerald-400">+50 XP</strong> and automatically checks off your linked task!
+      <div id="classifier-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- TAB 2: GRAMMAR & SENTENCE BUILDER LAB                 -->
+    <!-- ===================================================== -->
+    <section id="panel-builder" class="tab-panel space-y-6">
+      <div class="bg-gradient-to-r from-teal-600 via-indigo-600 to-violet-600 rounded-3xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-[11px] font-black uppercase tracking-wider mb-2">Module 2 • Structure Practice</span>
+          <h2 class="text-2xl font-black">Grammar & Sentence Builder Lab</h2>
+          <p class="text-sm text-teal-100 mt-1">
+            Choose the right verb forms to express changes and future goals, then assemble natural sentences from word tiles.
+          </p>
+        </div>
+        <button onclick="studio.builder.checkGaps()" class="px-5 py-2.5 rounded-xl bg-white text-indigo-800 hover:bg-indigo-50 font-black text-xs shadow-md transition shrink-0">
+          <i class="fa-solid fa-check-double mr-1"></i> Check Gap-Fills
+        </button>
+      </div>
+
+      <!-- Part A: Contextual Gap-Fill -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h3 class="text-base font-black">Part A: Complete the Life Update</h3>
+          <span class="text-xs font-bold text-slate-400">Select the best grammar form</span>
+        </div>
+        <div id="gap-feedback" class="hidden p-3.5 rounded-xl border text-xs font-extrabold"></div>
+        <div id="gap-list" class="space-y-3">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Part B: Word Tile Sentence Assembler -->
+      <div id="tile-stage" class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- TAB 3: PERSONAL LIFE ROADMAP (CREATIVE STUDIO)        -->
+    <!-- ===================================================== -->
+    <section id="panel-roadmap" class="tab-panel space-y-6">
+      <div class="bg-gradient-to-r from-amber-500 via-orange-600 to-indigo-600 rounded-3xl p-6 text-white shadow-lg">
+        <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-[11px] font-black uppercase tracking-wider mb-2">Module 3 • Guided Production</span>
+        <h2 class="text-2xl font-black">Interactive Life Roadmap: Then → Now → Future</h2>
+        <p class="text-sm text-amber-100 mt-1">
+          Build your own milestone statement by pairing a <strong>recent change</strong> with a <strong>future plan</strong>, listen to how it sounds, and pin it to your Vision Board!
         </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Builder Controls -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+          <h3 class="text-base font-black border-b border-slate-100 dark:border-slate-800 pb-3">1. Configure Your Milestone</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-extrabold uppercase text-slate-400">Life Area</label>
+              <select id="rm-area" onchange="studio.roadmap.applyPreset()" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold">
+                <option value="career">💼 Career & Education</option>
+                <option value="lifestyle">🏠 Lifestyle & City</option>
+                <option value="health">💪 Health & Habits</option>
+                <option value="travel">🌍 Travel & Languages</option>
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[11px] font-extrabold uppercase text-slate-400">Future Intention Frame</label>
+              <select id="rm-frame" onchange="studio.roadmap.updatePreview()" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold">
+                <option value="I hope to">I hope to + base verb</option>
+                <option value="I plan to">I plan to + base verb</option>
+                <option value="I'd love to">I'd love to + base verb</option>
+                <option value="I'm going to">I'm going to + base verb</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[11px] font-extrabold uppercase text-teal-600 dark:text-teal-400">
+              Step A — Describe a Recent Change (Past / Present Perfect / Comparative)
+            </label>
+            <input
+              id="rm-change-input"
+              type="text"
+              oninput="studio.roadmap.updatePreview()"
+              value="I've recently finished my university degree and started my first full-time job."
+              class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[11px] font-extrabold uppercase text-amber-600 dark:text-amber-400">
+              Step B — Complete Your Future Plan (Base Verb + Goal)
+            </label>
+            <input
+              id="rm-plan-input"
+              type="text"
+              oninput="studio.roadmap.updatePreview()"
+              value="get promoted to project manager within two years."
+              class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <!-- Live Spoken Preview -->
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-500">Live Statement Preview</span>
+              <button onclick="studio.roadmap.speakPreview()" class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">
+                <i class="fa-solid fa-volume-high mr-1"></i> Listen
+              </button>
+            </div>
+            <p id="rm-preview-text" class="text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100"></p>
+            <div id="rm-grammar-tip" class="text-xs font-bold text-emerald-600 dark:text-emerald-400"></div>
+          </div>
+
+          <button onclick="studio.roadmap.pinToBoard()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs sm:text-sm shadow-md transition">
+            <i class="fa-solid fa-thumbtack mr-1.5"></i> Pin Milestone to Vision Board (+25 XP)
+          </button>
+        </div>
+
+        <!-- Vision Board Output -->
+        <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 class="text-base font-black">2. Your Vision Board</h3>
+              <span id="board-count" class="text-xs font-extrabold text-indigo-500">1 Card</span>
+            </div>
+            <div id="vision-board-list" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Tip: Practice reading your pinned cards aloud to build speaking fluency!
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================== -->
+    <!-- TAB 4: MILESTONE CHALLENGE QUIZ                       -->
+    <!-- ===================================================== -->
+    <section id="panel-quiz" class="tab-panel space-y-6">
+      <div class="bg-gradient-to-r from-violet-600 via-indigo-600 to-amber-500 rounded-3xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-[11px] font-black uppercase tracking-wider mb-2">Module 4 • Mastery Check</span>
+          <h2 class="text-2xl font-black">Milestone Challenge Quiz</h2>
+          <p class="text-sm text-indigo-100 mt-1">
+            Test your command of changes vs. future plans with instant explanations.
+          </p>
+        </div>
+        <button onclick="studio.quiz.restart()" class="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-extrabold transition shrink-0">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Restart Quiz
+        </button>
+      </div>
+
+      <div id="quiz-card" class="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+        <!-- Rendered by JS -->
       </div>
     </section>
 
   </main>
 
   <script>
-    // ==========================================
-    // STATE & PERSISTENCE
-    // ==========================================
-    const DEFAULT_STATE = {
-      xp: 40,
-      soundEnabled: true,
-      tasks: [
-        { id: 101, title: 'Complete 30-minute strength workout', category: 'Health', priority: 'high', completed: false },
-        { id: 102, title: 'Review Q4 project roadmap & milestones', category: 'Work', priority: 'medium', completed: true },
-        { id: 103, title: 'Read 15 pages before sleep', category: 'Personal', priority: 'low', completed: false }
-      ],
-      habits: [
-        { id: 201, title: '💧 Hydrate (2L Water)', days: [true, true, true, false, false, false, false] },
-        { id: 202, title: '📖 20 Min Deep Reading', days: [true, false, true, true, false, false, false] },
-        { id: 203, title: '🏃 8,000 Daily Steps', days: [true, true, false, false, false, false, false] }
-      ]
-    };
+    const studio = {
+      state: {
+        xp: 0,
+        streak: 0,
+        audioEnabled: true,
+        darkMode: false
+      },
 
-    let appState = JSON.parse(localStorage.getItem('pulse_studio_v2')) || DEFAULT_STATE;
-    let currentFilter = 'all';
-    let draggedTaskId = null;
+      audioCtx: null,
 
-    // Timer State
-    let timerTotal = 25 * 60;
-    let timerRemaining = 25 * 60;
-    let timerInterval = null;
-    let activeFocusTaskId = null;
+      playTone(type) {
+        if (!this.state.audioEnabled) return;
+        try {
+          if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
 
-    const PRIORITY_XP = { high: 30, medium: 20, low: 10 };
-    const RANKS = [
-      'Focus Apprentice',
-      'Momentum Builder',
-      'Habit Architect',
-      'Deep Work Strategist',
-      'Pulse Grandmaster'
-    ];
+          const now = this.audioCtx.currentTime;
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
 
-    function saveState() {
-      localStorage.setItem('pulse_studio_v2', JSON.stringify(appState));
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    // ==========================================
-    // WEB AUDIO SYNTH & TOAST FEEDBACK
-    // ==========================================
-    let audioCtx = null;
-
-    function playSound(type) {
-      if (!appState.soundEnabled) return;
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        if (type === 'complete') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(523.25, now);
-          osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
-          gain.gain.setValueAtTime(0.12, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-          osc.start(now);
-          osc.stop(now + 0.25);
-        } else if (type === 'levelup') {
-          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.connect(g);
-            g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(freq, now + i * 0.09);
-            g.gain.setValueAtTime(0.09, now + i * 0.09);
-            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.25);
-            o.start(now + i * 0.09);
-            o.stop(now + i * 0.09 + 0.25);
-          });
-        } else {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(440, now);
-          gain.gain.setValueAtTime(0.05, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-          osc.start(now);
-          osc.stop(now + 0.06);
-        }
-      } catch (e) {
-        console.warn('Audio error:', e);
-      }
-    }
-
-    function showToast(message, colorClass = 'border-indigo-500/50 text-indigo-200') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      toast.className = `animate-pop px-4 py-2.5 rounded-xl bg-slate-900/95 backdrop-blur-md border ${colorClass} shadow-xl text-xs font-extrabold flex items-center gap-2`;
-      toast.innerHTML = message;
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => toast.remove(), 300);
-      }, 2400);
-    }
-
-    function awardXP(amount, reason) {
-      const oldLevel = Math.floor(appState.xp / 100) + 1;
-      appState.xp = Math.max(0, appState.xp + amount);
-      const newLevel = Math.floor(appState.xp / 100) + 1;
-
-      if (amount > 0) {
-        showToast(`<i class="fa-solid fa-sparkles text-amber-400"></i> +${amount} XP • ${reason}`, 'border-emerald-500/50 text-emerald-200');
-      }
-
-      if (newLevel > oldLevel) {
-        playSound('levelup');
-        triggerConfetti();
-        showToast(`<i class="fa-solid fa-crown text-amber-400"></i> LEVEL UP! You reached Level ${newLevel}!`, 'border-amber-400 text-amber-200');
-      }
-    }
-
-    function toggleSound() {
-      appState.soundEnabled = !appState.soundEnabled;
-      document.getElementById('soundIcon').className = appState.soundEnabled
-        ? 'fa-solid fa-volume-high text-indigo-400'
-        : 'fa-solid fa-volume-xmark text-slate-500';
-      if (appState.soundEnabled) playSound('pop');
-      saveState();
-    }
-
-    // ==========================================
-    // NAVIGATION TABS
-    // ==========================================
-    function switchView(viewName) {
-      ['tasks', 'habits', 'focus'].forEach(v => {
-        document.getElementById(`view-${v}`).classList.toggle('hidden', v !== viewName);
-        const btn = document.getElementById(`nav-${v}`);
-        if (v === viewName) {
-          btn.className = 'flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-md';
-        } else {
-          btn.className = 'flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white';
-        }
-      });
-      playSound('pop');
-    }
-
-    // ==========================================
-    // TASKS CRUD, DRAG-AND-DROP & RENDER
-    // ==========================================
-    function handleAddTask(e) {
-      e.preventDefault();
-      const titleInput = document.getElementById('taskTitle');
-      const category = document.getElementById('taskCategory').value;
-      const priority = document.getElementById('taskPriority').value;
-
-      const title = titleInput.value.trim();
-      if (!title) return;
-
-      appState.tasks.unshift({
-        id: Date.now(),
-        title,
-        category,
-        priority,
-        completed: false
-      });
-
-      titleInput.value = '';
-      playSound('pop');
-      showToast(`<i class="fa-solid fa-plus-circle text-indigo-400"></i> Task added to ${category}`);
-      saveState();
-      render();
-    }
-
-    function toggleTask(id) {
-      const task = appState.tasks.find(t => t.id === id);
-      if (!task) return;
-
-      task.completed = !task.completed;
-      const xpVal = PRIORITY_XP[task.priority] || 20;
-
-      if (task.completed) {
-        playSound('complete');
-        awardXP(xpVal, 'Task Completed');
-        const allDone = appState.tasks.length > 0 && appState.tasks.every(t => t.completed);
-        if (allDone) triggerConfetti();
-      } else {
-        appState.xp = Math.max(0, appState.xp - xpVal);
-        playSound('pop');
-      }
-
-      saveState();
-      render();
-    }
-
-    function editTask(id) {
-      const task = appState.tasks.find(t => t.id === id);
-      if (!task) return;
-      const updated = prompt('Edit task title:', task.title);
-      if (updated !== null && updated.trim() !== '') {
-        task.title = updated.trim();
-        playSound('pop');
-        saveState();
-        render();
-      }
-    }
-
-    function deleteTask(id) {
-      appState.tasks = appState.tasks.filter(t => t.id !== id);
-      if (activeFocusTaskId === id) {
-        activeFocusTaskId = null;
-        document.getElementById('activeFocusTaskTitle').textContent = 'Select a task or start a free focus session';
-      }
-      playSound('pop');
-      saveState();
-      render();
-    }
-
-    function clearCompleted() {
-      const before = appState.tasks.length;
-      appState.tasks = appState.tasks.filter(t => !t.completed);
-      if (appState.tasks.length < before) {
-        playSound('pop');
-        showToast('<i class="fa-solid fa-broom text-rose-400"></i> Cleared completed tasks');
-        saveState();
-        render();
-      }
-    }
-
-    function setFilter(filter) {
-      currentFilter = filter;
-      ['all', 'Work', 'Personal', 'Health'].forEach(f => {
-        const btn = document.getElementById(`filter-${f}`);
-        btn.className = f === filter
-          ? 'px-3 py-1.5 rounded-lg font-bold bg-indigo-600 text-white transition'
-          : 'px-3 py-1.5 rounded-lg font-bold bg-slate-800 text-slate-400 hover:text-white transition';
-      });
-      playSound('pop');
-      render();
-    }
-
-    function startFocusOnTask(id) {
-      const task = appState.tasks.find(t => t.id === id);
-      if (!task) return;
-      activeFocusTaskId = id;
-      document.getElementById('activeFocusTaskTitle').innerHTML = `<span class="text-indigo-400">Focusing on:</span> ${escapeHtml(task.title)}`;
-      switchView('focus');
-      showToast('<i class="fa-solid fa-crosshairs text-indigo-400"></i> Task loaded into Focus Timer!');
-    }
-
-    // Drag & Drop Handlers
-    function onDragStart(e, id) {
-      draggedTaskId = id;
-      e.currentTarget.classList.add('dragging');
-    }
-
-    function onDragEnd(e) {
-      e.currentTarget.classList.remove('dragging');
-      draggedTaskId = null;
-    }
-
-    function onDragOver(e) {
-      e.preventDefault();
-    }
-
-    function onDrop(e, targetId) {
-      e.preventDefault();
-      if (!draggedTaskId || draggedTaskId === targetId) return;
-      const fromIdx = appState.tasks.findIndex(t => t.id === draggedTaskId);
-      const toIdx = appState.tasks.findIndex(t => t.id === targetId);
-      if (fromIdx === -1 || toIdx === -1) return;
-
-      const [moved] = appState.tasks.splice(fromIdx, 1);
-      appState.tasks.splice(toIdx, 0, moved);
-      playSound('pop');
-      saveState();
-      render();
-    }
-
-    // ==========================================
-    // 7-DAY HABIT MATRIX LOGIC
-    // ==========================================
-    function addHabit() {
-      const input = document.getElementById('habitTitleInput');
-      const title = input.value.trim();
-      if (!title) return;
-
-      appState.habits.push({
-        id: Date.now(),
-        title,
-        days: [false, false, false, false, false, false, false]
-      });
-
-      input.value = '';
-      playSound('pop');
-      showToast('<i class="fa-solid fa-calendar-plus text-purple-400"></i> New weekly habit added!');
-      saveState();
-      renderHabits();
-    }
-
-    function toggleHabitDay(habitId, dayIdx) {
-      const habit = appState.habits.find(h => h.id === habitId);
-      if (!habit) return;
-
-      habit.days[dayIdx] = !habit.days[dayIdx];
-      if (habit.days[dayIdx]) {
-        playSound('complete');
-        awardXP(15, 'Habit Check-in');
-      } else {
-        appState.xp = Math.max(0, appState.xp - 15);
-        playSound('pop');
-      }
-
-      saveState();
-      renderHabits();
-      updateGlobalHUD();
-    }
-
-    function deleteHabit(habitId) {
-      appState.habits = appState.habits.filter(h => h.id !== habitId);
-      playSound('pop');
-      saveState();
-      renderHabits();
-      updateGlobalHUD();
-    }
-
-    function resetHabitWeek() {
-      appState.habits.forEach(h => {
-        h.days = [false, false, false, false, false, false, false];
-      });
-      playSound('pop');
-      showToast('<i class="fa-solid fa-rotate-left text-amber-400"></i> Weekly habit grid reset');
-      saveState();
-      renderHabits();
-      updateGlobalHUD();
-    }
-
-    function renderHabits() {
-      const tbody = document.getElementById('habitMatrixBody');
-      tbody.innerHTML = '';
-
-      if (appState.habits.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-500 text-xs">No habits yet. Add one above to start tracking your week!</td></tr>`;
-        return;
-      }
-
-      appState.habits.forEach(habit => {
-        const count = habit.days.filter(Boolean).length;
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-900/60 transition';
-
-        const dayCells = habit.days.map((done, idx) => `
-          <td class="py-3 text-center">
-            <button
-              onclick="toggleHabitDay(${habit.id}, ${idx})"
-              class="w-7 h-7 rounded-lg border transition-all inline-flex items-center justify-center text-xs ${
-                done
-                  ? 'bg-gradient-to-tr from-indigo-600 to-purple-500 border-indigo-400 text-white shadow-sm scale-105'
-                  : 'bg-slate-900 border-slate-700 text-slate-600 hover:border-purple-400'
-              }"
-            >
-              ${done ? '<i class="fa-solid fa-check"></i>' : ''}
-            </button>
-          </td>
-        `).join('');
-
-        tr.innerHTML = `
-          <td class="py-3 pr-2 font-semibold text-slate-200 flex items-center justify-between gap-2">
-            <span class="truncate">${escapeHtml(habit.title)}</span>
-            <button onclick="deleteHabit(${habit.id})" class="text-slate-600 hover:text-rose-400 text-xs" title="Remove habit">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </td>
-          ${dayCells}
-          <td class="py-3 text-right font-extrabold text-xs ${count >= 5 ? 'text-amber-400' : 'text-slate-400'}">
-            ${count}/7 ${count >= 5 ? '🔥' : ''}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // ==========================================
-    // FOCUS TIMER (POMODORO) LOGIC
-    // ==========================================
-    function formatSeconds(sec) {
-      const m = Math.floor(sec / 60).toString().padStart(2, '0');
-      const s = (sec % 60).toString().padStart(2, '0');
-      return `${m}:${s}`;
-    }
-
-    function updateTimerUI() {
-      document.getElementById('timerDisplay').textContent = formatSeconds(timerRemaining);
-      const ring = document.getElementById('timerRing');
-      const circumference = 326.72;
-      const offset = circumference - (timerRemaining / timerTotal) * circumference;
-      ring.style.strokeDashoffset = offset;
-    }
-
-    function setTimerPreset(seconds, label) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      timerTotal = seconds;
-      timerRemaining = seconds;
-      document.getElementById('timerModeLabel').textContent = label;
-      document.getElementById('timerStartBtn').innerHTML = '<i class="fa-solid fa-play"></i> Start Focus';
-      playSound('pop');
-      updateTimerUI();
-    }
-
-    function toggleTimer() {
-      const btn = document.getElementById('timerStartBtn');
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        btn.innerHTML = '<i class="fa-solid fa-play"></i> Resume';
-        playSound('pop');
-        return;
-      }
-
-      btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
-      playSound('pop');
-
-      timerInterval = setInterval(() => {
-        timerRemaining -= 1;
-        updateTimerUI();
-
-        if (timerRemaining <= 0) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-          btn.innerHTML = '<i class="fa-solid fa-play"></i> Start Focus';
-          playSound('levelup');
-          triggerConfetti();
-          awardXP(50, 'Focus Session Complete!');
-
-          if (activeFocusTaskId) {
-            const linkedTask = appState.tasks.find(t => t.id === activeFocusTaskId);
-            if (linkedTask && !linkedTask.completed) {
-              linkedTask.completed = true;
-              saveState();
-              render();
-            }
+          if (type === 'correct') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
+            gain.gain.setValueAtTime(0.11, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.start(now);
+            osc.stop(now + 0.22);
+          } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(210, now);
+            osc.frequency.linearRampToValueAtTime(125, now + 0.2);
+            gain.gain.setValueAtTime(0.09, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+            osc.start(now);
+            osc.stop(now + 0.24);
+          } else if (type === 'fanfare') {
+            [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+              const o = this.audioCtx.createOscillator();
+              const g = this.audioCtx.createGain();
+              o.connect(g);
+              g.connect(this.audioCtx.destination);
+              o.frequency.setValueAtTime(freq, now + i * 0.09);
+              g.gain.setValueAtTime(0.08, now + i * 0.09);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.24);
+              o.start(now + i * 0.09);
+              o.stop(now + i * 0.09 + 0.24);
+            });
+          } else {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(460, now);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+            osc.start(now);
+            osc.stop(now + 0.06);
           }
-          updateGlobalHUD();
+        } catch (e) {
+          console.warn(e);
         }
-      }, 1000);
-    }
+      },
 
-    function resetTimer() {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      timerRemaining = timerTotal;
-      document.getElementById('timerStartBtn').innerHTML = '<i class="fa-solid fa-play"></i> Start Focus';
-      playSound('pop');
-      updateTimerUI();
-    }
+      speak(text) {
+        if (!this.state.audioEnabled || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.98;
+        window.speechSynthesis.speak(u);
+      },
 
-    // ==========================================
-    // GLOBAL RENDER & HUD ANALYTICS
-    // ==========================================
-    function updateGlobalHUD() {
-      const level = Math.floor(appState.xp / 100) + 1;
-      const xpInLevel = appState.xp % 100;
-      const rank = RANKS[Math.min(level - 1, RANKS.length - 1)];
+      reward(xp, correct) {
+        if (correct) {
+          this.state.xp += xp;
+          this.state.streak += 1;
+          this.playTone('correct');
+        } else {
+          this.state.streak = 0;
+          this.playTone('wrong');
+        }
+        document.getElementById('hud-xp').textContent = `${this.state.xp} XP`;
+        document.getElementById('hud-streak').textContent = this.state.streak;
+      },
 
-      document.getElementById('levelBadge').textContent = `LVL ${level}`;
-      document.getElementById('rankTitle').textContent = `${rank} • Organize, build streaks & level up`;
-      document.getElementById('xpDisplay').textContent = `${appState.xp} XP`;
-      document.getElementById('xpProgressText').textContent = `${xpInLevel} / 100 XP`;
-      document.getElementById('xpProgressBar').style.width = `${xpInLevel}%`;
+      toggleAudio() {
+        this.state.audioEnabled = !this.state.audioEnabled;
+        document.getElementById('icon-audio').className = this.state.audioEnabled
+          ? 'fa-solid fa-volume-high text-indigo-600 dark:text-indigo-400'
+          : 'fa-solid fa-volume-xmark text-slate-400';
+        if (this.state.audioEnabled) this.playTone('pop');
+      },
 
-      const habitChecks = appState.habits.reduce((acc, h) => acc + h.days.filter(Boolean).length, 0);
-      document.getElementById('streakDisplay').textContent = habitChecks;
+      toggleTheme() {
+        this.state.darkMode = !this.state.darkMode;
+        document.documentElement.classList.toggle('dark', this.state.darkMode);
+        document.getElementById('icon-theme').className = this.state.darkMode
+          ? 'fa-solid fa-sun text-amber-400'
+          : 'fa-solid fa-moon';
+        this.playTone('pop');
+      },
 
-      const totalTasks = appState.tasks.length;
-      const completedTasks = appState.tasks.filter(t => t.completed).length;
-      const pendingTasks = totalTasks - completedTasks;
-      const rate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+      switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`panel-${tabId}`).classList.add('active');
 
-      document.getElementById('completionRate').textContent = `${rate}%`;
-      document.getElementById('progressBar').style.width = `${rate}%`;
-      document.getElementById('taskCounter').textContent = `${pendingTasks} task${pendingTasks === 1 ? '' : 's'} pending`;
-      document.getElementById('badge-tasks').textContent = pendingTasks;
-    }
+        document.querySelectorAll('.nav-tab').forEach(b => {
+          b.className = 'nav-tab px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-2';
+        });
+        if (btn) {
+          btn.className = 'nav-tab active px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap bg-indigo-600 text-white shadow-xs transition flex items-center gap-2';
+        }
+        this.playTone('pop');
+      },
 
-    function render() {
-      const list = document.getElementById('taskList');
-      list.innerHTML = '';
+      confetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const colors = ['#6366f1', '#14b8a6', '#f59e0b', '#8b5cf6', '#ec4899'];
+        const pieces = Array.from({ length: 80 }, () => ({
+          x: Math.random() * canvas.width,
+          y: -15 - Math.random() * 90,
+          r: 4 + Math.random() * 4,
+          vx: (Math.random() - 0.5) * 4,
+          vy: 2.5 + Math.random() * 3.5,
+          c: colors[Math.floor(Math.random() * colors.length)]
+        }));
 
-      const query = document.getElementById('searchInput').value.trim().toLowerCase();
-      const statusFilter = document.getElementById('statusFilter').value;
+        let frame = 0;
+        const step = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            ctx.fillStyle = p.c;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          if (++frame < 110) requestAnimationFrame(step);
+          else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+        step();
+      },
 
-      const filtered = appState.tasks.filter(t => {
-        const matchesCat = currentFilter === 'all' || t.category === currentFilter;
-        const matchesQuery = t.title.toLowerCase().includes(query);
-        const matchesStatus =
-          statusFilter === 'all' ||
-          (statusFilter === 'pending' && !t.completed) ||
-          (statusFilter === 'completed' && t.completed);
-        return matchesCat && matchesQuery && matchesStatus;
-      });
+      // =====================================================
+      // MODULE 1: CHANGES VS. FUTURE PLANS CLASSIFIER
+      // =====================================================
+      classifier: {
+        items: [
+          { id: 1, text: "I've started going to the gym three times a week.", type: 'C', grammar: 'Present Perfect ("I’ve started") expresses a recent change continuing now.' },
+          { id: 2, text: "I hope to open my own coffee shop someday.", type: 'P', grammar: '"Hope to + base verb" expresses a future wish or goal.' },
+          { id: 3, text: "My commute is much shorter than it used to be.", type: 'C', grammar: 'Comparative ("much shorter") contrasts the present situation with the past.' },
+          { id: 4, text: "We're going to move to a bigger apartment next month.", type: 'P', grammar: '"Be going to + base verb" expresses a decided future plan.' },
+          { id: 5, text: "I'm not in high school anymore — I graduated in June.", type: 'C', grammar: 'Present ("not... anymore") + Simple Past ("graduated") describe a life transition.' },
+          { id: 6, text: "I'd love to learn Japanese before my trip to Tokyo.", type: 'P', grammar: '"Would love to + base verb" expresses an enthusiastic future intention.' }
+        ],
+        answers: {},
+        rewarded: {},
 
-      const categoryBadges = {
-        Work: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-        Personal: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-        Health: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-      };
+        render() {
+          const grid = document.getElementById('classifier-grid');
+          grid.innerHTML = '';
+          let solved = 0;
 
-      const priorityBadges = {
-        high: { label: '🔥 High', cls: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
-        medium: { label: '⚡ Med', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-        low: { label: '🌱 Low', cls: 'bg-slate-700/40 text-slate-400 border-slate-700' }
-      };
+          this.items.forEach(item => {
+            const pick = this.answers[item.id];
+            const ok = pick === item.type;
+            if (ok) solved++;
 
-      if (filtered.length === 0) {
-        list.innerHTML = `
-          <li class="text-center py-10 text-slate-500 text-sm bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
-            <i class="fa-regular fa-folder-open text-2xl mb-2 block text-slate-600"></i>
-            No matching tasks found. Add one above or adjust your filters!
-          </li>
-        `;
-      } else {
-        filtered.forEach(task => {
-          const li = document.createElement('li');
-          li.draggable = true;
-          li.ondragstart = (e) => onDragStart(e, task.id);
-          li.ondragend = onDragEnd;
-          li.ondragover = onDragOver;
-          li.ondrop = (e) => onDrop(e, task.id);
+            const card = document.createElement('div');
+            card.className = `bg-white dark:bg-slate-900 rounded-2xl p-5 border-2 transition space-y-3 shadow-xs ${
+              pick
+                ? (ok ? 'border-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/20' : 'border-rose-400 bg-rose-50/20 dark:bg-rose-950/20')
+                : 'border-slate-200 dark:border-slate-800'
+            }`;
 
-          li.className = `animate-pop flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-all cursor-grab active:cursor-grabbing ${
-            task.completed
-              ? 'bg-slate-950/40 border-slate-900 opacity-60'
-              : 'bg-slate-950 border-slate-800 hover:border-indigo-500/40'
-          }`;
-
-          const pBadge = priorityBadges[task.priority] || priorityBadges.medium;
-
-          li.innerHTML = `
-            <div class="flex items-center gap-3 overflow-hidden flex-1">
-              <span class="text-slate-600 hover:text-slate-400 cursor-grab hidden sm:inline">
-                <i class="fa-solid fa-grip-vertical"></i>
-              </span>
-              <button
-                onclick="toggleTask(${task.id})"
-                class="w-6 h-6 rounded-lg border-2 shrink-0 ${
-                  task.completed ? 'bg-emerald-500 border-emerald-500 text-slate-950' : 'border-slate-600 hover:border-indigo-400'
-                } flex items-center justify-center text-xs font-black transition"
-              >
-                ${task.completed ? '<i class="fa-solid fa-check"></i>' : ''}
-              </button>
-              <span
-                ondblclick="editTask(${task.id})"
-                title="Double-click to edit"
-                class="text-sm font-medium truncate ${task.completed ? 'line-through text-slate-500' : 'text-slate-100'}"
-              >
-                ${escapeHtml(task.title)}
-              </span>
-            </div>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-              <span class="text-[10px] px-2 py-0.5 rounded-md border ${pBadge.cls} font-bold hidden md:inline">
-                ${pBadge.label}
-              </span>
-              <span class="text-[10px] px-2 py-0.5 rounded-md border ${categoryBadges[task.category]} font-bold hidden sm:inline">
-                ${task.category}
-              </span>
-              ${!task.completed ? `
-                <button onclick="startFocusOnTask(${task.id})" class="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold transition" title="Focus on this task">
-                  🎯
+            card.innerHTML = `
+              <div class="flex items-start justify-between gap-3">
+                <p class="text-sm font-extrabold leading-snug">"${item.text}"</p>
+                <button onclick="studio.speak('${item.text.replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 flex items-center justify-center shrink-0" title="Listen">
+                  <i class="fa-solid fa-volume-high text-xs"></i>
                 </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="studio.classifier.choose(${item.id}, 'C')" class="py-2 px-3 rounded-xl text-xs font-extrabold border transition ${
+                  pick === 'C'
+                    ? (item.type === 'C' ? 'bg-teal-600 text-white border-teal-600' : 'bg-rose-600 text-white border-rose-600')
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-teal-500'
+                }">
+                  🔄 Life Change
+                </button>
+                <button onclick="studio.classifier.choose(${item.id}, 'P')" class="py-2 px-3 rounded-xl text-xs font-extrabold border transition ${
+                  pick === 'P'
+                    ? (item.type === 'P' ? 'bg-amber-600 text-white border-amber-600' : 'bg-rose-600 text-white border-rose-600')
+                    : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-amber-500'
+                }">
+                  🚀 Future Plan
+                </button>
+              </div>
+              ${pick ? `
+                <p class="text-xs font-bold ${ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}">
+                  ${ok ? `✅ ${item.grammar}` : '❌ Not quite — check whether it has already happened or is a goal ahead!'}
+                </p>
               ` : ''}
-              <button onclick="editTask(${task.id})" class="text-slate-500 hover:text-indigo-400 text-xs p-1.5 transition" title="Edit">
-                <i class="fa-solid fa-pen"></i>
+            `;
+            grid.appendChild(card);
+          });
+
+          document.getElementById('classifier-progress').textContent = `${solved} / ${this.items.length} Classified`;
+          if (solved === this.items.length) {
+            studio.playTone('fanfare');
+            studio.confetti();
+          }
+        },
+
+        choose(id, val) {
+          const item = this.items.find(x => x.id === id);
+          this.answers[id] = val;
+          if (val === item.type) {
+            if (!this.rewarded[id]) {
+              this.rewarded[id] = true;
+              studio.reward(10, true);
+            } else {
+              studio.playTone('correct');
+            }
+          } else {
+            studio.reward(0, false);
+          }
+          this.render();
+        },
+
+        reset() {
+          this.answers = {};
+          studio.playTone('pop');
+          this.render();
+        }
+      },
+
+      // =====================================================
+      // MODULE 2: GRAMMAR & SENTENCE BUILDER LAB
+      // =====================================================
+      builder: {
+        gaps: [
+          {
+            id: 1,
+            before: 'Since last year, I',
+            after: 'much more confident speaking English. (change)',
+            ans: "'ve become",
+            options: ["'ve become", 'hope to become', 'going to become'],
+            rule: 'Use Present Perfect ("have become") for a change that started in the past and is true now.'
+          },
+          {
+            id: 2,
+            before: 'Next semester, I',
+            after: 'a course in graphic design. (plan)',
+            ans: 'plan to take',
+            options: ['took', 'plan to take', 'have taken'],
+            rule: '"Plan to + base verb" expresses a future intention.'
+          },
+          {
+            id: 3,
+            before: 'My schedule is',
+            after: 'than it was in college. (change)',
+            ans: 'more flexible',
+            options: ['more flexible', 'hope to flexible', 'flexibly'],
+            rule: 'Comparatives ("more flexible than...") highlight how life is different now.'
+          },
+          {
+            id: 4,
+            before: 'Within five years, we',
+            after: 'our own house near the coast. (plan)',
+            ans: "'d love to buy",
+            options: ['bought', "'d love to buy", 'have bought'],
+            rule: '"Would love to (\'d love to) + base verb" describes a future dream or aspiration.'
+          }
+        ],
+        gapAnswers: {},
+        gapChecked: false,
+        gapRewarded: {},
+
+        // Part B: Word Tile Assembler
+        tileIdx: 0,
+        selectedTiles: [],
+        tileFeedback: null,
+        tileChallenges: [
+          {
+            prompt: 'Assemble a sentence describing a recent lifestyle change:',
+            tiles: ["I've", 'changed', 'my', 'diet', 'and', 'I', 'feel', 'healthier', 'now.'],
+            answer: "I've changed my diet and I feel healthier now.",
+            note: 'Combines Present Perfect ("I’ve changed") with a Present comparative result ("feel healthier now").'
+          },
+          {
+            prompt: 'Assemble a sentence describing a career plan for next year:',
+            tiles: ['I', 'hope', 'to', 'find', 'a', 'remote', 'job', 'next', 'year.'],
+            answer: 'I hope to find a remote job next year.',
+            note: 'Uses "hope to + base verb (find)" with a future time marker ("next year").'
+          },
+          {
+            prompt: 'Assemble a sentence comparing past vs. present:',
+            tiles: ['My', 'life', 'is', 'much', 'busier', 'than', 'before.'],
+            answer: 'My life is much busier than before.',
+            note: 'Uses a comparative adjective ("much busier than before") to describe a change.'
+          }
+        ],
+
+        renderGaps() {
+          const list = document.getElementById('gap-list');
+          list.innerHTML = '';
+
+          this.gaps.forEach(g => {
+            const val = this.gapAnswers[g.id] || '';
+            const isOk = this.gapChecked && val === g.ans;
+            const isBad = this.gapChecked && val !== g.ans;
+
+            const row = document.createElement('div');
+            row.className = `p-4 rounded-xl border-2 transition space-y-1.5 ${
+              isOk ? 'border-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/20' :
+              isBad ? 'border-rose-400 bg-rose-50/20 dark:bg-rose-950/20' :
+              'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60'
+            }`;
+
+            const opts = g.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
+
+            row.innerHTML = `
+              <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold">
+                <span class="font-black text-indigo-500">${g.id}.</span>
+                <span>${g.before}</span>
+                <select onchange="studio.builder.selectGap(${g.id}, this.value)" class="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-extrabold text-indigo-600 dark:text-indigo-300">
+                  <option value="">-- choose --</option>
+                  ${opts}
+                </select>
+                <span>${g.after}</span>
+              </div>
+              ${this.gapChecked ? `
+                <p class="text-xs font-bold ${isOk ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">
+                  ${isOk ? `✅ Correct! ${g.rule}` : `❌ Expected "${g.ans}". ${g.rule}`}
+                </p>
+              ` : ''}
+            `;
+            list.appendChild(row);
+          });
+        },
+
+        selectGap(id, val) {
+          this.gapAnswers[id] = val;
+          this.gapChecked = false;
+          document.getElementById('gap-feedback').classList.add('hidden');
+          studio.playTone('pop');
+        },
+
+        checkGaps() {
+          this.gapChecked = true;
+          let score = 0;
+          this.gaps.forEach(g => {
+            if (this.gapAnswers[g.id] === g.ans) {
+              score++;
+              if (!this.gapRewarded[g.id]) {
+                this.gapRewarded[g.id] = true;
+                studio.reward(10, true);
+              }
+            }
+          });
+
+          const fb = document.getElementById('gap-feedback');
+          fb.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-400', 'text-emerald-800', 'bg-amber-50', 'border-amber-400', 'text-amber-800');
+
+          if (score === this.gaps.length) {
+            fb.classList.add('bg-emerald-50', 'border-emerald-400', 'text-emerald-800');
+            fb.textContent = `🎉 All ${score}/${this.gaps.length} forms correct!`;
+            studio.playTone('correct');
+          } else {
+            fb.classList.add('bg-amber-50', 'border-amber-400', 'text-amber-800');
+            fb.textContent = `📝 ${score} of ${this.gaps.length} correct. Review the grammar tips below!`;
+            studio.playTone('wrong');
+          }
+          this.renderGaps();
+        },
+
+        renderTiles() {
+          const stage = document.getElementById('tile-stage');
+          const ch = this.tileChallenges[this.tileIdx];
+          const sorted = [...ch.tiles].sort((a, b) => a.localeCompare(b));
+
+          const usedCount = {};
+          this.selectedTiles.forEach(t => { usedCount[t] = (usedCount[t] || 0) + 1; });
+
+          const bankHtml = sorted.map(t => {
+            const total = ch.tiles.filter(x => x === t).length;
+            const disabled = (usedCount[t] || 0) >= total;
+            return `
+              <button
+                type="button"
+                ${disabled ? 'disabled' : ''}
+                onclick="studio.builder.addTile('${t.replace(/'/g, "\\'")}')"
+                class="px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 transition ${
+                  disabled
+                    ? 'bg-slate-100 dark:bg-slate-950 text-slate-400 border-slate-200 dark:border-slate-800 opacity-40 cursor-not-allowed'
+                    : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700 hover:bg-indigo-600 hover:text-white'
+                }"
+              >${t}</button>
+            `;
+          }).join('');
+
+          const builtHtml = this.selectedTiles.length
+            ? this.selectedTiles.map((t, i) => `
+                <button
+                  type="button"
+                  onclick="studio.builder.removeTile(${i})"
+                  class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-600 text-white hover:bg-rose-600 transition"
+                >${t}</button>
+              `).join('')
+            : '<span class="text-xs text-slate-400 italic">Tap tiles below to build your sentence...</span>';
+
+          let fbHtml = '';
+          if (this.tileFeedback) {
+            const ok = this.tileFeedback.ok;
+            fbHtml = `
+              <div class="p-3.5 rounded-xl border-2 text-xs font-bold ${
+                ok
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-200'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-800 dark:text-rose-200'
+              }">
+                <div class="flex items-center justify-between gap-2">
+                  <span>${this.tileFeedback.msg}</span>
+                  ${ok ? `<button onclick="studio.speak('${ch.answer.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-extrabold"><i class="fa-solid fa-volume-high mr-1"></i>Listen</button>` : ''}
+                </div>
+              </div>
+            `;
+          }
+
+          stage.innerHTML = `
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 class="text-base font-black">Part B: Sentence Assembler (${this.tileIdx + 1}/${this.tileChallenges.length})</h3>
+              <button onclick="studio.builder.clearTiles()" class="text-xs font-bold text-slate-400 hover:text-rose-500">Clear</button>
+            </div>
+            <p class="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">${ch.prompt}</p>
+            <div class="min-h-[56px] p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-indigo-300 dark:border-indigo-800 flex flex-wrap items-center gap-2">
+              ${builtHtml}
+            </div>
+            <div class="flex flex-wrap gap-2">${bankHtml}</div>
+            ${fbHtml}
+            <div class="flex justify-between items-center pt-1">
+              <button onclick="studio.builder.checkTiles()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition">
+                Check Sentence
               </button>
-              <button onclick="deleteTask(${task.id})" class="text-slate-500 hover:text-rose-400 text-xs p-1.5 transition" title="Delete">
-                <i class="fa-solid fa-trash"></i>
+              <button onclick="studio.builder.nextTile()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-extrabold transition">
+                Next Sentence <i class="fa-solid fa-arrow-right ml-1"></i>
               </button>
             </div>
           `;
-          list.appendChild(li);
-        });
+        },
+
+        addTile(t) {
+          this.selectedTiles.push(t);
+          this.tileFeedback = null;
+          studio.playTone('pop');
+          this.renderTiles();
+        },
+
+        removeTile(i) {
+          this.selectedTiles.splice(i, 1);
+          this.tileFeedback = null;
+          studio.playTone('pop');
+          this.renderTiles();
+        },
+
+        clearTiles() {
+          this.selectedTiles = [];
+          this.tileFeedback = null;
+          studio.playTone('pop');
+          this.renderTiles();
+        },
+
+        checkTiles() {
+          const ch = this.tileChallenges[this.tileIdx];
+          const built = this.selectedTiles.join(' ');
+          if (!built) {
+            this.tileFeedback = { ok: false, msg: '⚠️ Add word tiles first before checking!' };
+            studio.playTone('wrong');
+          } else if (built === ch.answer) {
+            this.tileFeedback = { ok: true, msg: `✅ Spot on! ${ch.note}` };
+            studio.reward(15, true);
+          } else {
+            this.tileFeedback = { ok: false, msg: `❌ You wrote: "${built}". Check word order and try again!` };
+            studio.reward(0, false);
+          }
+          this.renderTiles();
+        },
+
+        nextTile() {
+          this.tileIdx = (this.tileIdx + 1) % this.tileChallenges.length;
+          this.selectedTiles = [];
+          this.tileFeedback = null;
+          studio.playTone('pop');
+          this.renderTiles();
+        }
+      },
+
+      // =====================================================
+      // MODULE 3: PERSONAL LIFE ROADMAP
+      // =====================================================
+      roadmap: {
+        presets: {
+          career: {
+            label: '💼 Career & Education',
+            change: "I've recently finished my university degree and started my first full-time job.",
+            plan: 'get promoted to project manager within two years.'
+          },
+          lifestyle: {
+            label: '🏠 Lifestyle & City',
+            change: 'I moved into my own apartment downtown, so my life is much more independent now.',
+            plan: 'decorate a cozy home office and host weekend dinners.'
+          },
+          health: {
+            label: '💪 Health & Habits',
+            change: "I've cut down on fast food and started running every morning.",
+            plan: 'complete my first 10K race this autumn.'
+          },
+          travel: {
+            label: '🌍 Travel & Languages',
+            change: "I've been practicing Spanish with an online tutor for six months.",
+            plan: 'backpack across South America next summer.'
+          }
+        },
+
+        cards: [
+          {
+            area: '💼 Career & Education',
+            text: "I've recently finished my university degree and started my first full-time job. In the future, I hope to get promoted to project manager within two years."
+          }
+        ],
+
+        applyPreset() {
+          const key = document.getElementById('rm-area').value;
+          const p = this.presets[key];
+          if (!p) return;
+          document.getElementById('rm-change-input').value = p.change;
+          document.getElementById('rm-plan-input').value = p.plan;
+          studio.playTone('pop');
+          this.updatePreview();
+        },
+
+        buildFullText() {
+          const change = document.getElementById('rm-change-input').value.trim();
+          const frame = document.getElementById('rm-frame').value;
+          const plan = document.getElementById('rm-plan-input').value.trim();
+
+          const cleanChange = change.endsWith('.') ? change : `${change}.`;
+          const cleanPlan = plan.endsWith('.') ? plan : `${plan}.`;
+          return `${cleanChange} Looking ahead, ${frame} ${cleanPlan}`;
+        },
+
+        updatePreview() {
+          const full = this.buildFullText();
+          const frame = document.getElementById('rm-frame').value;
+          const plan = document.getElementById('rm-plan-input').value.trim().toLowerCase();
+
+          document.getElementById('rm-preview-text').textContent = full;
+
+          const tip = document.getElementById('rm-grammar-tip');
+          if (plan.startsWith('to ')) {
+            tip.className = 'text-xs font-bold text-amber-600 dark:text-amber-400';
+            tip.textContent = `⚠️ Tip: "${frame}" already ends with "to", so start Step B directly with the base verb (remove the extra "to").`;
+          } else {
+            tip.className = 'text-xs font-bold text-emerald-600 dark:text-emerald-400';
+            tip.textContent = `✅ Structure looks great: Change statement + "${frame} + base verb".`;
+          }
+        },
+
+        speakPreview() {
+          studio.speak(this.buildFullText());
+        },
+
+        pinToBoard() {
+          const areaKey = document.getElementById('rm-area').value;
+          const areaLabel = this.presets[areaKey].label;
+          const text = this.buildFullText();
+
+          this.cards.unshift({ area: areaLabel, text });
+          studio.reward(25, true);
+          this.renderBoard();
+        },
+
+        removeCard(idx) {
+          this.cards.splice(idx, 1);
+          studio.playTone('pop');
+          this.renderBoard();
+        },
+
+        renderBoard() {
+          const list = document.getElementById('vision-board-list');
+          list.innerHTML = '';
+          document.getElementById('board-count').textContent = `${this.cards.length} Card${this.cards.length === 1 ? '' : 's'}`;
+
+          if (this.cards.length === 0) {
+            list.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">No milestones pinned yet. Create one on the left!</p>';
+            return;
+          }
+
+          this.cards.forEach((c, idx) => {
+            const div = document.createElement('div');
+            div.className = 'p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2';
+            div.innerHTML = `
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black text-indigo-600 dark:text-indigo-400">${c.area}</span>
+                <div class="flex items-center gap-2">
+                  <button onclick="studio.speak('${c.text.replace(/'/g, "\\'")}')" class="text-xs text-slate-400 hover:text-indigo-500" title="Listen">
+                    <i class="fa-solid fa-volume-high"></i>
+                  </button>
+                  <button onclick="studio.roadmap.removeCard(${idx})" class="text-xs text-slate-400 hover:text-rose-500" title="Delete">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">${c.text}</p>
+            `;
+            list.appendChild(div);
+          });
+        }
+      },
+
+      // =====================================================
+      // MODULE 4: MILESTONE CHALLENGE QUIZ
+      // =====================================================
+      quiz: {
+        idx: 0,
+        selected: null,
+        score: 0,
+        questions: [
+          {
+            q: '1. Which sentence accurately describes a recent personal change?',
+            opts: [
+              "I've grown my hair out and I wear contact lenses now.",
+              'I hope to grow my hair out next year.',
+              'I would like to wear contact lenses someday.'
+            ],
+            ans: 0,
+            exp: 'Present Perfect ("I’ve grown") + Present ("I wear... now") describe changes that are already true.'
+          },
+          {
+            q: '2. Complete the future plan: "After graduation, I ______ travel around Europe."',
+            opts: ['have traveled', "'d love to", 'traveled'],
+            ans: 1,
+            exp: '"Would love to (\'d love to) + base verb" expresses a future goal or wish.'
+          },
+          {
+            q: '3. Choose the correct comparative sentence for a lifestyle change:',
+            opts: [
+              'My new neighborhood is much quieter than my old one.',
+              'My new neighborhood is hope to quiet than before.',
+              'My new neighborhood is quietest than my old one.'
+            ],
+            ans: 0,
+            exp: 'Comparative adjective ("much quieter than...") contrasts the current situation with the past.'
+          },
+          {
+            q: '4. Which verb pattern is grammatically INCORRECT for future plans?',
+            opts: [
+              'I plan to start a master’s degree.',
+              'I hope to save enough money for a car.',
+              'I hope saving enough money for a car.'
+            ],
+            ans: 2,
+            exp: '"Hope" is followed by an infinitive ("hope to save"), not a gerund.'
+          },
+          {
+            q: '5. "I used to be really shy, but I\'m much more outgoing now." What does this express?',
+            opts: [
+              'A future resolution',
+              'A personality change from past to present',
+              'A scheduled appointment'
+            ],
+            ans: 1,
+            exp: '"Used to + base verb" contrasted with "now" highlights a clear personal change.'
+          }
+        ],
+
+        render() {
+          const card = document.getElementById('quiz-card');
+          const item = this.questions[this.idx];
+          const answered = this.selected !== null;
+          const isCorrect = this.selected === item.ans;
+
+          const optsHtml = item.opts.map((o, i) => {
+            let cls = 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-500';
+            let badge = '';
+            if (answered) {
+              if (i === item.ans) {
+                cls = 'bg-emerald-600 text-white border-emerald-600';
+                badge = '✅ ';
+              } else if (i === this.selected) {
+                cls = 'bg-rose-600 text-white border-rose-600';
+                badge = '❌ ';
+              } else {
+                cls = 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 opacity-50';
+              }
+            }
+            return `
+              <button
+                type="button"
+                ${answered ? 'disabled' : ''}
+                onclick="studio.quiz.pick(${i})"
+                class="w-full text-left p-4 rounded-2xl border-2 text-xs sm:text-sm font-bold transition ${cls}"
+              >${badge}${o}</button>
+            `;
+          }).join('');
+
+          const isLast = this.idx === this.questions.length - 1;
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                Question ${this.idx + 1} of ${this.questions.length}
+              </span>
+              <span class="text-xs font-extrabold text-slate-400">Score: ${this.score} / ${this.questions.length}</span>
+            </div>
+
+            <p class="text-base sm:text-lg font-extrabold">${item.q}</p>
+
+            <div class="space-y-2.5">${optsHtml}</div>
+
+            ${answered ? `
+              <div class="p-4 rounded-2xl border-2 text-xs font-bold ${
+                isCorrect
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-200'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-400 text-rose-800 dark:text-rose-200'
+              }">
+                <p class="text-sm font-black mb-1">${isCorrect ? '🎉 Correct! (+20 XP)' : '❌ Not quite!'}</p>
+                <p>${item.exp}</p>
+              </div>
+            ` : ''}
+
+            <div class="flex justify-end pt-2">
+              <button
+                onclick="studio.quiz.next()"
+                ${!answered ? 'disabled' : ''}
+                class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-extrabold transition"
+              >
+                ${isLast ? 'Finish & Celebrate 🎊' : 'Next Question →'}
+              </button>
+            </div>
+          `;
+        },
+
+        pick(i) {
+          if (this.selected !== null) return;
+          this.selected = i;
+          const item = this.questions[this.idx];
+          const ok = i === item.ans;
+          if (ok) {
+            this.score++;
+            studio.reward(20, true);
+          } else {
+            studio.reward(0, false);
+            document.getElementById('quiz-card').classList.add('animate-shake');
+            setTimeout(() => document.getElementById('quiz-card').classList.remove('animate-shake'), 350);
+          }
+          this.render();
+        },
+
+        next() {
+          if (this.idx < this.questions.length - 1) {
+            this.idx++;
+            this.selected = null;
+            studio.playTone('pop');
+            this.render();
+          } else {
+            studio.playTone('fanfare');
+            studio.confetti();
+            const card = document.getElementById('quiz-card');
+            card.innerHTML = `
+              <div class="text-center py-6 space-y-4">
+                <div class="text-5xl">🏆</div>
+                <h3 class="text-2xl font-black">Challenge Complete!</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-semibold">
+                  You scored <strong class="text-indigo-600 dark:text-indigo-400">${this.score} out of ${this.questions.length}</strong> and earned <strong class="text-emerald-600 dark:text-emerald-400">${studio.state.xp} XP</strong>!
+                </p>
+                <button onclick="studio.quiz.restart()" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-md transition">
+                  Play Again
+                </button>
+              </div>
+            `;
+          }
+        },
+
+        restart() {
+          this.idx = 0;
+          this.selected = null;
+          this.score = 0;
+          studio.playTone('pop');
+          this.render();
+        }
+      },
+
+      init() {
+        this.classifier.render();
+        this.builder.renderGaps();
+        this.builder.renderTiles();
+        this.roadmap.updatePreview();
+        this.roadmap.renderBoard();
+        this.quiz.render();
       }
+    };
 
-      updateGlobalHUD();
-    }
-
-    // ==========================================
-    // CONFETTI CELEBRATION
-    // ==========================================
-    function triggerConfetti() {
-      const canvas = document.getElementById('confettiCanvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
-      const palette = ['#6366f1', '#a855f7', '#ec4899', '#10b981', '#f59e0b'];
-      const pieces = Array.from({ length: 75 }, () => ({
-        x: Math.random() * canvas.width,
-        y: -20 - Math.random() * 80,
-        r: 4 + Math.random() * 4,
-        vx: (Math.random() - 0.5) * 4,
-        vy: 2.5 + Math.random() * 3.5,
-        color: palette[Math.floor(Math.random() * palette.length)]
-      }));
-
-      let frame = 0;
-      function loop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        pieces.forEach(p => {
-          p.x += p.vx;
-          p.y += p.vy;
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
-        });
-        frame++;
-        if (frame < 110) requestAnimationFrame(loop);
-        else ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      loop();
-    }
-
-    // Initial Boot
-    document.getElementById('soundIcon').className = appState.soundEnabled
-      ? 'fa-solid fa-volume-high text-indigo-400'
-      : 'fa-solid fa-volume-xmark text-slate-500';
-    render();
-    renderHabits();
-    updateTimerUI();
+    window.addEventListener('DOMContentLoaded', () => studio.init());
   </script>
 </body>
 </html>
