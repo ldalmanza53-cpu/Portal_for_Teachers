@@ -17,6 +17,7 @@
         body { font-family: 'Outfit', sans-serif; }
         .active-tab { background-color: #8b5cf6 !important; color: #ffffff !important; font-weight: 700; }
         .drag-over { border-color: #a855f7 !important; background-color: rgba(168, 85, 247, 0.15) !important; }
+        .ready-to-drop { border-color: rgba(168, 85, 247, 0.65) !important; background-color: rgba(168, 85, 247, 0.06) !important; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
@@ -68,7 +69,7 @@
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-shapes text-purple-400"></i> Section A: Categorize Free-Time Activities
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1">Select an event card or drag it into the correct category column below.</p>
+                    <p class="text-xs text-slate-400 mt-1">Click an event card to select it and then click the target category box (or drag and drop it).</p>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="resetSectionA()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition">
@@ -86,7 +87,7 @@
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-cube"></i> Unsorted Events Pool:</span>
                     <span id="poolCount" class="text-xs font-mono text-purple-400">12 items remaining</span>
                 </div>
-                <div id="wordPool" class="flex flex-wrap gap-2.5 min-h-[50px]">
+                <div id="wordPool" onclick="handlePoolClick()" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDropToPool(event)" class="flex flex-wrap gap-2.5 min-h-[54px] p-2 rounded-xl border border-transparent transition">
                     <!-- Generated via JS -->
                 </div>
             </div>
@@ -100,7 +101,7 @@
                             <i class="fa-solid fa-trophy text-emerald-400 text-lg"></i>
                             <h3 class="font-bold text-sm text-white">Sports and Games</h3>
                         </div>
-                        <div id="col-sports" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'sports')" class="bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition">
+                        <div id="col-sports" onclick="handleCategoryClick('sports')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'sports')" class="dropzone bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition cursor-pointer">
                             <!-- Items go here -->
                         </div>
                     </div>
@@ -117,7 +118,7 @@
                             <i class="fa-solid fa-users text-amber-400 text-lg"></i>
                             <h3 class="font-bold text-sm text-white">Friends and Family</h3>
                         </div>
-                        <div id="col-friends" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'friends')" class="bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition">
+                        <div id="col-friends" onclick="handleCategoryClick('friends')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'friends')" class="dropzone bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition cursor-pointer">
                             <!-- Items go here -->
                         </div>
                     </div>
@@ -134,7 +135,7 @@
                             <i class="fa-solid fa-masks-theater text-fuchsia-400 text-lg"></i>
                             <h3 class="font-bold text-sm text-white">Art and Performances</h3>
                         </div>
-                        <div id="col-art" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'art')" class="bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition">
+                        <div id="col-art" onclick="handleCategoryClick('art')" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="handleDrop(event, 'art')" class="dropzone bg-slate-900/60 p-3 rounded-xl border-2 border-dashed border-slate-700 min-h-[220px] space-y-2 transition cursor-pointer">
                             <!-- Items go here -->
                         </div>
                     </div>
@@ -237,7 +238,7 @@
         const eventsData = [
             { id: 'e1', phrase: 'a rock concert', cat: 'art', icon: 'fa-guitar' },
             { id: 'e2', phrase: 'a barbecue', cat: 'friends', icon: 'fa-drumstick-bite' },
-            { id: 'e3', phrase: 'a wedding', cat: 'friends', icon: 'fa-rings-wedding' },
+            { id: 'e3', phrase: 'a wedding', cat: 'friends', icon: 'fa-heart' },
             { id: 'e4', phrase: 'a hip-hop dance performance', cat: 'art', icon: 'fa-person-dancing' },
             { id: 'e5', phrase: 'a soccer game', cat: 'sports', icon: 'fa-futbol' },
             { id: 'e6', phrase: 'a film festival', cat: 'art', icon: 'fa-film' },
@@ -271,6 +272,9 @@
         // --- SECTION A LOGIC ---
         function initSectionA() {
             sortedState = {};
+            selectedCardId = null;
+            updateDropzoneHighlights();
+
             const pool = document.getElementById('wordPool');
             pool.innerHTML = '';
             document.getElementById('col-sports').innerHTML = '';
@@ -291,16 +295,31 @@
             el.id = `item-${item.id}`;
             el.draggable = true;
             el.ondragstart = (e) => dragStart(e, item.id);
-            el.onclick = () => selectBadge(item.id);
-            el.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-2 rounded-xl font-medium cursor-pointer flex items-center gap-2 shadow-sm transition active:scale-95 text-slate-200';
+            el.onclick = (e) => {
+                e.stopPropagation();
+                selectBadge(item.id);
+            };
+            el.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-2 rounded-xl font-medium cursor-pointer flex items-center gap-2 shadow-sm transition active:scale-95 text-slate-200 select-none';
             el.innerHTML = `<i class="fa-solid ${item.icon} text-purple-400"></i> ${item.phrase}`;
             return el;
+        }
+
+        function updateDropzoneHighlights() {
+            document.querySelectorAll('.dropzone').forEach(zone => {
+                if (selectedCardId) {
+                    zone.classList.add('ready-to-drop');
+                } else {
+                    zone.classList.remove('ready-to-drop');
+                }
+            });
         }
 
         function selectBadge(id) {
             if (selectedCardId === id) {
                 selectedCardId = null;
-                document.getElementById(`item-${id}`).classList.remove('ring-2', 'ring-purple-500');
+                const curr = document.getElementById(`item-${id}`);
+                if (curr) curr.classList.remove('ring-2', 'ring-purple-500');
+                updateDropzoneHighlights();
                 return;
             }
 
@@ -310,12 +329,30 @@
             }
 
             selectedCardId = id;
-            document.getElementById(`item-${id}`).classList.add('ring-2', 'ring-purple-500');
+            const target = document.getElementById(`item-${id}`);
+            if (target) target.classList.add('ring-2', 'ring-purple-500');
+            updateDropzoneHighlights();
+        }
+
+        function handleCategoryClick(cat) {
+            if (selectedCardId) {
+                moveItemToCategory(selectedCardId, cat);
+            }
+        }
+
+        function handlePoolClick() {
+            if (selectedCardId && sortedState[selectedCardId]) {
+                returnItemToPool(selectedCardId);
+            }
         }
 
         function allowDrop(e) {
             e.preventDefault();
             e.currentTarget.classList.add('drag-over');
+        }
+
+        function leaveDrop(e) {
+            e.currentTarget.classList.remove('drag-over');
         }
 
         function handleDrop(e, cat) {
@@ -324,6 +361,14 @@
 
             const id = e.dataTransfer ? e.dataTransfer.getData('text/plain') : selectedCardId;
             if (id) moveItemToCategory(id, cat);
+        }
+
+        function handleDropToPool(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            const id = e.dataTransfer ? e.dataTransfer.getData('text/plain') : selectedCardId;
+            if (id) returnItemToPool(id);
         }
 
         function dragStart(e, id) {
@@ -345,6 +390,22 @@
             }
 
             selectedCardId = null;
+            updateDropzoneHighlights();
+            updatePoolCount();
+        }
+
+        function returnItemToPool(id) {
+            delete sortedState[id];
+            const pool = document.getElementById('wordPool');
+            const badge = document.getElementById(`item-${id}`);
+
+            if (badge) {
+                badge.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-3 py-2 rounded-xl font-medium cursor-pointer flex items-center gap-2 shadow-sm transition active:scale-95 text-slate-200 select-none';
+                pool.appendChild(badge);
+            }
+
+            selectedCardId = null;
+            updateDropzoneHighlights();
             updatePoolCount();
         }
 
@@ -362,9 +423,9 @@
 
                 if (userCat === item.cat) {
                     correct++;
-                    if (badge) badge.className = 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs px-3 py-2 rounded-xl font-medium flex items-center gap-2';
+                    if (badge) badge.className = 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs px-3 py-2 rounded-xl font-medium cursor-pointer flex items-center gap-2 select-none';
                 } else if (userCat) {
-                    if (badge) badge.className = 'bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs px-3 py-2 rounded-xl font-medium flex items-center gap-2';
+                    if (badge) badge.className = 'bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs px-3 py-2 rounded-xl font-medium cursor-pointer flex items-center gap-2 select-none';
                 }
             });
 
