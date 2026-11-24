@@ -294,9 +294,14 @@
       align-items: center;
     }
 
-    .btn-option:hover {
+    .btn-option:hover:not(:disabled) {
       border-color: var(--primary);
       background: #EFF6FF;
+    }
+
+    .btn-option:disabled {
+      cursor: default;
+      opacity: 0.85;
     }
 
     .feedback-box {
@@ -473,7 +478,7 @@
     }
 
     @media print {
-      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, button { display: none !important; }
+      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, #quiz-feedback, button { display: none !important; }
       body { background: white; padding: 0; }
       .container { max-width: 100%; }
       .tab-content { display: block !important; box-shadow: none; border: none; padding: 0; }
@@ -683,7 +688,7 @@
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
           <button class="btn-primary" onclick="readStudioScript()">🔊 Listen Speech</button>
-          <button class="btn-secondary" onclick="copyStudioScript()">📋 Copy Speech</button>
+          <button class="btn-secondary" id="btn-copy-speech" onclick="copyStudioScript()">📋 Copy Speech</button>
         </div>
       </div>
     </div>
@@ -729,6 +734,8 @@
 
       <button class="btn-primary" onclick="submitQuiz()">Submit Answers & Earn Certificate</button>
 
+      <div id="quiz-feedback" class="feedback-box"></div>
+
       <!-- Printable Certificate -->
       <div id="certificate" class="certificate">
         <canvas id="confetti-canvas"></canvas>
@@ -751,7 +758,7 @@
           <div>Status: Certified</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
-          <button class="btn-primary" onclick="window.print()">🖨️️ Print Certificate</button>
+          <button class="btn-primary" onclick="window.print()">🖨 Print Certificate</button>
         </div>
       </div>
     </div>
@@ -899,11 +906,14 @@
     let currentScen = 0;
     let gameScore = 0;
     let gameStreak = 0;
+    let scenAnswered = false;
 
     function loadScenario() {
+      scenAnswered = false;
       const scen = scenarios[currentScen];
       document.getElementById('scen-icon').innerText = scen.icon;
       document.getElementById('scen-title').innerText = `"${scen.question}"`;
+      document.getElementById('game-total').innerText = scenarios.length;
 
       const optsContainer = document.getElementById('options-container');
       optsContainer.innerHTML = '';
@@ -914,7 +924,9 @@
         btn.innerHTML = `<span>${opt.text}</span> 🔊`;
         btn.onclick = () => {
           speak(opt.text);
-          checkOption(opt.correct, scen.explain);
+          if (!scenAnswered) {
+            checkOption(opt.correct, scen.explain);
+          }
         };
         optsContainer.appendChild(btn);
       });
@@ -928,6 +940,7 @@
     }
 
     function checkOption(isCorrect, explainText) {
+      scenAnswered = true;
       const feedback = document.getElementById('game-feedback');
       feedback.style.display = 'block';
 
@@ -951,7 +964,15 @@
 
     function nextScenario() {
       playSFX('click');
-      currentScen = (currentScen + 1) % scenarios.length;
+      if (currentScen + 1 >= scenarios.length) {
+        currentScen = 0;
+        gameScore = 0;
+        gameStreak = 0;
+        document.getElementById('game-score').innerText = gameScore;
+        document.getElementById('game-streak').innerText = gameStreak;
+      } else {
+        currentScen++;
+      }
       loadScenario();
     }
 
@@ -959,12 +980,161 @@
     const presentations = {
       "Place": {
         "breathtaking": "Today I want to present the Eiffel Tower. It is a remarkable place located in Paris, France. It was built in 1889. In my opinion, it is breathtaking because millions of people visit it every year.",
-        "revolutionary": "Today I want to present Machu Picchu. It is an ancient place located in Peru. It was built in the 15th century. In my opinion, its stone architecture is revolutionary for its time.",
-        "iconic": "Today I want to present the Colosseum. It is a famous monument located in Rome, Italy. It was built in 80 AD. In my opinion, it is an iconic symbol of world history.",
-        "fascinating": "Today I want to present the Great Wall of China. It is a historic site stretching across northern China. It was built over many centuries. In my opinion, its size is fascinating."
+        "revolutionary": "Today I want to present the Eiffel Tower. It is a remarkable place located in Paris, France. It was built in 1889 using iron. In my opinion, its architecture was revolutionary for modern engineering.",
+        "iconic": "Today I want to present the Eiffel Tower. It is a remarkable place located in Paris, France. It was built in 1889. In my opinion, it is iconic because people all over the world recognize it instantly.",
+        "fascinating": "Today I want to present the Eiffel Tower. It is a remarkable place located in Paris, France. It was built in 1889. In my opinion, it is fascinating because you can see the entire city from the top."
       },
       "Invention": {
-        "breathtaking": "Today I want to present the Internet. It was invented in the late 20th century to connect computers. In my opinion, its speed and global impact are breathtaking.",
-        "revolutionary": "Today I want to present the lightbulb. It was invented by Thomas Edison in 1879. In my opinion, it is revolutionary because it allowed people to work and study safely at night.",
-        "iconic": "Today I want to present the smartphone. It was created to combine phone calls with mobile computing. In my opinion, it is an iconic device of modern life.",
-        "
+        "breathtaking": "Today I want to present the electric lightbulb. It is a great invention that was developed by Thomas Edison in 1879. In my opinion, its impact is breathtaking because it transformed life after sunset.",
+        "revolutionary": "Today I want to present the electric lightbulb. It is a great invention that was developed by Thomas Edison in 1879. In my opinion, it is revolutionary because people could finally work and read safely at night.",
+        "iconic": "Today I want to present the electric lightbulb. It is a great invention that was developed by Thomas Edison in 1879. In my opinion, it is iconic because it is now the universal symbol for a bright idea.",
+        "fascinating": "Today I want to present the electric lightbulb. It is a great invention that was developed by Thomas Edison in 1879. In my opinion, it is fascinating how electricity heats a thin filament to create warm light."
+      },
+      "Art": {
+        "breathtaking": "Today I want to present the Mona Lisa. It is a masterpiece painting that was created by Leonardo da Vinci in Italy. In my opinion, it is breathtaking because of its realistic detail and soft colors.",
+        "revolutionary": "Today I want to present the Mona Lisa. It is a masterpiece painting that was created by Leonardo da Vinci in Italy. In my opinion, it was revolutionary because it changed how artists painted human expressions.",
+        "iconic": "Today I want to present the Mona Lisa. It is a masterpiece painting that was created by Leonardo da Vinci in Italy. In my opinion, it is iconic because millions of visitors travel to the Louvre Museum to see it.",
+        "fascinating": "Today I want to present the Mona Lisa. It is a masterpiece painting that was created by Leonardo da Vinci in Italy. In my opinion, it is fascinating because her mysterious smile looks different from every angle."
+      }
+    };
+
+    function updateStudio() {
+      playSFX('click');
+      const category = document.getElementById('script-category').value;
+      const adjective = document.getElementById('script-adjective').value;
+      const script = presentations[category][adjective];
+      document.getElementById('studio-text').innerText = `"${script}"`;
+    }
+
+    function readStudioScript() {
+      const rawText = document.getElementById('studio-text').innerText.replace(/^"|"$/g, '');
+      speak(rawText);
+    }
+
+    function copyStudioScript() {
+      playSFX('click');
+      const rawText = document.getElementById('studio-text').innerText.replace(/^"|"$/g, '');
+      const copyBtn = document.getElementById('btn-copy-speech');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(rawText).then(() => {
+          copyBtn.innerText = '✅ Copied!';
+          setTimeout(() => { copyBtn.innerText = '📋 Copy Speech'; }, 2000);
+        });
+      } else {
+        const tempInput = document.createElement('textarea');
+        tempInput.value = rawText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        copyBtn.innerText = '✅ Copied!';
+        setTimeout(() => { copyBtn.innerText = '📋 Copy Speech'; }, 2000);
+      }
+    }
+
+    // Tab 5: Quiz & Certificate
+    function submitQuiz() {
+      const answers = { q1: 'a', q2: 'a', q3: 'a', q4: 'a', q5: 'a' };
+      const feedback = document.getElementById('quiz-feedback');
+      const cert = document.getElementById('certificate');
+
+      let score = 0;
+      let unanswered = [];
+
+      for (let i = 1; i <= 5; i++) {
+        const qName = `q${i}`;
+        const selected = document.querySelector(`input[name="${qName}"]:checked`);
+        if (!selected) {
+          unanswered.push(i);
+        } else if (selected.value === answers[qName]) {
+          score++;
+        }
+      }
+
+      if (unanswered.length > 0) {
+        playSFX('wrong');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-box feedback-wrong';
+        feedback.innerHTML = `⚠️ Please answer all questions before submitting (Missing: Question ${unanswered.join(', ')}).`;
+        cert.style.display = 'none';
+        return;
+      }
+
+      if (score === 5) {
+        const studentName = prompt('🎉 Perfect 5/5 score! Enter your name for your certificate:', 'A2 Global Cultural Scholar');
+        if (studentName && studentName.trim() !== '') {
+          document.getElementById('cert-student-name').innerText = studentName.trim();
+        }
+
+        playSFX('fanfare');
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-box feedback-correct';
+        feedback.innerHTML = '🏆 Congratulations! You scored 5/5 (100%) and unlocked your Cultural Explorer Certificate!';
+
+        cert.style.display = 'block';
+        cert.scrollIntoView({ behavior: 'smooth' });
+        launchConfetti();
+      } else {
+        playSFX('wrong');
+        cert.style.display = 'none';
+        feedback.style.display = 'block';
+        feedback.className = 'feedback-box feedback-wrong';
+        feedback.innerHTML = `📝 You scored ${score}/5. Achieve 5/5 (100% mastery) to unlock your printable certificate—review your choices and try again!`;
+      }
+    }
+
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+
+      const colors = ['#2563EB', '#D97706', '#059669', '#DC2626', '#7C3AED', '#F59E0B'];
+      const particles = Array.from({ length: 70 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 4,
+        h: Math.random() * 6 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speedY: Math.random() * 2.5 + 1.5,
+        speedX: (Math.random() - 0.5) * 1.5,
+        angle: Math.random() * 360,
+        spin: (Math.random() - 0.5) * 6
+      }));
+
+      let frame = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.y += p.speedY;
+          p.x += p.speedX;
+          p.angle += p.spin;
+          if (p.y > canvas.height) {
+            p.y = -10;
+            p.x = Math.random() * canvas.width;
+          }
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.angle * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        });
+        frame++;
+        if (frame < 240) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      animate();
+    }
+
+    // Initialize interactive tabs on page load
+    updateBuilder();
+    loadScenario();
+    updateStudio();
+  </script>
+</body>
+</html>
