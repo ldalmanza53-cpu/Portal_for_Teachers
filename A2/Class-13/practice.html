@@ -276,6 +276,7 @@
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -323,6 +324,18 @@
       line-height: 1.6;
     }
 
+    .dialogue-line {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #ffedd5;
+    }
+
+    .dialogue-line:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
     /* ARCADE MINI QUIZ */
     .arcade-box {
       background: #fdf4ff;
@@ -330,6 +343,27 @@
       border-radius: 12px;
       padding: 20px;
       text-align: center;
+    }
+
+    .quiz-option-btn {
+      padding: 12px 16px;
+      border: 2px solid #e9d5ff;
+      background: #faf5ff;
+      color: #4c1d95;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-option-btn:hover:not(:disabled) {
+      background: #f3e8ff;
+      border-color: var(--accent);
+    }
+
+    .quiz-option-btn:disabled {
+      cursor: default;
     }
 
     .score-banner {
@@ -364,10 +398,10 @@
     </header>
 
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('partA')">Part A: Video Evaluations</button>
-      <button class="tab-btn" onclick="switchTab('partB')">Part B: Comparison Sentences</button>
-      <button class="tab-btn" onclick="switchTab('partC')">Part C: Pair Work Simulator</button>
-      <button class="tab-btn" onclick="switchTab('arcade')">Grammar Speed Quiz</button>
+      <button class="tab-btn active" onclick="switchTab('partA', this)">Part A: Video Evaluations</button>
+      <button class="tab-btn" onclick="switchTab('partB', this)">Part B: Comparison Sentences</button>
+      <button class="tab-btn" onclick="switchTab('partC', this)">Part C: Pair Work Simulator</button>
+      <button class="tab-btn" onclick="switchTab('arcade', this)">Grammar Speed Quiz</button>
     </div>
 
     <!-- GRAMMAR SPOTLIGHT -->
@@ -426,7 +460,7 @@
 
       <div class="controls">
         <button class="btn btn-primary" onclick="checkPartB()">Check Comparisons</button>
-        <button class="btn btn-secondary" onclick="resetPartB()">Reset</button>
+        <button class="btn btn-secondary" onclick="resetPartB()">Clear & Practice</button>
       </div>
     </div>
 
@@ -498,6 +532,69 @@
       { id: 5, prompt: "Compare Lakeview Drive vs. Hudson Street (convenience):", target: "The Lakeview Drive apartment isn't as convenient as Hudson Street." }
     ];
 
+    const quizQuestions = [
+      {
+        prompt: "This studio only has one small closet. It _____ for two people.",
+        options: ["isn't big enough", "is too enough", "isn't as big", "is big too"],
+        correct: "isn't big enough"
+      },
+      {
+        prompt: "The rent is $3,500 a month! That apartment _____.",
+        options: ["is too expensive", "isn't expensive enough", "is as expensive", "too is expensive"],
+        correct: "is too expensive"
+      },
+      {
+        prompt: "My new neighborhood _____ my old neighborhood. It's very peaceful!",
+        options: ["isn't as noisy as", "is too noisy enough", "isn't noisy too", "as noisy isn't as"],
+        correct: "isn't as noisy as"
+      },
+      {
+        prompt: "We have to walk 45 minutes to the subway. The station _____.",
+        options: ["isn't close enough", "is too close", "isn't as close", "is close too"],
+        correct: "isn't close enough"
+      },
+      {
+        prompt: "There are huge windows in every room! The living room _____.",
+        options: ["is bright enough", "is too dark enough", "isn't as bright", "too bright is"],
+        correct: "is bright enough"
+      },
+      {
+        prompt: "Traffic outside wakes me up every morning. This street _____.",
+        options: ["is too loud", "isn't loud enough", "is loud too", "as loud isn't"],
+        correct: "is too loud"
+      },
+      {
+        prompt: "Both apartments have two bedrooms. Apartment A _____ Apartment B.",
+        options: ["is as spacious as", "is too spacious as", "isn't spacious enough as", "as is spacious"],
+        correct: "is as spacious as"
+      },
+      {
+        prompt: "The kitchen only fits one person at a time. It _____.",
+        options: ["is too cramped", "isn't cramped enough", "is as cramped", "cramped too is"],
+        correct: "is too cramped"
+      }
+    ];
+
+    let currentQuizIndex = 0;
+    let quizPoints = 0;
+
+    function switchTab(tabName, btnElement) {
+      const sections = ['partA-section', 'partB-section', 'partC-section', 'arcade-section'];
+      sections.forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      document.getElementById(`${tabName}-section`).style.display = 'block';
+
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+
+      document.getElementById('score-banner').style.display = 'none';
+
+      if (tabName === 'arcade') {
+        startQuiz();
+      }
+    }
+
     function playSound(type) {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
@@ -527,6 +624,7 @@
       }
     }
 
+    // PART A
     function renderPartA() {
       const container = document.getElementById('partAList');
       container.innerHTML = '';
@@ -618,7 +716,8 @@
       document.getElementById('score-banner').style.display = 'none';
     }
 
-    function renderPartB() {
+    // PART B
+    function renderPartB(clearValues = false) {
       const container = document.getElementById('partBList');
       container.innerHTML = '';
 
@@ -631,18 +730,20 @@
             <div style="font-weight:600; font-size:0.95rem; margin-bottom:4px; color:#334155;">1. Example:</div>
             <div style="background:#e0f2fe; padding:10px 14px; border-radius:8px; font-weight:600; color:var(--primary-dark); display:flex; justify-content:space-between; align-items:center;">
               <span>${item.text}</span>
-              <button class="audio-btn" onclick="speakText('${item.text}')">🔊</button>
+              <button class="audio-btn" onclick="speakText('${item.text.replace(/'/g, "\\'")}')">🔊</button>
             </div>
           `;
         } else {
+          const initialVal = clearValues ? '' : item.target;
           div.innerHTML = `
             <label style="font-weight:600; font-size:0.9rem; display:block; margin-bottom:4px; color:#334155;">
               ${index + 1}. ${item.prompt}
             </label>
             <div style="display:flex; gap:8px;">
-              <input type="text" class="input-text" id="partB-input-${index}" value="${item.target}">
+              <input type="text" class="input-text" id="partB-input-${index}" value="${initialVal}" placeholder="Write a comparison using 'as ... as'...">
               <button class="audio-btn" onclick="speakPartB(${index})">🔊</button>
             </div>
+            <div class="feedback-msg" id="partB-fb-${index}"></div>
           `;
         }
         container.appendChild(div);
@@ -654,8 +755,192 @@
       if (val) speakText(val);
     }
 
+    function normalizeSentence(str) {
+      return str.toLowerCase().replace(/[.,!?]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
     function checkPartB() {
-      playSound('success');
+      let correctCount = 0;
+      const total = partBData.length - 1;
+
+      partBData.forEach((item, index) => {
+        if (!item.example) {
+          const input = document.getElementById(`partB-input-${index}`);
+          const fb = document.getElementById(`partB-fb-${index}`);
+          const userNorm = normalizeSentence(input.value);
+          const targetNorm = normalizeSentence(item.target);
+          const hasAsAsStructure = /\bas\s+[a-z]+\s+(to\s+school\s+)?as\b/i.test(input.value);
+
+          if (userNorm === targetNorm || (hasAsAsStructure && userNorm.length > 20)) {
+            input.className = 'input-text correct';
+            fb.innerText = '✓ Great comparison!';
+            fb.className = 'feedback-msg correct';
+            correctCount++;
+          } else {
+            input.className = 'input-text incorrect';
+            fb.innerText = `✗ Suggested answer: "${item.target}"`;
+            fb.className = 'feedback-msg incorrect';
+          }
+        }
+      });
+
       const banner = document.getElementById('score-banner');
       banner.style.display = 'block';
-      banner.style.background = 'var(--
+      banner.innerText = `Part B Score: ${correctCount} / ${total} valid comparisons!`;
+
+      if (correctCount === total) {
+        banner.style.background = 'var(--success-bg)';
+        banner.style.color = 'var(--success)';
+        playSound('success');
+      } else {
+        banner.style.background = 'var(--danger-bg)';
+        banner.style.color = 'var(--danger)';
+        playSound('error');
+      }
+    }
+
+    function resetPartB() {
+      renderPartB(true);
+      document.getElementById('score-banner').style.display = 'none';
+    }
+
+    // PART C
+    function generateDialogue() {
+      const apartment = document.getElementById('simApartment').value;
+      const opinion = document.getElementById('simOpinion').value;
+      const output = document.getElementById('dialogueOutput');
+
+      const apartmentDetails = {
+        "Hudson Street": {
+          detail: "It's pretty big, and it's very close to school.",
+          followUp: "True, though Ellen thought it wasn't bright enough because of that tiny window."
+        },
+        "Lakeview Drive": {
+          detail: "It looks nice, but it's too far from school and way too expensive.",
+          followUp: "Definitely! Your place sounds much more convenient and affordable."
+        },
+        "Third Avenue": {
+          detail: "It's big enough for three people and super bright.",
+          followUp: "Sounds like a tie! Both places are great for students."
+        }
+      };
+
+      const opinionLines = {
+        "too small": `Honestly, my apartment is too small compared to the ${apartment} apartment. It isn't spacious enough for roommates!`,
+        "not as close": `Well, my house isn't as close to school as the ${apartment} apartment, so my commute is too long.`,
+        "much bigger": `Actually, my place is much bigger and brighter! The ${apartment} apartment isn't as comfortable as my home.`
+      };
+
+      const lines = [
+        { speaker: "Student A", text: `What do you think about the ${apartment} apartment from the video?` },
+        { speaker: "Student B", text: `${apartmentDetails[apartment].detail} How does it compare to your place?` },
+        { speaker: "Student A", text: opinionLines[opinion] },
+        { speaker: "Student B", text: apartmentDetails[apartment].followUp }
+      ];
+
+      const fullScript = lines.map(l => l.text).join(' ');
+
+      output.style.display = 'block';
+      output.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="color:#c2410c;">💬 Model Conversation</strong>
+          <button class="btn btn-secondary btn-icon" id="playFullDialogueBtn">🔊 Listen to Full Dialogue</button>
+        </div>
+        ${lines.map((line, idx) => `
+          <div class="dialogue-line">
+            <strong style="color:var(--primary-dark);">${line.speaker}:</strong> ${line.text}
+            <button class="audio-btn" style="margin-left:6px;" data-line="${idx}">🔊</button>
+          </div>
+        `).join('')}
+      `;
+
+      document.getElementById('playFullDialogueBtn').onclick = () => speakText(fullScript);
+      output.querySelectorAll('.audio-btn').forEach(btn => {
+        btn.onclick = () => {
+          const lineIdx = btn.getAttribute('data-line');
+          speakText(lines[lineIdx].text);
+        };
+      });
+
+      speakText(fullScript);
+    }
+
+    // ARCADE SPEED QUIZ
+    function startQuiz() {
+      currentQuizIndex = 0;
+      quizPoints = 0;
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      const container = document.getElementById('quizContainer');
+      const scoreEl = document.getElementById('quizScore');
+
+      if (currentQuizIndex >= quizQuestions.length) {
+        container.innerHTML = `
+          <div style="font-size:1.3rem; font-weight:700; color:var(--primary-dark); margin-bottom:10px;">
+            🎉 Quiz Complete!
+          </div>
+          <p style="font-size:1.05rem; margin-bottom:16px;">
+            You scored <strong>${quizPoints} out of ${quizQuestions.length}</strong>!
+          </p>
+          <button class="btn btn-primary" onclick="startQuiz()">Play Again</button>
+        `;
+        scoreEl.innerText = '';
+        playSound('success');
+        return;
+      }
+
+      const q = quizQuestions[currentQuizIndex];
+      container.innerHTML = `
+        <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:6px;">
+          Question ${currentQuizIndex + 1} of ${quizQuestions.length}
+        </div>
+        <div id="quizPrompt" style="font-size:1.1rem; font-weight:700; color:#4c1d95; margin-bottom:16px;">
+          ${q.prompt}
+        </div>
+        <div id="quizOptions" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+      `;
+
+      const optionsDiv = document.getElementById('quizOptions');
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleQuizAnswer(btn, opt, q.correct);
+        optionsDiv.appendChild(btn);
+      });
+
+      scoreEl.innerText = `Current Score: ${quizPoints} / ${quizQuestions.length}`;
+    }
+
+    function handleQuizAnswer(selectedBtn, selectedOpt, correctOpt) {
+      const allBtns = document.querySelectorAll('.quiz-option-btn');
+      allBtns.forEach(b => b.disabled = true);
+
+      if (selectedOpt === correctOpt) {
+        selectedBtn.classList.add('correct');
+        quizPoints++;
+        playSound('success');
+      } else {
+        selectedBtn.classList.add('incorrect');
+        allBtns.forEach(b => {
+          if (b.innerText === correctOpt) b.classList.add('correct');
+        });
+        playSound('error');
+      }
+
+      document.getElementById('quizScore').innerText = `Current Score: ${quizPoints} / ${quizQuestions.length}`;
+
+      setTimeout(() => {
+        currentQuizIndex++;
+        renderQuizQuestion();
+      }, 1100);
+    }
+
+    // Initialize exercises on page load
+    renderPartA();
+    renderPartB();
+  </script>
+</body>
+</html>
