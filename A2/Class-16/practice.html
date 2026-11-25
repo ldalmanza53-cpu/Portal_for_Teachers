@@ -155,6 +155,7 @@
       justify-content: center;
       gap: 12px;
       margin-top: 24px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -171,30 +172,50 @@
     .btn-primary:hover { background: var(--primary-dark); }
     .btn-secondary { background: #e2e8f0; color: #334155; }
     .btn-secondary:hover { background: #cbd5e1; }
+    .btn-emerald { background: var(--secondary); color: white; }
+    .btn-emerald:hover { background: #047857; }
 
     .speech-bubble {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
-      padding: 16px;
+      padding: 18px;
       border-radius: 12px;
       margin-top: 16px;
       font-size: 1rem;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
-    #score-board {
+    .score-banner {
       text-align: center;
       font-weight: 700;
-      font-size: 1.1rem;
-      margin-top: 16px;
+      font-size: 1.05rem;
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
     }
 
     .scrambled-hint {
       font-size: 0.85rem;
-      color: #64748b;
-      font-style: italic;
-      margin-bottom: 4px;
-      display: block;
+      color: #475569;
+      background: #e2e8f0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .unscramble-row {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+
+    .unscramble-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
     }
   </style>
 </head>
@@ -207,9 +228,9 @@
     </header>
 
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('part1')">1. Tense Grammar Practice</button>
-      <button class="tab-btn" onclick="switchTab('part2')">2. Hamburger Recipe Unscramble</button>
-      <button class="tab-btn" onclick="switchTab('sim')">3. Pair Work Simulator</button>
+      <button class="tab-btn active" id="tab-part1" onclick="switchTab('part1')">1. Tense Grammar Practice</button>
+      <button class="tab-btn" id="tab-part2" onclick="switchTab('part2')">2. Hamburger Recipe Unscramble</button>
+      <button class="tab-btn" id="tab-sim" onclick="switchTab('sim')">3. Pair Work Simulator</button>
     </div>
 
     <!-- SECTION 1: SIMPLE PAST VS PRESENT PERFECT -->
@@ -335,4 +356,280 @@
         <div class="line">
           <span class="speaker">A:</span> No, it 
           <select class="gap-select" id="p3_4">
-            <option value="">
+            <option value="">-- choose --</option>
+            <option value="wasn't">wasn't</option>
+            <option value="hasn't been">hasn't been</option>
+          </select>. It 
+          <select class="gap-select" id="p3_5">
+            <option value="">-- choose --</option>
+            <option value="was">was</option>
+            <option value="has been">has been</option>
+          </select> 
+          very interesting!
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="checkPart1()">Check Answers</button>
+        <button class="btn btn-secondary" onclick="resetPart1()">Reset</button>
+      </div>
+      <div id="score-board-1" class="score-banner"></div>
+    </div>
+
+    <!-- SECTION 2: HAMBURGER RECIPE UNSCRAMBLE -->
+    <div id="part2-section" style="display:none;">
+      <div class="rule-card">
+        🍔 <strong>Instructions:</strong> Unscramble the words to write the 5 steps for making a delicious hamburger. Start each sentence with a capital letter and use a comma after the sequence adverb (e.g., <em>First, ...</em>).
+      </div>
+
+      <div class="dialogue-card" id="unscramble-container"></div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="checkPart2()">Check Recipe</button>
+        <button class="btn btn-secondary" onclick="showAnswersPart2()">Show Answers</button>
+        <button class="btn btn-secondary" onclick="resetPart2()">Reset</button>
+      </div>
+      <div id="score-board-2" class="score-banner"></div>
+    </div>
+
+    <!-- SECTION 3: PAIR WORK SIMULATOR -->
+    <div id="sim-section" style="display:none;">
+      <div class="rule-card" style="background:#ecfdf5; border-left-color:var(--secondary); color:#065f46;">
+        🗣️ <strong>Speaking Practice:</strong> Pick a food experience and generate a realistic conversation combining <strong>Present Perfect</strong>, <strong>Simple Past</strong>, and <strong>Sequence Adverbs</strong>.
+      </div>
+
+      <div class="dialogue-card">
+        <label for="sim-topic" style="font-weight:700; color:var(--primary-dark); display:block; margin-bottom:8px;">
+          Choose a dish or cooking experience:
+        </label>
+        <select id="sim-topic" class="gap-select" style="width:100%; max-width:380px; padding:10px;" onchange="renderSimulator()">
+          <option value="tacos">🌮 Street Tacos (Past & Present Perfect)</option>
+          <option value="pancakes">🥞 Fluffy Pancakes (Recipe & Sequence Adverbs)</option>
+          <option value="sushi">🍣 Homemade Sushi Rolls (Experience & Steps)</option>
+        </select>
+
+        <div id="sim-output" class="speech-bubble"></div>
+
+        <div class="controls">
+          <button class="btn btn-emerald" onclick="speakSimulator()">🔊 Listen to Conversation</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- TAB NAVIGATION ---
+    function switchTab(tabName) {
+      const tabs = ['part1', 'part2', 'sim'];
+      tabs.forEach(t => {
+        document.getElementById(`${t}-section`).style.display = (t === tabName) ? 'block' : 'none';
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === tabName);
+      });
+    }
+
+    // --- PART 1: SIMPLE PAST VS PRESENT PERFECT ---
+    const part1Answers = {
+      p1_1: "did you have",
+      p1_2: "tried",
+      p1_3: "Have you ever had",
+      p1_4: "ate",
+      p1_5: "was",
+      p2_1: "Have you ever taken",
+      p2_2: "haven't",
+      p2_3: "have taken",
+      p2_4: "was",
+      p2_5: "learned",
+      p3_1: "watched",
+      p3_2: "have never seen",
+      p3_3: "Was it",
+      p3_4: "wasn't",
+      p3_5: "was"
+    };
+
+    function checkPart1() {
+      let correctCount = 0;
+      const keys = Object.keys(part1Answers);
+
+      keys.forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('correct', 'incorrect');
+        if (el.value === part1Answers[id]) {
+          el.classList.add('correct');
+          correctCount++;
+        } else {
+          el.classList.add('incorrect');
+        }
+      });
+
+      const board = document.getElementById('score-board-1');
+      board.style.display = 'block';
+      if (correctCount === keys.length) {
+        board.style.background = 'var(--success-bg)';
+        board.style.color = 'var(--success)';
+        board.textContent = `🎉 Excellent! ${correctCount}/${keys.length} correct! You mastered Simple Past vs. Present Perfect.`;
+      } else {
+        board.style.background = '#eef2ff';
+        board.style.color = 'var(--primary-dark)';
+        board.textContent = `You got ${correctCount} out of ${keys.length} right. Review the red boxes and try again!`;
+      }
+    }
+
+    function resetPart1() {
+      Object.keys(part1Answers).forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.remove('correct', 'incorrect');
+      });
+      document.getElementById('score-board-1').style.display = 'none';
+    }
+
+    // --- PART 2: HAMBURGER RECIPE UNSCRAMBLE ---
+    const recipeData = [
+      {
+        scrambled: "First, / ground beef / salt and pepper / mix / with",
+        answer: "First, mix ground beef with salt and pepper."
+      },
+      {
+        scrambled: "Then, / into / shape / the meat / round patties",
+        answer: "Then, shape the meat into round patties."
+      },
+      {
+        scrambled: "Next, / for four minutes / on each side / grill / the burgers",
+        answer: "Next, grill the burgers on each side for four minutes."
+      },
+      {
+        scrambled: "After that, / on top / a slice of cheese / put / of each burger",
+        answer: "After that, put a slice of cheese on top of each burger."
+      },
+      {
+        scrambled: "Finally, / the burgers / with lettuce and tomato / on toasted buns / serve",
+        answer: "Finally, serve the burgers on toasted buns with lettuce and tomato."
+      }
+    ];
+
+    function renderPart2() {
+      const container = document.getElementById('unscramble-container');
+      container.innerHTML = '';
+
+      recipeData.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'unscramble-row';
+        row.innerHTML = `
+          <div style="font-weight:700; color:var(--primary-dark); margin-bottom:4px;">Step ${idx + 1}</div>
+          <span class="scrambled-hint">${item.scrambled}</span>
+          <div class="line" style="margin-bottom:0; margin-top:6px;">
+            <input type="text" class="gap-input" id="u_${idx}" placeholder="Type the complete sentence here..." autocomplete="off">
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function normalizeText(str) {
+      return str
+        .toLowerCase()
+        .replace(/[.,!?]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function checkPart2() {
+      let score = 0;
+
+      recipeData.forEach((item, idx) => {
+        const input = document.getElementById(`u_${idx}`);
+        input.classList.remove('correct', 'incorrect');
+
+        if (normalizeText(input.value) === normalizeText(item.answer)) {
+          input.classList.add('correct');
+          score++;
+        } else {
+          input.classList.add('incorrect');
+        }
+      });
+
+      const board = document.getElementById('score-board-2');
+      board.style.display = 'block';
+      if (score === recipeData.length) {
+        board.style.background = 'var(--success-bg)';
+        board.style.color = 'var(--success)';
+        board.textContent = `🍔 Delicious! ${score}/${recipeData.length} sentences are completely correct!`;
+      } else {
+        board.style.background = '#eef2ff';
+        board.style.color = 'var(--primary-dark)';
+        board.textContent = `You got ${score}/${recipeData.length} steps right. Check word order on the red lines!`;
+      }
+    }
+
+    function showAnswersPart2() {
+      recipeData.forEach((item, idx) => {
+        const input = document.getElementById(`u_${idx}`);
+        input.value = item.answer;
+        input.classList.remove('incorrect');
+        input.classList.add('correct');
+      });
+      const board = document.getElementById('score-board-2');
+      board.style.display = 'block';
+      board.style.background = '#eef2ff';
+      board.style.color = 'var(--primary-dark)';
+      board.textContent = "Here are the model answers! Study the word order and try resetting to test yourself.";
+    }
+
+    function resetPart2() {
+      document.getElementById('score-board-2').style.display = 'none';
+      renderPart2();
+    }
+
+    // --- PART 3: PAIR WORK SIMULATOR ---
+    const simulatorDialogues = {
+      tacos: [
+        { speaker: "A", text: "Have you ever eaten authentic Mexican street tacos?" },
+        { speaker: "B", text: "Yes, I have! I tried them at a food truck downtown last Friday. They were amazing!" },
+        { speaker: "A", text: "Do you know how to make them at home?" },
+        { speaker: "B", text: "Sure! First, season the beef with lime juice, garlic, and cumin. Then, cook the meat in a hot skillet. Next, warm up the corn tortillas. After that, chop fresh cilantro and onions. Finally, put everything together and add salsa!" }
+      ],
+      pancakes: [
+        { speaker: "A", text: "Have you ever made pancakes from scratch?" },
+        { speaker: "B", text: "Actually, I made some yesterday morning for breakfast!" },
+        { speaker: "A", text: "Really? How did you make them?" },
+        { speaker: "B", text: "First, mix flour, sugar, baking powder, and salt in a bowl. Then, whisk milk, an egg, and melted butter together. Next, pour the wet ingredients into the dry ones. After that, cook spoonfuls of batter on a hot pan until bubbles form. Finally, flip them and serve with maple syrup." }
+      ],
+      sushi: [
+        { speaker: "A", text: "Have you ever tried making sushi rolls?" },
+        { speaker: "B", text: "No, I haven't. Have you?" },
+        { speaker: "A", text: "Yes! I took a sushi workshop last month. It wasn't hard at all. First, spread seasoned rice onto a sheet of seaweed. Then, add strips of cucumber, avocado, and salmon. Next, roll it tightly using a bamboo mat. After that, slice the roll with a wet knife. Finally, serve with soy sauce!" }
+      ]
+    };
+
+    function renderSimulator() {
+      const topic = document.getElementById('sim-topic').value;
+      const lines = simulatorDialogues[topic];
+      const box = document.getElementById('sim-output');
+
+      box.innerHTML = lines.map(line => `
+        <p style="margin-bottom:10px;">
+          <strong style="color:${line.speaker === 'A' ? 'var(--primary)' : 'var(--secondary)'};">${line.speaker}:</strong> ${line.text}
+        </p>
+      `).join('');
+    }
+
+    function speakSimulator() {
+      if (!('speechSynthesis' in window)) {
+        alert("Your browser does not support text-to-speech.");
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const topic = document.getElementById('sim-topic').value;
+      const fullScript = simulatorDialogues[topic].map(l => l.text).join(' ');
+      const utterance = new SpeechSynthesisUtterance(fullScript);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // --- INIT ---
+    renderPart2();
+    renderSimulator();
+  </script>
+</body>
+</html>
