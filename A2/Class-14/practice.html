@@ -143,6 +143,8 @@
       background: #e0f2fe;
       padding: 2px 6px;
       border-radius: 4px;
+      display: inline-block;
+      margin-top: 6px;
     }
 
     /* EXERCISE CARDS */
@@ -193,10 +195,11 @@
       font-size: 0.9rem;
       font-weight: 600;
       background: white;
+      transition: all 0.2s ease;
     }
 
     input.input-text {
-      min-width: 110px;
+      min-width: 135px;
     }
 
     .correct {
@@ -210,6 +213,15 @@
       background-color: var(--danger-bg) !important;
       color: var(--danger) !important;
     }
+
+    .feedback-box {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .feedback-box.correct { color: var(--success); background: none !important; }
+    .feedback-box.incorrect { color: var(--danger); background: none !important; }
 
     /* CONTROLS */
     .controls {
@@ -230,6 +242,7 @@
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
@@ -267,12 +280,62 @@
       line-height: 1.6;
     }
 
+    .dialogue-line {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #dcfce7;
+    }
+
+    .dialogue-line:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
     .arcade-box {
       background: #fdf4ff;
       border: 2px solid #f5d0fe;
       border-radius: 12px;
       padding: 20px;
       text-align: center;
+    }
+
+    .quiz-card {
+      background: white;
+      border: 1px solid #f0abfc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    .quiz-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .classifier-btn {
+      padding: 14px 18px;
+      border: 2px solid #d8b4fe;
+      background: #faf5ff;
+      color: #581c87;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .classifier-btn:hover:not(:disabled) {
+      background: #f3e8ff;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .classifier-btn:disabled {
+      cursor: default;
     }
 
     .score-banner {
@@ -288,7 +351,7 @@
 <body>
 
   <div class="container">
-    header>
+    <header>
       <span class="unit-tag">Unit Focus • Food & Experiences</span>
       <h1>Simple Past vs. Present Perfect</h1>
       <p class="subtitle">Learn when to use general life experience (Present Perfect) vs. specific past times (Simple Past).</p>
@@ -324,6 +387,9 @@
 
     <!-- PART A SECTION -->
     <div id="partA-section" class="exercise-section">
+      <p style="font-size:0.92rem; color:var(--text-muted); margin-bottom:16px;">
+        Complete the conversations with the correct <strong>Present Perfect</strong> or <strong>Simple Past</strong> form of the verbs in parentheses.
+      </p>
       <div id="conversationList"></div>
 
       <div class="controls">
@@ -364,4 +430,468 @@
     <!-- ARCADE SPEED QUIZ -->
     <div id="arcade-section" style="display:none;" class="arcade-box">
       <h3 style="color:#86198f; margin-bottom:8px;">⚡ Grammar Classifier: Present Perfect or Simple Past?</h3>
-      <p style="font-size:0.9rem; color:#701a75; margin-bottom:16px;">Read the time expression or sentence and select the correct tense
+      <p style="font-size:0.9rem; color:#701a75; margin-bottom:16px;">Read the time expression or sentence and select the correct tense:</p>
+
+      <div id="quizCard" class="quiz-card">
+        <div id="quizProgress" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;"></div>
+        <div id="quizPrompt" style="font-size:1.15rem; font-weight:700; color:#4c1d95; margin-bottom:18px;"></div>
+        <div id="quizOptions" class="quiz-btn-grid"></div>
+        <div id="quizFeedback" style="margin-top:14px; font-weight:600; font-size:0.95rem;"></div>
+      </div>
+      <div id="quizScore" style="font-weight:700; color:#86198f;"></div>
+    </div>
+
+    <div id="score-banner" class="score-banner" style="display:none;"></div>
+  </div>
+
+  <script>
+    const conversationsData = [
+      {
+        id: 1,
+        title: "Conversation 1: Trying Sushi",
+        lines: [
+          {
+            speaker: "A:",
+            parts: ["", " you ever ", " (eat) sushi?"],
+            blanks: [
+              { id: "c1_b1", answer: ["Have"], placeholder: "aux verb" },
+              { id: "c1_b2", answer: ["eaten"], placeholder: "past participle" }
+            ],
+            fullText: "Have you ever eaten sushi?"
+          },
+          {
+            speaker: "B:",
+            parts: ["Yes, I ", " (have). In fact, I ", " (eat) some last week."],
+            blanks: [
+              { id: "c1_b3", answer: ["have"], placeholder: "short answer" },
+              { id: "c1_b4", answer: ["ate"], placeholder: "simple past" }
+            ],
+            fullText: "Yes, I have. In fact, I ate some last week."
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Conversation 2: Beach Picnic",
+        lines: [
+          {
+            speaker: "A:",
+            parts: ["", " you ever ", " (be) to a beach picnic?"],
+            blanks: [
+              { id: "c2_b1", answer: ["Have"], placeholder: "aux verb" },
+              { id: "c2_b2", answer: ["been"], placeholder: "past participle" }
+            ],
+            fullText: "Have you ever been to a beach picnic?"
+          },
+          {
+            speaker: "B:",
+            parts: ["No, I ", " (not / have). What about you?"],
+            blanks: [
+              { id: "c2_b3", answer: ["haven't", "have not"], placeholder: "negative" }
+            ],
+            fullText: "No, I haven't. What about you?"
+          },
+          {
+            speaker: "A:",
+            parts: ["Yes! My family and I ", " (go) to one last summer, and we ", " (cook) hamburgers."],
+            blanks: [
+              { id: "c2_b4", answer: ["went"], placeholder: "simple past" },
+              { id: "c2_b5", answer: ["cooked"], placeholder: "simple past" }
+            ],
+            fullText: "Yes! My family and I went to one last summer, and we cooked hamburgers."
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "Conversation 3: Moroccan Food",
+        lines: [
+          {
+            speaker: "A:",
+            parts: ["", " your sister ever ", " (try) Moroccan food?"],
+            blanks: [
+              { id: "c3_b1", answer: ["Has"], placeholder: "aux verb" },
+              { id: "c3_b2", answer: ["tried"], placeholder: "past participle" }
+            ],
+            fullText: "Has your sister ever tried Moroccan food?"
+          },
+          {
+            speaker: "B:",
+            parts: ["Yes, she ", " (have). She ", " (have) couscous at a new restaurant yesterday."],
+            blanks: [
+              { id: "c3_b3", answer: ["has"], placeholder: "short answer" },
+              { id: "c3_b4", answer: ["had"], placeholder: "simple past" }
+            ],
+            fullText: "Yes, she has. She had couscous at a new restaurant yesterday."
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: "Conversation 4: Dinner Last Night",
+        lines: [
+          {
+            speaker: "A:",
+            parts: ["", " you ", " (make) dinner last night?"],
+            blanks: [
+              { id: "c4_b1", answer: ["Did"], placeholder: "aux verb" },
+              { id: "c4_b2", answer: ["make"], placeholder: "base verb" }
+            ],
+            fullText: "Did you make dinner last night?"
+          },
+          {
+            speaker: "B:",
+            parts: ["No, I ", " (not / do). I ", " (order) Mexican tacos instead!"],
+            blanks: [
+              { id: "c4_b3", answer: ["didn't", "did not"], placeholder: "negative" },
+              { id: "c4_b4", answer: ["ordered"], placeholder: "simple past" }
+            ],
+            fullText: "No, I didn't. I ordered Mexican tacos instead!"
+          }
+        ]
+      }
+    ];
+
+    const simulatorDialogues = {
+      sushi: [
+        { speaker: "Student A", text: "Have you ever eaten sushi?" },
+        { speaker: "Student B", text: "Yes, I have! I went to a Japanese restaurant with my friends last Friday." },
+        { speaker: "Student A", text: "Did you like it?" },
+        { speaker: "Student B", text: "Yes, it was delicious! I tried salmon rolls and miso soup." }
+      ],
+      moroccan: [
+        { speaker: "Student A", text: "Have you ever tried Moroccan food?" },
+        { speaker: "Student B", text: "No, I haven't. Have you?" },
+        { speaker: "Student A", text: "Yes, I have. I ate chicken tagine and couscous in Marrakech two years ago." },
+        { speaker: "Student B", text: "That sounds amazing! I have never tried tagine before." }
+      ],
+      picnic: [
+        { speaker: "Student A", text: "Have you ever been to a beach picnic?" },
+        { speaker: "Student B", text: "Yes, I have! My family and I had a big picnic at the beach last summer." },
+        { speaker: "Student A", text: "What did you eat there?" },
+        { speaker: "Student B", text: "We grilled burgers and ate fresh watermelon. It was a great day!" }
+      ],
+      tacos: [
+        { speaker: "Student A", text: "Have you ever made Mexican tacos at home?" },
+        { speaker: "Student B", text: "Yes, I have. In fact, I cooked beef tacos for dinner yesterday evening." },
+        { speaker: "Student A", text: "Were they spicy?" },
+        { speaker: "Student B", text: "A little bit! I made fresh salsa with jalapeños and tomatoes." }
+      ]
+    };
+
+    const classifierQuestions = [
+      {
+        prompt: "\"... last week\"",
+        correct: "Simple Past",
+        explanation: "'Last week' is a specific finished time in the past → Simple Past."
+      },
+      {
+        prompt: "\"Have you ever _____ snails?\"",
+        correct: "Present Perfect",
+        explanation: "'Have you ever...' asks about general life experience → Present Perfect."
+      },
+      {
+        prompt: "\"... yesterday afternoon\"",
+        correct: "Simple Past",
+        explanation: "'Yesterday afternoon' refers to a specific past time → Simple Past."
+      },
+      {
+        prompt: "\"I have never _____ Turkish coffee.\"",
+        correct: "Present Perfect",
+        explanation: "'Never' for life experience without a specific date → Present Perfect."
+      },
+      {
+        prompt: "\"We _____ to an Italian restaurant in 2023.\"",
+        correct: "Simple Past",
+        explanation: "'In 2023' is a finished year in the past → Simple Past."
+      },
+      {
+        prompt: "\"Has she already _____ lunch?\"",
+        correct: "Present Perfect",
+        explanation: "'Already' with 'Has she...' uses Present Perfect."
+      },
+      {
+        prompt: "\"What did you _____ for breakfast this morning?\"",
+        correct: "Simple Past",
+        explanation: "'Did you...' asks about a completed past action → Simple Past."
+      },
+      {
+        prompt: "\"They haven't _____ the new bakery yet.\"",
+        correct: "Present Perfect",
+        explanation: "'Haven't ... yet' uses Present Perfect."
+      }
+    ];
+
+    let quizIndex = 0;
+    let quizScoreCount = 0;
+
+    function switchTab(tabName) {
+      const sections = ['partA-section', 'grammar-section', 'sim-section', 'arcade-section'];
+      sections.forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      document.getElementById(`${tabName}-section`).style.display = 'block';
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes(`'${tabName}'`)) {
+          btn.classList.add('active');
+        }
+      });
+
+      document.getElementById('score-banner').style.display = 'none';
+
+      if (tabName === 'arcade') {
+        startQuiz();
+      }
+    }
+
+    function playSound(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.25);
+        } else {
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {
+        // Ignore audio errors if blocked by browser policy
+      }
+    }
+
+    function speakText(text, rate = 1.0) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = parseFloat(rate);
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // PART A: RENDER, CHECK & RESET
+    function renderPartA() {
+      const container = document.getElementById('conversationList');
+      container.innerHTML = '';
+
+      conversationsData.forEach(conv => {
+        const card = document.createElement('div');
+        card.className = 'q-card';
+
+        const fullConvAudio = conv.lines.map(l => l.fullText).join(' ');
+        let html = `
+          <div class="q-title">
+            <span>${conv.title}</span>
+            <button class="audio-btn" onclick="speakText('${fullConvAudio.replace(/'/g, "\\'")}')">🔊 Listen All</button>
+          </div>
+        `;
+
+        conv.lines.forEach(line => {
+          let lineHtml = `<span class="speaker">${line.speaker}</span><span>`;
+          line.parts.forEach((part, idx) => {
+            lineHtml += part;
+            if (line.blanks[idx]) {
+              const blank = line.blanks[idx];
+              lineHtml += `<input type="text" class="input-text" id="${blank.id}" placeholder="${blank.placeholder}" autocomplete="off">`;
+            }
+          });
+          lineHtml += `</span> <button class="audio-btn" onclick="speakText('${line.fullText.replace(/'/g, "\\'")}')">🔊</button>`;
+          html += `<div class="line-row">${lineHtml}</div>`;
+        });
+
+        html += `<div class="feedback-box" id="conv-fb-${conv.id}"></div>`;
+        card.innerHTML = html;
+        container.appendChild(card);
+      });
+    }
+
+    function checkPartA() {
+      let correctCount = 0;
+      let totalBlanks = 0;
+
+      conversationsData.forEach(conv => {
+        let convMistakes = [];
+
+        conv.lines.forEach(line => {
+          line.blanks.forEach(blank => {
+            totalBlanks++;
+            const input = document.getElementById(blank.id);
+            const userVal = input.value.trim().toLowerCase().replace(/[’']/g, "'");
+            const validAnswers = blank.answer.map(a => a.toLowerCase());
+
+            if (validAnswers.includes(userVal)) {
+              input.className = 'input-text correct';
+              correctCount++;
+            } else {
+              input.className = 'input-text incorrect';
+              convMistakes.push(blank.answer[0]);
+            }
+          });
+        });
+
+        const fb = document.getElementById(`conv-fb-${conv.id}`);
+        if (convMistakes.length === 0) {
+          fb.innerText = '✓ Excellent! All answers in this conversation are correct.';
+          fb.className = 'feedback-box correct';
+        } else {
+          fb.innerText = `✗ Correct forms: ${convMistakes.join(' / ')}`;
+          fb.className = 'feedback-box incorrect';
+        }
+      });
+
+      const banner = document.getElementById('score-banner');
+      banner.style.display = 'block';
+      banner.innerText = `Part A Score: ${correctCount} / ${totalBlanks} blanks correct!`;
+
+      if (correctCount === totalBlanks) {
+        banner.style.background = 'var(--success-bg)';
+        banner.style.color = 'var(--success)';
+        playSound('success');
+      } else {
+        banner.style.background = 'var(--danger-bg)';
+        banner.style.color = 'var(--danger)';
+        playSound('error');
+      }
+    }
+
+    function resetPartA() {
+      renderPartA();
+      document.getElementById('score-banner').style.display = 'none';
+    }
+
+    // PAIR WORK SIMULATOR
+    function generateDialogue() {
+      const topic = document.getElementById('simTopic').value;
+      const speed = document.getElementById('simSpeed').value;
+      const lines = simulatorDialogues[topic];
+      const output = document.getElementById('dialogueOutput');
+
+      const fullScript = lines.map(l => l.text).join(' ');
+
+      output.style.display = 'block';
+      output.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="color:var(--secondary);">💬 Practice Dialogue (${speed}x speed)</strong>
+          <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.85rem;" id="replayDialogueBtn">🔊 Replay All</button>
+        </div>
+        ${lines.map((line, index) => `
+          <div class="dialogue-line">
+            <strong style="color:var(--primary-dark);">${line.speaker}:</strong> ${line.text}
+            <button class="audio-btn" style="margin-left:6px;" data-idx="${index}">🔊</button>
+          </div>
+        `).join('')}
+      `;
+
+      document.getElementById('replayDialogueBtn').onclick = () => speakText(fullScript, speed);
+      output.querySelectorAll('.audio-btn').forEach(btn => {
+        btn.onclick = () => {
+          const i = btn.getAttribute('data-idx');
+          speakText(lines[i].text, speed);
+        };
+      });
+
+      speakText(fullScript, speed);
+    }
+
+    // ARCADE SPEED CLASSIFIER
+    function startQuiz() {
+      quizIndex = 0;
+      quizScoreCount = 0;
+      renderQuizItem();
+    }
+
+    function renderQuizItem() {
+      const card = document.getElementById('quizCard');
+      const scoreEl = document.getElementById('quizScore');
+
+      if (quizIndex >= classifierQuestions.length) {
+        card.innerHTML = `
+          <div style="font-size:1.3rem; font-weight:700; color:var(--primary-dark); margin-bottom:8px;">
+            🎉 Classifier Complete!
+          </div>
+          <p style="font-size:1.05rem; margin-bottom:16px;">
+            You classified <strong>${quizScoreCount} out of ${classifierQuestions.length}</strong> correctly!
+          </p>
+          <button class="btn btn-primary" onclick="resetQuizUI()">Play Again</button>
+        `;
+        scoreEl.innerText = '';
+        playSound('success');
+        return;
+      }
+
+      const item = classifierQuestions[quizIndex];
+      document.getElementById('quizProgress').innerText = `Item ${quizIndex + 1} of ${classifierQuestions.length}`;
+      document.getElementById('quizPrompt').innerText = item.prompt;
+      document.getElementById('quizFeedback').innerText = '';
+
+      const optionsContainer = document.getElementById('quizOptions');
+      optionsContainer.innerHTML = '';
+
+      ['Present Perfect', 'Simple Past'].forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'classifier-btn';
+        btn.innerText = choice;
+        btn.onclick = () => evaluateClassifier(btn, choice, item);
+        optionsContainer.appendChild(btn);
+      });
+
+      scoreEl.innerText = `Score: ${quizScoreCount} / ${classifierQuestions.length}`;
+    }
+
+    function evaluateClassifier(selectedBtn, choice, item) {
+      const buttons = document.querySelectorAll('.classifier-btn');
+      buttons.forEach(b => b.disabled = true);
+
+      const fb = document.getElementById('quizFeedback');
+
+      if (choice === item.correct) {
+        selectedBtn.classList.add('correct');
+        quizScoreCount++;
+        fb.style.color = 'var(--success)';
+        fb.innerText = `✓ Correct! ${item.explanation}`;
+        playSound('success');
+      } else {
+        selectedBtn.classList.add('incorrect');
+        buttons.forEach(b => {
+          if (b.innerText === item.correct) b.classList.add('correct');
+        });
+        fb.style.color = 'var(--danger)';
+        fb.innerText = `✗ ${item.explanation}`;
+        playSound('error');
+      }
+
+      document.getElementById('quizScore').innerText = `Score: ${quizScoreCount} / ${classifierQuestions.length}`;
+
+      setTimeout(() => {
+        quizIndex++;
+        renderQuizItem();
+      }, 1700);
+    }
+
+    function resetQuizUI() {
+      const card = document.getElementById('quizCard');
+      card.innerHTML = `
+        <div id="quizProgress" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:8px;"></div>
+        <div id="quizPrompt" style="font-size:1.15rem; font-weight:700; color:#4c1d95; margin-bottom:18px;"></div>
+        <div id="quizOptions" class="quiz-btn-grid"></div>
+        <div id="quizFeedback" style="margin-top:14px; font-weight:600; font-size:0.95rem;"></div>
+      `;
+      startQuiz();
+    }
+
+    // Initialize Part A on load
+    renderPartA();
+  </script>
+</body>
+</html>
