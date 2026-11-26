@@ -262,10 +262,10 @@
     </header>
 
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('partA')">Parte A: Emparejar Usos</button>
-      <button class="tab-btn" onclick="switchTab('partC')">Parte C: Usos Inesperados</button>
-      <button class="tab-btn" onclick="switchTab('grammar')">Reglas Gramaticales</button>
-      <button class="tab-btn" onclick="switchTab('generator')">Generador de Oraciones</button>
+      <button class="tab-btn active" onclick="switchTab('partA', this)">Parte A: Emparejar Usos</button>
+      <button class="tab-btn" onclick="switchTab('partC', this)">Parte C: Usos Inesperados</button>
+      <button class="tab-btn" onclick="switchTab('grammar', this)">Reglas Gramaticales</button>
+      <button class="tab-btn" onclick="switchTab('generator', this)">Generador de Oraciones</button>
     </div>
 
     <!-- GRAMMAR SPOTLIGHT -->
@@ -300,10 +300,10 @@
 
     <!-- PART C SECTION -->
     <div id="partC-section" style="display:none;" class="exercise-section">
-      <p style="margin-bottom:14px; font-weight:600; color:#475569;">Explora ejemplos de usos inusuales o inesperados (*unexpected uses*):</p>
+      <p style="margin-bottom:14px; font-weight:600; color:#475569;">Explora ejemplos de usos inusuales o inesperados (<em>unexpected uses</em>):</p>
       <div id="partCList"></div>
       <div class="controls">
-        <button class="btn btn-primary" onclick="checkPartC()">Probar y Escuchar Oraciones</button>
+        <button class="btn btn-primary" onclick="checkPartC()">Escuchar Todos los Ejemplos</button>
       </div>
     </div>
 
@@ -406,6 +406,14 @@
       { item: "an old CD", textInf: "You can use an old CD to scare birds away from gardens.", textGer: "You can use an old CD for scaring birds away from gardens." }
     ];
 
+    const gerundMap = {
+      "get directions": "getting directions",
+      "make car parts": "making car parts",
+      "look for criminals": "looking for criminals",
+      "eject a SIM card tray": "ejecting a SIM card tray",
+      "watch your pet": "watching your pet"
+    };
+
     function playSound(type) {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
@@ -460,10 +468,163 @@
         } else {
           let opts = `<option value="">-- seleccionar propósito --</option>`;
           purposeOptions.forEach(p => {
-            opts += `<option value="${p.key}">${p.inf} /${p.ger}</option>`;
+            opts += `<option value="${p.key}">${p.inf} / ${p.ger}</option>`;
           });
 
           card.innerHTML = `
             <div style="font-weight:600; color:var(--primary-dark);">${item.subject}</div>
             <div class="q-row">
-              <select class="input-select" id="partA-select-${item.id}"
+              <select class="input-select" id="partA-select-${item.id}" style="flex-grow:1;">${opts}</select>
+              <button class="audio-btn" onclick="speakPartA(${item.id})">🔊</button>
+            </div>
+          `;
+        }
+        container.appendChild(card);
+      });
+    }
+
+    function speakPartA(id) {
+      const item = partAData.find(q => q.id === id);
+      const select = document.getElementById(`partA-select-${id}`);
+      const cleanSubject = item.subject.replace(/^\d+\.\s*/, '').replace(/\.\.\.$/, '');
+      const selectedOpt = purposeOptions.find(p => p.key === select.value);
+
+      if (selectedOpt) {
+        speakText(`${cleanSubject} ${selectedOpt.inf}. ${cleanSubject} ${selectedOpt.ger}.`);
+      } else {
+        speakText(cleanSubject);
+      }
+    }
+
+    function checkPartA() {
+      let total = 0;
+      let correct = 0;
+
+      partAData.forEach(item => {
+        if (!item.given) {
+          total++;
+          const select = document.getElementById(`partA-select-${item.id}`);
+          if (select.value === item.correctPurposeKey) {
+            select.classList.remove('incorrect');
+            select.classList.add('correct');
+            correct++;
+          } else {
+            select.classList.remove('correct');
+            select.classList.add('incorrect');
+          }
+        }
+      });
+
+      const banner = document.getElementById('score-banner');
+      banner.style.display = 'block';
+      banner.innerText = `Puntuación: ${correct} de ${total} respuestas correctas.`;
+
+      if (correct === total) {
+        banner.style.background = 'var(--success-bg)';
+        banner.style.color = 'var(--success)';
+        playSound('success');
+      } else {
+        banner.style.background = 'var(--danger-bg)';
+        banner.style.color = 'var(--danger)';
+        playSound('error');
+      }
+    }
+
+    function resetPartA() {
+      renderPartA();
+      document.getElementById('score-banner').style.display = 'none';
+    }
+
+    function renderPartC() {
+      const container = document.getElementById('partCList');
+      container.innerHTML = '';
+
+      partCData.forEach((entry, index) => {
+        const card = document.createElement('div');
+        card.className = 'q-card';
+        card.innerHTML = `
+          <div style="font-weight:700; color:var(--primary-dark); text-transform:capitalize;">${index + 1}. ${entry.item}</div>
+          <div class="q-row">
+            <span style="font-size:0.8rem; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-weight:700; color:var(--primary-dark);">TO + verb:</span>
+            <span>${entry.textInf}</span>
+            <button class="audio-btn" onclick="speakText('${entry.textInf.replace(/'/g, "\\'")}')">🔊</button>
+          </div>
+          <div class="q-row">
+            <span style="font-size:0.8rem; background:#fef3c7; padding:2px 8px; border-radius:4px; font-weight:700; color:#b45309;">FOR + -ing:</span>
+            <span>${entry.textGer}</span>
+            <button class="audio-btn" onclick="speakText('${entry.textGer.replace(/'/g, "\\'")}')">🔊</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function checkPartC() {
+      const allSentences = partCData.map(d => `${d.textInf} ${d.textGer}`).join(' ');
+      speakText(allSentences);
+      playSound('success');
+
+      const banner = document.getElementById('score-banner');
+      banner.style.display = 'block';
+      banner.style.background = 'var(--success-bg)';
+      banner.style.color = 'var(--success)';
+      banner.innerText = '🔊 Reproduciendo todos los ejemplos de usos inesperados.';
+    }
+
+    function buildSentence() {
+      const subject = document.getElementById('genSubject').value;
+      const action = document.getElementById('genAction').value;
+      const gerundAction = gerundMap[action] || action;
+
+      const sentInf = `You can use a ${subject} to ${action}.`;
+      const sentGer = `You can use a ${subject} for ${gerundAction}.`;
+
+      const output = document.getElementById('dialogueOutput');
+      output.style.display = 'block';
+      output.innerHTML = `
+        <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+          <div>
+            <span style="font-size:0.8rem; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-weight:700; color:var(--primary-dark);">Infinitive (to + verb):</span>
+            <p style="font-weight:600; margin-top:4px;">${sentInf}</p>
+          </div>
+          <button class="audio-btn" onclick="speakText('${sentInf}')">🔊</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; border-top:1px dashed #cbd5e1; padding-top:10px;">
+          <div>
+            <span style="font-size:0.8rem; background:#fef3c7; padding:2px 8px; border-radius:4px; font-weight:700; color:#b45309;">Gerund (for + -ing):</span>
+            <p style="font-weight:600; margin-top:4px;">${sentGer}</p>
+          </div>
+          <button class="audio-btn" onclick="speakText('${sentGer}')">🔊</button>
+        </div>
+      `;
+    }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      document.getElementById('partA-section').style.display = 'none';
+      document.getElementById('partC-section').style.display = 'none';
+      document.getElementById('grammar-section').style.display = 'none';
+      document.getElementById('gen-section').style.display = 'none';
+      document.getElementById('score-banner').style.display = 'none';
+
+      if (tab === 'partA') {
+        document.getElementById('partA-section').style.display = 'block';
+      } else if (tab === 'partC') {
+        document.getElementById('partC-section').style.display = 'block';
+      } else if (tab === 'grammar') {
+        document.getElementById('grammar-section').style.display = 'block';
+      } else if (tab === 'generator') {
+        document.getElementById('gen-section').style.display = 'block';
+        buildSentence();
+      }
+    }
+
+    window.onload = () => {
+      renderPartA();
+      renderPartC();
+    };
+  </script>
+</body>
+</html>
