@@ -123,11 +123,28 @@
       border-radius: 6px;
       padding: 16px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
+      gap: 12px;
       font-size: 1.05rem;
       font-weight: 500;
       line-height: 1.4;
       margin-bottom: 12px;
+    }
+
+    .audio-btn {
+      background: #dbeafe;
+      border: 1px solid var(--border);
+      color: var(--primary-dark);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .audio-btn:hover {
+      background: #bfdbfe;
     }
 
     .grammar-box {
@@ -172,6 +189,10 @@
       background: #6b7280;
     }
 
+    .btn.secondary:hover {
+      background: #4b5563;
+    }
+
     ol {
       margin-left: 20px;
       line-height: 1.6;
@@ -189,7 +210,7 @@
   <div class="app-container">
     <header>
       <h1>⚡ The Decision Lab</h1>
-      <p>A2 Speaking Practice: Situations & Consequences</p>
+      <p>A2 Speaking Practice: Situations &amp; Consequences</p>
     </header>
 
     <!-- Timer -->
@@ -206,15 +227,16 @@
 
     <!-- Navigation -->
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('cards')">🃏 Scenario Cards</button>
-      <button class="tab-btn" onclick="switchTab('guide')">📋 Context & Setup</button>
+      <button class="tab-btn active" onclick="switchTab('cards', this)">🃏 Scenario Cards</button>
+      <button class="tab-btn" onclick="switchTab('guide', this)">📋 Context &amp; Setup</button>
     </div>
 
     <!-- TAB 1: QUESTION CARDS -->
     <div id="cards" class="tab-content active">
       <div class="card">
-        <div class="prompt-box" id="promptDisplay">
-          Click "Next Card" to start analyzing scenarios!
+        <div class="prompt-box">
+          <span id="promptDisplay">Click "Next Card" to start analyzing scenarios!</span>
+          <button class="audio-btn" id="speakBtn" style="display: none;" title="Listen to scenario" onclick="speakPrompt()">🔊</button>
         </div>
 
         <div class="grammar-box">
@@ -252,7 +274,7 @@
       <div class="card">
         <h3 style="color: var(--primary-dark); margin-bottom: 8px;">⏱️ 10-Minute Timetable</h3>
         <ol>
-          <li><strong>0:00–2:00:</strong> Review First Conditional structures (*If + present, will + verb*) and assign roles.</li>
+          <li><strong>0:00–2:00:</strong> Review First Conditional structures (<em>If + present, will + verb</em>) and assign roles.</li>
           <li><strong>2:00–5:00:</strong> Round 1 (Role A asks Role B with Cards 1–10).</li>
           <li><strong>5:00–8:00:</strong> Round 2 (Swap roles, use Cards 11–20).</li>
           <li><strong>8:00–10:00:</strong> Share 1 situation and consequence sentence with the class.</li>
@@ -289,17 +311,96 @@
     let timerSeconds = 600;
     let timerInterval = null;
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      event.target.classList.add('active');
+      if (btn) btn.classList.add('active');
       document.getElementById(tabId).classList.add('active');
     }
 
     function updateCardUI() {
+      const display = document.getElementById('promptDisplay');
+      const counter = document.getElementById('counterDisplay');
+      const speakBtn = document.getElementById('speakBtn');
+
       if (currentCardIndex === -1) {
-        document.getElementById('promptDisplay').innerText = 'Click "Next Card" to begin!';
-        document.getElementById('counterDisplay').innerText = 'Card 0 of 20';
+        display.innerText = 'Click "Next Card" to start analyzing scenarios!';
+        counter.innerText = 'Card 0 of 20';
+        speakBtn.style.display = 'none';
         return;
       }
-      document.getElementById('promptDisplay').innerText = prompts
+
+      display.innerText = prompts[currentCardIndex];
+      counter.innerText = `Card ${currentCardIndex + 1} of ${prompts.length}`;
+      speakBtn.style.display = 'inline-block';
+    }
+
+    function nextCard() {
+      if (currentCardIndex < prompts.length - 1) {
+        currentCardIndex++;
+      } else {
+        currentCardIndex = 0;
+      }
+      updateCardUI();
+    }
+
+    function prevCard() {
+      if (currentCardIndex > 0) {
+        currentCardIndex--;
+      } else if (currentCardIndex === 0) {
+        currentCardIndex = -1;
+      } else {
+        currentCardIndex = prompts.length - 1;
+      }
+      updateCardUI();
+    }
+
+    function speakPrompt() {
+      if (currentCardIndex >= 0 && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(prompts[currentCardIndex]);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(timerSeconds / 60);
+      const secs = timerSeconds % 60;
+      document.getElementById('timer').innerText =
+        `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timerBtn');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btn.innerText = 'Resume';
+      } else {
+        btn.innerText = 'Pause';
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            btn.innerText = 'Time Up!';
+            document.getElementById('timer').style.color = '#dc2626';
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      timerSeconds = 600;
+      document.getElementById('timer').style.color = 'var(--primary-dark)';
+      document.getElementById('timerBtn').innerText = 'Start';
+      updateTimerDisplay();
+    }
+  </script>
+</body>
+</html>
