@@ -173,6 +173,7 @@
       justify-content: space-between;
       align-items: center;
       font-size: 0.95rem;
+      gap: 8px;
     }
 
     .phrase-item:last-child {
@@ -299,9 +300,14 @@
       align-items: center;
     }
 
-    .btn-option:hover {
+    .btn-option:hover:not(:disabled) {
       border-color: var(--primary);
       background: #F8FAFC;
+    }
+
+    .btn-option:disabled {
+      cursor: default;
+      opacity: 0.85;
     }
 
     .feedback-box {
@@ -481,7 +487,7 @@
     }
 
     @media print {
-      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, button { display: none !important; }
+      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, #quiz-feedback, #student-name-box, button { display: none !important; }
       body { background: white; padding: 0; }
       .container { max-width: 100%; }
       .tab-content { display: block !important; box-shadow: none; border: none; padding: 0; }
@@ -508,11 +514,11 @@
   </header>
 
   <nav class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('tab1')">1. Language Matrix</button>
-    <button class="tab-btn" onclick="switchTab('tab2')">2. Reason Builder</button>
-    <button class="tab-btn" onclick="switchTab('tab3')">3. Suitability Game</button>
-    <button class="tab-btn" onclick="switchTab('tab4')">4. Monologue Studio</button>
-    <button class="tab-btn" onclick="switchTab('tab5')">5. Mastery Quiz</button>
+    <button class="tab-btn active" onclick="switchTab('tab1', this)">1. Language Matrix</button>
+    <button class="tab-btn" onclick="switchTab('tab2', this)">2. Reason Builder</button>
+    <button class="tab-btn" onclick="switchTab('tab3', this)">3. Suitability Game</button>
+    <button class="tab-btn" onclick="switchTab('tab4', this)">4. Monologue Studio</button>
+    <button class="tab-btn" onclick="switchTab('tab5', this)">5. Mastery Quiz</button>
   </nav>
 
   <div class="container">
@@ -633,6 +639,7 @@
 
       <div style="text-align: center; margin-top: 20px;">
         <button class="btn-primary" id="btn-next-scen" style="display:none;" onclick="nextScenario()">Next Scenario ➔</button>
+        <button class="btn-secondary" id="btn-restart-game" style="display:none;" onclick="restartGame()">🔄 Play Again</button>
       </div>
     </div>
 
@@ -643,7 +650,7 @@
 
       <div class="form-group">
         <label for="studio-job">1. Choose a Job:</label>
-        <select id="studio-job" onchange="updateStudio()">
+        <select id="studio-job" onchange="updateStudioTraits(); updateStudio();">
           <option value="Software Developer">Software Developer</option>
           <option value="Chef">Chef</option>
           <option value="Tour Guide">Tour Guide</option>
@@ -654,7 +661,7 @@
 
       <div class="form-group">
         <label for="studio-fit">2. Are you good or bad at this job?</label>
-        <select id="studio-fit" onchange="updateStudio()">
+        <select id="studio-fit" onchange="updateStudioTraits(); updateStudio();">
           <option value="good">I would be a GREAT fit!</option>
           <option value="bad">I would be a TERRIBLE fit!</option>
         </select>
@@ -676,7 +683,7 @@
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
           <button class="btn-primary" onclick="readStudioMonologue()">🔊 Read Monologue</button>
-          <button class="btn-secondary" onclick="copyStudioMonologue()">📋 Copy Text</button>
+          <button class="btn-secondary" id="copy-studio-btn" onclick="copyStudioMonologue()">📋 Copy Text</button>
         </div>
       </div>
     </div>
@@ -684,6 +691,11 @@
     <!-- TAB 5: QUIZ -->
     <div id="tab5" class="tab-content">
       <h2>✅ Job Justification Mastery Quiz</h2>
+
+      <div class="form-group" id="student-name-box">
+        <label for="student-name-input">Your Full Name (for Certificate):</label>
+        <input type="text" id="student-name-input" placeholder="e.g., Carlos Mendoza" />
+      </div>
 
       <div class="quiz-card">
         <p>1. "I'd be a good teacher _______ I am very patient with kids."</p>
@@ -722,6 +734,8 @@
 
       <button class="btn-primary" onclick="submitQuiz()">Submit Answers & Get Certificate</button>
 
+      <div class="feedback-box" id="quiz-feedback"></div>
+
       <!-- Printable Certificate -->
       <div id="certificate" class="certificate">
         <canvas id="confetti-canvas"></canvas>
@@ -739,8 +753,8 @@
           <strong>Good or Bad at Jobs using Traits, Reasons & Skill Phrases</strong>.
         </div>
         <div class="cert-footer">
-          <div>Date: October 2026</div>
-          <div>Grade: 100% Mastery</div>
+          <div id="cert-date">Date: November 2026</div>
+          <div id="cert-grade">Grade: 100% Mastery</div>
           <div>Status: Certified</div>
         </div>
         <div style="text-align: center; margin-top: 20px;">
@@ -752,17 +766,21 @@
   </div>
 
   <script>
-    // Tab Navigation
-    function switchTab(tabId) {
+    // ==========================================
+    // 1. TAB NAVIGATION
+    // ==========================================
+    function switchTab(tabId, btnEl) {
       playSFX('click');
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
       document.getElementById(tabId).classList.add('active');
-      event.target.classList.add('active');
+      if (btnEl) btnEl.classList.add('active');
     }
 
-    // Audio TTS Functionality
+    // ==========================================
+    // 2. AUDIO TTS & SFX SYNTHESIZER
+    // ==========================================
     function speak(text) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -774,7 +792,6 @@
       }
     }
 
-    // Web Audio Synthesizer
     function playSFX(type) {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -817,10 +834,12 @@
             noteOsc.stop(ctx.currentTime + idx * 0.1 + 0.25);
           });
         }
-      } catch(e) {}
+      } catch (e) {}
     }
 
-    // Tab 2: Reason Builder Training
+    // ==========================================
+    // 3. TAB 2: REASON BUILDER TRAINING
+    // ==========================================
     const trainerStatements = [
       {
         prompt: "I would be a terrible tour guide because...",
@@ -844,6 +863,14 @@
           { text: "...I am bad at math and easily lose focus.", correct: true, explain: "Accountants need strong math skills and high focus." },
           { text: "...I am extremely organized and accurate.", correct: false, explain: "That would make you a great accountant." },
           { text: "...I love working with numbers.", correct: false, explain: "That's a positive trait for an accountant!" }
+        ]
+      },
+      {
+        prompt: "I'd be a great flight attendant because...",
+        options: [
+          { text: "...I am friendly, calm, and good at helping passengers.", correct: true, explain: "Friendliness and calmness under pressure are essential in aviation!" },
+          { text: "...I am terrified of flying in airplanes.", correct: false, explain: "Fear of flying makes this job impossible." },
+          { text: "...I hate traveling to different cities.", correct: false, explain: "Flight attendants travel constantly." }
         ]
       }
     ];
@@ -892,7 +919,9 @@
       loadTrainerStatement();
     }
 
-    // Tab 3: Scenario Challenge Game
+    // ==========================================
+    // 4. TAB 3: SCENARIO CHALLENGE GAME
+    // ==========================================
     const scenarios = [
       {
         target: "Job: Graphic Designer",
@@ -944,7 +973,282 @@
         title: "Lucas is good at solving logic puzzles and loves computer coding.",
         options: [
           { text: "He'd be a great programmer since he is good at logic and coding.", correct: true },
-          { text: "He'd be bad at coding because he loves logic puzzles.", correct: false },
-          { text: "He wouldn't be a good engineer.", correct: false }
+          { text: "He'd be bad at coding because he likes logic puzzles.", correct: false },
+          { text: "He wouldn't be a good Software Engineer as he loves computers.", correct: false }
         ],
-        explain: "
+        explain: "Strong logic and love for coding make Software Engineer an ideal job!"
+      }
+    ];
+
+    let currentScenIdx = 0;
+    let gameScore = 0;
+    let gameStreak = 0;
+    let scenAnswered = false;
+
+    function loadScenario() {
+      scenAnswered = false;
+      const sc = scenarios[currentScenIdx];
+      document.getElementById('game-total').innerText = scenarios.length;
+      const targetBadge = document.getElementById('scen-target');
+      targetBadge.innerText = sc.target;
+      targetBadge.className = `scenario-target ${sc.targetClass}`;
+      document.getElementById('scen-title').innerText = `"${sc.title}"`;
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      sc.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-option';
+        btn.innerHTML = `<span>${opt.text}</span><span>➔</span>`;
+        btn.onclick = () => selectScenarioOption(opt, btn);
+        container.appendChild(btn);
+      });
+
+      document.getElementById('game-feedback').style.display = 'none';
+      document.getElementById('btn-next-scen').style.display = 'none';
+      document.getElementById('btn-restart-game').style.display = 'none';
+    }
+
+    function selectScenarioOption(opt, clickedBtn) {
+      if (scenAnswered) return;
+      scenAnswered = true;
+      speak(opt.text);
+
+      document.querySelectorAll('#options-container .btn-option').forEach(b => b.disabled = true);
+
+      const sc = scenarios[currentScenIdx];
+      const fb = document.getElementById('game-feedback');
+      fb.style.display = 'block';
+
+      if (opt.correct) {
+        playSFX('correct');
+        gameScore++;
+        gameStreak++;
+        clickedBtn.style.borderColor = '#059669';
+        clickedBtn.style.background = '#ECFDF5';
+        fb.className = 'feedback-box feedback-correct';
+        fb.innerHTML = `✅ Great job! ${sc.explain}`;
+      } else {
+        playSFX('wrong');
+        gameStreak = 0;
+        clickedBtn.style.borderColor = '#DC2626';
+        clickedBtn.style.background = '#FEF2F2';
+        fb.className = 'feedback-box feedback-wrong';
+        fb.innerHTML = `❌ Oops! ${sc.explain}`;
+      }
+
+      document.getElementById('game-score').innerText = gameScore;
+      document.getElementById('game-streak').innerText = gameStreak;
+
+      if (currentScenIdx < scenarios.length - 1) {
+        document.getElementById('btn-next-scen').style.display = 'inline-flex';
+      } else {
+        playSFX('fanfare');
+        fb.innerHTML += `<br/><br/>🏆 Challenge Complete! Final Score: <strong>${gameScore} / ${scenarios.length}</strong>.`;
+        document.getElementById('btn-restart-game').style.display = 'inline-block';
+      }
+    }
+
+    function speakCurrentScenario() {
+      speak(scenarios[currentScenIdx].title);
+    }
+
+    function nextScenario() {
+      playSFX('click');
+      currentScenIdx++;
+      loadScenario();
+    }
+
+    function restartGame() {
+      playSFX('click');
+      currentScenIdx = 0;
+      gameScore = 0;
+      gameStreak = 0;
+      document.getElementById('game-score').innerText = '0';
+      document.getElementById('game-streak').innerText = '0';
+      loadScenario();
+    }
+
+    // ==========================================
+    // 5. TAB 4: MONOLOGUE STUDIO
+    // ==========================================
+    const studioTraitsMap = {
+      "Software Developer": {
+        good: [
+          { trait: "logical and patient", skill: "solving complex problems on a computer" },
+          { trait: "detail-oriented and focused", skill: "writing clean code for hours" }
+        ],
+        bad: [
+          { trait: "easily distracted and impatient", skill: "sitting in front of a screen all day" },
+          { trait: "bad at math and technology", skill: "fixing computer errors" }
+        ]
+      },
+      "Chef": {
+        good: [
+          { trait: "creative and passionate about food", skill: "cooking delicious meals under pressure" },
+          { trait: "energetic and organized", skill: "preparing fresh ingredients quickly" }
+        ],
+        bad: [
+          { trait: "clumsy and stressed in busy kitchens", skill: "following complicated recipes" },
+          { trait: "picky about food", skill: "tasting new dishes" }
+        ]
+      },
+      "Tour Guide": {
+        good: [
+          { trait: "outgoing and enthusiastic", skill: "talking to groups and sharing local history" },
+          { trait: "friendly and punctual", skill: "organizing exciting city walks" }
+        ],
+        bad: [
+          { trait: "very shy and quiet", skill: "speaking in front of large groups" },
+          { trait: "bad with directions", skill: "finding famous landmarks" }
+        ]
+      },
+      "Flight Attendant": {
+        good: [
+          { trait: "polite, calm, and helpful", skill: "taking care of passengers during long flights" },
+          { trait: "adventurous and adaptable", skill: "working with international travelers" }
+        ],
+        bad: [
+          { trait: "afraid of heights and turbulence", skill: "staying calm on airplanes" },
+          { trait: "impatient with tired travelers", skill: "smiling during 12-hour shifts" }
+        ]
+      },
+      "Accountant": {
+        good: [
+          { trait: "extremely organized and accurate", skill: "working with budgets and numbers" },
+          { trait: "responsible and analytical", skill: "checking financial reports" }
+        ],
+        bad: [
+          { trait: "terrible at math and disorganized", skill: "managing money and spreadsheets" },
+          { trait: "bored by numbers", skill: "calculating taxes all day" }
+        ]
+      }
+    };
+
+    function updateStudioTraits() {
+      const job = document.getElementById('studio-job').value;
+      const fit = document.getElementById('studio-fit').value;
+      const traitSelect = document.getElementById('studio-trait');
+      const list = studioTraitsMap[job][fit];
+
+      traitSelect.innerHTML = list.map((item, idx) =>
+        `<option value="${idx}">Trait: ${item.trait} (${item.skill})</option>`
+      ).join('');
+    }
+
+    function updateStudio() {
+      const job = document.getElementById('studio-job').value;
+      const fit = document.getElementById('studio-fit').value;
+      const traitIdx = parseInt(document.getElementById('studio-trait').value, 10) || 0;
+      const data = studioTraitsMap[job][fit][traitIdx];
+
+      const display = document.getElementById('studio-text');
+      if (fit === 'good') {
+        display.innerHTML = `"Personally, I think I <span class='hl-good'>would be a great ${job}</span> because I am <span class='hl-good'>${data.trait}</span>. In addition, I'm really <span class='hl-good'>good at ${data.skill}</span>, so I would enjoy this career every day!"`;
+      } else {
+        display.innerHTML = `"Honestly, I <span class='hl-bad'>wouldn't be a good ${job}</span> because I am <span class='hl-bad'>${data.trait}</span>. Also, I'm really <span class='hl-bad'>bad at ${data.skill}</span>, so this job would be too stressful for me!"`;
+      }
+    }
+
+    function readStudioMonologue() {
+      const text = document.getElementById('studio-text').innerText;
+      speak(text);
+    }
+
+    function copyStudioMonologue() {
+      const text = document.getElementById('studio-text').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-studio-btn');
+        const orig = btn.innerText;
+        btn.innerText = '✅ Copied!';
+        setTimeout(() => { btn.innerText = orig; }, 1600);
+      });
+    }
+
+    // ==========================================
+    // 6. TAB 5: MASTERY QUIZ & CERTIFICATE
+    // ==========================================
+    const quizAnswers = { q1: 'a', q2: 'b', q3: 'a', q4: 'a', q5: 'a' };
+
+    function submitQuiz() {
+      let score = 0;
+      const total = Object.keys(quizAnswers).length;
+
+      for (const [q, correctVal] of Object.entries(quizAnswers)) {
+        const checked = document.querySelector(`input[name="${q}"]:checked`);
+        if (checked && checked.value === correctVal) {
+          score++;
+        }
+      }
+
+      const percent = Math.round((score / total) * 100);
+      const fb = document.getElementById('quiz-feedback');
+      fb.style.display = 'block';
+
+      if (score >= 4) {
+        playSFX('fanfare');
+        fb.className = 'feedback-box feedback-correct';
+        fb.innerHTML = `🏆 Congratulations! You scored <strong>${score}/${total} (${percent}%)</strong>. Your certificate is ready below!`;
+
+        const nameInput = document.getElementById('student-name-input').value.trim();
+        document.getElementById('cert-student-name').innerText = nameInput || 'A2 Job Candidate';
+        document.getElementById('cert-grade').innerText = `Grade: ${percent}% Mastery`;
+        document.getElementById('cert-date').innerText = `Date: ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+
+        const cert = document.getElementById('certificate');
+        cert.style.display = 'block';
+        launchConfetti();
+      } else {
+        playSFX('wrong');
+        fb.className = 'feedback-box feedback-wrong';
+        fb.innerHTML = `❌ You scored <strong>${score}/${total} (${percent}%)</strong>. You need at least 4/5 (80%) to unlock the certificate. Review Tab 1 and try again!`;
+        document.getElementById('certificate').style.display = 'none';
+      }
+    }
+
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const colors = ['#4F46E5', '#059669', '#F59E0B', '#EC4899', '#06B6D4'];
+      const particles = Array.from({ length: 75 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        r: Math.random() * 5 + 3,
+        d: Math.random() * 3 + 1.5,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      }));
+
+      let frames = 0;
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          p.y += p.d;
+          if (p.y > canvas.height) p.y = -10;
+        });
+        frames++;
+        if (frames < 180) requestAnimationFrame(draw);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      draw();
+    }
+
+    // ==========================================
+    // 7. INITIALIZE ON LOAD
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTrainerStatement();
+      loadScenario();
+      updateStudioTraits();
+      updateStudio();
+    });
+  </script>
+</body>
+</html>
