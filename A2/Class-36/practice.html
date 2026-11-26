@@ -173,13 +173,16 @@
       font-size: 0.95rem;
     }
 
-    input.input-text {
+    select.input-select, input.input-text {
       padding: 8px 12px;
       border: 1px solid var(--border);
       border-radius: 8px;
       font-size: 0.9rem;
       font-weight: 600;
       background: white;
+    }
+
+    input.input-text {
       flex-grow: 1;
       min-width: 240px;
     }
@@ -260,9 +263,9 @@
     </header>
 
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('questions')">Preguntas de Discusión</button>
-      <button class="tab-btn" onclick="switchTab('grammar')">Gramática y Conectores</button>
-      <button class="tab-btn" onclick="switchTab('sim')">Simulador de Conversación</button>
+      <button class="tab-btn active" onclick="switchTab('questions', this)">Preguntas de Discusión</button>
+      <button class="tab-btn" onclick="switchTab('grammar', this)">Gramática y Conectores</button>
+      <button class="tab-btn" onclick="switchTab('sim', this)">Simulador de Conversación</button>
     </div>
 
     <!-- GRAMMAR SPOTLIGHT -->
@@ -285,10 +288,11 @@
 
     <!-- QUESTIONS SECTION -->
     <div id="questions-section" class="exercise-section">
-      <p style="margin-bottom:14px; font-weight:600; color:#475569;">Responde a cada una de las preguntas de la discusión. Puedes usar las respuestas modelo o cambiarlas con tus propias palabras:</p>
+      <p style="margin-bottom:14px; font-weight:600; color:#475569;">Responde a cada una de las preguntas de la discusión con tus propias palabras:</p>
       <div id="qList"></div>
       <div class="controls">
         <button class="btn btn-primary" onclick="checkAnswers()">Guardar y Probar Audio</button>
+        <button class="btn btn-secondary" onclick="resetAnswers()">Limpiar Espacios</button>
       </div>
     </div>
 
@@ -323,4 +327,192 @@
       <div id="dialogueOutput" style="display:none;" class="dialogue-box"></div>
     </div>
 
-    <div id="score-banner"
+    <div id="score-banner" class="score-banner" style="display:none;"></div>
+  </div>
+
+  <script>
+    const discussionQuestions = [
+      {
+        id: 1,
+        question: "1. How old are people when they get married?",
+        sampleAnswer: "In my country, most people get married when they are in their late twenties or early thirties."
+      },
+      {
+        id: 2,
+        question: "2. What happens after a couple gets engaged?",
+        sampleAnswer: "After a couple gets engaged, they usually have an engagement party and start planning the wedding."
+      },
+      {
+        id: 3,
+        question: "3. What happens during the ceremony?",
+        sampleAnswer: "During the ceremony, the bride and groom exchange vows and wedding rings in front of family and friends."
+      },
+      {
+        id: 4,
+        question: "4. What do the bride and groom wear?",
+        sampleAnswer: "The bride usually wears a long white dress, and the groom wears a formal suit or tuxedo."
+      },
+      {
+        id: 5,
+        question: "5. What kinds of food is served at the reception?",
+        sampleAnswer: "At the reception, guests usually enjoy a traditional three-course dinner and a big wedding cake."
+      },
+      {
+        id: 6,
+        question: "6. What kinds of gifts do people usually give?",
+        sampleAnswer: "People usually give household appliances, kitchen items, or money to help the couple with their honeymoon."
+      }
+    ];
+
+    function playSound(type) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      if (type === 'success') {
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      } else {
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+    }
+
+    function speakText(text, speed = 1.0) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = parseFloat(speed);
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById('qList');
+      container.innerHTML = '';
+
+      discussionQuestions.forEach(item => {
+        const cleanQ = item.question.replace(/^\d+\.\s*/, '');
+        const card = document.createElement('div');
+        card.className = 'q-card';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span class="q-title">${item.question}</span>
+            <button class="audio-btn" title="Escuchar pregunta" onclick="speakText('${cleanQ.replace(/'/g, "\\'")}')">🔊 Pregunta</button>
+          </div>
+          <div class="q-row">
+            <input type="text" class="input-text" id="ans-${item.id}" value="" autocomplete="off">
+            <button class="audio-btn" title="Escuchar tu respuesta" onclick="speakUserAnswer(${item.id})">🔊 Respuesta</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function speakUserAnswer(id) {
+      const val = document.getElementById(`ans-${id}`).value.trim();
+      if (val) {
+        speakText(val);
+      }
+    }
+
+    function checkAnswers() {
+      let answered = 0;
+      const sentences = [];
+
+      discussionQuestions.forEach(item => {
+        const input = document.getElementById(`ans-${item.id}`);
+        const val = input.value.trim();
+        if (val.length > 0) {
+          answered++;
+          input.style.borderColor = 'var(--success)';
+          input.style.backgroundColor = 'var(--success-bg)';
+          sentences.push(val);
+        } else {
+          input.style.borderColor = 'var(--border)';
+          input.style.backgroundColor = 'white';
+        }
+      });
+
+      const banner = document.getElementById('score-banner');
+      banner.style.display = 'block';
+
+      if (answered > 0) {
+        banner.style.background = 'var(--success-bg)';
+        banner.style.color = 'var(--success)';
+        banner.innerText = `✓ Has respondido ${answered} de ${discussionQuestions.length} preguntas. Reproduciendo tus respuestas...`;
+        playSound('success');
+        speakText(sentences.join(' '));
+      } else {
+        banner.style.background = 'var(--danger-bg)';
+        banner.style.color = 'var(--danger)';
+        banner.innerText = 'Escribe al menos una respuesta en los espacios en blanco para probar el audio.';
+        playSound('error');
+      }
+    }
+
+    function resetAnswers() {
+      renderQuestions();
+      document.getElementById('score-banner').style.display = 'none';
+    }
+
+    function generateDialogue() {
+      const val = parseInt(document.getElementById('simSelect').value);
+      const speed = document.getElementById('simSpeed').value;
+      const output = document.getElementById('dialogueOutput');
+
+      const item = discussionQuestions.find(q => q.id === val);
+      const cleanQ = item.question.replace(/^\d+\.\s*/, '');
+      const userAns = document.getElementById(`ans-${val}`) ? document.getElementById(`ans-${val}`).value.trim() : "";
+      const activeAnswer = userAns || item.sampleAnswer;
+
+      output.style.display = 'block';
+      output.innerHTML = `
+        <div style="margin-bottom:12px;">
+          <strong style="color:var(--secondary);">👤 Student A (Question):</strong><br>
+          <span>"${cleanQ}"</span>
+        </div>
+        <div style="margin-bottom:14px;">
+          <strong style="color:var(--primary-dark);">🗣️ Student B (${userAns ? 'Tu respuesta' : 'Respuesta modelo'}):</strong><br>
+          <span>"${activeAnswer}"</span>
+        </div>
+        <button class="btn btn-secondary" onclick="speakText('${cleanQ.replace(/'/g, "\\'")} ${activeAnswer.replace(/'/g, "\\'")}', ${speed})">
+          🔊 Escuchar Diálogo (${speed}x)
+        </button>
+      `;
+
+      speakText(`${cleanQ} ${activeAnswer}`, speed);
+    }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      document.getElementById('questions-section').style.display = 'none';
+      document.getElementById('grammar-section').style.display = 'none';
+      document.getElementById('sim-section').style.display = 'none';
+      document.getElementById('score-banner').style.display = 'none';
+
+      if (tab === 'questions') {
+        document.getElementById('questions-section').style.display = 'block';
+      } else if (tab === 'grammar') {
+        document.getElementById('grammar-section').style.display = 'block';
+      } else if (tab === 'sim') {
+        document.getElementById('sim-section').style.display = 'block';
+        generateDialogue();
+      }
+    }
+
+    window.onload = () => {
+      renderQuestions();
+    };
+  </script>
+</body>
+</html>
