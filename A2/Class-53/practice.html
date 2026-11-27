@@ -26,6 +26,7 @@
 
     .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
     .tab-btn { flex: 1; padding: 12px; border: 2px solid var(--border); background: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #64748b; }
+    .tab-btn:hover { border-color: #93c5fd; color: var(--primary); }
     .tab-btn.active { border-color: var(--primary); background: #eff6ff; color: var(--primary-dark); }
 
     .grammar-tip { background: #f0f9ff; border-left: 4px solid var(--primary); padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6; color: #1e40af; }
@@ -34,8 +35,9 @@
     .tab-content.active { display: block; }
 
     .match-card { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .match-row { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     @media(min-width: 640px) {
-      .match-card { flex-direction: row; align-items: center; justify-content: space-between; }
+      .match-row { flex-direction: row; align-items: center; justify-content: space-between; }
     }
 
     .stem-text { font-weight: 600; font-size: 1rem; color: #1e293b; flex: 1; }
@@ -49,21 +51,55 @@
       background: white;
       cursor: pointer;
       min-width: 280px;
+      max-width: 100%;
       transition: all 0.2s;
     }
     select:focus { border-color: var(--primary); }
     select.correct { border-color: var(--success); background-color: #f0fdf4; color: var(--success); font-weight: bold; }
     select.incorrect { border-color: var(--error); background-color: #fef2f2; color: var(--error); }
 
+    .feedback-note {
+      display: none;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 2px;
+    }
+    .feedback-note.correct { display: block; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .feedback-note.incorrect { display: block; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .celebration-banner {
+      display: none;
+      background: #f0fdf4;
+      border: 2px solid var(--success);
+      color: #166534;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 16px;
+      font-weight: 600;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+    .celebration-banner.show { display: block; }
+
     .builder-card { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
     .builder-row { margin-bottom: 16px; }
     .builder-row label { font-weight: 600; display: block; margin-bottom: 6px; color: var(--primary-dark); }
-    .builder-row input { width: 100%; padding: 10px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: 6px; outline: none; }
+    .inline-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .inline-fields span { white-space: nowrap; font-size: 0.95rem; color: #334155; }
+    .builder-row input { flex: 1; min-width: 180px; padding: 10px; font-size: 0.95rem; border: 1px solid var(--border); border-radius: 6px; outline: none; background: #ffffff; }
     .builder-row input:focus { border-color: var(--primary); }
 
     .preview-box { background: #eff6ff; border: 1px dashed var(--primary); border-radius: 8px; padding: 16px; font-size: 1rem; color: #1e3a8a; line-height: 1.8; }
+    .preview-list { margin-top: 8px; padding-left: 20px; }
+    .preview-list li { margin-bottom: 4px; }
 
-    .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .builder-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
+    .copy-status { font-size: 0.85rem; font-weight: 600; color: var(--success); margin-right: auto; opacity: 0; transition: opacity 0.2s; }
+    .copy-status.visible { opacity: 1; }
+
+    .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); gap: 12px; flex-wrap: wrap; }
     .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: var(--primary-dark); }
     .btn-sec { background: #64748b; }
@@ -81,8 +117,8 @@
   </header>
 
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('part-a')">1. Sentence Matching (Part A)</button>
-    <button class="tab-btn" onclick="switchTab('part-b')">2. Personal Timeline Builder (Part B)</button>
+    <button type="button" class="tab-btn active" data-tab="part-a" onclick="switchTab('part-a', this)">1. Sentence Matching (Part A)</button>
+    <button type="button" class="tab-btn" data-tab="part-b" onclick="switchTab('part-b', this)">2. Personal Timeline Builder (Part B)</button>
   </div>
 
   <div class="grammar-tip">
@@ -95,6 +131,9 @@
   <!-- Part A: Matching -->
   <div id="part-a" class="tab-content active">
     <div id="matchingContainer"></div>
+    <div id="celebrationBanner" class="celebration-banner">
+      🎉 Excellent work! You matched all 5 sentences accurately (5 / 5)!
+    </div>
   </div>
 
   <!-- Part B: Personal Timeline Builder -->
@@ -103,8 +142,8 @@
       <h3 style="margin-bottom: 14px; color: var(--primary);">Complete Statements About Yourself</h3>
       
       <div class="builder-row">
-        <label>1. Past Continuous Interruption:</label>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <label for="p1_action">1. Past Continuous Interruption:</label>
+        <div class="inline-fields">
           <span>I was</span>
           <input type="text" id="p1_action" placeholder="e.g., studying in London" oninput="updatePreview()" />
           <span>when I</span>
@@ -113,8 +152,8 @@
       </div>
 
       <div class="builder-row">
-        <label>2. Past Continuous Interest:</label>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <label for="p2_action">2. Past Continuous Interest:</label>
+        <div class="inline-fields">
           <span>While I was</span>
           <input type="text" id="p2_action" placeholder="e.g., traveling in Asia" oninput="updatePreview()" />
           <span>, I became interested in</span>
@@ -123,8 +162,8 @@
       </div>
 
       <div class="builder-row">
-        <label>3. Present Perfect Continuous Habit:</label>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <label for="p3_habit">3. Present Perfect Continuous Habit:</label>
+        <div class="inline-fields">
           <span>I've been</span>
           <input type="text" id="p3_habit" placeholder="e.g., practicing guitar" oninput="updatePreview()" />
           <span>for the last</span>
@@ -134,27 +173,65 @@
 
       <div class="preview-box">
         <strong>Your Personal Story Card:</strong>
-        <p id="previewText">Fill in the fields above to generate your personal story card for speaking practice...</p>
+        <div id="previewText">
+          <p style="margin-top: 6px;">Fill in the fields above to generate your personal story card for speaking practice...</p>
+        </div>
+      </div>
+
+      <div class="builder-actions">
+        <span id="copyStatus" class="copy-status">✓ Copied story card to clipboard!</span>
+        <button type="button" class="btn btn-sec" onclick="resetPartB()">Reset Builder</button>
+        <button type="button" class="btn" onclick="copyStoryCard()">Copy Story Card</button>
       </div>
     </div>
   </div>
 
-  <div class="controls">
+  <div class="controls" id="partAControls">
     <div class="score-badge" id="scoreDisplay">Score: <span id="scoreVal">0</span> / 5</div>
-    <div>
-      <button class="btn btn-sec" onclick="resetPartA()">Reset</button>
-      <button class="btn" onclick="checkPartA()" id="checkBtn">Check Answers</button>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="btn btn-sec" onclick="resetPartA()">Reset</button>
+      <button type="button" class="btn" onclick="checkPartA()" id="checkBtn">Check Answers</button>
     </div>
   </div>
 </div>
 
 <script>
   const matchData = [
-    { id: 1, stem: "1. Kai has been learning French...", target: "b", text: "since he arrived in Montreal." },
-    { id: 2, stem: "2. Kai was promoted to the TV side...", target: "c", text: "after working as a radio reporter." },
-    { id: 3, stem: "3. Kai has been riding his bike...", target: "a", text: "since he was a kid." },
-    { id: 4, stem: "4. Kai's ancestors immigrated to Canada...", target: "e", text: "more than a hundred years ago." },
-    { id: 5, stem: "5. Kai reported simple stories...", target: "d", text: "when he first joined the CBC." }
+    {
+      id: 1,
+      stem: "1. Kai has been learning French...",
+      target: "b",
+      text: "since he arrived in Montreal.",
+      explanation: "Present perfect continuous ('has been learning') pairs with 'since' + a past point in time ('arrived in Montreal') for an ongoing action."
+    },
+    {
+      id: 2,
+      stem: "2. Kai was promoted to the TV side...",
+      target: "c",
+      text: "after working as a radio reporter.",
+      explanation: "Simple past ('was promoted') combines with 'after' + gerund ('working...') to show the sequence of completed career steps."
+    },
+    {
+      id: 3,
+      stem: "3. Kai has been riding his bike...",
+      target: "a",
+      text: "since he was a kid.",
+      explanation: "Present perfect continuous ('has been riding') connects a childhood starting point ('since he was a kid') to the present."
+    },
+    {
+      id: 4,
+      stem: "4. Kai's ancestors immigrated to Canada...",
+      target: "e",
+      text: "more than a hundred years ago.",
+      explanation: "Simple past ('immigrated') is used with 'ago' to place a finished historical event in the past."
+    },
+    {
+      id: 5,
+      stem: "5. Kai reported simple stories...",
+      target: "d",
+      text: "when he first joined the CBC.",
+      explanation: "Simple past ('reported') matches 'when' + simple past ('joined') for past routines at a specific finished time."
+    }
   ];
 
   const endingOptions = [
@@ -174,77 +251,147 @@
       const card = document.createElement('div');
       card.className = 'match-card';
 
-      let optionsHtml = endingOptions.map(opt => `<option value="${opt.code}">${opt.label}</option>`).join('');
+      const optionsHtml = endingOptions.map(opt => `<option value="${opt.code}">${opt.label}</option>`).join('');
 
       card.innerHTML = `
-        <span class="stem-text">${item.stem}</span>
-        <select id="match-${item.id}">${optionsHtml}</select>
+        <div class="match-row">
+          <label for="match-${item.id}" class="stem-text">${item.stem}</label>
+          <select id="match-${item.id}">${optionsHtml}</select>
+        </div>
+        <div id="feedback-${item.id}" class="feedback-note"></div>
       `;
       container.appendChild(card);
     });
   }
 
-  function switchTab(tabId) {
+  function switchTab(tabId, clickedBtn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-    event.target.classList.add('active');
+    const targetBtn = clickedBtn || document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const checkBtn = document.getElementById('checkBtn');
-
-    if (tabId === 'part-b') {
-      scoreDisplay.style.visibility = 'hidden';
-      checkBtn.style.visibility = 'hidden';
-    } else {
-      scoreDisplay.style.visibility = 'visible';
-      checkBtn.style.visibility = 'visible';
-    }
+    const partAControls = document.getElementById('partAControls');
+    partAControls.style.display = tabId === 'part-b' ? 'none' : 'flex';
   }
 
   function checkPartA() {
     let score = 0;
     matchData.forEach(item => {
       const select = document.getElementById(`match-${item.id}`);
+      const feedbackEl = document.getElementById(`feedback-${item.id}`);
+
       if (select.value === item.target) {
         select.classList.add('correct');
         select.classList.remove('incorrect');
+        feedbackEl.className = 'feedback-note correct';
+        feedbackEl.innerHTML = `<strong>✓ Correct:</strong> ${item.explanation}`;
         score++;
       } else {
         select.classList.add('incorrect');
         select.classList.remove('correct');
+        feedbackEl.className = 'feedback-note incorrect';
+        feedbackEl.innerHTML = select.value === ''
+          ? `<strong>✗ Not answered yet:</strong> Select an ending above. Hint: ${item.explanation}`
+          : `<strong>✗ Try again:</strong> ${item.explanation}`;
       }
     });
 
     document.getElementById('scoreVal').textContent = score;
+    const banner = document.getElementById('celebrationBanner');
+    if (score === matchData.length) {
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
   }
 
   function resetPartA() {
     matchData.forEach(item => {
       const select = document.getElementById(`match-${item.id}`);
+      const feedbackEl = document.getElementById(`feedback-${item.id}`);
       select.value = '';
       select.classList.remove('correct', 'incorrect');
+      feedbackEl.className = 'feedback-note';
+      feedbackEl.textContent = '';
     });
     document.getElementById('scoreVal').textContent = '0';
+    document.getElementById('celebrationBanner').classList.remove('show');
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function updatePreview() {
+    const rawA1 = document.getElementById('p1_action').value.trim();
+    const rawE1 = document.getElementById('p1_event').value.trim();
+    const rawA2 = document.getElementById('p2_action').value.trim();
+    const rawI2 = document.getElementById('p2_interest').value.trim();
+    const rawH3 = document.getElementById('p3_habit').value.trim();
+    const rawT3 = document.getElementById('p3_time').value.trim();
+
+    const preview = document.getElementById('previewText');
+
+    if (!rawA1 && !rawE1 && !rawA2 && !rawI2 && !rawH3 && !rawT3) {
+      preview.innerHTML = `<p style="margin-top: 6px;">Fill in the fields above to generate your personal story card for speaking practice...</p>`;
+      return;
+    }
+
+    const a1 = escapeHtml(rawA1 || '___');
+    const e1 = escapeHtml(rawE1 || '___');
+    const a2 = escapeHtml(rawA2 || '___');
+    const i2 = escapeHtml(rawI2 || '___');
+    const h3 = escapeHtml(rawH3 || '___');
+    const t3 = escapeHtml(rawT3 || '___');
+
+    preview.innerHTML = `
+      <ul class="preview-list">
+        <li>I was <strong>${a1}</strong> when I <strong>${e1}</strong>.</li>
+        <li>While I was <strong>${a2}</strong>, I became interested in <strong>${i2}</strong>.</li>
+        <li>I've been <strong>${h3}</strong> for the last <strong>${t3}</strong>.</li>
+      </ul>
+    `;
+  }
+
+  function resetPartB() {
+    ['p1_action', 'p1_event', 'p2_action', 'p2_interest', 'p3_habit', 'p3_time'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    updatePreview();
+  }
+
+  function copyStoryCard() {
     const a1 = document.getElementById('p1_action').value.trim() || '___';
     const e1 = document.getElementById('p1_event').value.trim() || '___';
-
     const a2 = document.getElementById('p2_action').value.trim() || '___';
     const i2 = document.getElementById('p2_interest').value.trim() || '___';
-
     const h3 = document.getElementById('p3_habit').value.trim() || '___';
     const t3 = document.getElementById('p3_time').value.trim() || '___';
 
-    const preview = document.getElementById('previewText');
-    preview.innerHTML = `
-      • I was <strong>${a1}</strong> when I <strong>${e1}</strong>.<br/>
-      • While I was <strong>${a2}</strong>, I became interested in <strong>${i2}</strong>.<br/>
-      • I've been <strong>${h3}</strong> for the last <strong>${t3}</strong>.
-    `;
+    const plainText = [
+      `• I was ${a1} when I ${e1}.`,
+      `• While I was ${a2}, I became interested in ${i2}.`,
+      `• I've been ${h3} for the last ${t3}.`
+    ].join('\n');
+
+    const tempArea = document.createElement('textarea');
+    tempArea.value = plainText;
+    tempArea.style.position = 'fixed';
+    tempArea.style.opacity = '0';
+    document.body.appendChild(tempArea);
+    tempArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempArea);
+
+    const status = document.getElementById('copyStatus');
+    status.classList.add('visible');
+    setTimeout(() => status.classList.remove('visible'), 2500);
   }
 
   window.onload = renderPartA;
