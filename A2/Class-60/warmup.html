@@ -200,6 +200,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       font-size: 0.95rem;
     }
 
@@ -342,9 +343,14 @@
       align-items: center;
     }
 
-    .btn-option:hover {
+    .btn-option:hover:not(:disabled) {
       border-color: var(--primary);
       background: var(--primary-light);
+    }
+
+    .btn-option:disabled {
+      cursor: default;
+      opacity: 0.85;
     }
 
     .feedback-box {
@@ -404,6 +410,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 12px;
       font-size: 1.05rem;
     }
 
@@ -435,6 +442,17 @@
     }
 
     .quiz-opt:hover { background: var(--primary-light); }
+
+    .name-input-box {
+      background: var(--primary-light);
+      border: 1px solid #BFDBFE;
+      padding: 18px;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .certificate {
       display: none;
@@ -506,6 +524,8 @@
       font-size: 0.95rem;
     }
 
+    .btn-secondary:hover { background: #CBD5E1; }
+
     canvas {
       position: absolute;
       top: 0;
@@ -516,7 +536,7 @@
     }
 
     @media print {
-      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, button, .audio-controls { display: none !important; }
+      .nav-tabs, header, .btn-primary, .btn-secondary, .audio-btn, .quiz-card, .name-input-box, #quiz-feedback, button, .audio-controls { display: none !important; }
       body { background: white; padding: 0; }
       .container { max-width: 100%; }
       .tab-content { display: block !important; box-shadow: none; border: none; padding: 0; }
@@ -543,11 +563,11 @@
   </header>
 
   <nav class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('tab1')">1. Signs & Grammar Matrix</button>
-    <button class="tab-btn" onclick="switchTab('tab2')">2. Rule Constructor</button>
-    <button class="tab-btn" onclick="switchTab('tab3')">3. Sign Inspector Game</button>
-    <button class="tab-btn" onclick="switchTab('tab4')">4. Rules Reporter Studio</button>
-    <button class="tab-btn" onclick="switchTab('tab5')">5. Mastery Quiz</button>
+    <button class="tab-btn active" onclick="switchTab('tab1', this)">1. Signs & Grammar Matrix</button>
+    <button class="tab-btn" onclick="switchTab('tab2', this)">2. Rule Constructor</button>
+    <button class="tab-btn" onclick="switchTab('tab3', this)">3. Sign Inspector Game</button>
+    <button class="tab-btn" onclick="switchTab('tab4', this)">4. Rules Reporter Studio</button>
+    <button class="tab-btn" onclick="switchTab('tab5', this)">5. Mastery Quiz</button>
   </nav>
 
   <div class="container">
@@ -718,6 +738,7 @@
 
       <div style="text-align: center; margin-top: 20px;">
         <button class="btn-primary" id="btn-next-scen" style="display:none;" onclick="nextScenario()">Next Sign ➔</button>
+        <button class="btn-secondary" id="btn-restart-scen" style="display:none;" onclick="restartGame()">🔄 Play Again</button>
       </div>
     </div>
 
@@ -727,25 +748,31 @@
       <p style="margin-bottom: 16px; color: var(--text-muted);">Practice reading and presenting public venue guidelines out loud!</p>
 
       <div class="topic-selector">
-        <button class="topic-btn active" onclick="loadStudioScript('airport')">✈️ Airport Safety</button>
-        <button class="topic-btn" onclick="loadStudioScript('library')">📚 Library Rules</button>
-        <button class="topic-btn" onclick="loadStudioScript('pool')">🏊 Swimming Pool</button>
-        <button class="topic-btn" onclick="loadStudioScript('museum')">🖼️ Art Museum</button>
+        <button class="topic-btn active" onclick="loadStudioScript('airport', this)">✈️ Airport Safety</button>
+        <button class="topic-btn" onclick="loadStudioScript('library', this)">📚 Library Rules</button>
+        <button class="topic-btn" onclick="loadStudioScript('pool', this)">🏊 Swimming Pool</button>
+        <button class="topic-btn" onclick="loadStudioScript('museum', this)">🖼️ Art Museum</button>
       </div>
 
       <div class="report-card" id="report-container">
         <!-- Content inserted dynamically -->
       </div>
 
-      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; align-items: center;">
         <button class="btn-primary" onclick="readFullStudioScript()">🔊 Listen Full Rules Presentation</button>
-        <button class="btn-secondary" onclick="copyStudioScript()">📋 Copy Rules Script</button>
+        <button class="btn-secondary" id="copy-btn" onclick="copyStudioScript()">📋 Copy Rules Script</button>
       </div>
     </div>
 
     <!-- TAB 5: QUIZ & CERTIFICATE -->
     <div id="tab5" class="tab-content">
       <h2>✅ Rules & Signs Competency Quiz</h2>
+      <p style="margin-bottom: 18px; color: var(--text-muted);">Score 4 out of 5 (80%) or higher to unlock your printable CEFR A2 Certificate!</p>
+
+      <div class="name-input-box">
+        <label class="builder-label" for="student-name">Student Full Name (for Certificate):</label>
+        <input type="text" id="student-name" class="builder-input" placeholder="Enter your full name..." />
+      </div>
 
       <div class="quiz-card">
         <p>1. Which modal verb expresses a strong prohibition (something you are NOT allowed to do)?</p>
@@ -763,4 +790,448 @@
 
       <div class="quiz-card">
         <p>3. What does a "Quiet Zone" sign mean?</p>
-        <label class="quiz-opt"><input type="radio" name="q3" value="a"> You have to
+        <label class="quiz-opt"><input type="radio" name="q3" value="a"> You have to speak quietly or stay silent.</label>
+        <label class="quiz-opt"><input type="radio" name="q3" value="b"> You can play loud music here.</label>
+        <label class="quiz-opt"><input type="radio" name="q3" value="c"> You don't have to turn off your alarm.</label>
+      </div>
+
+      <div class="quiz-card">
+        <p>4. Look at the sign 🚭 (No Smoking). Which sentence is grammatically correct?</p>
+        <label class="quiz-opt"><input type="radio" name="q4" value="a"> Visitors are not allowed to smoke here.</label>
+        <label class="quiz-opt"><input type="radio" name="q4" value="b"> Visitors must to smoke outside.</label>
+        <label class="quiz-opt"><input type="radio" name="q4" value="c"> Visitors can't to smoke inside.</label>
+      </div>
+
+      <div class="quiz-card">
+        <p>5. Which sentence expresses permission?</p>
+        <label class="quiz-opt"><input type="radio" name="q5" value="a"> You are allowed to take photos without flash.</label>
+        <label class="quiz-opt"><input type="radio" name="q5" value="b"> You mustn't touch the paintings.</label>
+        <label class="quiz-opt"><input type="radio" name="q5" value="c"> You have to leave your bag at the desk.</label>
+      </div>
+
+      <button class="btn-primary" onclick="submitQuiz()">🎯 Submit Quiz & Check Score</button>
+
+      <div class="feedback-box" id="quiz-feedback"></div>
+
+      <!-- CERTIFICATE -->
+      <div class="certificate" id="certificate-box">
+        <canvas id="confetti-canvas"></canvas>
+        <div style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
+        <div class="cert-title">CERTIFICATE OF ACHIEVEMENT</div>
+        <div class="cert-sub">CEFR LEVEL A2 • RULES & PUBLIC SIGNS STUDIO</div>
+        <div class="cert-body">
+          This certifies that<br />
+          <span class="cert-name" id="cert-student-name">Student Name</span><br />
+          has successfully demonstrated mastery in explaining public signs, obligations, permissions, and prohibitions in English with a score of <strong id="cert-score-display">100%</strong>.
+        </div>
+        <div style="margin-top: 24px; color: var(--text-muted); font-size: 0.9rem;" id="cert-date"></div>
+        <div style="margin-top: 24px;">
+          <button class="btn-primary" onclick="window.print()">🖨️ Print / Save PDF Certificate</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. AUDIO & SPEECH SYNTHESIS
+    // ==========================================
+    let audioCtx = null;
+
+    function playSFX(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'correct') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.1);
+          osc.frequency.setValueAtTime(783.99, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'wrong') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(165, now + 0.25);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch (e) {
+        // Ignore if browser blocks audio before user gesture
+      }
+    }
+
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      const rateEl = document.getElementById('speech-rate');
+      utterance.rate = rateEl ? parseFloat(rateEl.value) : 0.75;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // ==========================================
+    // 2. TAB NAVIGATION
+    // ==========================================
+    function switchTab(tabId, btnEl) {
+      playSFX('click');
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    // ==========================================
+    // 3. TAB 2: RULE CONSTRUCTOR
+    // ==========================================
+    function updateRule() {
+      const loc = document.getElementById('rule-location').value;
+      const sign = document.getElementById('rule-sign').value;
+      const modal = document.getElementById('rule-modal').value;
+      const reason = document.getElementById('rule-reason').value;
+
+      const html = `
+        <div style="font-weight: 700; color: var(--primary-dark); margin-bottom: 8px;">Sign: ${sign}</div>
+        <p><strong>${loc}</strong>, ${modal} ${reason}</p>
+      `;
+      document.getElementById('rule-result').innerHTML = html;
+    }
+
+    function speakRuleResult() {
+      const loc = document.getElementById('rule-location').value;
+      const modal = document.getElementById('rule-modal').value;
+      const reason = document.getElementById('rule-reason').value;
+      speak(`${loc}, ${modal} ${reason}`);
+    }
+
+    // ==========================================
+    // 4. TAB 3: SIGN INSPECTOR GAME
+    // ==========================================
+    const scenarios = [
+      {
+        icon: '📵',
+        title: 'Sign: "No Mobile Phones Allowed"',
+        options: [
+          { text: "You mustn't use your mobile phone here.", correct: true },
+          { text: "You don't have to turn off your phone.", correct: false },
+          { text: "You are allowed to make loud calls.", correct: false }
+        ],
+        explanation: "Correct! 'Mustn't' expresses a strict prohibition."
+      },
+      {
+        icon: '🚲',
+        title: 'Sign: "Bicycle Lane Only"',
+        options: [
+          { text: "Cyclists can ride their bikes in this lane.", correct: true },
+          { text: "Cyclists mustn't ride here.", correct: false },
+          { text: "Cars are allowed to park in this lane.", correct: false }
+        ],
+        explanation: "Great job! 'Can' shows that riding a bicycle here is permitted."
+      },
+      {
+        icon: '🪖',
+        title: 'Sign: "Construction Area: Hard Hat Required"',
+        options: [
+          { text: "Workers have to wear a safety helmet.", correct: true },
+          { text: "Workers don't have to wear protection.", correct: false },
+          { text: "Workers mustn't wear a helmet.", correct: false }
+        ],
+        explanation: "Spot on! 'Have to' expresses a necessary obligation for safety."
+      },
+      {
+        icon: '🐕',
+        title: 'Sign: "No Dogs Allowed in the Supermarket"',
+        options: [
+          { text: "Customers can't bring their dogs inside.", correct: true },
+          { text: "Customers must bring their pets.", correct: false },
+          { text: "Dogs are allowed near the food.", correct: false }
+        ],
+        explanation: "Exact! 'Can't' means it is against the rules to bring dogs inside."
+      },
+      {
+        icon: '🆓',
+        title: 'Sign: "Museum Admission: Free on Sundays"',
+        options: [
+          { text: "Visitors don't have to pay for a ticket on Sundays.", correct: true },
+          { text: "Visitors mustn't enter on Sundays.", correct: false },
+          { text: "Visitors must buy an expensive ticket.", correct: false }
+        ],
+        explanation: "Awesome! 'Don't have to' means there is no obligation to pay."
+      }
+    ];
+
+    let currentScenIndex = 0;
+    let gameScore = 0;
+    let gameStreak = 0;
+    let answeredCurrent = false;
+
+    function renderScenario() {
+      const scen = scenarios[currentScenIndex];
+      answeredCurrent = false;
+
+      document.getElementById('game-current').textContent = currentScenIndex + 1;
+      document.getElementById('game-total').textContent = scenarios.length;
+      document.getElementById('scen-icon').textContent = scen.icon;
+      document.getElementById('scen-title').textContent = scen.title;
+
+      const feedbackEl = document.getElementById('game-feedback');
+      feedbackEl.style.display = 'none';
+      feedbackEl.className = 'feedback-box';
+
+      document.getElementById('btn-next-scen').style.display = 'none';
+      document.getElementById('btn-restart-scen').style.display = 'none';
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      scen.options.forEach((opt) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-option';
+        btn.innerHTML = `<span>${opt.text}</span> <span>➔</span>`;
+        btn.onclick = () => checkAnswer(opt.correct, btn, scen.explanation);
+        container.appendChild(btn);
+      });
+    }
+
+    function speakCurrentQuestion() {
+      const scen = scenarios[currentScenIndex];
+      speak(scen.title);
+    }
+
+    function checkAnswer(isCorrect, btnEl, explanation) {
+      if (answeredCurrent) return;
+      answeredCurrent = true;
+
+      const allBtns = document.querySelectorAll('#options-container .btn-option');
+      allBtns.forEach(b => b.disabled = true);
+
+      const feedbackEl = document.getElementById('game-feedback');
+      feedbackEl.style.display = 'block';
+
+      if (isCorrect) {
+        playSFX('correct');
+        gameScore += 20;
+        gameStreak += 1;
+        btnEl.style.borderColor = 'var(--success)';
+        btnEl.style.background = 'var(--success-bg)';
+        feedbackEl.className = 'feedback-box feedback-correct';
+        feedbackEl.textContent = '✅ ' + explanation;
+      } else {
+        playSFX('wrong');
+        gameStreak = 0;
+        btnEl.style.borderColor = 'var(--danger)';
+        btnEl.style.background = 'var(--danger-bg)';
+        feedbackEl.className = 'feedback-box feedback-wrong';
+        feedbackEl.textContent = '❌ Not quite! ' + explanation;
+      }
+
+      document.getElementById('game-score').textContent = gameScore;
+      document.getElementById('game-streak').textContent = gameStreak;
+
+      if (currentScenIndex < scenarios.length - 1) {
+        document.getElementById('btn-next-scen').style.display = 'inline-flex';
+      } else {
+        document.getElementById('btn-restart-scen').style.display = 'inline-flex';
+        feedbackEl.textContent += ` 🎉 Final Score: ${gameScore} / ${scenarios.length * 20} pts!`;
+      }
+    }
+
+    function nextScenario() {
+      playSFX('click');
+      if (currentScenIndex < scenarios.length - 1) {
+        currentScenIndex++;
+        renderScenario();
+      }
+    }
+
+    function restartGame() {
+      playSFX('click');
+      currentScenIndex = 0;
+      gameScore = 0;
+      gameStreak = 0;
+      document.getElementById('game-score').textContent = '0';
+      document.getElementById('game-streak').textContent = '0';
+      renderScenario();
+    }
+
+    // ==========================================
+    // 5. TAB 4: RULES REPORTER STUDIO
+    // ==========================================
+    const studioScripts = {
+      airport: [
+        "Welcome to the International Airport Terminal.",
+        "All passengers must show their passport and boarding pass at security.",
+        "You mustn't carry sharp objects or large liquids in your hand luggage.",
+        "You have to take off your jacket and belt before walking through the scanner.",
+        "Once inside the gate area, you can relax and use the free Wi-Fi."
+      ],
+      library: [
+        "Welcome to the City Public Library.",
+        "This is a quiet study zone, so you mustn't talk loudly on your phone.",
+        "You have to put your mobile phone on silent mode before entering.",
+        "Visitors are allowed to borrow up to five books for two weeks.",
+        "You don't have to pay for a library card if you live in the city."
+      ],
+      pool: [
+        "Attention swimmers! Please read our swimming pool safety rules.",
+        "You must take a shower before entering the swimming pool.",
+        "Children under eight have to swim with an adult at all times.",
+        "You mustn't run on the wet floor around the pool.",
+        "You can rent lockers and towels at the front reception desk."
+      ],
+      museum: [
+        "Welcome to the National Modern Art Museum.",
+        "Visitors are allowed to take photos, but you mustn't use flash.",
+        "You can't touch any of the paintings or sculptures in the gallery.",
+        "You have to leave large backpacks in the free cloakroom.",
+        "You can enjoy coffee and snacks in the museum garden café."
+      ]
+    };
+
+    let currentStudioTopic = 'airport';
+
+    function loadStudioScript(topic, btnEl) {
+      playSFX('click');
+      currentStudioTopic = topic;
+
+      if (btnEl) {
+        document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+      }
+
+      const lines = studioScripts[topic];
+      const container = document.getElementById('report-container');
+      container.innerHTML = lines.map((line, idx) => `
+        <div class="report-sentence">
+          <span><strong style="color: #60A5FA;">0${idx + 1}.</strong> ${line}</span>
+          <button class="audio-btn" onclick="speak(\`${line.replace(/'/g, "\\'")}\`)">🔊</button>
+        </div>
+      `).join('');
+    }
+
+    function readFullStudioScript() {
+      const fullText = studioScripts[currentStudioTopic].join(' ');
+      speak(fullText);
+    }
+
+    function copyStudioScript() {
+      const fullText = studioScripts[currentStudioTopic].join('\n');
+      navigator.clipboard.writeText(fullText).then(() => {
+        playSFX('correct');
+        const btn = document.getElementById('copy-btn');
+        const original = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    }
+
+    // ==========================================
+    // 6. TAB 5: MASTERY QUIZ & CERTIFICATE
+    // ==========================================
+    function submitQuiz() {
+      const answers = { q1: 'a', q2: 'a', q3: 'a', q4: 'a', q5: 'a' };
+      let score = 0;
+      let total = 5;
+
+      for (let q in answers) {
+        const selected = document.querySelector(`input[name="${q}"]:checked`);
+        if (selected && selected.value === answers[q]) {
+          score++;
+        }
+      }
+
+      const percentage = Math.round((score / total) * 100);
+      const feedbackEl = document.getElementById('quiz-feedback');
+      const certBox = document.getElementById('certificate-box');
+      feedbackEl.style.display = 'block';
+
+      if (score >= 4) {
+        playSFX('correct');
+        feedbackEl.className = 'feedback-box feedback-correct';
+        feedbackEl.textContent = `🎉 Congratulations! You scored ${score}/${total} (${percentage}%). Your certificate is unlocked below!`;
+
+        const rawName = document.getElementById('student-name').value.trim();
+        document.getElementById('cert-student-name').textContent = rawName || 'A2 English Learner';
+        document.getElementById('cert-score-display').textContent = `${percentage}%`;
+        document.getElementById('cert-date').textContent = 'Issued on: ' + new Date().toLocaleDateString('en-US', {
+          year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        certBox.style.display = 'block';
+        launchConfetti();
+      } else {
+        playSFX('wrong');
+        certBox.style.display = 'none';
+        feedbackEl.className = 'feedback-box feedback-wrong';
+        feedbackEl.textContent = `📚 You scored ${score}/${total} (${percentage}%). Review Tab 1 and try again to score at least 80% (4/5)!`;
+      }
+    }
+
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const colors = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+      const pieces = Array.from({ length: 70 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 8 + 4,
+        h: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        speed: Math.random() * 3 + 2,
+        angle: Math.random() * Math.PI * 2
+      }));
+
+      let frames = 0;
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+          p.y += p.speed;
+          p.x += Math.sin(p.angle) * 1.2;
+          p.angle += 0.05;
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, p.w, p.h);
+        });
+        frames++;
+        if (frames < 160) requestAnimationFrame(animate);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      animate();
+    }
+
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      updateRule();
+      renderScenario();
+      loadStudioScript('airport');
+    });
+  </script>
+</body>
+</html>
